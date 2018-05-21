@@ -1,0 +1,11 @@
+.DS_Store
+.merlin
+.bsb.lock
+npm-debug.log
+lib/
+node_modules/
+.vscode
+log_types.txt
+*.install
+_build
+static/codemirror-5.36.0

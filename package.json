@@ -1,0 +1,30 @@
+{
+  "name": "docre",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "bsb -make-world -backend native",
+    "clean": "bsb -clean-world",
+    "watch": "bsb -make-world -backend native -w",
+    "postinstall": "bsb -make-world -backend native"
+  },
+  "bin": "./docre.sh",
+  "keywords": [
+    "BuckleScript",
+    "documentation",
+    "generator"
+  ],
+  "repository": {
+    "url": "jaredly/docre",
+    "type": "git"
+  },
+  "description": "A clean & easy documentation generator for reason/bucklescript/ocaml",
+  "author": "Jared Forsyth",
+  "license": "ISC",
+  "dependencies": {
+    "bs-platform": "bsansouci/bsb-native#fast",
+    "pack.re": "jaredly/pack.re",
+    "pack.re-bin": "*",
+    "minimist.re": "0.0.5",
+    "rex-json": "1.3.0"
+  }
+}
