@@ -1,4 +1,6 @@
 
+let optMap = (fn, items) => List.fold_left((result, item) => switch (fn(item)) { | None => result | Some(res) => [res, ...result]}, [], items);
+
 let (|!) = (o, d) => switch o { | None => failwith(d) | Some(v) => v };
 let (|?) = (o, d) => switch o { | None => d | Some(v) => v };
 let (|??) = (o, d) => switch o { | None => d | Some(v) => Some(v) };

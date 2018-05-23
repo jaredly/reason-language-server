@@ -42,6 +42,12 @@ let readMessage = (log, input) => {
   }
 };
 
+let send = (output, content) => {
+  let length = String.length(content);
+  output_string(output, "Content-Length: " ++ string_of_int(length) ++ "\r\n\r\n" ++ content);
+  flush(output);
+};
+
 let sendMessage = (log, output, id, result) => {
   open Json;
   open J;
@@ -49,8 +55,28 @@ let sendMessage = (log, output, id, result) => {
     ("id", Number(id)),
     ("jsonrpc", s("2.0")),
     ("result", result)]));
-  let length = String.length(content);
   log("Sending response " ++ content);
-  output_string(output, "Content-Length: " ++ string_of_int(length) ++ "\r\n\r\n" ++ content);
-  flush(output);
+  send(output, content);
+};
+
+let sendError = (log, output, id, error) => {
+  open Json;
+  open J;
+  let content = Json.stringify(o([
+    ("id", Number(id)),
+    ("jsonrpc", s("2.0")),
+    ("error", error)]));
+  log("Sending response " ++ content);
+  send(output, content);
+};
+
+let sendNotification = (log, output, method, params) => {
+  open J;
+  let content = Json.stringify(o([
+    ("jsonrpc", s("2.0")),
+    ("method", s(method)),
+    ("params", params)
+  ]));
+  log("Sending notification " ++ content);
+  send(output, content);
 };
