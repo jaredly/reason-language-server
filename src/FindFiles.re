@@ -152,7 +152,7 @@ type modpath = Namespaced(string, string) | Plain(string);
 
 let findDependencyFiles = (~debug, base, config) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
-  deps |> List.map(name => {
+  let depFiles = deps |> List.map(name => {
     let loc = base /+ "node_modules" /+ name;
     switch (Files.readFile(loc /+ "bsconfig.json")) {
     | Some(text) =>
@@ -160,14 +160,19 @@ let findDependencyFiles = (~debug, base, config) => {
       let namespace = getNamespace(config);
       let files = findProjectFiles(~debug, namespace, loc, inner, getCompiledBase(base, config));
       switch namespace {
-      | None => List.map(((full, rel)) => (Plain(getName(rel)), (full, rel)), files)
+      | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, rel)), files)
       | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, rel)))
       }
     | None =>
       print_endline("Skipping nonexistent dependency: " ++ name);
       []
     }
-  }) |> List.concat
+  }) |> List.concat;
+  let builtins = Files.readDirectory(base /+ "node_modules/bs-platform/lib/ocaml")
+  |> List.filter(isCompiledFile)
+  |> filterDuplicates
+  |> List.map(path => (Plain(getName(path) |> String.capitalize), (path, Filename.chop_extension(path) ++ ".ml")));
+  depFiles @ builtins
 };
 
 /* let findDependencyDirectories = root => {

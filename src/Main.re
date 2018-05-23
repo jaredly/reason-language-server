@@ -51,6 +51,7 @@ let capabilities =
       /*
        * Found how to do the showReferences thing
        * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts
+       * but it seems I need to instantiate the object from javascript
        */
       /* ("executeCommandProvider", o([
 
@@ -69,16 +70,7 @@ let parseUri = uri => {
   }
 };
 
-type state = {
-  rootPath: string,
-  localCompiledBase: string,
-  localModules: list((string, (string, string))),
-  localCompiledMap: list((string, string)),
-  dependencyModules: list((FindFiles.modpath, (string, string))),
-  cmtMap: Hashtbl.t(string, Cmt_format.cmt_infos),
-  documentText: Hashtbl.t(string, (string, int, bool)),
-  /* workspace folders... */
-};
+open State;
 
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 
@@ -129,10 +121,10 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     |?> changes => List.nth(changes, List.length(changes) - 1) |> RJson.get("text") |?> RJson.string
     |?>> text => {
       /* Hmm how do I know if it's modified? */
-      Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
+      Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), false));
       state
     }
-  })
+  }),
 ];
 
 let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
@@ -145,19 +137,27 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         log("Finding in\n" ++ String.sub(text, 0, offset));
         let completions = switch (PartialParser.findCompletable(text, offset)) {
         | Nothing => []
-        | Labeled(string) => [o([("label", s(string ++ "_arg"))])]
-        | Lident(string) => [o([("label", s(string ++ "_lident"))])]
+        | Labeled(string) => []
+        /* [o([("label", s(string ++ "_arg"))])] */
+        | Lident(string) => {
+          let parts = Str.split(Str.regexp_string("."), string);
+          let (scope, name) = {
+            let rec loop = (l) => switch l {
+            | [] => assert(false)
+            | [one] => ([], one)
+            | [one, ...more] => {
+                let (scope, name) = loop(more);
+                ([one, ...scope], name)
+              };
+            };
+            loop(parts)
+          };
+          Completions.get(scope, name, state) |> List.map(name => o([("label", s(name))]))
+        }
         };
         (state, l(completions))
       }
     });
-    /* {textDocument: {uri}, position: {line, character}} */
-    /* Error("Can't handle completions yet") */
-    /* Ok((state, Rpc.J.(l([
-      o([
-        ("label", s("Hello_world"))
-      ])
-    ])))) */
   }),
   ("textDocument/codeLens", (state, params) => {
     open Protocol;

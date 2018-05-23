@@ -159,11 +159,7 @@ let findCompletable = (text, offset) => {
       | '~' => Labeled(String.sub(text, i + 1, offset - (i + 1)))
       | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' => loop(i - 1)
       | _ => {
-        /* Nothing */
-        i == offset - 1 ? Nothing : Lident(
-          /* Printf.sprintf("%d : %d - %d", String.length(text), i + 1, offset) */
-          String.sub(text, i + 1, offset - (i + 1))
-          )
+        i == offset - 1 ? Nothing : Lident(String.sub(text, i + 1, offset - (i + 1)))
       }
       }
     };
