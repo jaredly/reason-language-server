@@ -13,3 +13,5 @@ let zzz = 1;
 let more = 20;
 /** Something here */
 let added = 10;
+open Other;
+Inner.x

@@ -168,7 +168,7 @@ let findCompletable = (text, offset) => {
 };
 
 
-let findOpens = text => {
+let findOpens = (text, current) => {
   let opens = ref([]);
   let add = o => opens := [o, ...opens^];
 
@@ -223,8 +223,8 @@ let findOpens = text => {
       }
     }
   };
-  loop(String.length(text) - 1) |> ignore;
-  opens;
+  loop(current - 1) |> ignore;
+  opens^;
 };
 
 let offsetOfLine = (text, line) => {

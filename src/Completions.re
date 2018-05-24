@@ -100,17 +100,51 @@ let rec inDocs = (parts, contents) => {
   }
 };
 
+let rec findSubModule = (name, contents) => switch contents {
+  | [] => None
+  | [(n, doc, Docs.Module(innerContents)), ..._] when n == name => Some((n, doc, innerContents))
+  | [_, ...rest] => findSubModule(name, rest)
+};
+
+let resolveOpens = (opens, state) => {
+  List.fold_left((previous, name) => {
+    let rec loop = prev => switch prev {
+    | [] =>
+      switch (State.docsForModule(name, state)) {
+      | None => previous /* TODO warn? */
+      | Some((docs, contents)) => previous @ [(name, contents)]
+      }
+    | [(prevname, contents), ...rest] =>
+      switch (findSubModule(name, contents)) {
+      | None => loop(rest)
+      | Some((name, _, innerContents)) => previous @ [(name, innerContents)]
+      }
+      /* let rec find = contents => switch contents {
+      | [] => loop(rest)
+      | [(n, _, Docs.Module(innerContents)), ..._] when n == name =>
+      | [_, ...rest] => find(rest)
+      }; */
+      /* find(contents) */
+    };
+    loop(previous)
+  }, [], opens);
+};
+
 /** Some docs */
-let get = (topModule, parts, state) =>
+let get = (topModule, opens, parts, state) => {
+  let opens = resolveOpens(opens, state);
   switch parts {
   | [] => []
   | [single] when isCapitalized(single) =>
+    let results = opens |> List.map(((_, contents)) => contents |> Utils.filterMap(
+      ((name, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, doc, item)) : None
+    )) |> List.concat;
     let results =
       List.fold_left(
         (results, (k, (cmt, src))) =>
           Utils.startsWith(k, single) && k != topModule ?
             [forModule(state, k, cmt, src), ...results] : results,
-        [],
+        results,
         state.localModules
       );
     let results =
@@ -127,8 +161,13 @@ let get = (topModule, parts, state) =>
       );
     results;
   | [first, ...more] =>
+    switch (Utils.find(((name, contents)) => findSubModule(first, contents), opens)) {
+    | Some((_, _, contents)) => inDocs(more, contents)
+    | None =>
     switch (State.docsForModule(first, state)) {
     | None => [] /* TODO handle opens */
     | Some((_, contents)) => inDocs(more, contents)
     }
+    }
   };
+};

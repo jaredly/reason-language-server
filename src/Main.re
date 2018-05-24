@@ -166,7 +166,8 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           let parts = Str.split(Str.regexp_string("."), string);
           let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
           let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
-          Completions.get(currentModuleName, parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
+          let opens = PartialParser.findOpens(text, offset);
+          Completions.get(currentModuleName, opens, parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),

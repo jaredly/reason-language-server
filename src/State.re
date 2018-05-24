@@ -52,6 +52,7 @@ let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 let docsForCmt = (cmt, src, state) => {
   if (Hashtbl.mem(state.cmtCache, cmt)) {
     let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
+    /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
     | None => None
     | Some(changed) =>
@@ -70,7 +71,6 @@ let docsForCmt = (cmt, src, state) => {
   }
 };
 
-/* TODO track stale docs */
 let docsForModule = (modname, state) => {
   open Infix;
   if (Hashtbl.mem(state.pathsForModule, modname)) {
@@ -79,17 +79,4 @@ let docsForModule = (modname, state) => {
   } else {
     None
   }
-  /* if (Hashtbl.mem(state.docs, modname)) {
-    Result.Ok(Hashtbl.find(state.docs, modname))
-  } else {
-    let docs = switch (List.assoc(modname, state.localModules)) {
-    | (cmt, src) => Docs.forCmt(docConverter(src), getCmt(cmt, state))
-    | exception Not_found => switch (List.assoc(FindFiles.Plain(modname), state.dependencyModules)) {
-      | (cmt, src) => Docs.forCmt(docConverter(src), getCmt(cmt, state))
-      | exception Not_found => None
-      }
-    };
-    docs |?< d => Hashtbl.replace(state.docs, modname, d);
-    docs |> Result.orError("Unable to read cmt")
-  } */
 };
