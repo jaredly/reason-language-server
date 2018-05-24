@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "bs-platform": "^3.0.0"
+  },
+  "scripts": {
+    "build": "bsb -make-world"
+  }
+}
