@@ -133,12 +133,20 @@ let resolveOpens = (opens, state) => {
 /** Some docs */
 let get = (topModule, opens, parts, state) => {
   let opens = resolveOpens(opens, state);
+  let opens = switch (State.docsForModule("Pervasives", state)) {
+  | None => {
+    output_string(stderr, "No pervasives found...");
+    opens
+  }
+  | Some((_, contents)) => [("Pervasives", contents), ...opens]
+  };
   switch parts {
   | [] => []
-  | [single] when isCapitalized(single) =>
+  | [single] =>
     let results = opens |> List.map(((_, contents)) => contents |> Utils.filterMap(
       ((name, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, doc, item)) : None
     )) |> List.concat;
+    if (isCapitalized(single)) {
     let results =
       List.fold_left(
         (results, (k, (cmt, src))) =>
@@ -160,6 +168,10 @@ let get = (topModule, opens, parts, state) => {
         state.dependencyModules
       );
     results;
+
+    } else {
+      results
+    }
   | [first, ...more] =>
     switch (Utils.find(((name, contents)) => findSubModule(first, contents), opens)) {
     | Some((_, _, contents)) => inDocs(more, contents)
