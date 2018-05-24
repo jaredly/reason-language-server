@@ -21,12 +21,6 @@ let showLoc = ({Location.loc_start, loc_end}) => {
 module F = (Collector: {let check: (Location.t, Types.type_expr) => unit}) => {
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
-  let enter_pattern = ({pat_loc}) => {
-    Log.log("Enter pattern " ++ showLoc(pat_loc))
-  };
-  let enter_expression = expr => {
-    Log.log("Enter expr " ++ showLoc(expr.Typedtree.exp_loc))
-  };
   let leave_pattern = pat => {
     Collector.check(pat.pat_loc, pat.pat_type)
   };
@@ -37,17 +31,11 @@ module F = (Collector: {let check: (Location.t, Types.type_expr) => unit}) => {
 
 let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}, loc_end} as loc, exp) => {
   open Lexing;
-  Log.log(Printf.sprintf(
-    "Check %d:%d -- %s",
-    line, char,
-    showLoc(loc)
-  ));
   if (line < pos_lnum || (line == pos_lnum && char < pos_cnum - pos_bol)) {
     ()
   } else if (line > loc_end.pos_lnum || (line == loc_end.pos_lnum && char > loc_end.pos_cnum - loc_end.pos_bol)) {
     ()
   } else {
-    /* failwith("Abort"); */
     raise(Found(loc, exp))
   }
 };

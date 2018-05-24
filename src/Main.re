@@ -112,7 +112,10 @@ let getInitialState = (params) => {
         cmtCache,
         pathsForModule,
         compiledDocuments: Hashtbl.create(10),
-        includeDirectories: [uri /+ "node_modules/bs-platform/lib/ocaml"]
+        includeDirectories: [
+          uri /+ "node_modules/bs-platform/lib/ocaml",
+          uri /+ "lib/bs/src"
+        ]
         /* docs, */
       }
     };
@@ -139,7 +142,31 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     |?> changes => List.nth(changes, List.length(changes) - 1) |> RJson.get("text") |?> RJson.string
     |?>> text => {
       /* Hmm how do I know if it's modified? */
-      State.updateContents(uri, text, version, state)
+      let state = State.updateContents(uri, text, version, state);
+      let result = State.getCompilationResult(uri, state);
+      open Rpc.J;
+      Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
+        ("uri", s(uri)),
+        ("diagnostics", switch result {
+        | AsYouType.ParseError(text) => l([])
+        | Success(_) => l([])
+        | TypeError(text, _) => {
+          let pos = AsYouType.parseTypeError(text);
+          let (l0, c0, l1, c1) = switch pos {
+          | None => (0, 0, 0, 0)
+          | Some((line, c0, c1)) => (line, c0, line, c1)
+          };
+          l([o([
+            ("range", o([
+              ("start", Protocol.pos(~line=l0, ~character=c0)),
+              ("end", Protocol.pos(~line=l1, ~character=c1)),
+            ])),
+            ("message", s("Type error! " ++ text))
+          ])])
+        }
+        })
+      ]));
+      state
     }
   }),
 ];

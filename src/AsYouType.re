@@ -19,6 +19,19 @@ let runRefmt = (text, rootPath) => {
   }
 };
 
+let parseTypeError = text => {
+  let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:");
+  let rx = Str.regexp({|File "[^"]*", line \([0-9]+\), characters \([0-9]+\)-\([0-9]+\):|});
+  if (Str.string_match(rx, text, 0)) {
+    let line = Str.matched_group(1, text) |> int_of_string;
+    let c0 = Str.matched_group(2, text) |> int_of_string;
+    let c1 = Str.matched_group(3, text) |> int_of_string;
+    Some((line - 1, c0, c1))
+  } else {
+    None
+  }
+};
+
 let justBscCommand = (rootPath, sourceFile, includes) => {
   Printf.sprintf(
     {|%s -w -A %s -impl %s|},
