@@ -18,3 +18,13 @@ let getPosition = pos => Json.get("line", pos) |?> Json.number
 let rgetPosition = pos => (Result.InfixResult.(RJson.get("line", pos) |?> RJson.number
 |?> line => RJson.get("character", pos) |?> RJson.number
 |?>> character => (int_of_float(line), int_of_float(character))));
+
+let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => o([
+    ("line", i(pos_lnum - 1)),
+    ("character", i(pos_cnum - pos_bol))
+]);
+
+let rangeOfLoc = ({Location.loc_start, loc_end}) => o([
+    ("start", posOfLexing(loc_start)),
+    ("end", posOfLexing(loc_end))
+]);

@@ -1,13 +1,7 @@
 open Infix;
 open Result;
 
-let out = open_out("/Users/jared/ls.log");
-
-let log = msg => {
-  output_string(stderr, msg ++ "\n");
-  output_string(out, msg ++ "\n");
-  flush(out);
-};
+open Log;
 
 let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);
 
@@ -117,6 +111,8 @@ let getInitialState = (params) => {
         dependencyModules,
         cmtCache,
         pathsForModule,
+        compiledDocuments: Hashtbl.create(10),
+        includeDirectories: [uri /+ "node_modules/bs-platform/lib/ocaml"]
         /* docs, */
       }
     };
@@ -143,8 +139,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     |?> changes => List.nth(changes, List.length(changes) - 1) |> RJson.get("text") |?> RJson.string
     |?>> text => {
       /* Hmm how do I know if it's modified? */
-      Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), false));
-      state
+      State.updateContents(uri, text, version, state)
     }
   }),
 ];
@@ -216,7 +211,24 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
     ]))))
   }),
   ("textDocument/hover", (state, params) => {
-    Ok((state, Json.String("Ok folks")))
+    /* textDocument {uri}, position: {line, character} */
+    open InfixResult;
+    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
+    |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
+    |?>> ((line, character)) => {
+      open Rpc.J;
+      switch (Hover.getHover(uri, line, character, state)) {
+      | None => (state, Json.Null)
+      | Some((text, loc)) =>
+      (state, o([
+        ("range", Protocol.rangeOfLoc(loc)),
+        ("contents", o([
+          ("kind", s("markdown")),
+          ("value", s(text))
+        ]))
+      ]))
+      }
+    }
   })
 ];
 
