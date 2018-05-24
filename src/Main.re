@@ -9,6 +9,8 @@ let log = msg => {
   flush(out);
 };
 
+let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);
+
 /**
  * we get initialized, with a rootUri
  * if the rootPath doesn't have a bsconfig.json, show that as a notification, and be quiet afterwards
@@ -40,7 +42,10 @@ let capabilities =
       ("textDocumentSync", i(1)),
       ("hoverProvider", t),
       /* TODO list # and . as trigger characters */
-      ("completionProvider", t),
+      ("completionProvider", o([
+        ("resolveProvider", t),
+        ("triggerCharacters", l([s(".")]))
+      ])),
       ("signatureHelpProvider", t),
       ("definitionProvider", t),
       ("typeDefinitionProvider", t),
@@ -84,8 +89,11 @@ let getInitialState = (params) => {
       let dependencyModules = FindFiles.findDependencyFiles(~debug=false, uri, config);
       let cmtMap = Hashtbl.create(30);
       let documentText = Hashtbl.create(5);
-      localModules |> List.iter(((_, (cmt, source))) => {
-        Hashtbl.replace(cmtMap, cmt, Cmt_format.read_cmt(cmt));
+      let docs = Hashtbl.create(30);
+      localModules |> List.iter(((modName, (cmt, source))) => {
+        let cmt_info = Cmt_format.read_cmt(cmt);
+        Hashtbl.replace(cmtMap, cmt, cmt_info);
+        Infix.(Docs.forCmt(cmt_info) |?< info => Hashtbl.replace(docs, modName, info))
       });
       {
         rootPath: uri,
@@ -95,6 +103,7 @@ let getInitialState = (params) => {
         localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)),
         dependencyModules,
         cmtMap,
+        docs,
       }
     };
   }
@@ -140,8 +149,9 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         | Labeled(string) => []
         /* [o([("label", s(string ++ "_arg"))])] */
         | Lident(string) => {
+          log("Completing for string " ++ string);
           let parts = Str.split(Str.regexp_string("."), string);
-          let (scope, name) = {
+          let (scope, name) = string.[String.length(string) - 1] == '.' ? (parts, "") : {
             let rec loop = (l) => switch l {
             | [] => assert(false)
             | [one] => ([], one)
@@ -152,12 +162,40 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
             };
             loop(parts)
           };
-          Completions.get(scope, name, state) |> List.map(name => o([("label", s(name))]))
+          Completions.get(scope, name, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
+            ("label", s(label)),
+            ("kind", i(Completions.kindToInt(kind))),
+            ("detail", Infix.(detail |?>> s |? null)),
+            ("documentation", Infix.(documentation |?>> s |? null)),
+            ("data", switch kind {
+              | RootModule(cmt) => s(cmt)
+              | _ => null
+              })
+          ]))
         }
         };
         (state, l(completions))
       }
     });
+  }),
+  ("completionItem/resolve", (state, params) => {
+    switch (params |> Json.get("documentation") |?> Json.string) {
+    | Some(_) => Ok((state, params))
+    | None =>
+      let result = (params |> Json.get("data") |?> Json.string |?>> cmt => {
+        let cmt_infos = Cmt_format.read_cmt(cmt);
+        Hashtbl.replace(state.cmtMap, cmt, cmt_infos);
+        let (detail, docs) = Completions.getModuleResults(cmt_infos);
+
+        /* TODO */
+        open Rpc.J;
+        extend(params, [
+          ("detail", detail |?>> s |? null),
+          ("documentation", docs |?>> s |? null),
+        ]) |? params
+      }) |? params;
+      Ok((state, result))
+    }
   }),
   ("textDocument/codeLens", (state, params) => {
     open Protocol;
