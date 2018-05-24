@@ -64,6 +64,11 @@ let maybeStat = (path) =>
   | Unix.Unix_error(Unix.ENOENT, _, _) => None
   };
 
+let getMtime = path => switch (maybeStat(path)) {
+  | Some({Unix.st_mtime}) => Some(st_mtime)
+  | _ => None
+};
+
 let readFile = path => {
   switch (maybeStat(path)) {
   | Some({Unix.st_kind: Unix.S_REG}) =>

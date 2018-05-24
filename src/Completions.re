@@ -55,21 +55,21 @@ let isCapitalized = name => name.[0] >= 'A' && name.[0] <= 'Z';
 
 open Infix;
 
-let getModuleResults =
-    (processDoc, {cmt_modname, cmt_annots} as infos: Cmt_format.cmt_infos) =>
-  Docs.forCmt(processDoc, infos)
+let getModuleResults = (name, state, cmt, src) => {
+  State.docsForCmt(cmt, src, state)
   |?>> (
     ((doc, items)) => (
-      Some(showItem(cmt_modname, Docs.Module(items))),
+      Some(showItem(name, Docs.Module(items))),
       Some(doc |? "(no documentation)")
     )
   )
   |? (None, None);
+};
 
 let forModule = (state, k, cmt, src) => {
   let (detail, documentation) =
-    if (Hashtbl.mem(state.cmtMap, cmt)) {
-      getModuleResults(State.docConverter(src), Hashtbl.find(state.cmtMap, cmt));
+    if (State.hasProcessedCmt(state, cmt)) {
+      getModuleResults(k, state, cmt, src);
     } else {
       (
         None,
@@ -101,14 +101,14 @@ let rec inDocs = (parts, contents) => {
 };
 
 /** Some docs */
-let get = (parts, state) =>
+let get = (topModule, parts, state) =>
   switch parts {
   | [] => []
   | [single] when isCapitalized(single) =>
     let results =
       List.fold_left(
         (results, (k, (cmt, src))) =>
-          Utils.startsWith(k, single) ?
+          Utils.startsWith(k, single) && k != topModule ?
             [forModule(state, k, cmt, src), ...results] : results,
         [],
         state.localModules
@@ -118,7 +118,7 @@ let get = (parts, state) =>
         (results, (k, (cmt, src))) =>
           switch k {
           | FindFiles.Plain(k) =>
-            Utils.startsWith(k, single) ?
+            Utils.startsWith(k, single) && k != topModule ?
               [forModule(state, k, cmt, src), ...results] : results
           | _ => results
           },
@@ -127,8 +127,8 @@ let get = (parts, state) =>
       );
     results;
   | [first, ...more] =>
-    switch (State.getDocs(first, state)) {
-    | Error(_) => [] /* TODO handle opens */
-    | Ok((_, contents)) => inDocs(more, contents)
+    switch (State.docsForModule(first, state)) {
+    | None => [] /* TODO handle opens */
+    | Some((_, contents)) => inDocs(more, contents)
     }
   };

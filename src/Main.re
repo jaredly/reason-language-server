@@ -87,14 +87,27 @@ let getInitialState = (params) => {
       let compiledBase = FindFiles.getCompiledBase(uri, config);
       let localModules = FindFiles.findProjectFiles(~debug=false, None, uri, config, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
       let dependencyModules = FindFiles.findDependencyFiles(~debug=false, uri, config);
-      let cmtMap = Hashtbl.create(30);
+      let cmtCache = Hashtbl.create(30);
       let documentText = Hashtbl.create(5);
-      let docs = Hashtbl.create(30);
+
+      let pathsForModule = Hashtbl.create(30);
       localModules |> List.iter(((modName, (cmt, source))) => {
+        Hashtbl.replace(pathsForModule, modName, (cmt, source))
+
+      });
+      dependencyModules |> List.iter(((modName, (cmt, source))) => {
+        switch (modName) {
+        | FindFiles.Plain(name) =>
+        Hashtbl.replace(pathsForModule, name, (cmt, source))
+        | _ => ()
+        }
+      });
+
+      /* localModules |> List.iter(((modName, (cmt, source))) => {
         let cmt_info = Cmt_format.read_cmt(cmt);
         Hashtbl.replace(cmtMap, cmt, cmt_info);
         Infix.(Docs.forCmt(State.docConverter(source), cmt_info) |?< info => Hashtbl.replace(docs, modName, info))
-      });
+      }); */
       {
         rootPath: uri,
         documentText,
@@ -102,8 +115,9 @@ let getInitialState = (params) => {
         localModules,
         localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)),
         dependencyModules,
-        cmtMap,
-        docs,
+        cmtCache,
+        pathsForModule,
+        /* docs, */
       }
     };
   }
@@ -117,7 +131,6 @@ let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
 let notificationHandlers: list((string, (state, Json.t) => result(state, string))) = [
   ("textDocument/didOpen", (state, params) => {
     (params |> Json.get("textDocument") |?> getTextDocument |?>> ((uri, version, text))  => {
-      /* Hmm how do I know if it's modified? */
       Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
       state
     }) |> orError("Invalid params")
@@ -142,25 +155,24 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
   ("textDocument/completion", (state, params) => {
     open InfixResult;
     (RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
-    |?> (maybeHash(state.documentText) |.> orError("No document text found")) |?> ((text, version, isClean)) => RJson.get("position", params) |?> Protocol.rgetPosition |?> ((line, character)) => {
+    |?> uri => (maybeHash(state.documentText, uri) |> orError("No document text found")) |?> ((text, version, isClean)) => RJson.get("position", params) |?> Protocol.rgetPosition |?> ((line, character)) => {
       (PartialParser.positionToOffset(text, line, character) |> orError("invalid offset")) |?>> offset => {
         open Rpc.J;
-        log("Finding in\n" ++ String.sub(text, 0, offset));
         let completions = switch (PartialParser.findCompletable(text, offset)) {
         | Nothing => []
         | Labeled(string) => []
-        /* [o([("label", s(string ++ "_arg"))])] */
         | Lident(string) => {
           log("Completing for string " ++ string);
           let parts = Str.split(Str.regexp_string("."), string);
           let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
-          Completions.get(parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
+          let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
+          Completions.get(currentModuleName, parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
             ("documentation", Infix.(documentation |?>> markup |? null)),
             ("data", switch kind {
-              | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src))])
+              | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src)), ("name", s(label))])
               | _ => null
               })
           ]))
@@ -177,12 +189,10 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       let result = (params |> Json.get("data")
       |?> data => Json.get("cmt", data) |?> Json.string
       |?> cmt => Json.get("src", data) |?> Json.string
-      |?>> src => {
-        let cmt_infos = Cmt_format.read_cmt(cmt);
-        Hashtbl.replace(state.cmtMap, cmt, cmt_infos);
-        let (detail, docs) = Completions.getModuleResults(State.docConverter(src), cmt_infos);
+      |?> src => Json.get("name", data) |?> Json.string
+      |?>> name => {
+        let (detail, docs) = Completions.getModuleResults(name, state, cmt, src);
 
-        /* TODO */
         open Rpc.J;
         extend(params, [
           ("detail", detail |?>> s |? null),

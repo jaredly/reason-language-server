@@ -11,3 +11,5 @@ let z = transform("hello ", 5.);
 
 let zzz = 1;
 let more = 20;
+/** Something here */
+let added = 10;
