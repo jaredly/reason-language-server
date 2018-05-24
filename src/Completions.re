@@ -2,7 +2,19 @@ open State;
 
 type kind =
   | Module
+  | Function
+  | Value
+  | Struct
   | RootModule(string);
+
+let kindToInt = k =>
+  switch k {
+  | RootModule(_) => 9
+  | Module => 9
+  | Function => 3
+  | Struct => 22
+  | Value => 12
+  };
 
 type item = {
   kind,
@@ -12,11 +24,12 @@ type item = {
   deprecated: bool
 };
 
-let kindToInt = k =>
-  switch k {
-  | RootModule(_) => 9
-  | Module => 9
-  };
+let itemKind = doc => switch doc {
+| Docs.Module(_) => Module
+| Function(_) => Function
+| Value(_) => Value
+| Type(_) => Struct
+};
 
 let rec showItem = (name, item) =>
   switch item {
@@ -82,6 +95,27 @@ let forModule = (state, k, cmt) => {
   {kind: RootModule(cmt), label: k, detail, documentation, deprecated: false};
 };
 
+let forItem = (name, doc, item) => {
+  {
+    detail: Some(showItem(name, item)),
+    documentation: Some(doc |? "(no documentation)"),
+    kind: itemKind(item),
+    deprecated: false, /* TODO */
+    label: name
+  }
+};
+
+let rec inDocs = (parts, contents) => {
+  switch parts {
+  | [] => []
+  | [single] => contents |> Utils.filterMap(((name, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, doc, item)) : None)
+  | [first, ...rest] => contents |> Utils.find(((name, doc, item)) => switch item {
+  | Docs.Module(contents) when name == first => Some(inDocs(rest, contents))
+  | _ => None
+  }) |? []
+  }
+};
+
 /** Some docs */
 let get = (parts, state) =>
   switch parts {
@@ -111,11 +145,6 @@ let get = (parts, state) =>
   | [first, ...more] =>
     switch (State.getDocs(first, state)) {
     | Error(_) => [] /* TODO handle opens */
-    | Ok((_, contents)) => []
+    | Ok((_, contents)) => inDocs(more, contents)
     }
-  /* TODO resolve opens */
-  /* if (scope == [] && isCapitalized(name)) {
-     } else {
-       []
-     } */
   };
