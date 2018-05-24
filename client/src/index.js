@@ -6,6 +6,7 @@
 const vscode = require("vscode");
 const {LanguageClient} = require("vscode-languageclient");
 const path = require('path')
+const fs = require('fs')
 function activate(context) {
     // The server is implemented in reason
     let binaryLocation = context.asAbsolutePath(path.join('..', 'lib', 'bs', 'native', 'bin.native'));
@@ -34,7 +35,8 @@ function activate(context) {
     // client can be deactivated on extension deactivation
     context.subscriptions.push(client.start());
 
-    vscode.commands.registerCommand('reason-language-server.restart', () => {
+    let lastStartTime = Date.now();
+    const restart = () => {
         client.stop();
         client = new LanguageClient(
             'reason-language-server',
@@ -42,7 +44,28 @@ function activate(context) {
             serverOptions,
             clientOptions
         );
+        lastStartTime = Date.now()
         context.subscriptions.push(client.start());
-    });
+        vscode.window.showInformationMessage('Reason language server restarted');
+    }
+
+    // DEBUG
+    if (true) {
+        vscode.window.showInformationMessage('DEBUG MODE: Will auto-restart the reason language server if it recompiles');
+        const checkForBinaryChagne = setInterval(() => {
+            try {
+                const stat = fs.statSync(binaryLocation)
+                const mtime = stat.mtime.getTime()
+                if (mtime > lastStartTime) {
+                    restart()
+                }
+            } catch (e) {
+                console.warn('Failed to check binary mtime ' + e.message)
+            }
+        }, 500);
+        context.subscriptions.push({dispose: () => clearInterval(checkForBinaryChange)})
+    }
+
+    vscode.commands.registerCommand('reason-language-server.restart', restart);
 }
 exports.activate = activate;
