@@ -8,3 +8,6 @@ let thing = "thing";
 let transform = (x, y) => x ++ string_of_float(y);
 
 let z = transform("hello ", 5.);
+
+let zzz = 1;
+let more = 20;

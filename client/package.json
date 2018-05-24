@@ -20,6 +20,10 @@
 	],
 	"main": "./src/index",
 	"contributes": {
+		"commands": [{
+			"command": "reason-language-server.restart",
+			"title": "Restart Reason Language Server"
+		}],
 		"configuration": {
 			"type": "object",
 			"title": "Reason Language Server",

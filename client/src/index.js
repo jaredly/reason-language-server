@@ -5,11 +5,12 @@
 'use strict';
 const vscode = require("vscode");
 const {LanguageClient} = require("vscode-languageclient");
+const path = require('path')
 function activate(context) {
     // The server is implemented in reason
-    let binaryLocation = '/Users/jared/clone/tools/language-server/lib/bs/native/bin.native';
+    let binaryLocation = context.asAbsolutePath(path.join('..', 'lib', 'bs', 'native', 'bin.native'));
+    // '/Users/jared/clone/tools/language-server/lib/bs/native/bin.native';
     // Todo have it be a child npm module, and access it from there
-    // context.asAbsolutePath(path.join('server', 'server.js'));
     let serverOptions = {
         command: binaryLocation,
         args: [],
@@ -23,14 +24,25 @@ function activate(context) {
             fileEvents: vscode.workspace.createFileSystemWatcher('**/bsconfig.json')
         }
     };
-    let disposable = new LanguageClient(
+    let client = new LanguageClient(
         'reason-language-server',
         'Reason Language Server',
         serverOptions,
         clientOptions
-    ).start();
+    )
     // Push the disposable to the context's subscriptions so that the
     // client can be deactivated on extension deactivation
-    context.subscriptions.push(disposable);
+    context.subscriptions.push(client.start());
+
+    vscode.commands.registerCommand('reason-language-server.restart', () => {
+        client.stop();
+        client = new LanguageClient(
+            'reason-language-server',
+            'Reason Language Server',
+            serverOptions,
+            clientOptions
+        );
+        context.subscriptions.push(client.start());
+    });
 }
 exports.activate = activate;
