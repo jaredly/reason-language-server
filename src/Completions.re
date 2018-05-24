@@ -66,28 +66,12 @@ let getModuleResults =
   )
   |? (None, None);
 
-/* let getTopModule = (name, state) => {
-     if (Hashtbl.mem(state.docs, name)) {
-       `Doc(Hashtbl.find(state.docs, name))
-     } else {
-       switch (List.assoc(name, state.localModules)) {
-       | exception Not_found => switch (List.assoc(Plain(name), state.dependencyModules)) {
-       | exception Not_found => `NotFound
-       | (cmt, src) => State.getCmt(cmt, state)
-       }
-       | (cmt, stc) => State.getCmt(cmt, state)
-       }
-     }
-   }; */
 let forModule = (state, k, cmt, src) => {
   let (detail, documentation) =
     if (Hashtbl.mem(state.cmtMap, cmt)) {
       getModuleResults(State.docConverter(src), Hashtbl.find(state.cmtMap, cmt));
     } else {
       (
-        /* let cmt_infos = Cmt_format.read_cmt(cmt);
-           Hashtbl.replace(state.cmtMap, cmt, cmt_infos);
-           getModuleResults(cmt_infos) */
         None,
         None
       );

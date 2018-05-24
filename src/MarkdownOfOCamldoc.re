@@ -82,7 +82,7 @@ let convertItem = (currentModule, item) => {
   | `Tag(`See(_, link, contents)) => Omd.Paragraph([Omd.Text("See: "), Omd.Url(link, List.map(stripLoc(convertNestable), contents), "")])
   | `Tag(`Since(versionString)) => Omd.Text("Since: " ++ versionString)
   | `Tag(tag) => {
-    print_endline("Warning: Unhandled tag in ocamldoc (please tell the docre maintainers)");
+    output_string(stderr, "Warning: Unhandled tag in ocamldoc (please tell the docre maintainers)\n");
     Omd.Text("Unhandled tag")
   }
   | #nestable_block_element as item => convertNestable(item)

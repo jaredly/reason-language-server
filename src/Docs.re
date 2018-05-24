@@ -25,10 +25,6 @@ and "find all references"
 */
 open PrepareUtils;
 
-type docs = {
-  contents: string, /* string should be in markdown */
-};
-
 type item =
   | Module(list(full))
   | Function(list(Types.type_expr), Types.type_expr)
