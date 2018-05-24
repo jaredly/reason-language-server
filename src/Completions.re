@@ -5,7 +5,7 @@ type kind =
   | Function
   | Value
   | Struct
-  | RootModule(string);
+  | RootModule(string, string);
 
 let kindToInt = k =>
   switch k {
@@ -92,7 +92,7 @@ let forModule = (state, k, cmt, src) => {
         None
       );
     };
-  {kind: RootModule(cmt), label: k, detail, documentation, deprecated: false};
+  {kind: RootModule(cmt, src), label: k, detail, documentation, deprecated: false};
 };
 
 let forItem = (name, doc, item) => {

@@ -154,24 +154,13 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           log("Completing for string " ++ string);
           let parts = Str.split(Str.regexp_string("."), string);
           let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
-          /* let (scope, name) = string.[String.length(string) - 1] == '.' ? (parts, "") : {
-            let rec loop = (l) => switch l {
-            | [] => assert(false)
-            | [one] => ([], one)
-            | [one, ...more] => {
-                let (scope, name) = loop(more);
-                ([one, ...scope], name)
-              };
-            };
-            loop(parts)
-          }; */
           Completions.get(parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
             ("documentation", Infix.(documentation |?>> markup |? null)),
             ("data", switch kind {
-              | RootModule(cmt) => s(cmt)
+              | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src))])
               | _ => null
               })
           ]))
@@ -185,10 +174,13 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
     switch (params |> Json.get("documentation") |?> Json.string) {
     | Some(_) => Ok((state, params))
     | None =>
-      let result = (params |> Json.get("data") |?> Json.string |?>> cmt => {
+      let result = (params |> Json.get("data")
+      |?> data => Json.get("cmt", data) |?> Json.string
+      |?> cmt => Json.get("src", data) |?> Json.string
+      |?>> src => {
         let cmt_infos = Cmt_format.read_cmt(cmt);
         Hashtbl.replace(state.cmtMap, cmt, cmt_infos);
-        let (detail, docs) = Completions.getModuleResults(State.docConverter("fake.ml"), cmt_infos);
+        let (detail, docs) = Completions.getModuleResults(State.docConverter(src), cmt_infos);
 
         /* TODO */
         open Rpc.J;
