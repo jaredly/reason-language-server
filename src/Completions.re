@@ -56,8 +56,8 @@ let isCapitalized = name => name.[0] >= 'A' && name.[0] <= 'Z';
 open Infix;
 
 let getModuleResults =
-    ({cmt_modname, cmt_annots} as infos: Cmt_format.cmt_infos) =>
-  Docs.forCmt(infos)
+    (processDoc, {cmt_modname, cmt_annots} as infos: Cmt_format.cmt_infos) =>
+  Docs.forCmt(processDoc, infos)
   |?>> (
     ((doc, items)) => (
       Some(showItem(cmt_modname, Docs.Module(items))),
@@ -79,10 +79,10 @@ let getModuleResults =
        }
      }
    }; */
-let forModule = (state, k, cmt) => {
+let forModule = (state, k, cmt, src) => {
   let (detail, documentation) =
     if (Hashtbl.mem(state.cmtMap, cmt)) {
-      getModuleResults(Hashtbl.find(state.cmtMap, cmt));
+      getModuleResults(State.docConverter(src), Hashtbl.find(state.cmtMap, cmt));
     } else {
       (
         /* let cmt_infos = Cmt_format.read_cmt(cmt);
@@ -123,19 +123,19 @@ let get = (parts, state) =>
   | [single] when isCapitalized(single) =>
     let results =
       List.fold_left(
-        (results, (k, (cmt, _))) =>
+        (results, (k, (cmt, src))) =>
           Utils.startsWith(k, single) ?
-            [forModule(state, k, cmt), ...results] : results,
+            [forModule(state, k, cmt, src), ...results] : results,
         [],
         state.localModules
       );
     let results =
       List.fold_left(
-        (results, (k, (cmt, _))) =>
+        (results, (k, (cmt, src))) =>
           switch k {
           | FindFiles.Plain(k) =>
             Utils.startsWith(k, single) ?
-              [forModule(state, k, cmt), ...results] : results
+              [forModule(state, k, cmt, src), ...results] : results
           | _ => results
           },
         results,

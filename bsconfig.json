@@ -9,8 +9,8 @@
   "sources": [
     {"dir": "src", "subdirs": true},
     {"dir": "bin", "type": "dev"},
-    // "omd",
-    // "odoc_parser"
+    "omd",
+    "odoc_parser"
   ],
   "bs-dependencies": ["rex-json", "minimist.re", "pack.re"],
   "ocaml-dependencies": ["compiler-libs", "unix", "bigarray", "str"],

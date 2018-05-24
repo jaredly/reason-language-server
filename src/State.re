@@ -21,6 +21,15 @@ let getCmt = (cmt, state) => {
   }
 };
 
+let isMl = path => Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
+
+let odocToMd = text => {
+  let top = MarkdownOfOCamldoc.convert(0, text);
+  Omd.to_markdown(top)
+};
+
+let docConverter = src => isMl(src) ? odocToMd : (x => x);
+
 /* TODO track stale docs */
 let getDocs = (modname, state) => {
   open Infix;
@@ -28,9 +37,9 @@ let getDocs = (modname, state) => {
     Result.Ok(Hashtbl.find(state.docs, modname))
   } else {
     let docs = switch (List.assoc(modname, state.localModules)) {
-    | (cmt, _) => Docs.forCmt(getCmt(cmt, state))
+    | (cmt, src) => Docs.forCmt(docConverter(src), getCmt(cmt, state))
     | exception Not_found => switch (List.assoc(FindFiles.Plain(modname), state.dependencyModules)) {
-      | (cmt, _) => Docs.forCmt(getCmt(cmt, state))
+      | (cmt, src) => Docs.forCmt(docConverter(src), getCmt(cmt, state))
       | exception Not_found => None
       }
     };

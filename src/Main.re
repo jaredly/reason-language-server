@@ -93,7 +93,7 @@ let getInitialState = (params) => {
       localModules |> List.iter(((modName, (cmt, source))) => {
         let cmt_info = Cmt_format.read_cmt(cmt);
         Hashtbl.replace(cmtMap, cmt, cmt_info);
-        Infix.(Docs.forCmt(cmt_info) |?< info => Hashtbl.replace(docs, modName, info))
+        Infix.(Docs.forCmt(State.docConverter(source), cmt_info) |?< info => Hashtbl.replace(docs, modName, info))
       });
       {
         rootPath: uri,
@@ -136,6 +136,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   }),
 ];
 
+let markup = text => Json.Object([("kind", Json.String("markdown")), ("value", Json.String(text))]);
+
 let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/completion", (state, params) => {
     open InfixResult;
@@ -167,7 +169,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.(documentation |?>> s |? null)),
+            ("documentation", Infix.(documentation |?>> markup |? null)),
             ("data", switch kind {
               | RootModule(cmt) => s(cmt)
               | _ => null
@@ -186,13 +188,13 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       let result = (params |> Json.get("data") |?> Json.string |?>> cmt => {
         let cmt_infos = Cmt_format.read_cmt(cmt);
         Hashtbl.replace(state.cmtMap, cmt, cmt_infos);
-        let (detail, docs) = Completions.getModuleResults(cmt_infos);
+        let (detail, docs) = Completions.getModuleResults(State.docConverter("fake.ml"), cmt_infos);
 
         /* TODO */
         open Rpc.J;
         extend(params, [
           ("detail", detail |?>> s |? null),
-          ("documentation", docs |?>> s |? null),
+          ("documentation", docs |?>> markup |? null),
         ]) |? params
       }) |? params;
       Ok((state, result))
