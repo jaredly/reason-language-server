@@ -1,0 +1,74 @@
+{
+	"name": "reason-vscode",
+	"description": "a vscode client for the reason-language-server",
+	"author": "Jared Forsyth",
+	"license": "ISC",
+	"version": "0.0.1",
+	"publisher": "Jared Forsyth",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jaredly/language-server"
+	},
+	"engines": {
+		"vscode": "^1.22.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:reason"
+	],
+	"main": "./src/index",
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Reason Language Server",
+			"properties": {
+				"reason_language_server.maxNumberOfProblems": {
+					"scope": "resource",
+					"type": "number",
+					"default": 100,
+					"description": "Controls the maximum number of problems produced by the server."
+				},
+				"reason_language_server.trace.server": {
+					"scope": "window",
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "off",
+					"description": "Traces the communication between VSCode and the language server."
+				}
+			}
+		},
+		"grammars": [
+			{
+				"language": "reason",
+				"scopeName": "source.reason",
+				"path": "./reason.json"
+			}
+		],
+		"languages": [
+			{
+				"id": "reason",
+				"aliases": [
+					"Reason"
+				],
+				"extensions": [
+					".re",
+					".rei"
+				],
+				"configuration": "./reason.configuration.json"
+			}
+		]
+	},
+	"scripts": {
+		"postinstall": "node ./node_modules/vscode/bin/install"
+	},
+	"dependencies": {
+		"vscode": "^1.1.17",
+		"vscode-languageclient": "^4.1.3"
+	}
+}
