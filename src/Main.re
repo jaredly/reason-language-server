@@ -151,7 +151,8 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         | Lident(string) => {
           log("Completing for string " ++ string);
           let parts = Str.split(Str.regexp_string("."), string);
-          let (scope, name) = string.[String.length(string) - 1] == '.' ? (parts, "") : {
+          let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
+          /* let (scope, name) = string.[String.length(string) - 1] == '.' ? (parts, "") : {
             let rec loop = (l) => switch l {
             | [] => assert(false)
             | [one] => ([], one)
@@ -161,8 +162,8 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
               };
             };
             loop(parts)
-          };
-          Completions.get(scope, name, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
+          }; */
+          Completions.get(parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
