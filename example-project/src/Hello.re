@@ -20,3 +20,12 @@ let more = 20;
 let added = 10;
 open Other;
 open Hashtbl;
+let awesome = x => x + 2;
+let z = 10;
+
+
+for (i in 0 to 10) {
+  print_endline("hellO");
+};
+
+let x: string = [%raw " hello"]

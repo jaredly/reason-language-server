@@ -11,3 +11,5 @@ module InfixResult = {
   let (|?) = (a, default) => switch a { | Ok(a) => a | Error(e) => default };
   let (|!) = (a, message) => switch a { | Ok(a) => a | Error(e) => failwith(message) };
 };
+open InfixResult;
+let withDefault = (d, v) => v |? d;

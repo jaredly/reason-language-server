@@ -71,3 +71,8 @@ let use = base => {
   open Result.InfixResult;
   Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> getModulesFromMerlin(base)
 };
+
+let getFlags = base => {
+  open Result.InfixResult;
+  Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> parseMerlin |?>> ((_, _, flags)) => flags
+};

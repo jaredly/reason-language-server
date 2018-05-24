@@ -77,7 +77,7 @@ let getHover = (uri, line, character, state) => {
   let result = switch result {
   | AsYouType.ParseError(text) => Error("Cannot hover -- parser error: " ++ text)
   | TypeError(_, cmt) => Ok(cmt)
-  | Success(cmt) => Ok(cmt)
+  | Success(_, cmt) => Ok(cmt)
   };
   switch result {
   | Error(t) => Some((t, Location.none))

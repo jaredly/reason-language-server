@@ -18,7 +18,8 @@ type state = {
   /* cmtMap: Hashtbl.t(string, Cmt_format.cmt_infos), */
   /* docs: Hashtbl.t(string, (option(string), list(Docs.full))), */
   documentText: Hashtbl.t(string, (string, int, bool)),
-  compiledDocuments: Hashtbl.t(string, AsYouType.result)
+  compiledDocuments: Hashtbl.t(string, AsYouType.result),
+  compilationFlags: string,
   /* workspace folders... */
 };
 
@@ -84,7 +85,7 @@ let getCompilationResult = (uri, state) => {
     Hashtbl.find(state.compiledDocuments, uri)
   } else {
     let (text, _, _) = Hashtbl.find(state.documentText, uri);
-    let result = AsYouType.process(text, state.rootPath, state.includeDirectories);
+    let result = AsYouType.process(text, state.rootPath, state.includeDirectories, state.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     result
   }

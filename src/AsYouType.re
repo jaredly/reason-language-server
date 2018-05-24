@@ -2,7 +2,7 @@
 type result =
   | ParseError(string)
   | TypeError(string, Cmt_format.cmt_infos)
-  | Success(Cmt_format.cmt_infos)
+  | Success(list(string), Cmt_format.cmt_infos)
 ;
 open Infix;
 open Result;
@@ -32,20 +32,21 @@ let parseTypeError = text => {
   }
 };
 
-let justBscCommand = (rootPath, sourceFile, includes) => {
+let justBscCommand = (rootPath, sourceFile, includes, flags) => {
   Printf.sprintf(
-    {|%s -w -A %s -impl %s|},
+    {|%s -w +A %s -impl %s %s|},
     rootPath /+ "node_modules/bs-platform/lib/bsc.exe",
     includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
-    sourceFile
+    sourceFile,
+    flags
   )
 };
 
-let runBsc = (rootPath, sourceFile, includes) => {
-  let cmd = justBscCommand(rootPath, sourceFile, includes);
+let runBsc = (rootPath, sourceFile, includes, flags) => {
+  let cmd = justBscCommand(rootPath, sourceFile, includes, flags);
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
-    Ok(())
+    Ok(out @ error)
     /* TODO JSX */
     /* let (out, err, success) = Commands.execFull(bsRoot /+ "lib/reactjs_jsx_ppx_2.exe " ++ tmpFile ++ " " ++ tmpFile ++ "2"); */
   } else {
@@ -53,19 +54,19 @@ let runBsc = (rootPath, sourceFile, includes) => {
   }
 };
 
-let process = (text, rootPath, includes) => {
+let process = (text, rootPath, includes, flags) => {
   Log.log("Compiling text " ++ text);
   open InfixResult;
   switch (runRefmt(text, rootPath)) {
   | Error(lines) => ParseError(String.concat("\n", lines))
-  | Ok(fname) => switch (runBsc(rootPath, fname, includes)) {
+  | Ok(fname) => switch (runBsc(rootPath, fname, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
       TypeError(String.concat("\n", lines), cmt)
     }
-    | Ok(()) => {
+    | Ok(lines) => {
       let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
-      Success(cmt)
+      Success(lines, cmt)
     }
   }
   }

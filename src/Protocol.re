@@ -28,3 +28,8 @@ let rangeOfLoc = ({Location.loc_start, loc_end}) => o([
     ("start", posOfLexing(loc_start)),
     ("end", posOfLexing(loc_end))
 ]);
+
+let rangeOfInts = (l0, c0, l1, c1) => o([
+    ("start", pos(~line=l0, ~character=c0)),
+    ("end", pos(~line=l1, ~character=c1)),
+]);

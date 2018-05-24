@@ -110,6 +110,7 @@ let getInitialState = (params) => {
         localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)),
         dependencyModules,
         cmtCache,
+        compilationFlags: MerlinFile.getFlags(uri) |> Result.withDefault([""]) |> String.concat(" "),
         pathsForModule,
         compiledDocuments: Hashtbl.create(10),
         includeDirectories: [
@@ -148,8 +149,39 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
         ("uri", s(uri)),
         ("diagnostics", switch result {
-        | AsYouType.ParseError(text) => l([])
-        | Success(_) => l([])
+        | AsYouType.ParseError(text) => {
+          let pos = AsYouType.parseTypeError(text);
+          let (l0, c0, l1, c1) = switch pos {
+          | None => (0, 0, 0, 0)
+          | Some((line, c0, c1)) => (line, c0, line, c1)
+          };
+          l([o([
+            ("range", Protocol.rangeOfInts(l0, c0, l1, c1)),
+            ("message", s("Parse error: " ++ text)),
+            ("severity", i(1)),
+          ])])
+        }
+        | Success(lines, _) => {
+          if (lines == [] || lines == [""]) {
+            l([])
+          } else {
+            let rec loop = lines => switch lines {
+            | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(loc)) {
+              | None => loop([warning, ...rest])
+              | Some((line, c0, c1)) => {
+                [o([
+                  ("range", Protocol.rangeOfInts(line, c0, line, c1)),
+                  ("message", s(warning)),
+                  ("severity", i(2)),
+                ]), ...loop(rest)]
+              }
+            }
+            | _ => []
+            };
+            let warnings = loop(lines);
+            l(warnings)
+          }
+        }
         | TypeError(text, _) => {
           let pos = AsYouType.parseTypeError(text);
           let (l0, c0, l1, c1) = switch pos {
@@ -161,7 +193,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
               ("start", Protocol.pos(~line=l0, ~character=c0)),
               ("end", Protocol.pos(~line=l1, ~character=c1)),
             ])),
-            ("message", s("Type error! " ++ text))
+            ("message", s("Type error! " ++ text)),
+            ("severity", i(1)),
           ])])
         }
         })
