@@ -1,8 +1,10 @@
 
 let x = 10;
 
+/** Some docs about this awesome thing. */
 let awesome = 100;
-m_lidentz
 let thing = "thing";
-~awe_arg
-Some.More.Things.Some.More.Things.awesome_lident
+
+let transform = (x, y) => x ++ string_of_float(y);
+
+let z = transform("hello ", 5.);
