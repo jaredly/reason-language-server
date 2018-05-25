@@ -202,10 +202,13 @@ let tick = state => {
   checkDocumentTimers(state);
 };
 
+let recompileDebounceTime = 0.5; /* seconds */
+
 let notificationHandlers: list((string, (state, Json.t) => result(state, string))) = [
   ("textDocument/didOpen", (state, params) => {
     (params |> Json.get("textDocument") |?> getTextDocument |?>> ((uri, version, text))  => {
       Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
+      Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
       state
     }) |> orError("Invalid params")
   }),
@@ -218,7 +221,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     |?>> text => {
       /* Hmm how do I know if it's modified? */
       let state = State.updateContents(uri, text, version, state);
-      Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. 0.5);
+      Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
       state
     }
   }),
