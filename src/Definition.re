@@ -113,10 +113,12 @@ module Get = {
             )
         | Tstr_type(decls) =>
           decls
-          |> List.iter(({typ_id: {stamp, name}, typ_type, typ_name: {loc}}) =>
+          |> List.iter(({typ_attributes, typ_id: {stamp, name}, typ_type, typ_name: {loc}}) => {
+                let docs = PrepareUtils.findDocAttribute(typ_attributes);
               addStamp
-                (stamp, name, loc, Type(typ_type), None)
+                (stamp, name, loc, Type(typ_type), docs)
                 /* addLocation(loc, typ_type, None); */
+          }
             )
         | Tstr_module({
             mb_id: {stamp, name},
@@ -126,17 +128,22 @@ module Get = {
               mod_desc:
                 Tmod_structure(structure) |
                 Tmod_constraint({mod_desc: Tmod_structure(structure)}, _, _, _)
-            }
-          }) =>
-          addStamp(
-            stamp,
-            name,
-            loc,
-            Module(stampNames(structure.str_items)),
-            None
-          )
-        | Tstr_module({mb_id: {stamp, name}, mb_name: {loc}}) =>
-          addStamp(stamp, name, loc, Module([]), None)
+            },
+            mb_attributes
+          }) => {
+            let docs = PrepareUtils.findDocAttribute(mb_attributes);
+            addStamp(
+              stamp,
+              name,
+              loc,
+              Module(stampNames(structure.str_items)),
+              docs
+            )
+          }
+        | Tstr_module({mb_attributes, mb_id: {stamp, name}, mb_name: {loc}}) => {
+            let docs = PrepareUtils.findDocAttribute(mb_attributes);
+            addStamp(stamp, name, loc, Module([]), docs)
+        }
         /* | Tstr_modtype */
         | _ => ()
         }

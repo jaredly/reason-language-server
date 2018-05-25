@@ -14,11 +14,11 @@ let getHover = (uri, line, character, state) => {
     | None => None
     | Some((loc, expr, defn)) => {
       let typ = PrintType.default.expr(PrintType.default, expr) |> PrintType.prettyString;
-      let typ = "`" ++ typ ++ "`";
+      let typ = "```\n" ++ typ ++ "\n```";
       let tooltip = switch (Definition.resolveDefinition(defn, data)) {
       | None => typ
       | Some((name, l, item, docs)) =>
-        name ++ ": " ++ typ
+        typ
         /* ++ "\n\ndefined at " ++ Utils.showLocation(l) */
         ++ (switch docs {
       | Some(t) => "\n\n" ++ t
