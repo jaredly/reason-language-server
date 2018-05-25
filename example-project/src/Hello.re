@@ -23,9 +23,9 @@ open Hashtbl;
 let awesome = x => x + 2;
 let z = 10;
 
-
 for (i in 0 to 10) {
   print_endline("hellO");
 };
 
-let x: string = [%raw " hello"]
+let x: string = [%raw " hello"];
+let awesome = "hello";

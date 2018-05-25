@@ -15,23 +15,13 @@ type state = {
       )
     ),
   pathsForModule: Hashtbl.t(string, (string, string)),
-  /* cmtMap: Hashtbl.t(string, Cmt_format.cmt_infos), */
-  /* docs: Hashtbl.t(string, (option(string), list(Docs.full))), */
   documentText: Hashtbl.t(string, (string, int, bool)),
   compiledDocuments: Hashtbl.t(string, AsYouType.result),
+  documentTimers: Hashtbl.t(string, float),
   compilationFlags: string,
   /* workspace folders... */
 };
 
-/* let getCmt = (cmt, state) => {
-     if (Hashtbl.mem(state.cmtMap, cmt)) {
-       Hashtbl.find(state.cmtMap, cmt)
-     } else {
-       let infos = Cmt_format.read_cmt(cmt);
-       Hashtbl.replace(state.cmtMap, cmt, infos);
-       infos
-     }
-   }; */
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 

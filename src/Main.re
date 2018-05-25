@@ -87,8 +87,8 @@ let getInitialState = (params) => {
       let pathsForModule = Hashtbl.create(30);
       localModules |> List.iter(((modName, (cmt, source))) => {
         Hashtbl.replace(pathsForModule, modName, (cmt, source))
-
       });
+
       dependencyModules |> List.iter(((modName, (cmt, source))) => {
         switch (modName) {
         | FindFiles.Plain(name) =>
@@ -97,11 +97,6 @@ let getInitialState = (params) => {
         }
       });
 
-      /* localModules |> List.iter(((modName, (cmt, source))) => {
-        let cmt_info = Cmt_format.read_cmt(cmt);
-        Hashtbl.replace(cmtMap, cmt, cmt_info);
-        Infix.(Docs.forCmt(State.docConverter(source), cmt_info) |?< info => Hashtbl.replace(docs, modName, info))
-      }); */
       {
         rootPath: uri,
         documentText,
@@ -113,6 +108,7 @@ let getInitialState = (params) => {
         compilationFlags: MerlinFile.getFlags(uri) |> Result.withDefault([""]) |> String.concat(" "),
         pathsForModule,
         compiledDocuments: Hashtbl.create(10),
+        documentTimers: Hashtbl.create(10),
         includeDirectories: [
           uri /+ "node_modules/bs-platform/lib/ocaml",
           uri /+ "lib/bs/src"
@@ -127,6 +123,84 @@ let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
     |?> uri => Json.get("version", doc) |?> Json.number
     |?> version => Json.get("text", doc) |?> Json.string
     |?>> text => (uri, version, text);
+
+let runDiagnostics = (uri, state) => {
+  /* let (text, _, _) =  */
+  let result = State.getCompilationResult(uri, state);
+  open Rpc.J;
+  Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
+    ("uri", s(uri)),
+    ("diagnostics", switch result {
+    | AsYouType.ParseError(text) => {
+      let pos = AsYouType.parseTypeError(text);
+      let (l0, c0, l1, c1) = switch pos {
+      | None => (0, 0, 0, 0)
+      | Some((line, c0, c1)) => (line, c0, line, c1)
+      };
+      l([o([
+        ("range", Protocol.rangeOfInts(l0, c0, l1, c1)),
+        ("message", s("Parse error: " ++ text)),
+        ("severity", i(1)),
+      ])])
+    }
+    | Success(lines, _) => {
+      if (lines == [] || lines == [""]) {
+        l([])
+      } else {
+        let rec loop = lines => switch lines {
+        | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(loc)) {
+          | None => loop([warning, ...rest])
+          | Some((line, c0, c1)) => {
+            [o([
+              ("range", Protocol.rangeOfInts(line, c0, line, c1)),
+              ("message", s(warning)),
+              ("severity", i(2)),
+            ]), ...loop(rest)]
+          }
+        }
+        | _ => []
+        };
+        let warnings = loop(lines);
+        l(warnings)
+      }
+    }
+    | TypeError(text, _) => {
+      let pos = AsYouType.parseTypeError(text);
+      let (l0, c0, l1, c1) = switch pos {
+      | None => (0, 0, 0, 0)
+      | Some((line, c0, c1)) => (line, c0, line, c1)
+      };
+      l([o([
+        ("range", o([
+          ("start", Protocol.pos(~line=l0, ~character=c0)),
+          ("end", Protocol.pos(~line=l1, ~character=c1)),
+        ])),
+        ("message", s("Type error! " ++ text)),
+        ("severity", i(1)),
+      ])])
+    }
+    })
+  ]));
+
+};
+
+let checkDocumentTimers = state => {
+  let now = Unix.gettimeofday();
+  let removed = Hashtbl.fold((uri, timer, removed) => {
+    if (now > timer) {
+      runDiagnostics(uri, state);
+      [uri, ...removed]
+    } else {
+      removed
+    }
+  }, state.documentTimers, []);
+  List.iter(uri => Hashtbl.remove(state.documentTimers, uri), removed);
+  state
+};
+
+let tick = state => {
+  checkDocumentTimers(state);
+};
 
 let notificationHandlers: list((string, (state, Json.t) => result(state, string))) = [
   ("textDocument/didOpen", (state, params) => {
@@ -144,61 +218,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     |?>> text => {
       /* Hmm how do I know if it's modified? */
       let state = State.updateContents(uri, text, version, state);
-      let result = State.getCompilationResult(uri, state);
-      open Rpc.J;
-      Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
-        ("uri", s(uri)),
-        ("diagnostics", switch result {
-        | AsYouType.ParseError(text) => {
-          let pos = AsYouType.parseTypeError(text);
-          let (l0, c0, l1, c1) = switch pos {
-          | None => (0, 0, 0, 0)
-          | Some((line, c0, c1)) => (line, c0, line, c1)
-          };
-          l([o([
-            ("range", Protocol.rangeOfInts(l0, c0, l1, c1)),
-            ("message", s("Parse error: " ++ text)),
-            ("severity", i(1)),
-          ])])
-        }
-        | Success(lines, _) => {
-          if (lines == [] || lines == [""]) {
-            l([])
-          } else {
-            let rec loop = lines => switch lines {
-            | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(loc)) {
-              | None => loop([warning, ...rest])
-              | Some((line, c0, c1)) => {
-                [o([
-                  ("range", Protocol.rangeOfInts(line, c0, line, c1)),
-                  ("message", s(warning)),
-                  ("severity", i(2)),
-                ]), ...loop(rest)]
-              }
-            }
-            | _ => []
-            };
-            let warnings = loop(lines);
-            l(warnings)
-          }
-        }
-        | TypeError(text, _) => {
-          let pos = AsYouType.parseTypeError(text);
-          let (l0, c0, l1, c1) = switch pos {
-          | None => (0, 0, 0, 0)
-          | Some((line, c0, c1)) => (line, c0, line, c1)
-          };
-          l([o([
-            ("range", o([
-              ("start", Protocol.pos(~line=l0, ~character=c0)),
-              ("end", Protocol.pos(~line=l1, ~character=c1)),
-            ])),
-            ("message", s("Type error! " ++ text)),
-            ("severity", i(1)),
-          ])])
-        }
-        })
-      ]));
+      Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. 0.5);
       state
     }
   }),
@@ -207,6 +227,10 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
 let markup = text => Json.Object([("kind", Json.String("markdown")), ("value", Json.String(text))]);
 
 let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
+  ("textDocument/definition", (state, params) => {
+    Ok((state, Json.String("Ok folks")))
+  }),
+
   ("textDocument/completion", (state, params) => {
     open InfixResult;
     (RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
@@ -271,7 +295,6 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
     ]))))
   }),
   ("textDocument/hover", (state, params) => {
-    /* textDocument {uri}, position: {line, character} */
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
     |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
@@ -297,7 +320,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
 let main = () => {
   log("Booting up");
   BasicServer.run(
-    ~ignoreErrors=true,
+    ~tick,
     ~log,
     ~messageHandlers,
     ~notificationHandlers,

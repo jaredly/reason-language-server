@@ -6,6 +6,17 @@ maybe just invalidate the cache when we have a change? That sounds reasonable.
 
 */
 
+let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}, loc_end}) => {
+  open Lexing;
+  if (line < pos_lnum || (line == pos_lnum && char < pos_cnum - pos_bol)) {
+    false
+  } else if (line > loc_end.pos_lnum || (line == loc_end.pos_lnum && char > loc_end.pos_cnum - loc_end.pos_bol)) {
+    false
+  } else {
+    true
+  }
+};
+
 exception Found(Location.t, Types.type_expr);
 
 let showLoc = ({Location.loc_start, loc_end}) => {

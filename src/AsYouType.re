@@ -12,8 +12,6 @@ let runRefmt = (text, rootPath) => {
   let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print binary --parse re > /tmp/ls.ast", refmt));
   if (success) {
     Ok("/tmp/ls.ast")
-    /* TODO JSX */
-    /* let (out, err, success) = Commands.execFull(bsRoot /+ "lib/reactjs_jsx_ppx_2.exe " ++ tmpFile ++ " " ++ tmpFile ++ "2"); */
   } else {
     Error(out @ error)
   }
@@ -47,8 +45,6 @@ let runBsc = (rootPath, sourceFile, includes, flags) => {
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
     Ok(out @ error)
-    /* TODO JSX */
-    /* let (out, err, success) = Commands.execFull(bsRoot /+ "lib/reactjs_jsx_ppx_2.exe " ++ tmpFile ++ " " ++ tmpFile ++ "2"); */
   } else {
     Error(out @ error)
   }
