@@ -29,6 +29,11 @@ let rangeOfLoc = ({Location.loc_start, loc_end}) => o([
     ("end", posOfLexing(loc_end))
 ]);
 
+let locationOfLoc = ({Location.loc_start: {Lexing.pos_fname}} as loc) => o([
+    ("range", rangeOfLoc(loc)),
+    ("uri", s("file://" ++ pos_fname)),
+]);
+
 let rangeOfInts = (l0, c0, l1, c1) => o([
     ("start", pos(~line=l0, ~character=c0)),
     ("end", pos(~line=l1, ~character=c1)),

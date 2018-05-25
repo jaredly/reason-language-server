@@ -51,7 +51,7 @@ let runBsc = (rootPath, sourceFile, includes, flags) => {
 };
 
 let process = (text, rootPath, includes, flags) => {
-  Log.log("Compiling text " ++ text);
+  /* Log.log("Compiling text " ++ text); */
   open InfixResult;
   switch (runRefmt(text, rootPath)) {
   | Error(lines) => ParseError(String.concat("\n", lines))

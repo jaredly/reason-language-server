@@ -81,6 +81,11 @@ let getCompilationResult = (uri, state) => {
   }
 };
 
+let getDefinitionData = (uri, state) => switch (getCompilationResult(uri, state)) {
+| Success(_, _, data) | TypeError(_, _, data) => Some(data)
+| _ => None
+};
+
 let docsForModule = (modname, state) =>
   Infix.(
     if (Hashtbl.mem(state.pathsForModule, modname)) {

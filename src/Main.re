@@ -228,7 +228,22 @@ let markup = text => Json.Object([("kind", Json.String("markdown")), ("value", J
 
 let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
-    Ok((state, Json.String("Ok folks")))
+    open InfixResult;
+    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
+    |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
+    |?> position => {
+      switch (State.getDefinitionData(uri, state)) {
+      | None => Error("Parse error, can't find definition")
+      | Some(data) => switch (Definition.definitionForPos(position, data)) {
+      | None => Ok((state, Json.Null))
+      | Some((_, loc, _, _)) => Ok((state, Json.Object([
+        ("uri", Json.String(loc.Location.loc_start.pos_fname == "" ? uri : loc.Location.loc_start.pos_fname)),
+        ("range", Protocol.rangeOfLoc(loc)),
+      ])))
+      }
+      }
+    }
+    /* Ok((state, Json.String("Ok folks"))) */
   }),
 
   ("textDocument/completion", (state, params) => {
