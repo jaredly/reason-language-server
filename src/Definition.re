@@ -22,16 +22,23 @@
  */
 type item =
   | Module(list((string, int)))
-  | ModuleAlias(Path.t)
+  /* | ModuleAlias(Path.t) */
   | Type(Types.type_declaration)
   | Value(Types.type_expr);
+
+type definition =
+  | Path(Path.t)
+  /* | Location(Location.t) */
+  | Constructor(Path.t, string, Location.t)
+  | Attribute(Path.t, string, Location.t)
+  | IsDefinition;
 
 type moduleData = {
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string))),
   /* TODO track constructor names, and record attribute names */
   /* references: Hashtbl.t(int, list(Location.t)), */
   exported: Hashtbl.t(string, int),
-  mutable locations: list((Location.t, Types.type_expr, option(Path.t)))
+  mutable locations: list((Location.t, Types.type_expr, definition))
 };
 
 let rec stampNames = items =>
@@ -69,8 +76,8 @@ module F = (Collector: {let data: moduleData;}) => {
        Hashtbl.find(Collector.data.references, stamp) : [];
        Hashtbl.replace(Collector.data.references, stamp, [loc, ...current])
      }; */
-  let addLocation = (loc, typ, path) =>
-    Collector.data.locations = [(loc, typ, path), ...Collector.data.locations];
+  let addLocation = (loc, typ, definition) =>
+    Collector.data.locations = [(loc, typ, definition), ...Collector.data.locations];
   /* let enter_signature_item = item => switch item.sig_desc {
        | Tsig_value({val_id: {stamp, name}, val_val: {val_type}, val_loc}) => addStamp(stamp, name, val_loc, Value(val_type), None)
        | Tsig_type(decls) => List.iter(({typ_id: {stamp, name}}) => (stamp, addToPath(currentPath, name) |> toFullPath(PType)), decls)
@@ -85,7 +92,7 @@ module F = (Collector: {let data: moduleData;}) => {
   let enter_structure_item = item =>
     Typedtree.(
       switch item.str_desc {
-      | Tstr_value(_rec, bindings) =>
+      /* | Tstr_value(_rec, bindings) =>
         bindings
         |> List.iter(binding =>
              switch binding {
@@ -95,7 +102,7 @@ module F = (Collector: {let data: moduleData;}) => {
                  /* addLocation(loc, pat_type, None); */
              | _ => ()
              }
-           )
+           ) */
       | Tstr_type(decls) =>
         decls
         |> List.iter(({typ_id: {stamp, name}, typ_type, typ_name: {loc}}) =>
@@ -132,7 +139,7 @@ module F = (Collector: {let data: moduleData;}) => {
     switch typ.ctyp_desc {
     | Ttyp_constr(path, {txt, loc}, args) =>
       addLocation
-        (loc, typ.ctyp_type, Some(path))
+        (loc, typ.ctyp_type, Path(path))
         /* if (usesOpen(txt, path)) {
              add_use((path, Type), txt, loc);
            };
@@ -148,54 +155,54 @@ module F = (Collector: {let data: moduleData;}) => {
   let enter_pattern = pat =>
     switch pat.pat_desc {
     | Tpat_alias(_, {stamp, name}, {txt, loc})
-    | Tpat_var({stamp, name}, {txt, loc}) =>
-      addStamp(stamp, name, loc, Value(pat.pat_type), None)
-    /*
-     TODO allow renaming of constructor items
-     | Tpat_construct({txt, loc}, desc, args) => {
+    | Tpat_var({stamp, name}, {txt, loc}) => {
+      addStamp(stamp, name, loc, Value(pat.pat_type), None);
+      addLocation(loc, pat.pat_type, IsDefinition)
+    }
+
+     | Tpat_construct({txt, loc}, {cstr_name, cstr_loc, cstr_res}, args) => {
+      switch (dig(cstr_res).Types.desc) {
+      | Tconstr(path, args, _) => addLocation(loc, cstr_res, Constructor(path, cstr_name, cstr_loc))
+      | _ => ()
+      }
      }
-     } */
-    /* | Tpat_record(items, isClosed) => items |> List.iter((({Asttypes.txt, loc}, {lbl_res, lbl_name}, value)) => {
+    | Tpat_record(items, isClosed) => items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_res, lbl_name, lbl_loc}, value)) => {
            switch (dig(lbl_res).Types.desc) {
-           | Tconstr(path, args, _) => {
-             Collector.ident((path, Attribute(label.Types.lbl_name)), loc);
-             let typeTxt = handleRecord(path, txt);
-             if (usesOpen(typeTxt, path)) {
-               add_use(~inferable=true, (path, Attribute(label.Types.lbl_name)), typeTxt, loc)
-             };
-           }
-           | _ => print_endline("Record not a constr " ++ {
-             Printtyp.type_expr(Format.str_formatter, pat.pat_type);
-             Format.flush_str_formatter()
-           })
+           | Tconstr(path, args, _) => addLocation(loc, lbl_res, Attribute(path, lbl_name, lbl_loc))
+           | _ => ()
            };
 
-       }) */
+       })
     | _ => ()
     };
   let enter_expression = expr =>
     switch expr.exp_desc {
     | Texp_for({stamp, name}, {ppat_loc}, {exp_type}, _, _, _) =>
-      addLocation(ppat_loc, exp_type, None);
+      addLocation(ppat_loc, exp_type, IsDefinition);
       addStamp(stamp, name, ppat_loc, Value(exp_type), None);
-    /* | Texp_let(isrec, bindings, _) => bindings |> List.iter(({vb_expr: {exp_type}, vb_loc})) */
     | Texp_ident(path, {txt, loc}, _) =>
-      addLocation(loc, expr.exp_type, Some(path))
-    /* TODO record */
-    | Texp_field(inner, {txt, loc}, label) =>
-      addLocation(loc, expr.exp_type, None)
+      addLocation(loc, expr.exp_type, Path(path))
+    | Texp_field(inner, {txt, loc}, {lbl_name, lbl_res, lbl_loc}) =>
+        switch (dig(lbl_res).Types.desc) {
+        | Tconstr(path, args, _) => addLocation(loc, expr.exp_type, Attribute(path, lbl_name, lbl_loc))
+        | _ => ()
+        };
     | Texp_record(items, ext) =>
       items
-      |> List.iter((({Asttypes.txt, loc}, label, ex)) =>
-           addLocation(loc, ex.exp_type, None)
+      |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_name, lbl_res}, ex)) =>
+           /* addLocation(loc, ex.exp_type, Location(lbl_loc)) */
+        switch (dig(lbl_res).Types.desc) {
+        | Tconstr(path, args, _) => addLocation(loc, ex.exp_type, Attribute(path, lbl_name, lbl_loc))
+        | _ => ()
+        }
+
          )
     | Texp_construct({txt, loc}, {cstr_name, cstr_loc, cstr_res}, args) =>
       /* Huh, we can jump right to cstr_loc!! Wow */
-      addLocation(
-        loc,
-        cstr_res,
-        None
-      )
+      switch (dig(cstr_res).Types.desc) {
+      | Tconstr(path, args, _) => addLocation(loc, cstr_res, Constructor(path, cstr_name, cstr_loc))
+      | _ => ()
+      }
     | _ => ()
     };
 };

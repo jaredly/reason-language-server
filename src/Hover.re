@@ -17,7 +17,7 @@ let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}
   }
 };
 
-exception Found(Location.t, Types.type_expr);
+/* exception Found(Location.t, Types.type_expr);
 
 let showLoc = ({Location.loc_start, loc_end}) => {
   open Lexing;
@@ -80,6 +80,15 @@ let typeAtPos = (pos, cmt) => {
   }; None} {
     | Found(loc, expr) => Some((loc, expr))
   }
+}; */
+
+let typeAtPos = (pos, data) => {
+  let rec loop = locations => switch locations {
+  | [] => None
+  | [(loc, expr, defn), ..._] when checkPos(pos, loc) => Some((loc, expr))
+  | [_, ...rest] => loop(rest)
+  };
+  loop(data.Definition.locations)
 };
 
 open Result;
@@ -87,13 +96,13 @@ let getHover = (uri, line, character, state) => {
   let result = State.getCompilationResult(uri, state);
   let result = switch result {
   | AsYouType.ParseError(text) => Error("Cannot hover -- parser error: " ++ text)
-  | TypeError(_, cmt) => Ok(cmt)
-  | Success(_, cmt) => Ok(cmt)
+  | TypeError(_, cmt, data) => Ok(data)
+  | Success(_, cmt, data) => Ok(data)
   };
   switch result {
   | Error(t) => Some((t, Location.none))
-  | Ok(cmt) => {
-    switch (typeAtPos((line + 1, character), cmt.Cmt_format.cmt_annots)) {
+  | Ok(data) => {
+    switch (typeAtPos((line + 1, character), data)) {
     | None => None
     | Some((loc, expr)) => Some((PrintType.default.expr(PrintType.default, expr) |> PrintType.prettyString, loc))
     }

@@ -27,5 +27,5 @@ for (i in 0 to 10) {
   print_endline("hellO");
 };
 
-let x: string = [%raw " hello"];
+let x = [%raw " hello"];
 let awesome = "hello";

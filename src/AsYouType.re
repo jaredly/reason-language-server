@@ -1,8 +1,8 @@
 
 type result =
   | ParseError(string)
-  | TypeError(string, Cmt_format.cmt_infos)
-  | Success(list(string), Cmt_format.cmt_infos)
+  | TypeError(string, Cmt_format.cmt_infos, Definition.moduleData)
+  | Success(list(string), Cmt_format.cmt_infos, Definition.moduleData)
 ;
 open Infix;
 open Result;
@@ -58,11 +58,11 @@ let process = (text, rootPath, includes, flags) => {
   | Ok(fname) => switch (runBsc(rootPath, fname, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
-      TypeError(String.concat("\n", lines), cmt)
+      TypeError(String.concat("\n", lines), cmt, Definition.process(cmt.Cmt_format.cmt_annots))
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
-      Success(lines, cmt)
+      Success(lines, cmt, Definition.process(cmt.Cmt_format.cmt_annots))
     }
   }
   }

@@ -143,7 +143,7 @@ let runDiagnostics = (uri, state) => {
         ("severity", i(1)),
       ])])
     }
-    | Success(lines, _) => {
+    | Success(lines, _, _) => {
       if (lines == [] || lines == [""]) {
         l([])
       } else {
@@ -164,7 +164,7 @@ let runDiagnostics = (uri, state) => {
         l(warnings)
       }
     }
-    | TypeError(text, _) => {
+    | TypeError(text, _, _) => {
       let pos = AsYouType.parseTypeError(text);
       let (l0, c0, l1, c1) = switch pos {
       | None => (0, 0, 0, 0)
