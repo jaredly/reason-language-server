@@ -229,6 +229,7 @@ module F = (Collector: Collector) => {
     | _ => ()
     }
   };
+
   let enter_structure_item = str => {
     open Typedtree;
     switch str.str_desc {

@@ -234,10 +234,10 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
     |?> position => {
       switch (State.getDefinitionData(uri, state)) {
       | None => Error("Parse error, can't find definition")
-      | Some(data) => switch (Definition.definitionForPos(position, data)) {
+      | Some(data) => switch (State.definitionForPos(uri, position, data, state)) {
       | None => Ok((state, Json.Null))
-      | Some((_, loc, _, _)) => Ok((state, Json.Object([
-        ("uri", Json.String(loc.Location.loc_start.pos_fname == "" ? uri : loc.Location.loc_start.pos_fname)),
+      | Some(((_, loc, _, _), uri)) => Ok((state, Json.Object([
+        ("uri", Json.String(uri)),
         ("range", Protocol.rangeOfLoc(loc)),
       ])))
       }

@@ -7,6 +7,12 @@ type result =
 open Infix;
 open Result;
 
+let getResult = result => switch result {
+| ParseError(_) => None
+| TypeError(_, cmt, data) => Some((cmt, data))
+| Success(_, cmt, data) => Some((cmt, data))
+};
+
 let runRefmt = (text, rootPath) => {
   let refmt = rootPath /+ "node_modules/bs-platform/lib/refmt.exe";
   let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print binary --parse re > /tmp/ls.ast", refmt));

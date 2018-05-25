@@ -41,6 +41,33 @@ type moduleData = {
   mutable locations: list((Location.t, Types.type_expr, definition))
 };
 
+let resolvePath = (data, path) => {
+  switch (path) {
+  | [] => None
+  | [one, ...rest] =>
+    switch (Hashtbl.find(data.exported, one)) {
+    | exception Not_found => None
+    | stamp =>
+      let rec loop = (stamp, path) => {
+        switch (Hashtbl.find(data.stamps, stamp)) {
+          | exception Not_found => None
+          | (name, loc, item, docs) => {
+            switch (path, item) {
+            | ([], _) => Some((name, loc, item, docs))
+            | ([first, ...rest], Module(contents)) => switch (List.assoc(first, contents)) {
+              | exception Not_found => None
+              | stamp => loop(stamp, rest)
+              }
+            | _ => None
+            }
+          }
+        }
+      };
+      loop(stamp, rest)
+    };
+  }
+};
+
 module Get = {
   /* TODO maybe return loc from this? or have a separate one that
    * finds a thing by name...
@@ -76,16 +103,13 @@ module Get = {
       if (! Hashtbl.mem(Collector.data.stamps, stamp)) {
         Hashtbl.replace(Collector.data.stamps, stamp, (name, loc, item, docs));
       };
-    /* let addReference = (stamp, loc) => {
-         let current = Hashtbl.mem(Collector.data.references, stamp) ?
-         Hashtbl.find(Collector.data.references, stamp) : [];
-         Hashtbl.replace(Collector.data.references, stamp, [loc, ...current])
-       }; */
+
     let addLocation = (loc, typ, definition) =>
       Collector.data.locations = [
         (loc, typ, definition),
         ...Collector.data.locations
       ];
+
     /* let enter_signature_item = item => switch item.sig_desc {
          | Tsig_value({val_id: {stamp, name}, val_val: {val_type}, val_loc}) => addStamp(stamp, name, val_loc, Value(val_type), None)
          | Tsig_type(decls) => List.iter(({typ_id: {stamp, name}}) => (stamp, addToPath(currentPath, name) |> toFullPath(PType)), decls)
@@ -97,6 +121,7 @@ module Get = {
          | Tsig_module({md_id: {stamp, name}}) => [(stamp, addToPath(currentPath, name) |> toFullPath(PModule))]
          | _ => []
        } */
+
     let enter_structure_item = item =>
       Typedtree.(
         switch item.str_desc {
@@ -347,11 +372,9 @@ let findDefinition = (defn, data) =>
   | Path(path) =>
     switch path {
     | Path.Pident({stamp: 0, name}) =>
-      Log.log("Global stamp folks");
-      None; /* Not handling global ones yett */
+      Some(`Global(name, []))
     | Path.Pident({stamp, name}) =>
-      maybeFound(Hashtbl.find(data.stamps), stamp)
-      |?>> x => `Local(x)
+      maybeFound(Hashtbl.find(data.stamps), stamp) |?>> x => `Local(x)
     | Path.Pdot(inner, name, _) =>
       let rec loop = p =>
         switch p {
@@ -383,12 +406,9 @@ let findDefinition = (defn, data) =>
     }
   };
 
-let resolveDefinition = (defn, data) => switch (findDefinition(defn, data)) {
+/* let resolveDefinition = (defn, data) => switch (findDefinition(defn, data)) {
 | None => None
-| Some(`Global(top, children)) => None
+| Some(`Global(top, children)) => {
+}
 | Some(`Local(defn)) => Some(defn)
-};
-
-let definitionForPos = (pos, data) =>
-  locationAtPos(pos, data)
-  |?> (((_, _, defn)) => resolveDefinition(defn, data));
+}; */
