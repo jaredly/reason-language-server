@@ -38,7 +38,7 @@ let rec showItem = (name, item) =>
     ++ name
     ++ " {\n"
     ++ (
-      List.map(((name, _, item)) => showItem(name, item), contents)
+      List.map(((name, _loc, _, item)) => showItem(name, item), contents)
       |> String.concat("\n")
     )
     ++ "\n}"
@@ -79,7 +79,7 @@ let forModule = (state, k, cmt, src) => {
   {kind: RootModule(cmt, src), label: k, detail, documentation, deprecated: false};
 };
 
-let forItem = (name, doc, item) => {
+let forItem = (name, loc, doc, item) => {
   {
     detail: Some(showItem(name, item)),
     documentation: Some(doc |? "(no documentation)"),
@@ -92,8 +92,8 @@ let forItem = (name, doc, item) => {
 let rec inDocs = (parts, contents) => {
   switch parts {
   | [] => []
-  | [single] => contents |> Utils.filterMap(((name, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, doc, item)) : None)
-  | [first, ...rest] => contents |> Utils.find(((name, doc, item)) => switch item {
+  | [single] => contents |> Utils.filterMap(((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, loc, doc, item)) : None)
+  | [first, ...rest] => contents |> Utils.find(((name, loc, doc, item)) => switch item {
   | Docs.Module(contents) when name == first => Some(inDocs(rest, contents))
   | _ => None
   }) |? []
@@ -102,7 +102,7 @@ let rec inDocs = (parts, contents) => {
 
 let rec findSubModule = (name, contents) => switch contents {
   | [] => None
-  | [(n, doc, Docs.Module(innerContents)), ..._] when n == name => Some((n, doc, innerContents))
+  | [(n, loc, doc, Docs.Module(innerContents)), ..._] when n == name => Some((n, loc, doc, innerContents))
   | [_, ...rest] => findSubModule(name, rest)
 };
 
@@ -117,7 +117,7 @@ let resolveOpens = (opens, state) => {
     | [(prevname, contents), ...rest] =>
       switch (findSubModule(name, contents)) {
       | None => loop(rest)
-      | Some((name, _, innerContents)) => previous @ [(name, innerContents)]
+      | Some((name, _loc, _, innerContents)) => previous @ [(name, innerContents)]
       }
       /* let rec find = contents => switch contents {
       | [] => loop(rest)
@@ -144,7 +144,7 @@ let get = (topModule, opens, parts, state) => {
   | [] => []
   | [single] =>
     let results = opens |> List.map(((_, contents)) => contents |> Utils.filterMap(
-      ((name, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, doc, item)) : None
+      ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, loc, doc, item)) : None
     )) |> List.concat;
     if (isCapitalized(single)) {
     let results =
@@ -174,7 +174,7 @@ let get = (topModule, opens, parts, state) => {
     }
   | [first, ...more] =>
     switch (Utils.find(((name, contents)) => findSubModule(first, contents), opens)) {
-    | Some((_, _, contents)) => inDocs(more, contents)
+    | Some((_, _, _, contents)) => inDocs(more, contents)
     | None =>
     switch (State.docsForModule(first, state)) {
     | None => [] /* TODO handle opens */

@@ -30,15 +30,30 @@ type item =
   | Function(list(Types.type_expr), Types.type_expr)
   | Value(Types.type_expr)
   | Type(Types.type_declaration)
-and full = (string, option(string), item);
+and full = (string, Location.t, option(string), item);
 /* TODO module types n that jazz also functors I guess */
+
+let rec find = (name, docs) => switch docs {
+| [] => None
+| [(n, _, _, _) as doc, ..._] when n == name => Some(doc)
+| [_, ...rest] => find(name, rest)
+};
+
+let rec findPath = (children, docs) => switch (children) {
+| [] => None
+| [single] => find(single, docs)
+| [first, ...rest] => switch (find(first, docs)) {
+| Some((_, _, _, Module(contents))) => findPath(rest, contents)
+| _ => None
+}
+};
 
 let rec forSignatureType = (processDoc, signature) => {
   open Types;
   List.fold_left((items, item) => switch item {
-  | Sig_value({stamp, name}, {val_type, val_kind, val_attributes}) => [(name, findDocAttribute(val_attributes) |?>> processDoc, Value(val_type)), ...items]
-  | Sig_type({stamp, name}, decl, _) => [(name, findDocAttribute(decl.type_attributes) |?>> processDoc, Type(decl)), ...items]
-  | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) => [(name, findDocAttribute(md_attributes) |?>> processDoc, Module(forModuleType(processDoc, md_type)))]
+  | Sig_value({stamp, name}, {val_type, val_kind, val_attributes, val_loc}) => [(name, val_loc, findDocAttribute(val_attributes) |?>> processDoc, Value(val_type)), ...items]
+  | Sig_type({stamp, name}, decl, _) => [(name, decl.type_loc, findDocAttribute(decl.type_attributes) |?>> processDoc, Type(decl)), ...items]
+  | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, Module(forModuleType(processDoc, md_type)))]
   | _ => items
   }, [], signature);
 } and forModuleType = (processDoc, modtype) => Types.(switch modtype {
@@ -60,19 +75,19 @@ let rec forSignature = (processDoc, signature) => {
   (doc, List.map(forSignatureItem(processDoc), items) |> List.concat)
 } and forSignatureItem = (processDoc, item) => Typedtree.(switch (item.sig_desc) {
   | Tsig_value({val_name: {txt, loc}, val_val, val_attributes, val_loc}) =>
-      [(txt, findDocAttribute(val_attributes) |?>> processDoc, Value(val_val.val_type))]
+      [(txt, val_loc, findDocAttribute(val_attributes) |?>> processDoc, Value(val_val.val_type))]
   | Tsig_include({incl_loc, incl_mod, incl_attributes, incl_type}) => {
       switch incl_mod.mty_desc {
       | Tmty_ident(path, _) | Tmty_alias(path, _) => forSignatureType(processDoc, incl_type)
       | _ => forSignatureType(processDoc, incl_type)
       }
   }
-  | Tsig_type(decls) => foldOpt(({typ_name: {txt}, typ_loc, typ_attributes, typ_type}) =>
-      Some((txt, findDocAttribute(typ_attributes) |?>> processDoc, Type(typ_type)))
+  | Tsig_type(decls) => foldOpt(({typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
+      Some((txt, typ_loc, findDocAttribute(typ_attributes) |?>> processDoc, Type(typ_type)))
     , decls, [])
-  | Tsig_module({md_attributes, md_loc, md_name: {txt}, md_type: module_type}) => {
+  | Tsig_module({md_attributes, md_loc, md_name: {txt, loc}, md_type: module_type}) => {
       let (docc, contents) = forModuleSig(processDoc, module_type);
-      [(txt, either(docc, findDocAttribute(md_attributes) |?>> processDoc), Module(contents))]
+      [(txt, md_loc, either(docc, findDocAttribute(md_attributes) |?>> processDoc), Module(contents))]
     }
   | _ => []
   })
@@ -101,12 +116,12 @@ let rec forStructure = (processDoc, structure) => {
 } and forItem = (processDoc, item) => Typedtree.(switch (item.str_desc) {
 | Tstr_value(_, bindings) => foldOpt(({vb_loc, vb_expr, vb_pat, vb_attributes}) =>
     switch (vb_pat.pat_desc) {
-    | Tpat_var(_, {Asttypes.txt}) => Some((txt, findDocAttribute(vb_attributes) |?>> processDoc, Value(vb_pat.pat_type)))
+    | Tpat_var(_, {Asttypes.txt}) => Some((txt, vb_loc, findDocAttribute(vb_attributes) |?>> processDoc, Value(vb_pat.pat_type)))
     | _ => None
     }
     , bindings, [])
 | Tstr_primitive({val_name: {txt, loc}, val_val, val_attributes, val_loc}) => {
-  [(txt, findDocAttribute(val_attributes) |?>> processDoc, Value(val_val.val_type))]
+  [(txt, val_loc, findDocAttribute(val_attributes) |?>> processDoc, Value(val_val.val_type))]
 }
 | Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) => {
   switch incl_mod.mod_desc {
@@ -115,11 +130,11 @@ let rec forStructure = (processDoc, structure) => {
   }
 }
 | Tstr_type(decls) => foldOpt(({typ_name: {txt}, typ_loc, typ_attributes, typ_type}) =>
-    Some((txt, findDocAttribute(typ_attributes) |?>> processDoc, Type(typ_type)))
+    Some((txt, typ_loc, findDocAttribute(typ_attributes) |?>> processDoc, Type(typ_type)))
   , decls, [])
 | Tstr_module({mb_attributes, mb_loc, mb_name: {txt}, mb_expr}) => {
   let (docc, contents) = forModule(processDoc, mb_expr);
-  [(txt, either(docc, findDocAttribute(mb_attributes) |?>> processDoc), Module(contents))]
+  [(txt, mb_loc, either(docc, findDocAttribute(mb_attributes) |?>> processDoc), Module(contents))]
 }
 | _ => []
 })

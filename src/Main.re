@@ -239,7 +239,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       | None => Error("Parse error, can't find definition")
       | Some(data) => switch (State.definitionForPos(uri, position, data, state)) {
       | None => Ok((state, Json.Null))
-      | Some(((_, loc, _, _), uri)) => Ok((state, Json.Object([
+      | Some((loc, docs, uri)) => Ok((state, Json.Object([
         ("uri", Json.String(uri)),
         ("range", Protocol.rangeOfLoc(loc)),
       ])))

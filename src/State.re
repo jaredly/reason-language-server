@@ -99,25 +99,40 @@ let docsForModule = (modname, state) =>
 let maybeFound = Definition.maybeFound;
 
 open Infix;
-let resolveDefinition = (uri, defn, state) => {
-  switch (defn) {
-  | `Local(defn) => Some((defn, uri))
-  | `Global(top, children) => {
-  switch (maybeFound(List.assoc(top), state.localModules) |?> ((cmt, src)) => {
-    let uri = "file://" ++ Infix.fileConcat(state.rootPath, src);
-    Log.log("Got it! " ++ uri);
-    Hashtbl.iter((k, _) => Log.log(k), state.compiledDocuments);
-    maybeFound(Hashtbl.find(state.compiledDocuments), uri) |?> AsYouType.getResult |?>> defn => (defn, uri)
-  }) {
-    | Some(((cmtInfos, data), uri)) => Definition.resolvePath(data, children) |?> defn => Some((defn, uri))
+
+let resolveDefinition = (uri, defn, state) =>
+  switch defn {
+  | `Local((_, loc, _, docs)) => Some((loc, docs, uri))
+  | `Global(top, children) =>
+    switch (
+      maybeFound(List.assoc(top), state.localModules)
+      |?> (
+        ((cmt, src)) => {
+          let uri = "file://" ++ Infix.fileConcat(state.rootPath, src);
+          /* Log.log("Got it! " ++ uri);
+          Hashtbl.iter((k, _) => Log.log(k), state.compiledDocuments); */
+          maybeFound(Hashtbl.find(state.compiledDocuments), uri)
+          |?> AsYouType.getResult
+          |?>> (defn => (defn, uri));
+        }
+      )
+    ) {
+    | Some(((cmtInfos, data), uri)) =>
+      Definition.resolvePath(data, children) |?> ((_, loc, _, docs)) => Some((loc, docs, uri))
     | None =>
-    maybeFound(Hashtbl.find(state.pathsForModule), top) |?> ((cmt, src)) => {
-      /* TODO */
-      None
+      maybeFound(Hashtbl.find(state.pathsForModule), top)
+      |?> (
+        ((cmt, src)) => {
+
+          let uri = "file://" ++ src;
+          /* Log.log("Got it! " ++ uri); */
+          /* TODO */
+          docsForCmt(cmt, src, state) |?>> snd |?> Docs.findPath(children) |?>> ((name, loc, docs, _)) => (loc, docs, uri)
+          /* None */
+        }
+      )
     }
-  }
-}
-  }};
+  };
 
 let getResolvedDefinition = (uri, defn, data, state) => {
   Definition.findDefinition(defn, data) |?> resolveDefinition(uri, _, state)
