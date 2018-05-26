@@ -142,7 +142,7 @@ let findProjectFiles = (~debug, namespace, root, config, compiledBase) => {
   |> filterDuplicates
   |> List.map(path => {
     let rel = Files.relpath(root, path);
-    (compiledBase /+ compiledName(~namespace, rel), rel)
+    (compiledBase /+ compiledName(~namespace, rel), path)
   })
   |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
   |> List.filter(((full, rel)) => Files.exists(full))
@@ -177,17 +177,4 @@ let findDependencyFiles = (~debug, base, config) => {
   ;
   depFiles @ builtins
 };
-
-/* let findDependencyDirectories = root => {
-  let config = Json.parse(Files.readFile(root /+ "bsconfig.json") |! "No bsconfig.json found");
-  let isNative = isNative(config);
-  let compiledBase = oneShouldExist("Cannot find directory for compiled artifacts.",
-    isNative
-      ? [root /+ "lib/bs/js", root /+ "lib/bs/native"]
-      : [root /+ "lib/bs", root /+ "lib/ocaml"]
-  );
-  let jsBase = root /+ "lib/js";
-  let mine = [compiledBase, ...Files.collectDirs(compiledBase)] |> List.map(path => (path, jsBase /+ Files.relpath(compiledBase, path)));
-  mine @ getDependencyDirs(root, config)
-}; */
 

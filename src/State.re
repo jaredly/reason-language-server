@@ -108,7 +108,8 @@ let resolveDefinition = (uri, defn, state) =>
       maybeFound(List.assoc(top), state.localModules)
       |?> (
         ((cmt, src)) => {
-          let uri = "file://" ++ Infix.fileConcat(state.rootPath, src);
+          let uri = "file://" ++ src;
+          /* Infix.fileConcat(state.rootPath, src); */
           /* Log.log("Got it! " ++ uri);
           Hashtbl.iter((k, _) => Log.log(k), state.compiledDocuments); */
           maybeFound(Hashtbl.find(state.compiledDocuments), uri)
