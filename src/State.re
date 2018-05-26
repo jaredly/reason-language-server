@@ -133,7 +133,7 @@ let resolveDefinition = (uri, defn, state) =>
       )
     ) {
     | Some(((cmtInfos, data), uri)) =>
-      Definition.resolvePath(data, children) |?> ((_, loc, _, docs)) => Some((loc, docs, uri))
+      Definition.resolveNamedPath(data, children) |?> ((_, loc, _, docs)) => Some((loc, docs, uri))
     | None =>
       maybeFound(Hashtbl.find(state.pathsForModule), top)
       |?> (

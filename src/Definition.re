@@ -219,7 +219,7 @@ let listTopLevel = data => {
     });
   };
 
-let resolvePath = (data, path) => {
+let resolveNamedPath = (data, path) => {
   switch (path) {
   | [] => None
   | [one, ...rest] =>
@@ -245,6 +245,103 @@ let resolvePath = (data, path) => {
     };
   }
 };
+
+
+let checkPos =
+    (
+      (line, char),
+      {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}, loc_end}
+    ) =>
+  Lexing.(
+    if (line < pos_lnum || line == pos_lnum && char < pos_cnum - pos_bol) {
+      false;
+    } else if (line > loc_end.pos_lnum
+               || line == loc_end.pos_lnum
+               && char > loc_end.pos_cnum
+               - loc_end.pos_bol) {
+      false;
+    } else {
+      true;
+    }
+  );
+
+let locationAtPos = ((line, char), data) => {
+  let pos = (line + 1, char);
+  let rec loop = locations =>
+    switch locations {
+    | [] => None
+    | [(loc, expr, defn), ..._] when checkPos(pos, loc) =>
+      Some((loc, expr, defn))
+    | [_, ...rest] => loop(rest)
+    };
+  loop(data.locations);
+};
+
+let isStampExported = (needle, data) => {
+  Hashtbl.fold((_, stamp, found) => found || stamp == needle, data.exported, false)
+};
+
+let highlightsForStamp = (stamp, data) => {
+  maybeFound(Hashtbl.find(data.stamps), stamp) |?> ((_, defnLoc, _, _, _)) => {
+  let usages = maybeFound(Hashtbl.find(data.internalReferences), stamp) |? [];
+  Some([(`Write, defnLoc), ...List.map(l => (`Read, l), usages)])
+  };
+};
+
+let stampAtPos = (pos, data) => {
+  locationAtPos(pos, data) |?> ((loc, expr, defn)) => {
+    switch defn {
+    | IsDefinition(stamp)
+    | Path(Pident({stamp})) when stamp != 0 => Some(stamp)
+    | _ => None
+    }
+  };
+};
+
+let highlights = (pos, data) => {
+  stampAtPos(pos, data) |?> highlightsForStamp(_, data)
+};
+
+let rec stampAtPath = (path, data) => {
+  switch path {
+  | Path.Pident({stamp: 0, name}) => Some(`Global(name, []))
+  | Path.Pident({stamp, name}) => Some(`Local(stamp))
+  | Path.Pdot(inner, name, _) =>
+        switch (stampAtPath(inner, data)) {
+        | Some(`Global(top, subs)) => Some(`Global(top, subs @ [name]))
+        | Some(`Local(stamp)) =>
+          maybeFound(Hashtbl.find(data.stamps), stamp) |?> x => switch x {
+          | (_, _, Module(contents), _, _) => maybeFound(List.assoc(name), contents) |?>> stamp => `Local(stamp)
+          | _ => None
+          };
+        | _ => None
+        }
+  | _ => None
+  }
+};
+
+
+let resolvePath = (path, data) => {
+  switch (stampAtPath(path, data)){
+  | None => None
+  | Some(`Global(name, children)) => Some(`Global(name, children))
+  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> x => `Local(x)
+  }
+};
+
+let findDefinition = (defn, data) =>
+  /* Log.log("😍 resolving a definition"); */
+  switch defn {
+  | IsConstant => None
+  | IsDefinition(stamp) =>
+    Log.log("Is a definition");
+    None;
+  | Constructor(path, _, _)
+  | Attribute(path, _, _)
+  | Path(path) => resolvePath(path, data);
+  };
+
+
 
 module Get = {
   /* TODO maybe return loc from this? or have a separate one that
@@ -345,10 +442,21 @@ let rec relative = (ident, path) => switch (ident, path) {
 
     let addLocation = (loc, typ, definition) => {
       switch definition {
-      | Path(Path.Pident({stamp, name})) when stamp != 0 => {
+      | Path(path) => {
+        switch (stampAtPath(path, Collector.data)) {
+        | None => ()
+        | Some(`Global(_)) => () /* TODO */
+        | Some(`Local(stamp)) => {
+          let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
+          Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
+        }
+        }
+      }
+
+      /* | Path(Path.Pident({stamp, name})) when stamp != 0 => {
         let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
         Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
-      }
+      } */
       | _ => ()
       };
       Collector.data.locations = [
@@ -646,98 +754,6 @@ let rec relative = (ident, path) => switch (ident, path) {
 
 let process = Get.process;
 
-
-let checkPos =
-    (
-      (line, char),
-      {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}, loc_end}
-    ) =>
-  Lexing.(
-    if (line < pos_lnum || line == pos_lnum && char < pos_cnum - pos_bol) {
-      false;
-    } else if (line > loc_end.pos_lnum
-               || line == loc_end.pos_lnum
-               && char > loc_end.pos_cnum
-               - loc_end.pos_bol) {
-      false;
-    } else {
-      true;
-    }
-  );
-
-let locationAtPos = ((line, char), data) => {
-  let pos = (line + 1, char);
-  let rec loop = locations =>
-    switch locations {
-    | [] => None
-    | [(loc, expr, defn), ..._] when checkPos(pos, loc) =>
-      Some((loc, expr, defn))
-    | [_, ...rest] => loop(rest)
-    };
-  loop(data.locations);
-};
-
-let highlights = (pos, data) => {
-  locationAtPos(pos, data) |?> ((loc, expr, defn)) => {
-    switch defn {
-    | IsDefinition(stamp)
-    | Path(Pident({stamp})) when stamp != 0 => {
-      maybeFound(Hashtbl.find(data.stamps), stamp) |?> ((_, defnLoc, _, _, _)) => {
-      let usages = maybeFound(Hashtbl.find(data.internalReferences), stamp) |? [];
-      Some([(`Write, defnLoc), ...List.map(l => (`Read, l), usages)])
-      };
-    }
-    | _ => None
-    }
-  };
-};
-
-let findDefinition = (defn, data) =>
-  /* Log.log("😍 resolving a definition"); */
-  switch defn {
-  | IsConstant => None
-
-  | IsDefinition(stamp) =>
-    Log.log("Is a definition");
-    None;
-  | Constructor(path, _, _)
-  | Attribute(path, _, _)
-  | Path(path) =>
-    switch path {
-    | Path.Pident({stamp: 0, name}) =>
-      Some(`Global(name, []))
-    | Path.Pident({stamp, name}) =>
-      maybeFound(Hashtbl.find(data.stamps), stamp) |?>> x => `Local(x)
-    | Path.Pdot(inner, name, _) =>
-      let rec loop = p =>
-        switch p {
-        | Path.Pident({stamp: 0, name}) => {
-          `Global(name, [])
-        }
-        | Path.Pident({stamp, name}) =>
-          `Local(maybeFound(Hashtbl.find(data.stamps), stamp))
-        | Path.Pdot(inner, name, _) =>
-          switch (loop(inner)) {
-          | `Global(top, subs) => `Global(top, subs @ [name])
-          | `Local(Some((_, _, Module(contents), _, _))) =>
-            `Local(maybeFound(List.assoc(name), contents)
-            |?> maybeFound(Hashtbl.find(data.stamps)))
-          | _ => `Local(None)
-          }
-        | _ => `Local(None)
-        };
-      switch (loop(inner)) {
-      | `Global(top, children) => Some(`Global(top, children @ [name]))
-      | `Local(Some((_, _, Module(contents), _, _))) =>
-        maybeFound(List.assoc(name), contents)
-        |?> maybeFound(Hashtbl.find(data.stamps))
-        |?>> x => `Local(x)
-      | _ =>  None
-      };
-    | _ =>
-      None
-    }
-  };
 
 /* let resolveDefinition = (defn, data) => switch (findDefinition(defn, data)) {
 | None => None

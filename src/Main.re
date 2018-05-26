@@ -48,6 +48,7 @@ let capabilities =
       /* ("codeActionProvider", t), */
       ("codeLensProvider", t),
       ("documentHighlightProvider", t),
+      ("renameProvider", t),
       ("documentRangeFormattingProvider", t),
       ("documentFormattingProvider", t),
       /*
@@ -322,6 +323,32 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         | `Write => 3
         }))
         ]))))
+    };
+  }),
+
+  ("textDocument/rename", (state, params) => {
+    open InfixResult;
+    Protocol.rPositionParams(params) |?> ((uri, pos)) => RJson.get("newName", params) |?> RJson.string
+    |?> newName => {
+      open Infix;
+      (State.getDefinitionData(uri, state)
+      |?> data => Definition.stampAtPos(pos, data)
+      |?> stamp => Definition.isStampExported(stamp, data)
+      ? Some(Error("Cannot yet rename items that might be exported"))
+      : {
+        Definition.highlightsForStamp(stamp, data) |?>> positions => {
+
+        open Rpc.J;
+        Ok((state, o([
+          ("changes", o([
+            (uri, l(positions |> List.map(((_, loc)) => o([
+              ("range", Protocol.rangeOfLoc(loc)),
+              ("newText", s(newName)),
+            ]))))
+          ]))
+        ])))
+        }
+      }) |? Ok((state, Json.Null))
     };
   }),
 

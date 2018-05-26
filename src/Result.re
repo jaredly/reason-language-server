@@ -13,3 +13,5 @@ module InfixResult = {
 };
 open InfixResult;
 let withDefault = (d, v) => v |? d;
+let map = (fn, r) => r |?>> fn;
+let bind = (fn, r) => r |?> fn;
