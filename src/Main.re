@@ -316,7 +316,8 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       let items = State.getCompilationResult(uri, state) |> AsYouType.getResult |?>> snd
       |?# lazy(State.getLastDefinitions(uri, state))
       |?>> (((moduleData)) => {
-        Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
+
+        let lenses = false ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
           switch item {
           | Definition.Module(_) => None
           | Type(t) => None
@@ -324,7 +325,11 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           /* | Type(t) => PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString |> s => Some((s, loc)) */
           | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
           }
-        })
+        }) : [];
+
+        let lenses = true ? lenses @ Definition.opens(moduleData) : [];
+
+        lenses
       });
       switch items {
       | None => Error("Could not get compilation data")

@@ -5,4 +5,6 @@ let later = 10;
 
 let something = 10;
 
+type person = {name: string, age: int};
 
+type animals = Dog(int) | Cat(string) | Mouse;

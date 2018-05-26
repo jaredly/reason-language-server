@@ -33,13 +33,22 @@ type definition =
   | Attribute(Path.t, string, Location.t)
   | IsDefinition;
 
+type tag = TagType | TagValue | TagModule | Constructor(string) | Attribute(string);
+
+type anOpen = {
+  path: Path.t,
+  loc: Location.t,
+  mutable used: list((Longident.t, tag)),
+};
+
 type moduleData = {
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
   /* TODO track constructor names, and record attribute names */
   /* references: Hashtbl.t(int, list(Location.t)), */
   exported: Hashtbl.t(string, int),
   mutable topLevel: list((string, int)),
-  mutable locations: list((Location.t, Types.type_expr, definition))
+  mutable locations: list((Location.t, Types.type_expr, definition)),
+  mutable allOpens: list(anOpen),
 };
 
 let rec docsItem = (item, data) => switch item {
@@ -68,6 +77,98 @@ let completions = ({stamps}, prefix, (l, c)) => {
   }, stamps, [])
 };
 
+module Opens = {
+
+  let pushHashList = (hash, key, value) => Hashtbl.replace(hash, key, switch (Hashtbl.find(hash, key)) {
+  | exception Not_found => [value]
+  | items => [value, ...items]
+  });
+
+  let mapHash = (hash, fn) => Hashtbl.fold((k, v, l) => [fn(k, v), ...l], hash, []);
+
+let toString = (fn, (a, tag)) => switch tag {
+| TagType => "type: " ++ fn(a)
+| TagValue => "value: " ++ fn(a)
+| Constructor(b) => "constr: " ++ fn(a) ++ " - " ++ b
+| Attribute(b) => "attr: " ++ fn(a) ++ " - " ++ b
+| TagModule => "module: " ++ fn(a)
+};
+let showLident = l => String.concat(".", Longident.flatten(l));
+
+let rec pathName = path => {
+  switch path {
+  | Path.Pident({Ident.stamp, name}) => stamp == 0 ? name ++ "!" : name ++ "/" ++ string_of_int(stamp)
+  | Path.Pdot(path, name, _) => pathName(path) ++ "." ++ name
+  | Path.Papply(one, two) => failwith("cannot path name an apply") /* TBH I just don't understand apply */
+  }
+};
+
+let rec addLidentToPath = (path, lident) => {
+  open Path;
+  open Longident;
+
+  switch lident {
+  | Lident(text) => Pdot(path, text, 0)
+  | Ldot(lident, text) => Pdot(addLidentToPath(path, lident), text, 0)
+  | Lapply(_, _) => failwith("I dont know what these are")
+  }
+};
+
+  let showUses = (openPath, uses) => {
+    let attrs = Hashtbl.create(50);
+    let constrs = Hashtbl.create(50);
+    let normals = List.filter(((innerPath, tag)) => {
+      switch (tag) {
+      | Constructor(name) => {pushHashList(constrs, innerPath, name); false}
+      | Attribute(name) => {pushHashList(attrs, innerPath, name); false}
+      | _ => true
+      }
+    }, uses);
+    let normals = normals |> List.filter(((innerPath, tag)) => {
+      switch tag {
+      | TagType => !(Hashtbl.mem(attrs, innerPath) || Hashtbl.mem(constrs, innerPath))
+      | _ => true
+      }
+    });
+    List.concat([
+      (normals |> List.map(((lident, tag)) => {
+        let fullPath = addLidentToPath(openPath, lident);
+          showLident(lident)
+      })),
+      mapHash(attrs, (path, attrs) => {
+        let fullPath = addLidentToPath(openPath, path);
+          showLident(path)
+         ++ " {" ++ String.concat(", ", attrs |> List.map(attr => {
+            attr
+        })) ++ "}"
+      }),
+      mapHash(constrs, (path, attrs) => {
+        let fullPath = addLidentToPath(openPath, path);
+          showLident(path)
+         ++ " (" ++ String.concat("|", attrs |> List.map(attr => {
+            attr
+        })) ++ ")"
+      }),
+    ]) |> String.concat(", ")
+  };
+};
+
+let opens = ({allOpens}) => {
+  allOpens |> Utils.filterMap(({path, loc, used}) => {
+    if (!loc.Location.loc_ghost) {
+      let i = loc.Location.loc_end.pos_cnum;
+      let isPervasives = switch path {
+        | Path.Pident({name: "Pervasives"}) =>true
+        | _ => false
+      };
+      let used = List.sort_uniq(compare, used);
+      Some(("exposing (" ++ Opens.showUses(path, used) ++ ")", loc))
+    } else {
+      None
+    }
+  });
+};
+
 let listExported = data => {
   Hashtbl.fold((name, stamp, results) => {
     switch (Hashtbl.find(data.stamps, stamp)) {
@@ -80,6 +181,34 @@ let listExported = data => {
 let listTopLevel = data => {
   data.topLevel |> List.map(((name, stamp)) => Hashtbl.find(data.stamps, stamp));
 };
+
+  let handleConstructor = (path, txt) => {
+    let typeName = switch path {
+    | Path.Pdot(path, typename, _) => typename
+    | Pident({Ident.name}) => name
+    | _ => assert(false)
+    };
+
+    Longident.(switch txt {
+    | Longident.Lident(name) => (name, Lident(typeName))
+    | Ldot(left, name) => (name, Ldot(left, typeName))
+    | Lapply(_) => assert(false)
+    });
+  };
+
+  let handleRecord = (path, txt) => {
+    let typeName = switch path {
+    | Path.Pdot(path, typename, _) => typename
+    | Pident({Ident.name}) => name
+    | _ => assert(false)
+    };
+
+    Longident.(switch txt {
+    | Lident(name) => Lident(typeName)
+    | Ldot(inner, name) => Ldot(inner, typeName)
+    | Lapply(_) => assert(false)
+    });
+  };
 
 let resolvePath = (data, path) => {
   switch (path) {
@@ -136,7 +265,8 @@ module Get = {
          )
       |> List.concat
     );
-  module F = (Collector: {let data: moduleData;}) => {
+
+  module F = (Collector: {let data: moduleData;let allOpens: ref(list(anOpen))}) => {
     open Typedtree;
     include TypedtreeIter.DefaultIteratorArgument;
 
@@ -146,6 +276,50 @@ module Get = {
       posOfLexing(loc_start),
       posOfLexing(loc_end)
     );
+
+    let openScopes = ref([ref([])]);
+    let addOpenScope = () => openScopes := [ref([]), ...openScopes^];
+    let popOpenScope = () => openScopes := List.tl(openScopes^);
+    let addOpen = (path, loc) => {
+      let top = List.hd(openScopes^);
+      let op = {path, loc, used: []};
+      top := [op, ...top^];
+      Collector.allOpens := [op, ...Collector.allOpens^];
+    };
+
+
+let rec usesOpen = (ident, path) => switch (ident, path) {
+| (Longident.Lident(name), Path.Pdot(path, pname, _)) => true
+| (Longident.Lident(_), Path.Pident(_)) => false
+| (Longident.Ldot(ident, _), Path.Pdot(path, _, _)) => usesOpen(ident, path)
+| _ => failwith("Cannot relative "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
+};
+
+let rec relative = (ident, path) => switch (ident, path) {
+| (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => path
+| (Longident.Ldot(ident, _), Path.Pdot(path, _, _)) => relative(ident, path)
+| _ => failwith("Cannot relative "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
+};
+
+    let addUse = ((path, tag), ident, loc) => {
+      let openNeedle = relative(ident, path);
+      let rec loop = stacks => switch stacks {
+      | [] => ()
+      | [stack, ...rest] =>
+        let rec inner = opens => switch opens {
+        | [] => loop(rest)
+        | [{path} as one, ...rest] when Path.same(path, openNeedle) =>  {
+          one.used = [(ident, tag), ...one.used];
+        }
+        | [{path}, ...rest] => {
+          inner(rest)
+        }
+        };
+        inner(stack^)
+      };
+      loop(openScopes^)
+    };
+
 
     let scopes = ref([((0, 0), (-1, -1))]);
     let addScope = loc => scopes := [loc, ...scopes^];
@@ -226,6 +400,7 @@ module Get = {
             mb_attributes
           }) =>
           let docs = PrepareUtils.findDocAttribute(mb_attributes);
+          addOpenScope();
           addStamp(
             stamp,
             name,
@@ -236,20 +411,36 @@ module Get = {
         | Tstr_module({mb_attributes, mb_id: {stamp, name}, mb_name: {loc}}) =>
           let docs = PrepareUtils.findDocAttribute(mb_attributes);
           addStamp(stamp, name, loc, Module([]), docs);
+        | Tstr_open({open_path, open_txt: {txt, loc}}) => {
+      if (usesOpen(txt, open_path)) {
+        addUse((open_path, TagModule), txt, loc);
+      };
+      addOpen(open_path, loc);
+
+        }
         /* | Tstr_modtype */
         | _ => ()
         }
       );
+
+    let leave_structure_item = item => switch item.str_desc {
+    | Tstr_module({mb_expr: {mod_desc: Tmod_structure(_) | Tmod_constraint({mod_desc: Tmod_structure(_)}, _, _, _)}}) => {
+      popOpenScope();
+    }
+    | _ => ()
+    };
+
+
     let enter_core_type = typ =>
       /* open Typedtree; */
       /* Collector.add(~depth=depth^, typ.ctyp_type, typ.ctyp_loc); */
       switch typ.ctyp_desc {
       | Ttyp_constr(path, {txt, loc}, args) =>
-        addLocation(loc, typ.ctyp_type, Path(path))
-      /* if (usesOpen(txt, path)) {
-           add_use((path, Type), txt, loc);
+        addLocation(loc, typ.ctyp_type, Path(path));
+        if (usesOpen(txt, path)) {
+           addUse((path, TagType), txt, loc);
          };
-         Collector.ident((path, Type), loc) */
+         /* Collector.ident((path, Type), loc) */
       | _ => ()
       };
     let rec dig = typ =>
@@ -267,6 +458,10 @@ module Get = {
       | Tpat_construct({txt, loc}, {cstr_name, cstr_loc, cstr_res}, args) =>
         switch (dig(cstr_res).Types.desc) {
         | Tconstr(path, args, _) =>
+          let (constructorName, typeTxt) = handleConstructor(path, txt);
+          if (usesOpen(typeTxt, path)) {
+            addUse((path,Constructor(constructorName)),  typeTxt, loc)
+          };
           addLocation(
             loc,
             pat.pat_type,
@@ -280,7 +475,11 @@ module Get = {
              (({Asttypes.txt, loc}, {Types.lbl_res, lbl_name, lbl_loc}, value)) =>
              switch (dig(lbl_res).Types.desc) {
              | Tconstr(path, args, _) =>
-               addLocation(loc, lbl_res, Attribute(path, lbl_name, lbl_loc))
+               addLocation(loc, lbl_res, Attribute(path, lbl_name, lbl_loc));
+              let typeTxt = handleRecord(path, txt);
+              if (usesOpen(typeTxt, path)) {
+                addUse((path, Attribute(lbl_name)), typeTxt, loc)
+              };
              | _ => ()
              }
            )
@@ -294,11 +493,18 @@ module Get = {
         addStamp(stamp, name, ppat_loc, Value(exp_type), None);
         popScope();
       | Texp_ident(path, {txt, loc}, _) =>
-        addLocation(loc, expr.exp_type, Path(path))
+        addLocation(loc, expr.exp_type, Path(path));
+        if (usesOpen(txt, path)) {
+          addUse((path, TagValue), txt, loc);
+        };
       | Texp_field(inner, {txt, loc}, {lbl_name, lbl_res, lbl_loc}) =>
         switch (dig(lbl_res).Types.desc) {
         | Tconstr(path, args, _) =>
-          addLocation(loc, expr.exp_type, Attribute(path, lbl_name, lbl_loc))
+          addLocation(loc, expr.exp_type, Attribute(path, lbl_name, lbl_loc));
+          let typeTxt = handleRecord(path, txt);
+          if (usesOpen(typeTxt, path)) {
+            addUse((path, Attribute(lbl_name)), typeTxt, loc)
+          };
         | _ => ()
         }
       | Texp_constant(_) =>
@@ -315,7 +521,11 @@ module Get = {
                    loc,
                    ex.exp_type,
                    Attribute(path, lbl_name, lbl_loc)
-                 )
+                 );
+          let typeTxt = handleRecord(path, txt);
+          if (usesOpen(typeTxt, path)) {
+            addUse((path, Attribute(lbl_name)), typeTxt, loc)
+          };
                | _ => ()
                }
              )
@@ -327,7 +537,11 @@ module Get = {
             loc,
             expr.exp_type,
             Constructor(path, cstr_name, cstr_loc)
-          )
+          );
+        let (constructorName, typeTxt) = handleConstructor(path, txt);
+        if (usesOpen(typeTxt, path)) {
+          addUse((path, Constructor(constructorName)), typeTxt, loc)
+        };
         | _ => ()
         }
       | Texp_let(recFlag, bindings, expr) => {
@@ -353,15 +567,18 @@ module Get = {
       stamps: Hashtbl.create(100),
       /* references: Hashtbl.create(100), */
       exported: Hashtbl.create(10),
+      allOpens: [],
       topLevel: [],
       locations: []
     };
+    let allOpens = ref([]);
     module IterIter =
       TypedtreeIter.MakeIterator(
         (
           F(
             {
               let data = data;
+              let allOpens = allOpens;
             }
           )
         )
@@ -402,6 +619,10 @@ module Get = {
     | _ => failwith("Not a valid cmt file")
     };
     data.locations = List.rev(data.locations);
+    allOpens^ |> List.iter(({used, path, loc}) => {
+      Log.log("An Open! " ++ string_of_int(List.length(used)));
+    });
+    data.allOpens = allOpens^;
     data;
   };
 };
