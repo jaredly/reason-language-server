@@ -48,6 +48,7 @@ let capabilities =
       /* ("codeActionProvider", t), */
       ("codeLensProvider", t),
       ("documentRangeFormattingProvider", t),
+      ("documentFormattingProvider", t),
       /*
        * Found how to do the showReferences thing
        * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts
@@ -370,6 +371,24 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           ])]))
         }
       }) |? Error("Invalid position")
+    }
+  }),
+
+  ("textDocument/formatting", (state, params) => {
+    open InfixResult;
+    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
+    |?> uri => {
+      let text = State.getContents(uri, state);
+      AsYouType.format(text, state.rootPath) |?>> newText => {
+        open Rpc.J;
+        (state, text == newText ? Json.Null : l([o([
+          ("range", Protocol.rangeOfInts(
+            0, 0,
+            List.length(Str.split(Str.regexp_string("\n"), text)) + 1, 0
+          )),
+          ("newText", s(newText))
+        ])]))
+      }
     }
   })
 ];
