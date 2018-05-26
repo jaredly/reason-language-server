@@ -31,6 +31,8 @@ let awesome = x => x + 2;
 
 
 let someFunction = (memorableName, {contents}) => {
+  let innerMemorable = 20;
+  memorableName + innerMemorable
 };
 
 
@@ -42,7 +44,7 @@ let z = later;
 
 let m = Other.later;
 
-for (i in 0 to 10) {
+for (index in 0 to 10) {
   print_endline("hellO");
 };
 

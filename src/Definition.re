@@ -51,7 +51,11 @@ let rec docsItem = (item, data) => switch item {
 }))
 };
 
+/* TODO this is not perfect, because if the user edits and gets outside of the original scope, then
+we no longer give you the completions you need. This is annoying :/
+Not sure how annoying in practice? One hack would be to forgive going a few lines over... */
 let completions = ({stamps}, prefix, (l, c)) => {
+  let l = l + 1;
   Hashtbl.fold((_, (name, loc, item, docs, ((l0, c0), (l1, c1))), results) => {
     if ((l0 < l || (l0 == l && c0 <= c)) &&
     ((l1 == -1 && c1 == -1) ||
@@ -136,9 +140,11 @@ module Get = {
     open Typedtree;
     include TypedtreeIter.DefaultIteratorArgument;
 
+    let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => (pos_lnum, pos_cnum - pos_bol);
+
     let rangeOfLoc = ({Location.loc_start, loc_end}) => (
-      (loc_start.pos_lnum, loc_start.pos_cnum - loc_start.pos_bol),
-      (loc_end.pos_lnum, loc_end.pos_cnum - loc_end.pos_bol)
+      posOfLexing(loc_start),
+      posOfLexing(loc_end)
     );
 
     let scopes = ref([((0, 0), (-1, -1))]);
@@ -178,6 +184,7 @@ module Get = {
       Typedtree.(
         switch item.str_desc {
         | Tstr_value(_rec, bindings) =>
+          /* TODO limit toplevel value completions */
           bindings
           |> List.iter(binding =>
                switch binding {
@@ -281,9 +288,11 @@ module Get = {
       };
     let enter_expression = expr =>
       switch expr.exp_desc {
-      | Texp_for({stamp, name}, {ppat_loc}, {exp_type}, _, _, _) =>
+      | Texp_for({stamp, name}, {ppat_loc}, {exp_type}, _, _, contents) =>
         addLocation(ppat_loc, exp_type, IsDefinition);
+        addScope(rangeOfLoc(contents.exp_loc));
         addStamp(stamp, name, ppat_loc, Value(exp_type), None);
+        popScope();
       | Texp_ident(path, {txt, loc}, _) =>
         addLocation(loc, expr.exp_type, Path(path))
       | Texp_field(inner, {txt, loc}, {lbl_name, lbl_res, lbl_loc}) =>
@@ -321,8 +330,23 @@ module Get = {
           )
         | _ => ()
         }
+      | Texp_let(recFlag, bindings, expr) => {
+        let start = Asttypes.Recursive == recFlag ? (List.hd(bindings).vb_loc.loc_start) : expr.exp_loc.loc_start;
+        addScope((posOfLexing(start), posOfLexing(expr.exp_loc.loc_end)))
+      }
+      | Texp_function(label, cases, _) => {
+        addScope(rangeOfLoc(expr.exp_loc))
+      }
       | _ => ()
       };
+
+    let leave_expression = expr => switch expr.exp_desc {
+      | Texp_let(recFlag, bindings, expr) => {
+        popScope()
+      }
+      | Texp_function(_) => popScope()
+      | _ => ()
+    }
   };
   let process = cmt => {
     let data = {
@@ -353,21 +377,28 @@ module Get = {
     };
     let iter_part = part =>
       switch part {
-      | Cmt_format.Partial_structure(str) => structure(str.str_items)
-      | Partial_structure_item(str) => structure([str])
-      | Partial_signature(str) => IterIter.iter_signature(str)
-      | Partial_signature_item(str) => IterIter.iter_signature_item(str)
-      | Partial_expression(expression) => IterIter.iter_expression(expression)
-      | Partial_pattern(pattern) => IterIter.iter_pattern(pattern)
-      | Partial_class_expr(class_expr) => IterIter.iter_class_expr(class_expr)
+      | Cmt_format.Partial_structure(str) => {IterIter.iter_structure(str); stampNames(str.str_items)}
+      | Partial_structure_item(str) => {IterIter.iter_structure_item(str); stampNames([str])}
+      | Partial_signature(str) => {IterIter.iter_signature(str); []}
+      | Partial_signature_item(str) => {IterIter.iter_signature_item(str); []}
+      | Partial_expression(expression) => {IterIter.iter_expression(expression); []}
+      | Partial_pattern(pattern) => {IterIter.iter_pattern(pattern); []}
+      | Partial_class_expr(class_expr) => {IterIter.iter_class_expr(class_expr); []}
       | Partial_module_type(module_type) =>
-        IterIter.iter_module_type(module_type)
+        {IterIter.iter_module_type(module_type); []}
       };
     switch cmt {
     | Cmt_format.Implementation(str) => structure(str.str_items)
     | Cmt_format.Interface(sign) => IterIter.iter_signature(sign)
     | Cmt_format.Partial_implementation(parts)
-    | Cmt_format.Partial_interface(parts) => Array.iter(iter_part, parts)
+    | Cmt_format.Partial_interface(parts) => {
+      let names = Array.map(iter_part, parts) |> Array.to_list |> List.concat;
+      names
+      |> List.iter(((name, stamp)) =>
+           Hashtbl.replace(data.exported, name, stamp)
+         );
+      data.topLevel = names;
+    }
     | _ => failwith("Not a valid cmt file")
     };
     data.locations = List.rev(data.locations);

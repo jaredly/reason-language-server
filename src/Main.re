@@ -310,10 +310,12 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
   ("textDocument/codeLens", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?>> uri => {
+    |?> uri => {
       open Infix;
-      let items = State.getCompilationResult(uri, state) |> AsYouType.getResult
-      |?>> (((cmt, moduleData)) => {
+      /* let items = */
+      let items = State.getCompilationResult(uri, state) |> AsYouType.getResult |?>> snd
+      |?# lazy(State.getLastDefinitions(uri, state))
+      |?>> (((moduleData)) => {
         Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
           switch item {
           | Definition.Module(_) => None
@@ -323,15 +325,21 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
           }
         })
-      }) |? [];
+      });
+      switch items {
+      | None => Error("Could not get compilation data")
+      | Some(items) => {
+
       open Rpc.J;
-      (state, l(items |> List.map(((text, loc)) => o([
+      Ok((state, l(items |> List.map(((text, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("command", o([
           ("title", s(text)),
           ("command", s(""))
         ]))
-      ]))))
+      ])))))
+      }
+      }
     };
   }),
   ("textDocument/hover", (state, params) => {
