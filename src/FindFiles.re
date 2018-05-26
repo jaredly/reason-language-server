@@ -170,9 +170,11 @@ let findDependencyFiles = (~debug, base, config) => {
   }) |> List.concat;
   let stdlib = base /+ "node_modules/bs-platform/lib/ocaml";
   let builtins = Files.readDirectory(stdlib)
-  |> List.filter(isCompiledFile)
+  |> List.filter(isSourceFile)
   |> filterDuplicates
-  |> List.map(path => (Plain(getName(path) |> String.capitalize), (stdlib /+ path, stdlib /+ Filename.chop_extension(path) ++ ".ml")));
+  |> List.map(path => (Plain(getName(path) |> String.capitalize), (stdlib /+ compiledName(~namespace=None, path), stdlib /+ path)))
+  |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
+  ;
   depFiles @ builtins
 };
 
