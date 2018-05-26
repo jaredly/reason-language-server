@@ -44,19 +44,18 @@ let parseTypeError = text => {
   }
 };
 
-let justBscCommand = (compilerPath, sourceFile, ~libraries, includes, flags) => {
+let justBscCommand = (compilerPath, sourceFile, includes, flags) => {
   Printf.sprintf(
-    {|%s -w +A %s %s -bin-annot -impl %s %s|},
+    {|%s %s -bin-annot -impl %s %s|},
     compilerPath,
     includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
-    libraries |> List.map(Printf.sprintf("%S")) |> String.concat(" "),
     sourceFile,
     flags
   )
 };
 
-let runBsc = (compilerPath, sourceFile, ~libraries, includes, flags) => {
-  let cmd = justBscCommand(compilerPath, sourceFile, ~libraries, includes, flags);
+let runBsc = (compilerPath, sourceFile, includes, flags) => {
+  let cmd = justBscCommand(compilerPath, sourceFile, includes, flags);
   Log.log("running bsc " ++ cmd);
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
@@ -66,12 +65,12 @@ let runBsc = (compilerPath, sourceFile, ~libraries, includes, flags) => {
   }
 };
 
-let process = (text, compilerPath, refmtPath, ~libraries, includes, flags) => {
+let process = (text, compilerPath, refmtPath, includes, flags) => {
   /* Log.log("Compiling text " ++ text); */
   open InfixResult;
   switch (runRefmt(text, refmtPath)) {
   | Error(lines) => ParseError(String.concat("\n", lines))
-  | Ok(fname) => switch (runBsc(compilerPath, fname, ~libraries, includes, flags)) {
+  | Ok(fname) => switch (runBsc(compilerPath, fname, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
       TypeError(String.concat("\n", lines), cmt, Definition.process(cmt.Cmt_format.cmt_annots))

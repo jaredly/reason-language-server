@@ -91,6 +91,7 @@ let getInitialState = (params) => {
         Log.log("Local " ++ cmt ++ " - " ++ source);
         Hashtbl.replace(pathsForModule, modName, (cmt, source))
       });
+      Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
       dependencyModules |> List.iter(((modName, (cmt, source))) => {
         Log.log("Dependency " ++ cmt ++ " - " ++ source);
@@ -104,7 +105,7 @@ let getInitialState = (params) => {
       {
         rootPath: uri,
         compilerPath: FindFiles.isNative(config) ?
-          uri /+ "node_modules/bs-platform/vendor/ocaml/ocamlopt.opt"
+          uri /+ "node_modules/bs-platform/vendor/ocaml/ocamlopt.opt -c"
           : uri /+ "node_modules/bs-platform/lib/bsc.exe",
         refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
           uri /+ "node_modules/bs-platform/lib/refmt3.exe",
@@ -121,13 +122,10 @@ let getInitialState = (params) => {
         compiledDocuments: Hashtbl.create(10),
         lastDefinitions: Hashtbl.create(10),
         documentTimers: Hashtbl.create(10),
-        includedLibraries: Infix.(config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> Infix.optMap(Json.string)
-        |> List.filter(name => name != "compiler-libs")
-        |> List.map(name =>
-          uri /+ "node_modules/bs-platform/vendor/ocaml/" ++ name ++ ".cmxa"
-        )),
         includeDirectories: [
-          uri /+ "node_modules/bs-platform/lib/ocaml",
+          FindFiles.isNative(config)
+          ? uri /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml"
+          : uri /+ "node_modules/bs-platform/lib/ocaml",
           ...dependencyDirectories
         ] @ localCompiledDirs
         /* docs, */

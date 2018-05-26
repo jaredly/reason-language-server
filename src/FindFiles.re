@@ -158,14 +158,16 @@ let needsCompilerLibs = config => {
 
 let findDependencyFiles = (~debug, base, config) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  Log.log("Deps " ++ String.concat(", ", deps));
   let depFiles = deps |> List.map(name => {
     let loc = base /+ "node_modules" /+ name;
+    Log.log("Dep loc " ++ loc);
     switch (Files.readFile(loc /+ "bsconfig.json")) {
     | Some(text) =>
       let inner = Json.parse(text);
       let namespace = getNamespace(config);
       let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = getCompiledBase(base, config);
+      let compiledBase = getCompiledBase(loc, config);
       let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
       let files = switch namespace {
@@ -174,7 +176,7 @@ let findDependencyFiles = (~debug, base, config) => {
       };
       (compiledDirectories, files)
     | None =>
-      print_endline("Skipping nonexistent dependency: " ++ name);
+      Log.log("Skipping nonexistent dependency: " ++ name);
       ([], [])
     }
   });
