@@ -393,7 +393,6 @@ module Get = {
       Collector.allOpens := [op, ...Collector.allOpens^];
     };
 
-
 let rec usesOpen = (ident, path) => switch (ident, path) {
 | (Longident.Lident(name), Path.Pdot(path, pname, _)) => true
 | (Longident.Lident(_), Path.Pident(_)) => false
@@ -409,7 +408,6 @@ let rec relative = (ident, path) => switch (ident, path) {
 | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => path
 | (Longident.Ldot(ident, _), Path.Pdot(path, _, _)) => relative(ident, path)
 | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => path
-/* | (Ldot(_), Pident({name: "*predef*" | "exn"})) => path */
 | _ => {
   failwith("Cannot relative "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
 }
@@ -646,7 +644,6 @@ let rec relative = (ident, path) => switch (ident, path) {
         items
         |> List.iter(
              (({Asttypes.txt, loc}, {Types.lbl_loc, lbl_name, lbl_res}, ex))
-             /* addLocation(loc, ex.exp_type, Location(lbl_loc)) */
              =>
                switch (dig(lbl_res).Types.desc) {
                | Tconstr(path, args, _) =>
@@ -662,19 +659,23 @@ let rec relative = (ident, path) => switch (ident, path) {
                | _ => ()
                }
              )
+        /* Skip array literals */
+      | Texp_construct({txt: Lident("::"), loc: {loc_start: {pos_cnum: cstart}, loc_end: {pos_cnum: cend}}}, {cstr_name, cstr_loc, cstr_res}, args) when cend - cstart != 2 => ()
       | Texp_construct({txt, loc}, {cstr_name, cstr_loc, cstr_res}, args) =>
-        /* Huh, we can jump right to cstr_loc!! Wow */
         switch (dig(cstr_res).Types.desc) {
+        /* | Tconstr(Pident({name: "::"}), _, _) when cstr_loc.loc_end.pos_cnum - cstr_loc.loc_start.pos_cnum != 2 => {
+          ()
+        } */
         | Tconstr(path, args, _) =>
           addLocation(
             loc,
             expr.exp_type,
             Constructor(path, cstr_name, cstr_loc)
           );
-        let (constructorName, typeTxt) = handleConstructor(path, txt);
-        if (usesOpen(typeTxt, path)) {
-          addUse((path, Constructor(constructorName)), typeTxt, loc)
-        };
+          let (constructorName, typeTxt) = handleConstructor(path, txt);
+          if (usesOpen(typeTxt, path)) {
+            addUse((path, Constructor(constructorName)), typeTxt, loc)
+          };
         | _ => ()
         }
       | Texp_let(recFlag, bindings, expr) => {

@@ -184,7 +184,11 @@ let findDependencyFiles = (~debug, base, config) => {
   let files = List.concat(files);
   let directories = List.concat(directories);
   let results = files @ loadStdlib(base /+ "node_modules/bs-platform/lib/ocaml");
-  (directories, needsCompilerLibs(config)
+  (
+    needsCompilerLibs(config)
+    ? [base /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml/compiler-libs", ...directories]
+    : directories,
+    needsCompilerLibs(config)
   ? loadStdlib(base /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml/compiler-libs") @ results
   : results)
 };
