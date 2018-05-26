@@ -47,6 +47,7 @@ let capabilities =
       ("documentSymbolProvider", t),
       /* ("codeActionProvider", t), */
       ("codeLensProvider", t),
+      ("documentHighlightProvider", t),
       ("documentRangeFormattingProvider", t),
       ("documentFormattingProvider", t),
       /*
@@ -306,6 +307,22 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       }) |? params;
       Ok((state, result))
     }
+  }),
+
+  ("textDocument/documentHighlight", (state, params) => {
+    open InfixResult;
+    Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
+      open Infix;
+      let highlights = (State.getDefinitionData(uri, state) |?> data => Definition.highlights(pos, data)) |? [];
+      open Rpc.J;
+      (state, l(highlights |> List.map(((t, loc)) => o([
+        ("range", Protocol.rangeOfLoc(loc)),
+        ("kind", i(switch t {
+        | `Read => 2
+        | `Write => 3
+        }))
+        ]))))
+    };
   }),
 
   ("textDocument/codeLens", (state, params) => {

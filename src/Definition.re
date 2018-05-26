@@ -20,6 +20,8 @@
  maybe have a separate map for that?
 
  */
+open Infix;
+
 type item =
   | Module(list((string, int)))
   /* | ModuleAlias(Path.t) */
@@ -31,7 +33,8 @@ type definition =
   /* | Location(Location.t) */
   | Constructor(Path.t, string, Location.t)
   | Attribute(Path.t, string, Location.t)
-  | IsDefinition;
+  | IsConstant
+  | IsDefinition(int);
 
 type tag = TagType | TagValue | TagModule | Constructor(string) | Attribute(string);
 
@@ -44,12 +47,18 @@ type anOpen = {
 type moduleData = {
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
   /* TODO track constructor names, and record attribute names */
-  /* references: Hashtbl.t(int, list(Location.t)), */
+  internalReferences: Hashtbl.t(int, list(Location.t)),
   exported: Hashtbl.t(string, int),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition)),
   mutable allOpens: list(anOpen),
 };
+
+let maybeFound = (fn, a) =>
+  switch (fn(a)) {
+  | exception Not_found => None
+  | x => Some(x)
+  };
 
 let rec docsItem = (item, data) => switch item {
 | Type(t) => Docs.Type(t)
@@ -334,11 +343,19 @@ let rec relative = (ident, path) => switch (ident, path) {
         Hashtbl.replace(Collector.data.stamps, stamp, (name, loc, item, docs, currentScope()));
       };
 
-    let addLocation = (loc, typ, definition) =>
+    let addLocation = (loc, typ, definition) => {
+      switch definition {
+      | Path(Path.Pident({stamp, name})) when stamp != 0 => {
+        let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
+        Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
+      }
+      | _ => ()
+      };
       Collector.data.locations = [
         (loc, typ, definition),
         ...Collector.data.locations
       ];
+    };
 
     let enter_signature_item = item => switch item.sig_desc {
       | Tsig_value({val_id: {stamp, name}, val_val: {val_type}, val_loc}) => addStamp(stamp, name, val_loc, Value(val_type), None)
@@ -454,7 +471,7 @@ let rec relative = (ident, path) => switch (ident, path) {
       | Tpat_alias(_, {stamp, name}, {txt, loc})
       | Tpat_var({stamp, name}, {txt, loc}) =>
         addStamp(stamp, name, loc, Value(pat.pat_type), None);
-        addLocation(loc, pat.pat_type, IsDefinition);
+        addLocation(loc, pat.pat_type, IsDefinition(stamp));
       | Tpat_construct({txt, loc}, {cstr_name, cstr_loc, cstr_res}, args) =>
         switch (dig(cstr_res).Types.desc) {
         | Tconstr(path, args, _) =>
@@ -488,7 +505,7 @@ let rec relative = (ident, path) => switch (ident, path) {
     let enter_expression = expr =>
       switch expr.exp_desc {
       | Texp_for({stamp, name}, {ppat_loc}, {exp_type}, _, _, contents) =>
-        addLocation(ppat_loc, exp_type, IsDefinition);
+        addLocation(ppat_loc, exp_type, IsDefinition(stamp));
         addScope(rangeOfLoc(contents.exp_loc));
         addStamp(stamp, name, ppat_loc, Value(exp_type), None);
         popScope();
@@ -508,7 +525,7 @@ let rec relative = (ident, path) => switch (ident, path) {
         | _ => ()
         }
       | Texp_constant(_) =>
-        addLocation(expr.exp_loc, expr.exp_type, IsDefinition)
+        addLocation(expr.exp_loc, expr.exp_type, IsConstant)
       | Texp_record(items, ext) =>
         items
         |> List.iter(
@@ -565,7 +582,7 @@ let rec relative = (ident, path) => switch (ident, path) {
   let process = cmt => {
     let data = {
       stamps: Hashtbl.create(100),
-      /* references: Hashtbl.create(100), */
+      internalReferences: Hashtbl.create(100),
       exported: Hashtbl.create(10),
       allOpens: [],
       topLevel: [],
@@ -629,7 +646,6 @@ let rec relative = (ident, path) => switch (ident, path) {
 
 let process = Get.process;
 
-open Infix;
 
 let checkPos =
     (
@@ -661,16 +677,27 @@ let locationAtPos = ((line, char), data) => {
   loop(data.locations);
 };
 
-let maybeFound = (fn, a) =>
-  switch (fn(a)) {
-  | exception Not_found => None
-  | x => Some(x)
+let highlights = (pos, data) => {
+  locationAtPos(pos, data) |?> ((loc, expr, defn)) => {
+    switch defn {
+    | IsDefinition(stamp)
+    | Path(Pident({stamp})) when stamp != 0 => {
+      maybeFound(Hashtbl.find(data.stamps), stamp) |?> ((_, defnLoc, _, _, _)) => {
+      let usages = maybeFound(Hashtbl.find(data.internalReferences), stamp) |? [];
+      Some([(`Write, defnLoc), ...List.map(l => (`Read, l), usages)])
+      };
+    }
+    | _ => None
+    }
   };
+};
 
 let findDefinition = (defn, data) =>
   /* Log.log("😍 resolving a definition"); */
   switch defn {
-  | IsDefinition =>
+  | IsConstant => None
+
+  | IsDefinition(stamp) =>
     Log.log("Is a definition");
     None;
   | Constructor(path, _, _)
