@@ -1,0 +1,18 @@
+{
+	"version": "0.2.0",
+	// List of configurations. Add new configurations or edit existing ones.
+	"configurations": [
+		{
+			"name": "Launch Dogfood",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/../client",
+				"${workspaceRoot}/.."
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		}
+	]
+}
