@@ -274,7 +274,9 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n*" ++ uri ++ "*") |?>> markup |? null)),
+            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n*" ++ (
+              Utils.startsWith(uri, state.rootPath ++ "/") ? Utils.sliceToEnd(uri, String.length(state.rootPath ++ "/")) : uri
+              ) ++ "*") |?>> markup |? null)),
             ("data", switch kind {
               | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src)), ("name", s(label))])
               | _ => null
