@@ -79,17 +79,21 @@ let getInitialState = (params) => {
   uri |?> uri => {
     Files.readFile(uri /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
       let compiledBase = FindFiles.getCompiledBase(uri, config);
-      let localModules = FindFiles.findProjectFiles(~debug=false, None, uri, config, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-      let dependencyModules = FindFiles.findDependencyFiles(~debug=false, uri, config);
+      let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, uri, config);
+      let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
+      let localModules = FindFiles.findProjectFiles(~debug=false, None, uri, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+      let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, uri, config);
       let cmtCache = Hashtbl.create(30);
       let documentText = Hashtbl.create(5);
 
       let pathsForModule = Hashtbl.create(30);
       localModules |> List.iter(((modName, (cmt, source))) => {
+        Log.log("Local " ++ cmt ++ " - " ++ source);
         Hashtbl.replace(pathsForModule, modName, (cmt, source))
       });
 
       dependencyModules |> List.iter(((modName, (cmt, source))) => {
+        Log.log("Dependency " ++ cmt ++ " - " ++ source);
         switch (modName) {
         | FindFiles.Plain(name) =>
         Hashtbl.replace(pathsForModule, name, (cmt, source))
@@ -99,6 +103,13 @@ let getInitialState = (params) => {
 
       {
         rootPath: uri,
+        compilerPath: FindFiles.isNative(config) ?
+          uri /+ "node_modules/bs-platform/vendor/ocaml/ocamlopt.opt"
+          : uri /+ "node_modules/bs-platform/lib/bsc.exe",
+        refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
+          uri /+ "node_modules/bs-platform/lib/refmt3.exe",
+          uri /+ "node_modules/bs-platform/lib/refmt.exe",
+        ]),
         documentText,
         localCompiledBase: compiledBase,
         localModules,
@@ -110,10 +121,15 @@ let getInitialState = (params) => {
         compiledDocuments: Hashtbl.create(10),
         lastDefinitions: Hashtbl.create(10),
         documentTimers: Hashtbl.create(10),
+        includedLibraries: Infix.(config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> Infix.optMap(Json.string)
+        |> List.filter(name => name != "compiler-libs")
+        |> List.map(name =>
+          uri /+ "node_modules/bs-platform/vendor/ocaml/" ++ name ++ ".cmxa"
+        )),
         includeDirectories: [
           uri /+ "node_modules/bs-platform/lib/ocaml",
-          uri /+ "lib/bs/src"
-        ]
+          ...dependencyDirectories
+        ] @ localCompiledDirs
         /* docs, */
       }
     };

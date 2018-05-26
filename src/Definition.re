@@ -398,13 +398,21 @@ let rec usesOpen = (ident, path) => switch (ident, path) {
 | (Longident.Lident(name), Path.Pdot(path, pname, _)) => true
 | (Longident.Lident(_), Path.Pident(_)) => false
 | (Longident.Ldot(ident, _), Path.Pdot(path, _, _)) => usesOpen(ident, path)
-| _ => failwith("Cannot relative "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
+| (Ldot(_), Pident({name: "*predef*" | "exn"})) => false
+| (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => false
+| _ => {
+  failwith("Cannot open "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
+}
 };
 
 let rec relative = (ident, path) => switch (ident, path) {
 | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => path
 | (Longident.Ldot(ident, _), Path.Pdot(path, _, _)) => relative(ident, path)
-| _ => failwith("Cannot relative "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
+| (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => path
+/* | (Ldot(_), Pident({name: "*predef*" | "exn"})) => path */
+| _ => {
+  failwith("Cannot relative "  ++ Path.name(path) ++ " " ++ String.concat(".", Longident.flatten(ident)))
+}
 };
 
     let addUse = ((path, tag), ident, loc) => {

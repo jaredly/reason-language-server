@@ -128,11 +128,9 @@ let getCompiledBase = (root, config) => oneShouldExist("Cannot find directory fo
 /**
  * returns a list of (absolute path to cmt(i), relative path from base to source file)
  */
-let findProjectFiles = (~debug, namespace, root, config, compiledBase) => {
-  getSourceDirectories(~includeDev=true, root, config)
-  |> ifDebug(debug, "Source directories from bsconfig", items => String.concat("\n", items))
+let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase) => {
+  sourceDirectories
   |> List.map(Infix.fileConcat(root))
-  |> ifDebug(debug, "With root", items => String.concat("\n", items))
   |> List.map(name => Files.collect(name, isSourceFile))
   |> List.concat
   |> ifDebug(debug, "Source files found", String.concat(" : "))
@@ -147,6 +145,17 @@ let findProjectFiles = (~debug, namespace, root, config, compiledBase) => {
 
 type modpath = Namespaced(string, string) | Plain(string);
 
+let loadStdlib = stdlib => Files.readDirectory(stdlib)
+  |> List.filter(isSourceFile)
+  |> filterDuplicates
+  |> List.map(path => (Plain(getName(path) |> String.capitalize), (stdlib /+ compiledName(~namespace=None, path), stdlib /+ path)))
+  |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
+  ;
+
+let needsCompilerLibs = config => {
+  config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> optMap(Json.string) |> List.mem("compiler-libs")
+};
+
 let findDependencyFiles = (~debug, base, config) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
   let depFiles = deps |> List.map(name => {
@@ -155,23 +164,25 @@ let findDependencyFiles = (~debug, base, config) => {
     | Some(text) =>
       let inner = Json.parse(text);
       let namespace = getNamespace(config);
-      let files = findProjectFiles(~debug, namespace, loc, inner, getCompiledBase(base, config));
-      switch namespace {
+      let directories = getSourceDirectories(~includeDev=false, loc, inner);
+      let compiledBase = getCompiledBase(base, config);
+      let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
+      let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
+      let files = switch namespace {
       | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, rel)), files)
       | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, rel)))
-      }
+      };
+      (compiledDirectories, files)
     | None =>
       print_endline("Skipping nonexistent dependency: " ++ name);
-      []
+      ([], [])
     }
-  }) |> List.concat;
-  let stdlib = base /+ "node_modules/bs-platform/lib/ocaml";
-  let builtins = Files.readDirectory(stdlib)
-  |> List.filter(isSourceFile)
-  |> filterDuplicates
-  |> List.map(path => (Plain(getName(path) |> String.capitalize), (stdlib /+ compiledName(~namespace=None, path), stdlib /+ path)))
-  |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
-  ;
-  depFiles @ builtins
+  });
+  let (directories, files) = List.split(depFiles);
+  let files = List.concat(files);
+  let directories = List.concat(directories);
+  let results = files @ loadStdlib(base /+ "node_modules/bs-platform/lib/ocaml");
+  (directories, needsCompilerLibs(config)
+  ? loadStdlib(base /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml/compiler-libs") @ results
+  : results)
 };
-

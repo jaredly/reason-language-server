@@ -41,12 +41,10 @@ open Hashtbl;
 /** Some more documentation about this */
 let awesome = x => x + 2;
 
-
 let someFunction = (memorableName, {contents}) => {
   let innerMemorable = 20;
-  memorableName + innerMemorable
+  memorableName + innerMemorable;
 };
-
 
 /* let awesome = 10000; */
 

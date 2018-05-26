@@ -13,8 +13,7 @@ let getResult = result => switch result {
 | Success(_, cmt, data) => Some((cmt, data))
 };
 
-let runRefmt = (text, rootPath) => {
-  let refmt = rootPath /+ "node_modules/bs-platform/lib/refmt.exe";
+let runRefmt = (text, refmt) => {
   let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print binary --parse re > /tmp/ls.ast", refmt));
   if (success) {
     Ok("/tmp/ls.ast")
@@ -23,8 +22,7 @@ let runRefmt = (text, rootPath) => {
   }
 };
 
-let format = (text, rootPath) => {
-  let refmt = rootPath /+ "node_modules/bs-platform/lib/refmt.exe";
+let format = (text, refmt) => {
   let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print re --parse re", refmt));
   if (success) {
     Ok(String.concat("\n", out))
@@ -46,18 +44,20 @@ let parseTypeError = text => {
   }
 };
 
-let justBscCommand = (rootPath, sourceFile, includes, flags) => {
+let justBscCommand = (compilerPath, sourceFile, ~libraries, includes, flags) => {
   Printf.sprintf(
-    {|%s -w +A %s -impl %s %s|},
-    rootPath /+ "node_modules/bs-platform/lib/bsc.exe",
+    {|%s -w +A %s %s -bin-annot -impl %s %s|},
+    compilerPath,
     includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
+    libraries |> List.map(Printf.sprintf("%S")) |> String.concat(" "),
     sourceFile,
     flags
   )
 };
 
-let runBsc = (rootPath, sourceFile, includes, flags) => {
-  let cmd = justBscCommand(rootPath, sourceFile, includes, flags);
+let runBsc = (compilerPath, sourceFile, ~libraries, includes, flags) => {
+  let cmd = justBscCommand(compilerPath, sourceFile, ~libraries, includes, flags);
+  Log.log("running bsc " ++ cmd);
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
     Ok(out @ error)
@@ -66,12 +66,12 @@ let runBsc = (rootPath, sourceFile, includes, flags) => {
   }
 };
 
-let process = (text, rootPath, includes, flags) => {
+let process = (text, compilerPath, refmtPath, ~libraries, includes, flags) => {
   /* Log.log("Compiling text " ++ text); */
   open InfixResult;
-  switch (runRefmt(text, rootPath)) {
+  switch (runRefmt(text, refmtPath)) {
   | Error(lines) => ParseError(String.concat("\n", lines))
-  | Ok(fname) => switch (runBsc(rootPath, fname, includes, flags)) {
+  | Ok(fname) => switch (runBsc(compilerPath, fname, ~libraries, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
       TypeError(String.concat("\n", lines), cmt, Definition.process(cmt.Cmt_format.cmt_annots))

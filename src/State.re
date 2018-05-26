@@ -1,9 +1,12 @@
 type state = {
   rootPath: string,
+  compilerPath: string,
+  refmtPath: string,
   localCompiledBase: string,
   localModules: list((string, (string, string))),
   localCompiledMap: list((string, string)),
   includeDirectories: list(string),
+  includedLibraries: list(string),
   dependencyModules: list((FindFiles.modpath, (string, string))),
   cmtCache:
     Hashtbl.t(
@@ -81,7 +84,7 @@ let getCompilationResult = (uri, state) => {
     Hashtbl.find(state.compiledDocuments, uri)
   } else {
     let (text, _, _) = Hashtbl.find(state.documentText, uri);
-    let result = AsYouType.process(text, state.rootPath, state.includeDirectories, state.compilationFlags);
+    let result = AsYouType.process(text, state.compilerPath, state.refmtPath, ~libraries=state.includedLibraries, state.includeDirectories, state.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()
