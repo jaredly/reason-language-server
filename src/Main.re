@@ -255,9 +255,8 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
 
   ("textDocument/completion", (state, params) => {
     open InfixResult;
-    (RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
-    |?> uri => (maybeHash(state.documentText, uri) |> orError("No document text found")) |?> ((text, version, isClean)) => RJson.get("position", params) |?> Protocol.rgetPosition |?> ((line, character)) => {
-      (PartialParser.positionToOffset(text, (line, character)) |> orError("invalid offset")) |?>> offset => {
+    (Protocol.rPositionParams(params) |?> ((uri, pos)) => (maybeHash(state.documentText, uri) |> orError("No document text found"))
+    |?> ((text, version, isClean)) => (PartialParser.positionToOffset(text, pos) |> orError("invalid offset")) |?>> offset => {
         open Rpc.J;
         let completions = switch (PartialParser.findCompletable(text, offset)) {
         | Nothing => []
@@ -270,7 +269,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           let opens = PartialParser.findOpens(text, offset);
           /* */
           let localData = State.getLastDefinitions(uri, state);
-          Completions.get(currentModuleName, opens, parts, state, localData, (line, character)) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
+          Completions.get(currentModuleName, opens, parts, state, localData, pos) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
@@ -286,7 +285,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         };
         (state, l(completions))
       }
-    });
+    );
   }),
   ("completionItem/resolve", (state, params) => {
     switch (params |> Json.get("documentation") |?> Json.string) {
@@ -351,9 +350,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
   }),
   ("textDocument/hover", (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
-    |?>> ((line, character)) => {
+    Protocol.rPositionParams(params) |?>> ((uri, (line, character))) => {
       open Rpc.J;
       switch (Hover.getHover(uri, line, character, state)) {
       | None => (state, Json.Null)

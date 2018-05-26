@@ -42,3 +42,9 @@ let rangeOfInts = (l0, c0, l1, c1) => o([
     ("start", pos(~line=l0, ~character=c0)),
     ("end", pos(~line=l1, ~character=c1)),
 ]);
+
+let rPositionParams = params => Result.InfixResult.(
+    RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
+    |?> uri => RJson.get("position", params) |?> rgetPosition
+    |?>> pos => (uri, pos)
+);

@@ -101,7 +101,6 @@ let rec inDocs = (~resolveAlias, uri, parts, contents) => {
     | Docs.Module(contents) when name == first => Some(inDocs(~resolveAlias, uri, rest, contents))
     | Docs.ModuleAlias(path) when name == first => {
       let res = resolveAlias(path, rest);
-      Log.log("Resolved an alias, where are we? " ++ string_of_int(List.length(res)));
       Some(res)
       /* TODO TODO grab the stuff out of here */
       /* Some([forItem(uri, "hi", Location.none, None, Module([]))]) */
@@ -138,7 +137,6 @@ let resolveOpens = (opens, state) => {
 
 /** Some docs */
 let get = (topModule, opens, parts, state, localData, pos) => {
-  Log.log("Get me some");
   let opens = resolveOpens(opens, state);
   let opens = switch (State.docsForModule("Pervasives", state)) {
   | None => {
@@ -156,7 +154,6 @@ let get = (topModule, opens, parts, state, localData, pos) => {
       Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem("(current file)", name, loc, docs, Definition.docsItem(item, moduleData)))
     }
     };
-    /* localResults |> List.iter(((name, _, _)) => Log.log(name)); */
 
     let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
       ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None
@@ -191,14 +188,11 @@ let get = (topModule, opens, parts, state, localData, pos) => {
       results
     }
   | [first, ...more] =>
-  Log.log("Completing for mutliple");
     let rec resolveAlias = (path, children) => {
       let rec loop = (path, items) => {
         switch (path) {
         | Path.Pident({stamp: 0, name}) => {
-          Log.log("DOCS FOR MOREUL " ++ name);
           State.docsForModule(name, state) |> fold(_, [], (((_, contents), uri)) => {
-            Log.log("Got some dosssss " ++ string_of_int(List.length(contents)) ++ " >> " ++ String.concat(" ", items));
             inDocs(~resolveAlias, uri, items, contents)
           })
         }
