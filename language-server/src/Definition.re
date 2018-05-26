@@ -299,7 +299,7 @@ let stampAtPos = (pos, data) => {
 };
 
 let highlights = (pos, data) => {
-  stampAtPos(pos, data) |?> highlightsForStamp(_, data)
+  stampAtPos(pos, data) |?> x => highlightsForStamp(x, data)
 };
 
 let rec stampAtPath = (path, data) => {

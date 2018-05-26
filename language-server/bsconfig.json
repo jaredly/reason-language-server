@@ -12,7 +12,7 @@
     "omd",
     "odoc_parser"
   ],
-  "bs-dependencies": ["rex-json", "minimist.re", "pack.re"],
+  "bs-dependencies": ["rex-json"],
   "ocaml-dependencies": ["compiler-libs", "unix", "bigarray", "str"],
   "public": ["Main"],
   "entries": [{

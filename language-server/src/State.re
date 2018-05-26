@@ -150,7 +150,7 @@ let resolveDefinition = (uri, defn, state) =>
   };
 
 let getResolvedDefinition = (uri, defn, data, state) => {
-  Definition.findDefinition(defn, data) |?> resolveDefinition(uri, _, state)
+  Definition.findDefinition(defn, data) |?> x => resolveDefinition(uri, x, state)
 };
 
 let definitionForPos = (uri, pos, data, state) =>

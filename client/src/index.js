@@ -9,7 +9,7 @@ const path = require('path')
 const fs = require('fs')
 function activate(context) {
     // The server is implemented in reason
-    let binaryLocation = context.asAbsolutePath(path.join('..', 'lib', 'bs', 'native', 'bin.native'));
+    let binaryLocation = context.asAbsolutePath(path.join('node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native'));
     // '/Users/jared/clone/tools/language-server/lib/bs/native/bin.native';
     // Todo have it be a child npm module, and access it from there
     let serverOptions = {

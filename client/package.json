@@ -4,7 +4,7 @@
 	"author": "Jared Forsyth",
 	"license": "ISC",
 	"version": "0.0.1",
-	"publisher": "Jared Forsyth",
+	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/jaredly/language-server"
@@ -20,10 +20,12 @@
 	],
 	"main": "./src/index",
 	"contributes": {
-		"commands": [{
-			"command": "reason-language-server.restart",
-			"title": "Restart Reason Language Server"
-		}],
+		"commands": [
+			{
+				"command": "reason-language-server.restart",
+				"title": "Restart Reason Language Server"
+			}
+		],
 		"configuration": {
 			"type": "object",
 			"title": "Reason Language Server",
@@ -73,6 +75,7 @@
 	},
 	"dependencies": {
 		"vscode": "^1.1.17",
-		"vscode-languageclient": "^4.1.3"
+		"vscode-languageclient": "^4.1.3",
+		"@jaredly/reason-language-server": "file:../language-server"
 	}
 }

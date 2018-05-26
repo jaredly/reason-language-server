@@ -192,7 +192,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
       let rec loop = (path, items) => {
         switch (path) {
         | Path.Pident({stamp: 0, name}) => {
-          State.docsForModule(name, state) |> fold(_, [], (((_, contents), uri)) => {
+          State.docsForModule(name, state) |> x => fold(x, [], (((_, contents), uri)) => {
             inDocs(~resolveAlias, uri, items, contents)
           })
         }
