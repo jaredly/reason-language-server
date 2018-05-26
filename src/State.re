@@ -36,7 +36,7 @@ let docConverter = src => isMl(src) ? odocToMd : (x => x);
 let newDocs = (cmtCache, changed, cmt, src) => {
   let infos = Cmt_format.read_cmt(cmt);
   switch (Docs.forCmt(docConverter(src), infos)) {
-  | None => None
+  | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some(docs) =>
     Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
     Some(docs);
@@ -50,7 +50,7 @@ let docsForCmt = (cmt, src, state) =>
     let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
     /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
-    | None => None
+    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
     | Some(changed) =>
       if (changed > mtime) {
         newDocs(state.cmtCache, changed, cmt, src);
@@ -60,7 +60,7 @@ let docsForCmt = (cmt, src, state) =>
     };
   } else {
     switch (Files.getMtime(cmt)) {
-    | None => None
+    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
     | Some(changed) => newDocs(state.cmtCache, changed, cmt, src)
     };
   };
@@ -105,8 +105,10 @@ let docsForModule = (modname, state) =>
   Infix.(
     if (Hashtbl.mem(state.pathsForModule, modname)) {
       let (cmt, src) = Hashtbl.find(state.pathsForModule, modname);
+      Log.log("FINDING " ++ cmt ++ " src " ++ src);
       docsForCmt(cmt, src, state) |?>> d => (d, src)
     } else {
+      Log.log("No path for module " ++ modname);
       None;
     }
   );

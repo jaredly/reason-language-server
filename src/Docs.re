@@ -137,6 +137,9 @@ let rec forStructure = (processDoc, structure) => {
 | Tstr_type(decls) => foldOpt(({typ_name: {txt}, typ_loc, typ_attributes, typ_type}) =>
     Some((txt, typ_loc, findDocAttribute(typ_attributes) |?>> processDoc, Type(typ_type)))
   , decls, [])
+| Tstr_module({mb_attributes, mb_loc, mb_name: {txt}, mb_expr: {mod_desc: Tmod_ident(path, _)}}) => {
+  [(txt, mb_loc, findDocAttribute(mb_attributes) |?>> processDoc, ModuleAlias(path))]
+}
 | Tstr_module({mb_attributes, mb_loc, mb_name: {txt}, mb_expr}) => {
   let (docc, contents) = forModule(processDoc, mb_expr);
   [(txt, mb_loc, either(docc, findDocAttribute(mb_attributes) |?>> processDoc), Module(contents))]

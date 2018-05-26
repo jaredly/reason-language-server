@@ -93,13 +93,20 @@ let forItem = (uri, name, loc, doc, item) => {
   }
 };
 
-let rec inDocs = (uri, parts, contents) => {
+let rec inDocs = (~resolveAlias, uri, parts, contents) => {
   switch parts {
   | [] => []
   | [single] => contents |> Utils.filterMap(((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None)
   | [first, ...rest] => contents |> Utils.find(((name, loc, doc, item)) => switch item {
-  | Docs.Module(contents) when name == first => Some(inDocs(uri, rest, contents))
-  | _ => None
+    | Docs.Module(contents) when name == first => Some(inDocs(~resolveAlias, uri, rest, contents))
+    | Docs.ModuleAlias(path) when name == first => {
+      let res = resolveAlias(path, rest);
+      Log.log("Resolved an alias, where are we? " ++ string_of_int(List.length(res)));
+      Some(res)
+      /* TODO TODO grab the stuff out of here */
+      /* Some([forItem(uri, "hi", Location.none, None, Module([]))]) */
+    }
+    | _ => None
   }) |? []
   }
 };
@@ -185,12 +192,29 @@ let get = (topModule, opens, parts, state, localData, pos) => {
     }
   | [first, ...more] =>
   Log.log("Completing for mutliple");
+    let rec resolveAlias = (path, children) => {
+      let rec loop = (path, items) => {
+        switch (path) {
+        | Path.Pident({stamp: 0, name}) => {
+          Log.log("DOCS FOR MOREUL " ++ name);
+          State.docsForModule(name, state) |> fold(_, [], (((_, contents), uri)) => {
+            Log.log("Got some dosssss " ++ string_of_int(List.length(contents)) ++ " >> " ++ String.concat(" ", items));
+            inDocs(~resolveAlias, uri, items, contents)
+          })
+        }
+        | Path.Pident(_) => []
+        | Pdot(inner, name, _) => loop(inner, [name, ...items])
+        | Papply(_) => []
+        }
+      };
+      loop(path, children)
+    };
     switch (Utils.find(((name, contents, uri)) => findSubModule(first, contents) |?>> x => (x, uri), opens)) {
-    | Some(((_, _, _, contents), uri)) => inDocs(uri, more, contents)
+    | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
     | None =>
     switch (State.docsForModule(first, state)) {
     | None => [] /* TODO handle opens */
-    | Some(((_, contents), uri)) => inDocs(uri, more, contents)
+    | Some(((_, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
     }
     }
   };
