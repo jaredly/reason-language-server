@@ -27,6 +27,7 @@ open PrepareUtils;
 
 type item =
   | Module(list(full))
+  | ModuleAlias(Path.t)
   | Function(list(Types.type_expr), Types.type_expr)
   | Value(Types.type_expr)
   | Type(Types.type_declaration)
@@ -53,6 +54,7 @@ let rec forSignatureType = (processDoc, signature) => {
   List.fold_left((items, item) => switch item {
   | Sig_value({stamp, name}, {val_type, val_kind, val_attributes, val_loc}) => [(name, val_loc, findDocAttribute(val_attributes) |?>> processDoc, Value(val_type)), ...items]
   | Sig_type({stamp, name}, decl, _) => [(name, decl.type_loc, findDocAttribute(decl.type_attributes) |?>> processDoc, Type(decl)), ...items]
+  | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, ModuleAlias(path))]
   | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, Module(forModuleType(processDoc, md_type)))]
   | _ => items
   }, [], signature);
@@ -85,6 +87,9 @@ let rec forSignature = (processDoc, signature) => {
   | Tsig_type(decls) => foldOpt(({typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
       Some((txt, typ_loc, findDocAttribute(typ_attributes) |?>> processDoc, Type(typ_type)))
     , decls, [])
+  | Tsig_module({md_attributes, md_loc, md_name: {txt, loc}, md_type: {mty_desc: Tmty_alias(path, _) | Tmty_ident(path, _)}}) => {
+      [(txt, md_loc, findDocAttribute(md_attributes) |?>> processDoc, ModuleAlias(path))]
+    }
   | Tsig_module({md_attributes, md_loc, md_name: {txt, loc}, md_type: module_type}) => {
       let (docc, contents) = forModuleSig(processDoc, module_type);
       [(txt, md_loc, either(docc, findDocAttribute(md_attributes) |?>> processDoc), Module(contents))]
@@ -96,7 +101,7 @@ and forModuleSig = (processDoc, {Typedtree.mty_desc, mty_attributes, mty_loc}) =
   open Typedtree;
   switch mty_desc {
   | Tmty_signature(signature) => forSignature(processDoc, signature.sig_items)
-  | Tmty_alias(path, _) | Tmty_ident(path, _) => (None, [])
+  | Tmty_alias(path, _) | Tmty_ident(path, _) => (None, [("_alias_", Location.none, None, Module([]))])
   | Tmty_functor(_, _, _, result) => forModuleSig(processDoc, result) |> mapFst(either(findDocAttribute(mty_attributes) |?>> processDoc))
   | Tmty_with(inner, _) => forModuleSig(processDoc, inner) |> mapFst(either(findDocAttribute(mty_attributes) |?>> processDoc))
   | Tmty_typeof(modd)

@@ -4,6 +4,18 @@ let otherLongName = "string";
 
 string_of_bool;
 
+module Something = {
+  open Other;
+
+  let m = {name: "Me", age: 0};
+  let animal = Dog(10);
+  let x = something + 10;
+};
+
+open Something;
+
+let y = x + 10;
+
 let aThing = 10 + Other.later;
 
 /** Some docs about this **awesome** thing. */
@@ -36,6 +48,10 @@ let someFunction = (memorableName, {contents}) => {
 };
 
 
+/* let awesome = 10000; */
+
+/* let awesome = 111; */
+
 let z = 10;
 
 let z = find;
@@ -60,6 +76,10 @@ let z = {contents: 30};
 let party = {one: "one", two: 2.};
 
 let {one, two} = party;
+
+let thing = () => {
+  34 + 43;
+};
 
 type more = awesome;
 

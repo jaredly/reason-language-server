@@ -27,6 +27,7 @@ type item = {
 
 let itemKind = doc => switch doc {
 | Docs.Module(_) => Module
+| ModuleAlias(_) => Module
 | Function(_) => Function
 | Value(_) => Value
 | Type(_) => Struct
@@ -43,6 +44,7 @@ let rec showItem = (name, item) =>
       |> String.concat("\n")
     )
     ++ "\n}"
+  | ModuleAlias(_) => "module alias " ++ name
   | Function(_) => "function"
   | Value(t) =>
     PrintType.default.value(PrintType.default, name, name, t)
