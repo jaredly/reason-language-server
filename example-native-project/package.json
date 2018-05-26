@@ -1,0 +1,27 @@
+{
+  "name": "@jaredly/reason-language-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "bsb -make-world -backend native -w",
+    "build": "bsb -make-world -backend native",
+    "clean": "bsb -clean-world",
+    "watch": "bsb -make-world -backend native -w",
+    "postinstall": "bsb -make-world -backend native"
+  },
+  "keywords": [
+    "BuckleScript",
+    "documentation",
+    "generator"
+  ],
+  "repository": {
+    "url": "jaredly/language-server",
+    "type": "git"
+  },
+  "description": "A pure-reason implementation of a language server",
+  "author": "Jared Forsyth",
+  "license": "ISC",
+  "dependencies": {
+    "bs-platform": "bsansouci/bsb-native#fast",
+    "rex-json": "1.3.1"
+  }
+}
