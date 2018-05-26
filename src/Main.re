@@ -110,6 +110,7 @@ let getInitialState = (params) => {
         compilationFlags: MerlinFile.getFlags(uri) |> Result.withDefault([""]) |> String.concat(" "),
         pathsForModule,
         compiledDocuments: Hashtbl.create(10),
+        lastDefinitions: Hashtbl.create(10),
         documentTimers: Hashtbl.create(10),
         includeDirectories: [
           uri /+ "node_modules/bs-platform/lib/ocaml",
@@ -267,7 +268,9 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
           let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
           let opens = PartialParser.findOpens(text, offset);
-          Completions.get(currentModuleName, opens, parts, state) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
+          /* */
+          let localData = State.getLastDefinitions(uri, state);
+          Completions.get(currentModuleName, opens, parts, state, localData, (line, character)) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
@@ -311,7 +314,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       open Infix;
       let items = State.getCompilationResult(uri, state) |> AsYouType.getResult
       |?>> (((cmt, moduleData)) => {
-        Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs)) => {
+        Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
           switch item {
           | Definition.Module(_) => None
           | Type(t) => None

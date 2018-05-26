@@ -34,12 +34,34 @@ type definition =
   | IsDefinition;
 
 type moduleData = {
-  stamps: Hashtbl.t(int, (string, Location.t, item, option(string))),
+  stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
   /* TODO track constructor names, and record attribute names */
   /* references: Hashtbl.t(int, list(Location.t)), */
   exported: Hashtbl.t(string, int),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition))
+};
+
+let rec docsItem = (item, data) => switch item {
+| Type(t) => Docs.Type(t)
+| Value(t) => Docs.Value(t)
+| Module(items) => Docs.Module(items |> List.map(((name, stamp)) => {
+  let (name, loc, item, docs, _) = Hashtbl.find(data.stamps, stamp);
+  (name, loc, docs, docsItem(item, data))
+}))
+};
+
+let completions = ({stamps}, prefix, (l, c)) => {
+  Hashtbl.fold((_, (name, loc, item, docs, ((l0, c0), (l1, c1))), results) => {
+    if ((l0 < l || (l0 == l && c0 <= c)) &&
+    ((l1 == -1 && c1 == -1) ||
+    (l1 > l || (l1 == l && c1 > c))
+    ) && Utils.startsWith(name, prefix)) {
+      [(name, loc, item, docs), ...results]
+    } else {
+      results
+    }
+  }, stamps, [])
 };
 
 let listExported = data => {
@@ -65,7 +87,7 @@ let resolvePath = (data, path) => {
       let rec loop = (stamp, path) => {
         switch (Hashtbl.find(data.stamps, stamp)) {
           | exception Not_found => None
-          | (name, loc, item, docs) => {
+          | (name, loc, item, docs, scope) => {
             switch (path, item) {
             | ([], _) => Some((name, loc, item, docs))
             | ([first, ...rest], Module(contents)) => switch (List.assoc(first, contents)) {
@@ -113,9 +135,23 @@ module Get = {
   module F = (Collector: {let data: moduleData;}) => {
     open Typedtree;
     include TypedtreeIter.DefaultIteratorArgument;
+
+    let rangeOfLoc = ({Location.loc_start, loc_end}) => (
+      (loc_start.pos_lnum, loc_start.pos_cnum - loc_start.pos_bol),
+      (loc_end.pos_lnum, loc_end.pos_cnum - loc_end.pos_bol)
+    );
+
+    let scopes = ref([((0, 0), (-1, -1))]);
+    let addScope = loc => scopes := [loc, ...scopes^];
+    let popScope = () => scopes := switch (scopes^) {
+    | [] => []
+    | [_, ...rest] => rest
+    };
+    let currentScope = () => List.hd(scopes^);
+
     let addStamp = (stamp, name, loc, item, docs) =>
       if (! Hashtbl.mem(Collector.data.stamps, stamp)) {
-        Hashtbl.replace(Collector.data.stamps, stamp, (name, loc, item, docs));
+        Hashtbl.replace(Collector.data.stamps, stamp, (name, loc, item, docs, currentScope()));
       };
 
     let addLocation = (loc, typ, definition) =>
@@ -124,17 +160,19 @@ module Get = {
         ...Collector.data.locations
       ];
 
-    /* let enter_signature_item = item => switch item.sig_desc {
-         | Tsig_value({val_id: {stamp, name}, val_val: {val_type}, val_loc}) => addStamp(stamp, name, val_loc, Value(val_type), None)
-         | Tsig_type(decls) => List.iter(({typ_id: {stamp, name}}) => (stamp, addToPath(currentPath, name) |> toFullPath(PType)), decls)
-         | Tsig_include({incl_mod, incl_type}) => stampsFromTypesSignature(currentPath, incl_type)
-         | Tsig_module({md_id: {stamp, name}, md_type: {mty_desc: Tmty_signature(signature)}}) => {
-           let (stamps) = stampsFromTypedtreeInterface(addToPath(currentPath, name), signature.sig_items);
-           [(stamp, addToPath(currentPath, name) |> toFullPath(PModule)), ...stamps]
-         }
-         | Tsig_module({md_id: {stamp, name}}) => [(stamp, addToPath(currentPath, name) |> toFullPath(PModule))]
-         | _ => []
-       } */
+    let enter_signature_item = item => switch item.sig_desc {
+      | Tsig_value({val_id: {stamp, name}, val_val: {val_type}, val_loc}) => addStamp(stamp, name, val_loc, Value(val_type), None)
+      | Tsig_type(decls) => List.iter(({typ_id: {stamp, name}, typ_loc, typ_type}) => addStamp(stamp, name, typ_loc, Type(typ_type), None), decls)
+      /* TODO add support for these */
+      /* | Tsig_include({incl_mod, incl_type}) => stampsFromTypesSignature(currentPath, incl_type) */
+      /* | Tsig_module({md_id: {stamp, name}, md_type: {mty_desc: Tmty_signature(signature)}}) => {
+        addStamp
+        let (stamps) = stampsFromTypedtreeInterface(addToPath(currentPath, name), signature.sig_items);
+        [(stamp, addToPath(currentPath, name) |> toFullPath(PModule)), ...stamps]
+      } */
+      | Tsig_module({md_id: {stamp, name}, md_loc}) => addStamp(stamp, name, md_loc, Module([]), None)
+      | _ => ()
+    };
 
     let enter_structure_item = item =>
       Typedtree.(
@@ -402,7 +440,7 @@ let findDefinition = (defn, data) =>
         | Path.Pdot(inner, name, _) =>
           switch (loop(inner)) {
           | `Global(top, subs) => `Global(top, subs @ [name])
-          | `Local(Some((_, _, Module(contents), _))) =>
+          | `Local(Some((_, _, Module(contents), _, _))) =>
             `Local(maybeFound(List.assoc(name), contents)
             |?> maybeFound(Hashtbl.find(data.stamps)))
           | _ => `Local(None)
@@ -411,7 +449,7 @@ let findDefinition = (defn, data) =>
         };
       switch (loop(inner)) {
       | `Global(top, children) => Some(`Global(top, children @ [name]))
-      | `Local(Some((_, _, Module(contents), _))) =>
+      | `Local(Some((_, _, Module(contents), _, _))) =>
         maybeFound(List.assoc(name), contents)
         |?> maybeFound(Hashtbl.find(data.stamps))
         |?>> x => `Local(x)

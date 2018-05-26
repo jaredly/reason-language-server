@@ -29,6 +29,11 @@ open Hashtbl;
 /** Some more documentation about this */
 let awesome = x => x + 2;
 
+
+let someFunction = (memorableName, {contents}) => {
+};
+
+
 let z = 10;
 
 let z = find;

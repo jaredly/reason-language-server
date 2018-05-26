@@ -17,6 +17,7 @@ type state = {
   pathsForModule: Hashtbl.t(string, (string, string)),
   documentText: Hashtbl.t(string, (string, int, bool)),
   compiledDocuments: Hashtbl.t(string, AsYouType.result),
+  lastDefinitions: Hashtbl.t(string, Definition.moduleData),
   documentTimers: Hashtbl.t(string, float),
   compilationFlags: string,
   /* workspace folders... */
@@ -82,8 +83,17 @@ let getCompilationResult = (uri, state) => {
     let (text, _, _) = Hashtbl.find(state.documentText, uri);
     let result = AsYouType.process(text, state.rootPath, state.includeDirectories, state.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
+    switch (AsYouType.getResult(result)) {
+    | None => ()
+    | Some((_, data)) => Hashtbl.replace(state.lastDefinitions, uri, data)
+    };
     result
   }
+};
+
+let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefinitions, uri)) {
+| exception Not_found => None
+| data => Some(data)
 };
 
 let getDefinitionData = (uri, state) => switch (getCompilationResult(uri, state)) {
@@ -107,7 +117,7 @@ open Infix;
 
 let resolveDefinition = (uri, defn, state) =>
   switch defn {
-  | `Local((_, loc, _, docs)) => Some((loc, docs, uri))
+  | `Local((_, loc, _, docs, _)) => Some((loc, docs, uri))
   | `Global(top, children) =>
     switch (
       maybeFound(List.assoc(top), state.localModules)

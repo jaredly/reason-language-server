@@ -108,6 +108,7 @@ let rec findSubModule = (name, contents) => switch contents {
   | [_, ...rest] => findSubModule(name, rest)
 };
 
+/* TODO local opens */
 let resolveOpens = (opens, state) => {
   List.fold_left((previous, name) => {
     let rec loop = prev => switch prev {
@@ -121,19 +122,14 @@ let resolveOpens = (opens, state) => {
       | None => loop(rest)
       | Some((name, _loc, _, innerContents)) => previous @ [(name, innerContents, uri)]
       }
-      /* let rec find = contents => switch contents {
-      | [] => loop(rest)
-      | [(n, _, Docs.Module(innerContents)), ..._] when n == name =>
-      | [_, ...rest] => find(rest)
-      }; */
-      /* find(contents) */
     };
     loop(previous)
   }, [], opens);
 };
 
 /** Some docs */
-let get = (topModule, opens, parts, state) => {
+let get = (topModule, opens, parts, state, localData, pos) => {
+  Log.log("Get me some");
   let opens = resolveOpens(opens, state);
   let opens = switch (State.docsForModule("Pervasives", state)) {
   | None => {
@@ -145,36 +141,48 @@ let get = (topModule, opens, parts, state) => {
   switch parts {
   | [] => []
   | [single] =>
+    let localResults = switch (localData) {
+    | None => []
+    | Some(moduleData) => {
+      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem("(current file)", name, loc, docs, Definition.docsItem(item, moduleData)))
+    }
+    };
+    /* localResults |> List.iter(((name, _, _)) => Log.log(name)); */
+
     let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
       ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None
     )) |> List.concat;
+
+    let results = localResults @ results;
+
     if (isCapitalized(single)) {
-    let results =
-      List.fold_left(
-        (results, (k, (cmt, src))) =>
-          Utils.startsWith(k, single) && k != topModule ?
-            [forModule(state, k, cmt, src), ...results] : results,
-        results,
-        state.localModules
-      );
-    let results =
-      List.fold_left(
-        (results, (k, (cmt, src))) =>
-          switch k {
-          | FindFiles.Plain(k) =>
+      let results =
+        List.fold_left(
+          (results, (k, (cmt, src))) =>
             Utils.startsWith(k, single) && k != topModule ?
-              [forModule(state, k, cmt, src), ...results] : results
-          | _ => results
-          },
-        results,
-        state.dependencyModules
-      );
-    results;
+              [forModule(state, k, cmt, src), ...results] : results,
+          results,
+          state.localModules
+        );
+      let results =
+        List.fold_left(
+          (results, (k, (cmt, src))) =>
+            switch k {
+            | FindFiles.Plain(k) =>
+              Utils.startsWith(k, single) && k != topModule ?
+                [forModule(state, k, cmt, src), ...results] : results
+            | _ => results
+            },
+          results,
+          state.dependencyModules
+        );
+      results;
 
     } else {
       results
     }
   | [first, ...more] =>
+  Log.log("Completing for mutliple");
     switch (Utils.find(((name, contents, uri)) => findSubModule(first, contents) |?>> x => (x, uri), opens)) {
     | Some(((_, _, _, contents), uri)) => inDocs(uri, more, contents)
     | None =>
