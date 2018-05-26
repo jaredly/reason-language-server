@@ -236,7 +236,7 @@ let offsetOfLine = (text, line) => {
   loop(0, 0)
 };
 
-let positionToOffset = (text, line, character) => {
+let positionToOffset = (text, (line, character)) => {
   offsetOfLine(text, line) |?>> bol => bol + character
 };
 

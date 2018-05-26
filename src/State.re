@@ -70,6 +70,11 @@ let updateContents = (uri, text, version, state) => {
   state
 };
 
+let getContents = (uri, state) => {
+  let (text, _, _) = Hashtbl.find(state.documentText, uri);
+  text
+};
+
 let getCompilationResult = (uri, state) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
     Hashtbl.find(state.compiledDocuments, uri)
@@ -109,9 +114,6 @@ let resolveDefinition = (uri, defn, state) =>
       |?> (
         ((cmt, src)) => {
           let uri = "file://" ++ src;
-          /* Infix.fileConcat(state.rootPath, src); */
-          /* Log.log("Got it! " ++ uri);
-          Hashtbl.iter((k, _) => Log.log(k), state.compiledDocuments); */
           maybeFound(Hashtbl.find(state.compiledDocuments), uri)
           |?> AsYouType.getResult
           |?>> (defn => (defn, uri));

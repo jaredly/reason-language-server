@@ -19,6 +19,10 @@ let rgetPosition = pos => (Result.InfixResult.(RJson.get("line", pos) |?> RJson.
 |?> line => RJson.get("character", pos) |?> RJson.number
 |?>> character => (int_of_float(line), int_of_float(character))));
 
+let rgetRange = pos => (Result.InfixResult.(RJson.get("start", pos) |?> rgetPosition
+|?> start => RJson.get("end", pos) |?> rgetPosition
+|?>> end_ => (start, end_)));
+
 let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => o([
     ("line", i(pos_lnum - 1)),
     ("character", i(pos_cnum - pos_bol))

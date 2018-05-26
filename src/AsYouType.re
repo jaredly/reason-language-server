@@ -23,6 +23,16 @@ let runRefmt = (text, rootPath) => {
   }
 };
 
+let format = (text, rootPath) => {
+  let refmt = rootPath /+ "node_modules/bs-platform/lib/refmt.exe";
+  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print re --parse re", refmt));
+  if (success) {
+    Ok(String.concat("\n", out))
+  } else {
+    Error(String.concat("\n", out @ error))
+  }
+};
+
 let parseTypeError = text => {
   let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:");
   let rx = Str.regexp({|File "[^"]*", line \([0-9]+\), characters \([0-9]+\)-\([0-9]+\):|});

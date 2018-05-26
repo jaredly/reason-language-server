@@ -47,6 +47,7 @@ let capabilities =
       ("documentSymbolProvider", t),
       /* ("codeActionProvider", t), */
       ("codeLensProvider", t),
+      ("documentRangeFormattingProvider", t),
       /*
        * Found how to do the showReferences thing
        * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts
@@ -229,6 +230,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
 
 let markup = text => Json.Object([("kind", Json.String("markdown")), ("value", Json.String(text))]);
 
+type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
+
 let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
     open InfixResult;
@@ -246,14 +249,13 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       }
       }
     }
-    /* Ok((state, Json.String("Ok folks"))) */
   }),
 
   ("textDocument/completion", (state, params) => {
     open InfixResult;
     (RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
     |?> uri => (maybeHash(state.documentText, uri) |> orError("No document text found")) |?> ((text, version, isClean)) => RJson.get("position", params) |?> Protocol.rgetPosition |?> ((line, character)) => {
-      (PartialParser.positionToOffset(text, line, character) |> orError("invalid offset")) |?>> offset => {
+      (PartialParser.positionToOffset(text, (line, character)) |> orError("invalid offset")) |?>> offset => {
         open Rpc.J;
         let completions = switch (PartialParser.findCompletable(text, offset)) {
         | Nothing => []
@@ -300,6 +302,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
       Ok((state, result))
     }
   }),
+
   ("textDocument/codeLens", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
@@ -311,6 +314,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           switch item {
           | Definition.Module(_) => None
           | Type(t) => None
+          /* TODO maybe types are useful? but maybe it's redundant. */
           /* | Type(t) => PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString |> s => Some((s, loc)) */
           | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
           }
@@ -325,16 +329,6 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         ]))
       ]))))
     };
-    /* open Protocol;
-    Ok((state, Rpc.J.(l([
-      o([
-        ("range", range(~start=pos(~line=0, ~character=0), ~end_=pos(~line=0, ~character=0))),
-        ("command", o([
-          ("title", s("Party all day")),
-          ("command", s("")),
-        ]))
-      ]),
-    ])))) */
   }),
   ("textDocument/hover", (state, params) => {
     open InfixResult;
@@ -353,6 +347,29 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
         ]))
       ]))
       }
+    }
+  }),
+
+  ("textDocument/rangeFormatting", (state, params) => {
+    open InfixResult;
+    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
+    |?> uri => RJson.get("range", params) |?> Protocol.rgetRange
+    |?> ((start, end_)) => {
+      let text = State.getContents(uri, state);
+      open Infix;
+      (PartialParser.positionToOffset(text, start)
+      |?> startPos => PartialParser.positionToOffset(text, end_)
+      |?>> endPos => {
+        let substring = String.sub(text, startPos, endPos - startPos);
+        open InfixResult;
+        AsYouType.format(substring, state.rootPath) |?>> text => {
+          open Rpc.J;
+          (state, l([o([
+            ("range", Infix.(|!)(Json.get("range", params), "what")),
+            ("newText", s(text))
+          ])]))
+        }
+      }) |? Error("Invalid position")
     }
   })
 ];

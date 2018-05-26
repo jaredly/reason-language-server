@@ -129,14 +129,11 @@ let getCompiledBase = (root, config) => oneShouldExist("Cannot find directory fo
  * returns a list of (absolute path to cmt(i), relative path from base to source file)
  */
 let findProjectFiles = (~debug, namespace, root, config, compiledBase) => {
-  /* let config = Json.parse(Files.readFile(root /+ "bsconfig.json") |! "No bsconfig.json found"); */
   getSourceDirectories(~includeDev=true, root, config)
   |> ifDebug(debug, "Source directories from bsconfig", items => String.concat("\n", items))
   |> List.map(Infix.fileConcat(root))
-  /* |> List.sort(compare) */
   |> ifDebug(debug, "With root", items => String.concat("\n", items))
   |> List.map(name => Files.collect(name, isSourceFile))
-  /* |> List.sort(compare)) */
   |> List.concat
   |> ifDebug(debug, "Source files found", String.concat(" : "))
   |> filterDuplicates
