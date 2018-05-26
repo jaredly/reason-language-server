@@ -90,7 +90,7 @@ let docsForModule = (modname, state) =>
   Infix.(
     if (Hashtbl.mem(state.pathsForModule, modname)) {
       let (cmt, src) = Hashtbl.find(state.pathsForModule, modname);
-      docsForCmt(cmt, src, state);
+      docsForCmt(cmt, src, state) |?>> d => (d, src)
     } else {
       None;
     }

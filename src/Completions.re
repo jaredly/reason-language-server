@@ -18,6 +18,7 @@ let kindToInt = k =>
 
 type item = {
   kind,
+  uri: string,
   label: string,
   detail: option(string),
   documentation: option(string),
@@ -76,12 +77,13 @@ let forModule = (state, k, cmt, src) => {
         None
       );
     };
-  {kind: RootModule(cmt, src), label: k, detail, documentation, deprecated: false};
+  {kind: RootModule(cmt, src), uri: src, label: k, detail, documentation, deprecated: false};
 };
 
-let forItem = (name, loc, doc, item) => {
+let forItem = (uri, name, loc, doc, item) => {
   {
     detail: Some(showItem(name, item)),
+    uri,
     documentation: Some(doc |? "(no documentation)"),
     kind: itemKind(item),
     deprecated: false, /* TODO */
@@ -89,12 +91,12 @@ let forItem = (name, loc, doc, item) => {
   }
 };
 
-let rec inDocs = (parts, contents) => {
+let rec inDocs = (uri, parts, contents) => {
   switch parts {
   | [] => []
-  | [single] => contents |> Utils.filterMap(((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, loc, doc, item)) : None)
+  | [single] => contents |> Utils.filterMap(((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None)
   | [first, ...rest] => contents |> Utils.find(((name, loc, doc, item)) => switch item {
-  | Docs.Module(contents) when name == first => Some(inDocs(rest, contents))
+  | Docs.Module(contents) when name == first => Some(inDocs(uri, rest, contents))
   | _ => None
   }) |? []
   }
@@ -112,12 +114,12 @@ let resolveOpens = (opens, state) => {
     | [] =>
       switch (State.docsForModule(name, state)) {
       | None => previous /* TODO warn? */
-      | Some((docs, contents)) => previous @ [(name, contents)]
+      | Some(((docs, contents), uri)) => previous @ [(name, contents, uri)]
       }
-    | [(prevname, contents), ...rest] =>
+    | [(prevname, contents, uri), ...rest] =>
       switch (findSubModule(name, contents)) {
       | None => loop(rest)
-      | Some((name, _loc, _, innerContents)) => previous @ [(name, innerContents)]
+      | Some((name, _loc, _, innerContents)) => previous @ [(name, innerContents, uri)]
       }
       /* let rec find = contents => switch contents {
       | [] => loop(rest)
@@ -138,13 +140,13 @@ let get = (topModule, opens, parts, state) => {
     output_string(stderr, "No pervasives found...");
     opens
   }
-  | Some((_, contents)) => [("Pervasives", contents), ...opens]
+  | Some(((_, contents), uri)) => [("Pervasives", contents, uri), ...opens]
   };
   switch parts {
   | [] => []
   | [single] =>
-    let results = opens |> List.map(((_, contents)) => contents |> Utils.filterMap(
-      ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(name, loc, doc, item)) : None
+    let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
+      ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None
     )) |> List.concat;
     if (isCapitalized(single)) {
     let results =
@@ -173,12 +175,12 @@ let get = (topModule, opens, parts, state) => {
       results
     }
   | [first, ...more] =>
-    switch (Utils.find(((name, contents)) => findSubModule(first, contents), opens)) {
-    | Some((_, _, _, contents)) => inDocs(more, contents)
+    switch (Utils.find(((name, contents, uri)) => findSubModule(first, contents) |?>> x => (x, uri), opens)) {
+    | Some(((_, _, _, contents), uri)) => inDocs(uri, more, contents)
     | None =>
     switch (State.docsForModule(first, state)) {
     | None => [] /* TODO handle opens */
-    | Some((_, contents)) => inDocs(more, contents)
+    | Some(((_, contents), uri)) => inDocs(uri, more, contents)
     }
     }
   };

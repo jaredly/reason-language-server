@@ -264,11 +264,11 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
           let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
           let opens = PartialParser.findOpens(text, offset);
-          Completions.get(currentModuleName, opens, parts, state) |> List.map(({Completions.kind, label, detail, documentation}) => o([
+          Completions.get(currentModuleName, opens, parts, state) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.(documentation |?>> markup |? null)),
+            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n*" ++ uri ++ "*") |?>> markup |? null)),
             ("data", switch kind {
               | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src)), ("name", s(label))])
               | _ => null
@@ -301,7 +301,31 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
     }
   }),
   ("textDocument/codeLens", (state, params) => {
-    open Protocol;
+    open InfixResult;
+    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
+    |?>> uri => {
+      open Infix;
+      let items = State.getCompilationResult(uri, state) |> AsYouType.getResult
+      |?>> (((cmt, moduleData)) => {
+        Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs)) => {
+          switch item {
+          | Definition.Module(_) => None
+          | Type(t) => None
+          /* | Type(t) => PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString |> s => Some((s, loc)) */
+          | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
+          }
+        })
+      }) |? [];
+      open Rpc.J;
+      (state, l(items |> List.map(((text, loc)) => o([
+        ("range", Protocol.rangeOfLoc(loc)),
+        ("command", o([
+          ("title", s(text)),
+          ("command", s(""))
+        ]))
+      ]))))
+    };
+    /* open Protocol;
     Ok((state, Rpc.J.(l([
       o([
         ("range", range(~start=pos(~line=0, ~character=0), ~end_=pos(~line=0, ~character=0))),
@@ -310,7 +334,7 @@ let messageHandlers: list((string, (state, Json.t) => result((state, Json.t), st
           ("command", s("")),
         ]))
       ]),
-    ]))))
+    ])))) */
   }),
   ("textDocument/hover", (state, params) => {
     open InfixResult;

@@ -38,7 +38,21 @@ type moduleData = {
   /* TODO track constructor names, and record attribute names */
   /* references: Hashtbl.t(int, list(Location.t)), */
   exported: Hashtbl.t(string, int),
+  mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition))
+};
+
+let listExported = data => {
+  Hashtbl.fold((name, stamp, results) => {
+    switch (Hashtbl.find(data.stamps, stamp)) {
+    | exception Not_found => results
+    | item => [item, ...results]
+    };
+  }, data.exported, [])
+};
+
+let listTopLevel = data => {
+  data.topLevel |> List.map(((name, stamp)) => Hashtbl.find(data.stamps, stamp));
 };
 
 let resolvePath = (data, path) => {
@@ -277,6 +291,7 @@ module Get = {
       stamps: Hashtbl.create(100),
       /* references: Hashtbl.create(100), */
       exported: Hashtbl.create(10),
+      topLevel: [],
       locations: []
     };
     module IterIter =
@@ -295,6 +310,7 @@ module Get = {
       |> List.iter(((name, stamp)) =>
            Hashtbl.replace(data.exported, name, stamp)
          );
+      data.topLevel = names;
       List.iter(IterIter.iter_structure_item, items);
     };
     let iter_part = part =>

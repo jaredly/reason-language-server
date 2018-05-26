@@ -24,6 +24,11 @@ open Hashtbl;
 let awesome = x => x + 2;
 let z = 10;
 
+
+let z = find;
+let z = later;
+let m = Other.later;
+
 for (i in 0 to 10) {
   print_endline("hellO");
 };
