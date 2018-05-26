@@ -23,10 +23,18 @@ let rgetRange = pos => (Result.InfixResult.(RJson.get("start", pos) |?> rgetPosi
 |?> start => RJson.get("end", pos) |?> rgetPosition
 |?>> end_ => (start, end_)));
 
+let rPositionParams = params => Result.InfixResult.(
+    RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
+    |?> uri => RJson.get("position", params) |?> rgetPosition
+    |?>> pos => (uri, pos)
+);
+
 let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => o([
     ("line", i(pos_lnum - 1)),
     ("character", i(pos_cnum - pos_bol))
 ]);
+
+let markup = text => Json.Object([("kind", Json.String("markdown")), ("value", Json.String(text))]);
 
 let rangeOfLoc = ({Location.loc_start, loc_end}) => o([
     ("start", posOfLexing(loc_start)),
@@ -42,9 +50,3 @@ let rangeOfInts = (l0, c0, l1, c1) => o([
     ("start", pos(~line=l0, ~character=c0)),
     ("end", pos(~line=l1, ~character=c1)),
 ]);
-
-let rPositionParams = params => Result.InfixResult.(
-    RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string
-    |?> uri => RJson.get("position", params) |?> rgetPosition
-    |?>> pos => (uri, pos)
-);
