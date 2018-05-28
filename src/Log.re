@@ -1,4 +1,4 @@
-let out = ref(open_out("/Users/jared/ls.log"));
+let out = ref(open_out("/tmp/lsp.log"));
 
 let setLocation = location => {
   close_out(out^);

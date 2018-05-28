@@ -286,20 +286,6 @@ let highlightsForStamp = (stamp, data) => {
   };
 };
 
-let stampAtPos = (pos, data) => {
-  locationAtPos(pos, data) |?> ((loc, expr, defn)) => {
-    switch defn {
-    | IsDefinition(stamp)
-    | Path(Pident({stamp})) when stamp != 0 => Some(stamp)
-    | _ => None
-    }
-  };
-};
-
-let highlights = (pos, data) => {
-  stampAtPos(pos, data) |?> x => highlightsForStamp(x, data)
-};
-
 let rec stampAtPath = (path, data) => {
   switch path {
   | Path.Pident({stamp: 0, name}) => Some(`Global(name, []))
@@ -316,6 +302,26 @@ let rec stampAtPath = (path, data) => {
         }
   | _ => None
   }
+};
+
+let stampAtPos = (pos, data) => {
+  locationAtPos(pos, data) |?> ((loc, expr, defn)) => {
+    switch defn {
+    | IsDefinition(stamp) => Some(stamp)
+    | Path(path) => {
+      switch (stampAtPath(path, data)) {
+        | Some(`Global(name, children)) => None /* TODO resolve cross-file */
+        | Some(`Local(stamp)) => Some(stamp)
+        | None => None
+      }
+    }
+    | _ => None
+    }
+  };
+};
+
+let highlights = (pos, data) => {
+  stampAtPos(pos, data) |?> x => highlightsForStamp(x, data)
 };
 
 
