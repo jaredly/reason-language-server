@@ -63,18 +63,10 @@ let capabilities =
     ])
 );
 
-let parseUri = uri => {
-  if (Utils.startsWith(uri, "file://")) {
-    Some(Utils.sliceToEnd(uri, String.length("file://")))
-  } else {
-    None
-  }
-};
-
 open State;
 
 let getInitialState = (params) => {
-  let uri = Json.get("rootUri", params) |?> Json.string |?> parseUri |> resultOfOption("No root uri");
+  let uri = Json.get("rootUri", params) |?> Json.string |?> Utils.parseUri |> resultOfOption("No root uri");
   open InfixResult;
   uri |?> uri => {
     Files.mkdirp(uri /+ "node_modules");
