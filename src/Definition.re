@@ -276,7 +276,7 @@ let locationAtPos = ((line, char), data) => {
 };
 
 let isStampExported = (needle, data) => {
-  Hashtbl.fold((_, stamp, found) => found || stamp == needle, data.exported, false)
+  Hashtbl.fold((name, stamp, found) => found != None ? found : (stamp == needle ? Some(name) : None), data.exported, None)
 };
 
 let highlightsForStamp = (stamp, data) => {

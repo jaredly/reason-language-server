@@ -104,23 +104,49 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     Protocol.rPositionParams(params) |?> ((uri, pos)) => RJson.get("newName", params) |?> RJson.string
     |?> newName => {
       open Infix;
+      let thisModName = FindFiles.getName(uri);
       (State.getDefinitionData(uri, state)
       |?> data => Definition.stampAtPos(pos, data)
-      |?> stamp => Definition.isStampExported(stamp, data)
-      ? Some(Error("Cannot yet rename items that might be exported"))
-      : {
-        Definition.highlightsForStamp(stamp, data) |?>> positions => {
+      |?> stamp => {
+        let externalChanges = (Definition.isStampExported(stamp, data) |?>> exportedName => {
+          optMap(((modname, (cmt, src))) => {
+            if (modname == thisModName) {
+              None
+            } else {
+              Log.log("in rename " ++ cmt);
+              State.getDefinitionData("file://" ++ src, state) |?> data => {
+                Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
+                  let realUses = Utils.filterMap(((path, loc)) => {
+                    if (path == [exportedName]) {
+                      Some((`Read, loc))
+                    } else {
+                      None
+                    }
+                  }, uses);
+                  if (realUses == []) {
+                    None
+                  } else {
+                    Some(("file://" ++ src, realUses))
+                  }
+                }
+              }
+            }
+          }, state.State.localModules)
+          }) |? [];
+        (Definition.highlightsForStamp(stamp, data) |?>> positions => {
+
+          let allChanges = [(uri, positions), ...externalChanges];
 
         open Rpc.J;
         Ok((state, o([
-          ("changes", o([
+          ("changes", o(allChanges |> List.map(((uri, positions)) =>
             (uri, l(positions |> List.map(((_, loc)) => o([
               ("range", Protocol.rangeOfLoc(loc)),
               ("newText", s(newName)),
             ]))))
-          ]))
+          )))
         ])))
-        }
+        })
       }) |? Ok((state, Json.Null))
     };
   }),
