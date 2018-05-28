@@ -13,10 +13,11 @@ let getResult = result => switch result {
 | Success(_, cmt, data) => Some((cmt, data))
 };
 
-let runRefmt = (text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print binary --parse re > /tmp/ls.ast", refmt));
+let runRefmt = (~cacheLocation, text, refmt) => {
+  let target = cacheLocation /+ "lsp.ast";
+  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print binary --parse re > %S", refmt, target));
   if (success) {
-    Ok("/tmp/ls.ast")
+    Ok(target)
   } else {
     Error(out @ error)
   }
@@ -65,18 +66,17 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
   }
 };
 
-let process = (text, compilerPath, refmtPath, includes, flags) => {
-  /* Log.log("Compiling text " ++ text); */
+let process = (text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   open InfixResult;
-  switch (runRefmt(text, refmtPath)) {
+  switch (runRefmt(~cacheLocation, text, refmtPath)) {
   | Error(lines) => ParseError(String.concat("\n", lines))
   | Ok(fname) => switch (runBsc(compilerPath, fname, includes, flags)) {
     | Error(lines) => {
-      let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
       TypeError(String.concat("\n", lines), cmt, Definition.process(cmt.Cmt_format.cmt_annots))
     }
     | Ok(lines) => {
-      let cmt = Cmt_format.read_cmt("/tmp/ls.cmt");
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
       Success(lines, cmt, Definition.process(cmt.Cmt_format.cmt_annots))
     }
   }

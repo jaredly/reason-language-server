@@ -78,12 +78,13 @@ let getContents = (uri, state) => {
   text
 };
 
+open Infix;
 let getCompilationResult = (uri, state) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
     Hashtbl.find(state.compiledDocuments, uri)
   } else {
     let (text, _, _) = Hashtbl.find(state.documentText, uri);
-    let result = AsYouType.process(text, state.compilerPath, state.refmtPath, state.includeDirectories, state.compilationFlags);
+    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules/.lsp", state.compilerPath, state.refmtPath, state.includeDirectories, state.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()
