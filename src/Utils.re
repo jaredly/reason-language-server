@@ -17,6 +17,16 @@ let parseUri = uri => {
   }
 };
 
+let endOfLocation = (loc, length) => Location.({
+  {
+    ...loc,
+    loc_start: {
+      ...loc.loc_end,
+      pos_cnum: loc.loc_end.pos_cnum - length
+    }
+  }
+});
+
 let chopPrefix = (s, prefix) => sliceToEnd(s, String.length(prefix));
 
 let filterMap = (fn, items) =>

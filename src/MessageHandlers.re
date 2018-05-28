@@ -118,7 +118,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
                 Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
                   let realUses = Utils.filterMap(((path, loc)) => {
                     if (path == [exportedName]) {
-                      Some((`Read, loc))
+                      Some((`Read, Utils.endOfLocation(loc, String.length(exportedName))))
                     } else {
                       None
                     }
