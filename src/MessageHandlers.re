@@ -135,7 +135,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       |?# lazy(State.getLastDefinitions(uri, state))
       |?>> (((moduleData)) => {
 
-        let lenses = false ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
+        let showToplevelTypes = false; /* TODO config option */
+        let lenses = showToplevelTypes ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
           switch item {
           | Definition.Module(_) => None
           | Type(t) => None
@@ -145,7 +146,15 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           }
         }) : [];
 
-        let lenses = true ? lenses @ Definition.opens(moduleData) : [];
+        let showOpens = true;
+        let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
+
+        let showDependencies = true;
+        let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
+          Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+          Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+          loc_ghost: false,
+        }), ...lenses] : lenses;
 
         lenses
       });

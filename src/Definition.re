@@ -49,7 +49,7 @@ type moduleData = {
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
   /* TODO track constructor names, and record attribute names */
   internalReferences: Hashtbl.t(int, list(Location.t)),
-  externalReferences: Hashtbl.t(string, list(list(string))),
+  externalReferences: Hashtbl.t(string, list((list(string), Location.t))),
   exported: Hashtbl.t(string, int),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition)),
@@ -170,6 +170,10 @@ let opens = ({allOpens}) => {
       None
     }
   });
+};
+
+let dependencyList = ({externalReferences}) => {
+  Hashtbl.fold((k, _, items) => [k, ...items], externalReferences, [])
 };
 
 let listExported = data => {
@@ -446,7 +450,10 @@ let rec relative = (ident, path) => switch (ident, path) {
       | Path(path) => {
         switch (stampAtPath(path, Collector.data)) {
         | None => ()
-        | Some(`Global(_)) => () /* TODO */
+        | Some(`Global(modname, children)) => {
+          let current = maybeFound(Hashtbl.find(Collector.data.externalReferences), modname) |? [];
+          Hashtbl.replace(Collector.data.externalReferences, modname, [(children, loc), ...current]);
+        }
         | Some(`Local(stamp)) => {
           let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
           Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
