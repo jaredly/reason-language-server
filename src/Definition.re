@@ -42,12 +42,14 @@ type anOpen = {
   path: Path.t,
   loc: Location.t,
   mutable used: list((Longident.t, tag)),
+  mutable useCount: int,
 };
 
 type moduleData = {
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
   /* TODO track constructor names, and record attribute names */
   internalReferences: Hashtbl.t(int, list(Location.t)),
+  externalReferences: Hashtbl.t(string, list(list(string))),
   exported: Hashtbl.t(string, int),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition)),
@@ -104,14 +106,6 @@ let toString = (fn, (a, tag)) => switch tag {
 };
 let showLident = l => String.concat(".", Longident.flatten(l));
 
-let rec pathName = path => {
-  switch path {
-  | Path.Pident({Ident.stamp, name}) => stamp == 0 ? name ++ "!" : name ++ "/" ++ string_of_int(stamp)
-  | Path.Pdot(path, name, _) => pathName(path) ++ "." ++ name
-  | Path.Papply(one, two) => failwith("cannot path name an apply") /* TBH I just don't understand apply */
-  }
-};
-
 let rec addLidentToPath = (path, lident) => {
   open Path;
   open Longident;
@@ -163,7 +157,7 @@ let rec addLidentToPath = (path, lident) => {
 };
 
 let opens = ({allOpens}) => {
-  allOpens |> Utils.filterMap(({path, loc, used}) => {
+  allOpens |> Utils.filterMap(({path, loc, used, useCount}) => {
     if (!loc.Location.loc_ghost) {
       let i = loc.Location.loc_end.pos_cnum;
       let isPervasives = switch path {
@@ -171,7 +165,7 @@ let opens = ({allOpens}) => {
         | _ => false
       };
       let used = List.sort_uniq(compare, used);
-      Some(("exposing (" ++ Opens.showUses(path, used) ++ ")", loc))
+      Some(("exposing (" ++ Opens.showUses(path, used) ++ ") " ++ string_of_int(useCount) ++ " uses", loc))
     } else {
       None
     }
@@ -388,7 +382,7 @@ module Get = {
     let popOpenScope = () => openScopes := List.tl(openScopes^);
     let addOpen = (path, loc) => {
       let top = List.hd(openScopes^);
-      let op = {path, loc, used: []};
+      let op = {path, loc, used: [], useCount: 0};
       top := [op, ...top^];
       Collector.allOpens := [op, ...Collector.allOpens^];
     };
@@ -422,6 +416,7 @@ let rec relative = (ident, path) => switch (ident, path) {
         | [] => loop(rest)
         | [{path} as one, ...rest] when Path.same(path, openNeedle) =>  {
           one.used = [(ident, tag), ...one.used];
+          one.useCount = one.useCount + 1;
         }
         | [{path}, ...rest] => {
           inner(rest)
@@ -700,6 +695,7 @@ let rec relative = (ident, path) => switch (ident, path) {
     let data = {
       stamps: Hashtbl.create(100),
       internalReferences: Hashtbl.create(100),
+      externalReferences: Hashtbl.create(100),
       exported: Hashtbl.create(10),
       allOpens: [],
       topLevel: [],
