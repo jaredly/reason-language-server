@@ -77,6 +77,9 @@ let getInitialState = (params) => {
   let uri = Json.get("rootUri", params) |?> Json.string |?> parseUri |> resultOfOption("No root uri");
   open InfixResult;
   uri |?> uri => {
+    Files.mkdirp(uri /+ "node_modules");
+    Files.mkdirp(uri /+ "node_modules/.lsp");
+    Log.setLocation(uri /+ "node_modules/.lsp/debug.log");
     Files.readFile(uri /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
       let compiledBase = FindFiles.getCompiledBase(uri, config);
       let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, uri, config);
@@ -256,5 +259,5 @@ let main = () => {
     ~getInitialState
   );
   log("Finished");
-  close_out(out);
+  close_out(out^);
 };
