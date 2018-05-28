@@ -41,7 +41,7 @@ type tag = TagType | TagValue | TagModule | Constructor(string) | Attribute(stri
 type anOpen = {
   path: Path.t,
   loc: Location.t,
-  mutable used: list((Longident.t, tag)),
+  mutable used: list((Longident.t, tag, Location.t)),
   mutable useCount: int,
 };
 
@@ -148,7 +148,7 @@ let rec addLidentToPath = (path, lident) => {
       mapHash(constrs, (path, attrs) => {
         let fullPath = addLidentToPath(openPath, path);
           showLident(path)
-         ++ " (" ++ String.concat("|", attrs |> List.map(attr => {
+         ++ " (" ++ String.concat(" | ", attrs |> List.map(attr => {
             attr
         })) ++ ")"
       }),
@@ -164,7 +164,7 @@ let opens = ({allOpens}) => {
         | Path.Pident({name: "Pervasives"}) =>true
         | _ => false
       };
-      let used = List.sort_uniq(compare, used);
+      let used = List.sort_uniq(compare, List.map(((ident, tag, _)) => (ident, tag), used));
       Some(("exposing (" ++ Opens.showUses(path, used) ++ ") " ++ string_of_int(useCount) ++ " uses", loc))
     } else {
       None
@@ -415,7 +415,7 @@ let rec relative = (ident, path) => switch (ident, path) {
         let rec inner = opens => switch opens {
         | [] => loop(rest)
         | [{path} as one, ...rest] when Path.same(path, openNeedle) =>  {
-          one.used = [(ident, tag), ...one.used];
+          one.used = [(ident, tag, loc), ...one.used];
           one.useCount = one.useCount + 1;
         }
         | [{path}, ...rest] => {
@@ -749,9 +749,9 @@ let rec relative = (ident, path) => switch (ident, path) {
     | _ => failwith("Not a valid cmt file")
     };
     data.locations = List.rev(data.locations);
-    allOpens^ |> List.iter(({used, path, loc}) => {
+    /* allOpens^ |> List.iter(({used, path, loc}) => {
       Log.log("An Open! " ++ string_of_int(List.length(used)));
-    });
+    }); */
     data.allOpens = allOpens^;
     data;
   };

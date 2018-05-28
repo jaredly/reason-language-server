@@ -9,6 +9,8 @@ module Something = {
 
   let m = {name: "Me", age: 0};
   let animal = Dog(10);
+  let other = Dog(2);
+  let me = Cat("Hie");
   let x = something + 10;
 };
 
@@ -40,6 +42,23 @@ open Hashtbl;
 
 /** Some more documentation about this */
 let awesome = x => x + 2;
+
+let a = [
+  "hello",
+  "my fine" ++ "folks",
+  "in boonville"
+];
+
+let div = (~x, ~y, ~children, ()) => 10;
+
+let m = <div
+  x=10
+  y=20
+ />;
+
+ let something = animal => switch animal {
+   | blank => ()
+ };
 
 let someFunction = (memorableName, {contents}) => {
   let innerMemorable = 20;
