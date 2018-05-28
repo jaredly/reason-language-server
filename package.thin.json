@@ -1,0 +1,9 @@
+{
+  "name": "@jaredly/reason-language-server",
+  "version": "1.0.0",
+  "description": "A pure-reason implementation of a language server",
+  "author": "Jared Forsyth",
+  "license": "ISC",
+  "dependencies": {
+  }
+}

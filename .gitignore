@@ -9,3 +9,5 @@ log_types.txt
 _build
 static/codemirror-5.36.0
 _old
+tmp
+*.vsix
