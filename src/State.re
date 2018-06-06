@@ -134,12 +134,10 @@ let resolveDefinition = (uri, defn, state) =>
   | `Local(_, loc, item, docs, _) => Some((loc, docs, uri))
   | `Global(top, children, suffix) =>
     {
-      Log.log("Resolving global " ++ top);
       switch (
         maybeFound(List.assoc(top), state.localModules)
         |?> (
           ((cmt, src)) => {
-            Log.log("Found it " ++ src);
             let uri = "file://" ++ src;
             maybeFound(Hashtbl.find(state.compiledDocuments), uri)
             |?> AsYouType.getResult
@@ -184,7 +182,7 @@ let referencesForPos = (uri, pos, data, state) => {
   /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
   Definition.stampAtPos(pos, data)
   |?> stamp => {
-    let externals = (Definition.isStampExported(stamp, data) |?>> exportedName => {
+    let externals = (Definition.isStampExported(stamp, data) |?>> ((exportedName, suffixName)) => {
       let thisModName = FindFiles.getName(uri);
       optMap(((modname, (cmt, src))) => {
         if (modname == thisModName) {
@@ -192,9 +190,9 @@ let referencesForPos = (uri, pos, data, state) => {
         } else {
           getDefinitionData("file://" ++ src, state) |?> data => {
             Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
-              let realUses = Utils.filterMap(((path, loc, suffix/* TODO */)) => {
-                if (path == [exportedName]) {
-                  Some((`Read, Utils.endOfLocation(loc, String.length(exportedName))))
+              let realUses = Utils.filterMap(((path, loc, suffix)) => {
+                if (path == [exportedName] && suffix == suffixName) {
+                  Some((`Read, Utils.endOfLocation(loc, String.length(suffixName |? exportedName))))
                 } else {
                   None
                 }

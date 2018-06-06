@@ -56,10 +56,10 @@ type anOpen = {
 type moduleData = {
   mutable toplevelDocs: option(string),
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
-  /* TODO track constructor names, and record attribute names */
   internalReferences: Hashtbl.t(int, list(Location.t)),
   externalReferences: Hashtbl.t(string, list((list(string), Location.t, option(string)))),
   exported: Hashtbl.t(string, int),
+  mutable exportedSuffixes: list((int, string, string)),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition)),
   mutable allOpens: list(anOpen)
@@ -391,11 +391,14 @@ let openReferencesAtPos = ({allOpens} as data, pos) => {
 };
 
 let isStampExported = (needle, data) =>
-  Hashtbl.fold(
-    (name, stamp, found) => found != None ? found : stamp == needle ? Some(name) : None,
+  switch (Hashtbl.fold(
+    (name, stamp, found) => found != None ? found : stamp == needle ? Some((name, None)) : None,
     data.exported,
     None
-  );
+  )) {
+    | Some(m) => Some(m)
+    | None => data.exportedSuffixes |> Utils.find(((suffixStamp, mainName, suffixName)) => suffixStamp == needle ? Some((mainName, Some(suffixName))) : None)
+  };
 
 let highlightsForStamp = (stamp, data) =>
   maybeFound(Hashtbl.find(data.stamps), stamp)
@@ -436,18 +439,6 @@ let rec stampAtPath = (path, data, suffix) =>
     }
   | _ => None
   };
-
-/* let suffixAtPath = (path, suffix, data) => {
-  stampAtPath(path, data) |?> stamp => switch stamp {
-    | `Global(name, children) => Some(`Global(name, children, suffix))
-    | `Local(stamp) => (maybeFound(Hashtbl.find(Collector.data.stamps), stamp) |?> ((name, loc, item, docs, range)) => {
-      switch item {
-        | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => `Local(stamp)
-        | _ => None
-      }
-    })
-  }
-}; */
 
 let stampAtPos = (pos, data) =>
   locationAtPos(pos, data)
@@ -702,19 +693,24 @@ module Get = {
 
                   switch (typ_type.type_kind) {
                     | Types.Type_record(labels, _) => {
-                      labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
+                      labels |> List.iter(({Types.ld_id: {stamp: lstamp, name: lname}, ld_type, ld_loc}) => {
                         let shortLoc = Utils.clampLocation(ld_loc, String.length(lname));
-                        addStamp(stamp, lname, shortLoc, Attribute(ld_type, name, typ_type), docs);
-                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(stamp));
+                        addStamp(lstamp, lname, shortLoc, Attribute(ld_type, name, typ_type), docs);
+                        if (maybeFound(Hashtbl.find(Collector.data.exported), name) == Some(stamp)) {
+                          Collector.data.exportedSuffixes = [(lstamp, name, lname), ...Collector.data.exportedSuffixes];
+                        };
+                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(lstamp));
                       })
                     }
                     | Types.Type_variant(constructors) => {
-                      constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
+                      constructors |> List.iter(({Types.cd_id: {stamp: cstamp, name: cname}, cd_loc} as cd) => {
                         let shortLoc = Utils.clampLocation(cd_loc, String.length(cname));
-                        addStamp(stamp, cname, shortLoc, Constructor(cd, name, typ_type), docs);
-                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(stamp));
+                        addStamp(cstamp, cname, shortLoc, Constructor(cd, name, typ_type), docs);
+                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(cstamp));
+                        if (maybeFound(Hashtbl.find(Collector.data.exported), name) == Some(stamp)) {
+                          Collector.data.exportedSuffixes = [(cstamp, name, cname), ...Collector.data.exportedSuffixes];
+                        };
                       })
-
                     }
                     | _ => ()
                   }
@@ -884,6 +880,7 @@ module Get = {
       stamps: Hashtbl.create(100),
       internalReferences: Hashtbl.create(100),
       externalReferences: Hashtbl.create(100),
+      exportedSuffixes: [],
       exported: Hashtbl.create(10),
       allOpens: [],
       topLevel: [],

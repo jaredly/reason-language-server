@@ -1,16 +1,16 @@
 
-let later = 10;
+/* let later = 10; */
 
 /* Ok testing things */
 
 let something = 10;
 
-type person = {name: string, age: int};
+type person = {firstName: string, age: int};
 
-type animals = Dog(int) | Cat(string) | Mouse;
+type animals = Wolf(int) | Cat(string) | Mouse;
 
-let m = Dog(1);
+let m = Wolf(1);
 
-let z = {name: "hi", age: 20};
+let z = {firstName: "hi", age: 20};
 
-let e = z.name;
+/* let e = z.name; */

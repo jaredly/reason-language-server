@@ -1,19 +1,20 @@
-let someLongName = 10;
+/* let someLongName = 10;
 
 let otherLongName = "string";
 
-string_of_bool;
+string_of_bool; */
 
 module Something = {
   open Other;
 
-  let m = {name: "Me", age: 0};
-  let animal = Dog(10);
-  let other = Dog(2);
+  let m = {firstName: "Me", age: 0};
+  let animal = Wolf(10);
+  let other = Wolf(2);
   let me = Cat("Hie");
   let x = something + 10;
 };
 
+/*
 open Something;
 
 let y = x + 10;
@@ -117,3 +118,4 @@ switch (y) {
 /* let x = [%raw " hello"]; */
 
 let awesome = "hello";
+*/
