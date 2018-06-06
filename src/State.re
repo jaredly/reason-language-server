@@ -131,28 +131,10 @@ let topLocation = uri => {
 
 let resolveDefinition = (uri, defn, state) =>
   switch defn {
-  | `Local((_, loc, item, docs, _), Some(suffix)) => {
-    switch item {
-      | Definition.Type(t) => Definition.getSuffix(t, suffix) |?>> loc => (loc, docs, uri)
-      /* | Definition.Type({type_kind: Type_record(attributes, _)}) => {
-        Utils.find(({Types.ld_id: {name, stamp}, ld_loc}) => {
-          if (name == suffix) {
-            Some((ld_loc, docs, uri))
-          } else { None }
-        }, attributes)
-      }
-      | Definition.Type({type_kind: Type_variant(constructors)}) => {
-        Utils.find(({Types.cd_id: {name, stamp}, cd_loc}) => {
-          if (name == suffix) {
-            Some((cd_loc, docs, uri))
-          } else { None }
-        }, constructors)
-      } */
-      | _ => None
-    };
-    /* Some((loc, docs, uri)) */
+  | `Local((_, loc, Definition.Type(t), docs, _), Some(suffix)) => {
+    Definition.getSuffix(t, suffix) |?>> loc => (loc, docs, uri)
   }
-  | `Local((_, loc, item, docs, _), None) => Some((loc, docs, uri))
+  | `Local((_, loc, item, docs, _), _) => Some((loc, docs, uri))
   | `Global(top, children, suffix) =>
     {
       Log.log("Resolving global " ++ top);
