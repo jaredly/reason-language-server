@@ -3,7 +3,7 @@
 	"description": "a vscode client for the reason-language-server",
 	"author": "Jared Forsyth",
 	"license": "ISC",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
