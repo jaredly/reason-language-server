@@ -7,7 +7,8 @@ It is written in Reason, and compiled via bsb-native. The goal is for it to work
 # Contributing
 
 - open this project in vscode
-- install the client's dependencies `cd client && npm i`
+- install dependencies and build the example project `cd example-project && npm i && npm build && cd ..`
+- install the client's dependencies `cd client && npm i && cd ..`
 - install the server's dependencies & start it running `npm i && npm start`
 - select "Debug > Start Without Debugging" from the vscode menu
 - it should start up a window titled `[Extension development host]`
