@@ -26,14 +26,16 @@ type item =
   | Module(list((string, int)))
   /* | ModuleAlias(Path.t) */
   | Type(Types.type_declaration)
+  | Constructor(Types.constructor_declaration, string, Types.type_declaration)
+  | Attribute(Types.label_declaration, string, Types.type_declaration)
   | Value(Types.type_expr);
 
 type definition =
   | Path(Path.t)
   | Open(Path.t)
   /* | Location(Location.t) */
-  | Constructor(Path.t, string, Location.t)
-  | Attribute(Path.t, string, Location.t)
+  | ConstructorDefn(Path.t, string, Location.t)
+  | AttributeDefn(Path.t, string, Location.t)
   | IsConstant
   | IsDefinition(int);
 
@@ -41,8 +43,8 @@ type tag =
   | TagType
   | TagValue
   | TagModule
-  | Constructor(string)
-  | Attribute(string);
+  | TagConstructor(string)
+  | TagAttribute(string);
 
 type anOpen = {
   path: Path.t,
@@ -72,6 +74,8 @@ let maybeFound = (fn, a) =>
 let rec docsItem = (item, data) =>
   switch item {
   | Type(t) => Docs.Type(t)
+  | Constructor(_, _, t) => Docs.Type(t)
+  | Attribute(_, _, t) => Docs.Type(t)
   | Value(t) => Docs.Value(t)
   | Module(items) =>
     Docs.Module(
@@ -85,20 +89,45 @@ let rec docsItem = (item, data) =>
     )
   };
 
+let inRange = ((l, c), ((l0, c0), (l1, c1))) => {
+  let l = l + 1;
+  (l0 < l || l0 == l && c0 <= c) && (l1 == (-1) && c1 == (-1) || l1 > l || l1 == l && c1 > c)
+};
+
 /* TODO this is not perfect, because if the user edits and gets outside of the original scope, then
    we no longer give you the completions you need. This is annoying :/
    Not sure how annoying in practice? One hack would be to forgive going a few lines over... */
-let completions = ({stamps}, prefix, (l, c)) => {
-  let l = l + 1;
+let completions = ({stamps}, prefix, pos) => {
   Hashtbl.fold(
-    (_, (name, loc, item, docs, ((l0, c0), (l1, c1))), results) =>
-      if ((l0 < l || l0 == l && c0 <= c)
-          && (l1 == (-1) && c1 == (-1) || l1 > l || l1 == l && c1 > c)
-          && Utils.startsWith(name, prefix)) {
-        [(name, loc, item, docs), ...results]
-      } else {
-        results
-      },
+    (_, (name, loc, item, docs, range), results) =>
+      if (inRange(pos, range)) {
+        let results = if (Utils.startsWith(name, prefix)) {
+          [(name, loc, item, docs), ...results]
+        } else {
+          results
+        };
+        switch item {
+          | Type({type_kind: Type_variant(constructors)}) => {
+            List.fold_left((results, {Types.cd_id: {name, stamp}}) => {
+              if (Utils.startsWith(name, prefix)) {
+                [(name, loc, item, docs), ...results]
+              } else {
+                results
+              }
+            }, results, constructors)
+          }
+          | Type({type_kind: Type_record(labels, _)}) => {
+            List.fold_left((results, {Types.ld_id: {name, stamp}}) => {
+              if (Utils.startsWith(name, prefix)) {
+                [(name, loc, item, docs), ...results]
+              } else {
+                results
+              }
+            }, results, labels)
+          }
+          | _ => results
+        }
+      } else { results },
     stamps,
     []
   )
@@ -119,8 +148,8 @@ module Opens = {
     switch tag {
     | TagType => "type: " ++ fn(a)
     | TagValue => "value: " ++ fn(a)
-    | Constructor(b) => "constr: " ++ fn(a) ++ " - " ++ b
-    | Attribute(b) => "attr: " ++ fn(a) ++ " - " ++ b
+    | TagConstructor(b) => "constr: " ++ fn(a) ++ " - " ++ b
+    | TagAttribute(b) => "attr: " ++ fn(a) ++ " - " ++ b
     | TagModule => "module: " ++ fn(a)
     };
   let showLident = (l) => String.concat(".", Longident.flatten(l));
@@ -141,10 +170,10 @@ module Opens = {
       List.filter(
         ((innerPath, tag)) =>
           switch tag {
-          | Constructor(name) =>
+          | TagConstructor(name) =>
             pushHashList(constrs, innerPath, name);
             false
-          | Attribute(name) =>
+          | TagAttribute(name) =>
             pushHashList(attrs, innerPath, name);
             false
           | _ => true
@@ -398,8 +427,8 @@ let findDefinition = (defn, data) => {
   | IsDefinition(stamp) =>
     Log.log("Is a definition");
     None
-  | Constructor(path, _, _)
-  | Attribute(path, _, _)
+  | ConstructorDefn(path, _, _)
+  | AttributeDefn(path, _, _)
   | Open(path)
   | Path(path) => resolvePath(path, data)
   };
@@ -658,9 +687,9 @@ module Get = {
         | Tconstr(path, args, _) =>
           let (constructorName, typeTxt) = handleConstructor(path, txt);
           if (usesOpen(typeTxt, path)) {
-            addUse((path, Constructor(constructorName)), typeTxt, loc)
+            addUse((path, TagConstructor(constructorName)), typeTxt, loc)
           };
-          addLocation(loc, pat.pat_type, Constructor(path, cstr_name, cstr_loc))
+          addLocation(loc, pat.pat_type, ConstructorDefn(path, cstr_name, cstr_loc))
         | _ => ()
         }
       | Tpat_record(items, isClosed) =>
@@ -669,10 +698,10 @@ module Get = {
              (({Asttypes.txt, loc}, {Types.lbl_res, lbl_name, lbl_loc}, value)) =>
                switch (dig(lbl_res).Types.desc) {
                | Tconstr(path, args, _) =>
-                 addLocation(loc, lbl_res, Attribute(path, lbl_name, lbl_loc));
+                 addLocation(loc, lbl_res, AttributeDefn(path, lbl_name, lbl_loc));
                  let typeTxt = handleRecord(path, txt);
                  if (usesOpen(typeTxt, path)) {
-                   addUse((path, Attribute(lbl_name)), typeTxt, loc)
+                   addUse((path, TagAttribute(lbl_name)), typeTxt, loc)
                  }
                | _ => ()
                }
@@ -694,10 +723,10 @@ module Get = {
       | Texp_field(inner, {txt, loc}, {lbl_name, lbl_res, lbl_loc}) =>
         switch (dig(lbl_res).Types.desc) {
         | Tconstr(path, args, _) =>
-          addLocation(loc, expr.exp_type, Attribute(path, lbl_name, lbl_loc));
+          addLocation(loc, expr.exp_type, AttributeDefn(path, lbl_name, lbl_loc));
           let typeTxt = handleRecord(path, txt);
           if (usesOpen(typeTxt, path)) {
-            addUse((path, Attribute(lbl_name)), typeTxt, loc)
+            addUse((path, TagAttribute(lbl_name)), typeTxt, loc)
           }
         | _ => ()
         }
@@ -708,10 +737,10 @@ module Get = {
              (({Asttypes.txt, loc}, {Types.lbl_loc, lbl_name, lbl_res}, ex)) =>
                switch (dig(lbl_res).Types.desc) {
                | Tconstr(path, args, _) =>
-                 addLocation(loc, ex.exp_type, Attribute(path, lbl_name, lbl_loc));
+                 addLocation(loc, ex.exp_type, AttributeDefn(path, lbl_name, lbl_loc));
                  let typeTxt = handleRecord(path, txt);
                  if (usesOpen(typeTxt, path)) {
-                   addUse((path, Attribute(lbl_name)), typeTxt, loc)
+                   addUse((path, TagAttribute(lbl_name)), typeTxt, loc)
                  }
                | _ => ()
                }
@@ -730,10 +759,10 @@ module Get = {
              ()
            } */
         | Tconstr(path, args, _) =>
-          addLocation(loc, expr.exp_type, Constructor(path, cstr_name, cstr_loc));
+          addLocation(loc, expr.exp_type, ConstructorDefn(path, cstr_name, cstr_loc));
           let (constructorName, typeTxt) = handleConstructor(path, txt);
           if (usesOpen(typeTxt, path)) {
-            addUse((path, Constructor(constructorName)), typeTxt, loc)
+            addUse((path, TagConstructor(constructorName)), typeTxt, loc)
           }
         | _ => ()
         }

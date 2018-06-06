@@ -168,6 +168,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           switch item {
           | Definition.Module(_) => None
           | Type(t) => None
+          | Constructor(_) => None
+          | Attribute(_) => None
           | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
           }
         }) : [];

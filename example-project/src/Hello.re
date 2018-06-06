@@ -88,10 +88,15 @@ type awesome = {
   two: float,
 };
 
+type lots =
+| Parties
+| Plutocrats(int, float)
+| Possums
+| Oppossums;
+
 let y = Some(10 + awesome(3));
 
 let z = {contents: 30};
-
 let party = {one: "one", two: 2.};
 
 let {one, two} = party;
