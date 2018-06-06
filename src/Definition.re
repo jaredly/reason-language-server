@@ -27,7 +27,7 @@ type item =
   /* | ModuleAlias(Path.t) */
   | Type(Types.type_declaration)
   | Constructor(Types.constructor_declaration, string, Types.type_declaration)
-  | Attribute(Types.label_declaration, string, Types.type_declaration)
+  | Attribute(Types.type_expr, string, Types.type_declaration)
   | Value(Types.type_expr);
 
 type definition =
@@ -74,8 +74,8 @@ let maybeFound = (fn, a) =>
 let rec docsItem = (item, data) =>
   switch item {
   | Type(t) => Docs.Type(t)
-  | Constructor(_, _, t) => Docs.Type(t)
-  | Attribute(_, _, t) => Docs.Type(t)
+  | Constructor(a, b, c) => Docs.Constructor(a, b, c)
+  | Attribute(a, b, c) => Docs.Attribute(a, b, c)
   | Value(t) => Docs.Value(t)
   | Module(items) =>
     Docs.Module(
@@ -106,7 +106,7 @@ let completions = ({stamps}, prefix, pos) => {
         } else {
           results
         };
-        switch item {
+        /* switch item {
           | Type({type_kind: Type_variant(constructors)}) => {
             List.fold_left((results, {Types.cd_id: {name, stamp}}) => {
               if (Utils.startsWith(name, prefix)) {
@@ -126,7 +126,8 @@ let completions = ({stamps}, prefix, pos) => {
             }, results, labels)
           }
           | _ => results
-        }
+        } */
+        results
       } else { results },
     stamps,
     []
@@ -574,8 +575,23 @@ module Get = {
         addStamp(stamp, name, val_loc, Value(val_type), None)
       | Tsig_type(decls) =>
         List.iter(
-          ({typ_id: {stamp, name}, typ_loc, typ_type}) =>
-            addStamp(stamp, name, typ_loc, Type(typ_type), None),
+          ({typ_id: {stamp, name}, typ_loc, typ_type}) => {
+            addStamp(stamp, name, typ_loc, Type(typ_type), None);
+            switch (typ_type.type_kind) {
+              | Types.Type_record(labels, _) => {
+                labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
+                  addStamp(stamp, lname, ld_loc, Attribute(ld_type, name, typ_type), None)
+                })
+              }
+              | Types.Type_variant(constructors) => {
+                constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
+                  addStamp(stamp, cname, cd_loc, Constructor(cd, name, typ_type), None)
+                })
+
+              }
+              | _ => ()
+            }
+          },
           decls
         )
       /* TODO add support for these */
@@ -617,7 +633,22 @@ module Get = {
           |> List.iter(
                ({typ_attributes, typ_id: {stamp, name}, typ_type, typ_name: {loc}}) => {
                  let docs = PrepareUtils.findDocAttribute(typ_attributes);
-                 addStamp(stamp, name, loc, Type(typ_type), docs)
+                 addStamp(stamp, name, loc, Type(typ_type), docs);
+
+                  switch (typ_type.type_kind) {
+                    | Types.Type_record(labels, _) => {
+                      labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
+                        addStamp(stamp, lname, ld_loc, Attribute(ld_type, name, typ_type), docs)
+                      })
+                    }
+                    | Types.Type_variant(constructors) => {
+                      constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
+                        addStamp(stamp, cname, cd_loc, Constructor(cd, name, typ_type), docs)
+                      })
+
+                    }
+                    | _ => ()
+                  }
                }
              )
         /* addLocation(loc, typ_type, None); */

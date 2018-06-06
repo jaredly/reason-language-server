@@ -31,6 +31,8 @@ type item =
   | Function(list(Types.type_expr), Types.type_expr)
   | Value(Types.type_expr)
   | Type(Types.type_declaration)
+  | Constructor(Types.constructor_declaration, string, Types.type_declaration)
+  | Attribute(Types.type_expr, string, Types.type_declaration)
 and full = (string, Location.t, option(string), item);
 /* TODO module types n that jazz also functors I guess */
 

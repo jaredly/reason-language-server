@@ -8,3 +8,5 @@ let something = 10;
 type person = {name: string, age: int};
 
 type animals = Dog(int) | Cat(string) | Mouse;
+
+let m = Dog(1);

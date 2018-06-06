@@ -29,6 +29,8 @@ let itemKind = doc => switch doc {
 | Docs.Module(_) => Module
 | ModuleAlias(_) => Module
 | Function(_) => Function
+| Constructor(_) => Value
+| Attribute(_) => Value
 | Value(_) => Value
 | Type(_) => Struct
 };
@@ -52,6 +54,16 @@ let rec showItem = (name, item) =>
   | Type(t) =>
     PrintType.default.decl(PrintType.default, name, name, t)
     |> PrintType.prettyString
+  | Constructor(decl, parentName, t) => {
+    let top = PrintType.default.constructor(PrintType.default, decl) |> PrintType.prettyString;
+    let bottom = PrintType.default.decl(PrintType.default, parentName, parentName, t) |> PrintType.prettyString;
+    top ++ "\n\n" ++ bottom
+  }
+  | Attribute(ret, parentName, t) => {
+    let top = name ++ ": " ++ (PrintType.default.expr(PrintType.default, ret) |> PrintType.prettyString);
+    let bottom = PrintType.default.decl(PrintType.default, parentName, parentName, t) |> PrintType.prettyString;
+    top ++ "\n\n" ++ bottom
+  }
   };
 
 let isCapitalized = name => name.[0] >= 'A' && name.[0] <= 'Z';

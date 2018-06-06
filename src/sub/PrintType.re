@@ -17,6 +17,7 @@ module T = {
     ident: (stringifier, Ident.t) => Pretty.doc,
     decl: (stringifier, string, string, Types.type_declaration) => Pretty.doc,
     value: (stringifier, string, string, Types.type_expr) => Pretty.doc,
+    constructor: (stringifier, Types.constructor_declaration) => Pretty.doc,
   };
 };
 open T;
@@ -177,6 +178,7 @@ let default = {
   value: print_value,
   expr: print_expr,
   decl: print_decl,
+  constructor: (s, decl) => print_constructor(s.expr(s), decl),
 };
 
 let prettyString = (~width=60, doc) => {
