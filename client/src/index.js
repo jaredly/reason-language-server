@@ -7,7 +7,7 @@ const vscode = require("vscode");
 const {LanguageClient} = require("vscode-languageclient");
 const path = require('path')
 const fs = require('fs')
-const DEV = false;
+const DEV = true;
 
 function activate(context) {
     // The server is implemented in reason

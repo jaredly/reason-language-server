@@ -140,7 +140,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
   let opens = resolveOpens(opens, state);
   let opens = switch (State.docsForModule("Pervasives", state)) {
   | None => {
-    output_string(stderr, "No pervasives found...");
+    Log.log("No pervasives found...");
     opens
   }
   | Some(((_, contents), uri)) => [("Pervasives", contents, uri), ...opens]
