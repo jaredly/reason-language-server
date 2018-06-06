@@ -4,5 +4,6 @@
   ],
   "git.ignoreLimitWarning": true,
   "git.enabled": false,
-  "reason.path.bsb": "./node_modules/.bin/bsb"
+  "reason.path.bsb": "./node_modules/.bin/bsb",
+  "editor.codeLens": true
 }

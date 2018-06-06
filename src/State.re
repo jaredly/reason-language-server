@@ -123,14 +123,23 @@ let maybeFound = Definition.maybeFound;
 
 open Infix;
 
+let topLocation = uri => {
+        Location.loc_ghost: false,
+        loc_start: {Lexing.pos_fname: uri, pos_lnum: 1, pos_cnum: 1, pos_bol: 1},
+        loc_end: {Lexing.pos_fname: uri, pos_lnum: 1, pos_cnum: 1, pos_bol: 1},
+      };
+
 let resolveDefinition = (uri, defn, state) =>
   switch defn {
   | `Local((_, loc, _, docs, _)) => Some((loc, docs, uri))
   | `Global(top, children) =>
-    switch (
+    {
+      Log.log("Resolving global " ++ top);
+      switch (
       maybeFound(List.assoc(top), state.localModules)
       |?> (
         ((cmt, src)) => {
+          Log.log("Found it " ++ src);
           let uri = "file://" ++ src;
           maybeFound(Hashtbl.find(state.compiledDocuments), uri)
           |?> AsYouType.getResult
@@ -139,19 +148,25 @@ let resolveDefinition = (uri, defn, state) =>
       )
     ) {
     | Some(((cmtInfos, data), uri)) =>
+    if (children == []) {
+      Log.log("No children tho");
+      Some((topLocation(uri), data.toplevelDocs, uri))
+    } else {
       Definition.resolveNamedPath(data, children) |?> ((_, loc, _, docs)) => Some((loc, docs, uri))
+    }
     | None =>
       maybeFound(Hashtbl.find(state.pathsForModule), top)
       |?> (
         ((cmt, src)) => {
-
           let uri = "file://" ++ src;
-          /* Log.log("Got it! " ++ uri); */
-          /* TODO */
-          docsForCmt(cmt, src, state) |?>> snd |?> Docs.findPath(children) |?>> ((name, loc, docs, _)) => (loc, docs, uri)
-          /* None */
+          if (children == []) {
+            Some((topLocation(uri), docsForCmt(cmt, src, state) |?> fst, uri))
+          } else {
+            docsForCmt(cmt, src, state) |?>> snd |?> Docs.findPath(children) |?>> ((name, loc, docs, _)) => (loc, docs, uri)
+          }
         }
       )
+    }
     }
   };
 

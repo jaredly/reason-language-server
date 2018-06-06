@@ -1,3 +1,4 @@
+
 open Infix;
 open Result;
 
@@ -33,9 +34,9 @@ let capabilities =
     o([
       ("textDocumentSync", i(1)),
       ("hoverProvider", t),
-      /* TODO list # and . as trigger characters */
       ("completionProvider", o([
         ("resolveProvider", t),
+        /* TODO list # as trigger character */
         ("triggerCharacters", l([s(".")]))
       ])),
       ("signatureHelpProvider", t),

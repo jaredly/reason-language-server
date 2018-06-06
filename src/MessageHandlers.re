@@ -1,3 +1,4 @@
+
 open Result;
 open State;
 open Infix;
@@ -16,7 +17,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
     |?> position => {
       switch (State.getDefinitionData(uri, state)) {
-      | None => Error("Parse error, can't find definition")
+      | None => {
+        Error("Parse error, can't find definition")
+      }
       | Some(data) => switch (State.definitionForPos(uri, position, data, state)) {
       | None => Ok((state, Json.Null))
       | Some((loc, docs, uri)) => Ok((state, Json.Object([
@@ -62,6 +65,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       }
     );
   }),
+
   ("completionItem/resolve", (state, params) => {
     switch (params |> Json.get("documentation") |?> Json.string) {
     | Some(_) => Ok((state, params))
@@ -96,6 +100,16 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | `Write => 3
         }))
         ]))))
+    };
+  }),
+
+  ("textDocument/references", (state, params) => {
+    open InfixResult;
+    Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
+      open Infix;
+      let references = (State.getDefinitionData(uri, state) |?>> data => []) |? [];
+      open Rpc.J;
+      (state, l([]))
     };
   }),
 
