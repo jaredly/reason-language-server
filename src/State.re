@@ -133,7 +133,8 @@ let resolveDefinition = (uri, defn, state) =>
   switch defn {
   | `Local((_, loc, item, docs, _), Some(suffix)) => {
     switch item {
-      | Definition.Type({type_kind: Type_record(attributes, _)}) => {
+      | Definition.Type(t) => Definition.getSuffix(t, suffix) |?>> loc => (loc, docs, uri)
+      /* | Definition.Type({type_kind: Type_record(attributes, _)}) => {
         Utils.find(({Types.ld_id: {name, stamp}, ld_loc}) => {
           if (name == suffix) {
             Some((ld_loc, docs, uri))
@@ -146,7 +147,7 @@ let resolveDefinition = (uri, defn, state) =>
             Some((cd_loc, docs, uri))
           } else { None }
         }, constructors)
-      }
+      } */
       | _ => None
     };
     /* Some((loc, docs, uri)) */
@@ -156,37 +157,39 @@ let resolveDefinition = (uri, defn, state) =>
     {
       Log.log("Resolving global " ++ top);
       switch (
-      maybeFound(List.assoc(top), state.localModules)
-      |?> (
-        ((cmt, src)) => {
-          Log.log("Found it " ++ src);
-          let uri = "file://" ++ src;
-          maybeFound(Hashtbl.find(state.compiledDocuments), uri)
-          |?> AsYouType.getResult
-          |?>> (defn => (defn, uri));
-        }
-      )
-    ) {
-    | Some(((cmtInfos, data), uri)) =>
-    if (children == []) {
-      Log.log("No children tho");
-      Some((topLocation(uri), data.toplevelDocs, uri))
-    } else {
-      Definition.resolveNamedPath(data, children) |?> ((_, loc, _, docs)) => Some((loc, docs, uri))
-    }
-    | None =>
-      maybeFound(Hashtbl.find(state.pathsForModule), top)
-      |?> (
-        ((cmt, src)) => {
-          let uri = "file://" ++ src;
-          if (children == []) {
-            Some((topLocation(uri), docsForCmt(cmt, src, state) |?> fst, uri))
-          } else {
-            docsForCmt(cmt, src, state) |?>> snd |?> Docs.findPath(children) |?>> ((name, loc, docs, _)) => (loc, docs, uri)
+        maybeFound(List.assoc(top), state.localModules)
+        |?> (
+          ((cmt, src)) => {
+            Log.log("Found it " ++ src);
+            let uri = "file://" ++ src;
+            maybeFound(Hashtbl.find(state.compiledDocuments), uri)
+            |?> AsYouType.getResult
+            |?>> ((defn) => (defn, uri))
           }
+        )
+      ) {
+      | Some(((cmtInfos, data), uri)) =>
+        if (children == []) {
+          Some((topLocation(uri), data.toplevelDocs, uri))
+        } else {
+          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((loc, docs, uri)))
         }
-      )
-    }
+      | None =>
+        maybeFound(Hashtbl.find(state.pathsForModule), top)
+        |?> (
+          ((cmt, src)) => {
+            let uri = "file://" ++ src;
+            if (children == []) {
+              Some((topLocation(uri), docsForCmt(cmt, src, state) |?> fst, uri))
+            } else {
+              docsForCmt(cmt, src, state)
+              |?>> snd
+              |?> Docs.findPath(children)
+              |?>> (((name, loc, docs, _)) => (loc, docs, uri))
+            }
+          }
+        )
+      };
     }
   };
 

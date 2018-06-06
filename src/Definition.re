@@ -294,7 +294,32 @@ let handleRecord = (path, txt) => {
   )
 };
 
-let resolveNamedPath = (data, path) =>
+let getSuffix = (declaration, suffix) =>
+  switch declaration.Types.type_kind {
+  | Type_record(attributes, _) =>
+    Utils.find(
+      ({Types.ld_id: {name, stamp}, ld_loc}) =>
+        if (name == suffix) {
+          Some(ld_loc)
+        } else {
+          None
+        },
+      attributes
+    )
+  | Type_variant(constructors) =>
+    Utils.find(
+      ({Types.cd_id: {name, stamp}, cd_loc}) =>
+        if (name == suffix) {
+          Some(cd_loc)
+        } else {
+          None
+        },
+      constructors
+    )
+  | _ => None
+  };
+
+let resolveNamedPath = (data, path, suffix) =>
   switch path {
   | [] => None
   | [one, ...rest] =>
@@ -306,7 +331,14 @@ let resolveNamedPath = (data, path) =>
         | exception Not_found => None
         | (name, loc, item, docs, scope) =>
           switch (path, item) {
-          | ([], _) => Some((name, loc, item, docs))
+          | ([], _) => switch (item, suffix) {
+            | (_, None) => Some((name, loc, item, docs))
+            | (Type(t), Some(suffix)) => {
+              /* TODO this isn't the right `item` --- it'sstill the type  */
+              getSuffix(t, suffix) |?>> loc => (name, loc, item, docs)
+            }
+            | _ => None
+          }
           | ([first, ...rest], Module(contents)) =>
             switch (List.assoc(first, contents)) {
             | exception Not_found => None
