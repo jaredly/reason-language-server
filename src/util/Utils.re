@@ -27,6 +27,16 @@ let endOfLocation = (loc, length) => Location.({
   }
 });
 
+let clampLocation = (loc, length) => Location.({
+  {
+    ...loc,
+    loc_end: {
+      ...loc.loc_start,
+      pos_cnum: loc.loc_start.pos_cnum + length
+    }
+  }
+});
+
 let chopPrefix = (s, prefix) => sliceToEnd(s, String.length(prefix));
 
 let filterMap = (fn, items) =>

@@ -703,14 +703,16 @@ module Get = {
                   switch (typ_type.type_kind) {
                     | Types.Type_record(labels, _) => {
                       labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
-                        addStamp(stamp, lname, ld_loc, Attribute(ld_type, name, typ_type), docs);
-                        addLocation(ld_loc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(stamp));
+                        let shortLoc = Utils.clampLocation(ld_loc, String.length(lname));
+                        addStamp(stamp, lname, shortLoc, Attribute(ld_type, name, typ_type), docs);
+                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(stamp));
                       })
                     }
                     | Types.Type_variant(constructors) => {
                       constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
-                        addStamp(stamp, cname, cd_loc, Constructor(cd, name, typ_type), docs);
-                        addLocation(cd_loc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(stamp));
+                        let shortLoc = Utils.clampLocation(cd_loc, String.length(cname));
+                        addStamp(stamp, cname, shortLoc, Constructor(cd, name, typ_type), docs);
+                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(stamp));
                       })
 
                     }
