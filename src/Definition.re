@@ -190,10 +190,6 @@ module Opens = {
   };
 };
 
-let openAtPos = ({allOpens}, line, col) => {
-
-};
-
 let opens = ({allOpens}) =>
   allOpens
   |> Utils.filterMap(
@@ -316,6 +312,20 @@ let locationAtPos = ((line, char), data) => {
     | [_, ...rest] => loop(rest)
     };
   loop(data.locations)
+};
+
+let openReferencesAtPos = ({allOpens} as data, pos) => {
+  locationAtPos(pos, data) |?> ((loc, expr, defn)) => switch defn {
+    | Open(path) => {
+      let rec loop = opens => switch opens {
+        | [] => None
+        | [one, ..._] when one.loc == loc => Some(one)
+        | [_, ...rest] => loop(rest)
+      };
+      loop(allOpens) |?>> openn => openn.used
+    }
+    | _ => None
+  }
 };
 
 let isStampExported = (needle, data) =>

@@ -7,7 +7,7 @@ let setLocation = location => {
 };
 
 let log = msg => {
-  output_string(stderr, msg ++ "\n");
+  /* output_string(stderr, msg ++ "\n"); */
   output_string(out^, msg ++ "\n");
   flush(out^);
 };

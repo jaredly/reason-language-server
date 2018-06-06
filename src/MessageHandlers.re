@@ -107,9 +107,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open InfixResult;
     Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
       open Infix;
-      let references = (State.getDefinitionData(uri, state) |?>> data => []) |? [];
+      let references = (State.getDefinitionData(uri, state) |?> data => {
+        (Definition.openReferencesAtPos(data, pos) |?>> List.map(((_, _, loc)) => loc)) |?# lazy (
+          Definition.stampAtPos(pos, data) |?> stamp => Definition.highlightsForStamp(stamp, data) |?>> List.map(((_, loc)) => loc)
+        )
+      }) |? [];
       open Rpc.J;
-      (state, l([]))
+      (state, l(references |> List.map(Protocol.locationOfLoc(~fname=uri))))
     };
   }),
 
