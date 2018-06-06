@@ -414,11 +414,11 @@ let stampAtPos = (pos, data) =>
 
 let highlights = (pos, data) => stampAtPos(pos, data) |?> ((x) => highlightsForStamp(x, data));
 
-let resolvePath = (path, data) =>
+let resolvePath = (path, data, suffix) =>
   switch (stampAtPath(path, data)) {
   | None => None
-  | Some(`Global(name, children)) => Some(`Global((name, children)))
-  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> ((x) => `Local(x))
+  | Some(`Global(name, children)) => Some(`Global((name, children, suffix)))
+  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> ((x) => `Local(x, suffix))
   };
 
 let findDefinition = (defn, data) => {
@@ -428,10 +428,10 @@ let findDefinition = (defn, data) => {
   | IsDefinition(stamp) =>
     Log.log("Is a definition");
     None
-  | ConstructorDefn(path, _, _)
-  | AttributeDefn(path, _, _)
+  | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name))
+  | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name))
   | Open(path)
-  | Path(path) => resolvePath(path, data)
+  | Path(path) => resolvePath(path, data, None)
   };
 };
 
@@ -786,9 +786,6 @@ module Get = {
         ()
       | Texp_construct({txt, loc}, {cstr_name, cstr_loc, cstr_res}, args) =>
         switch (dig(cstr_res).Types.desc) {
-        /* | Tconstr(Pident({name: "::"}), _, _) when cstr_loc.loc_end.pos_cnum - cstr_loc.loc_start.pos_cnum != 2 => {
-             ()
-           } */
         | Tconstr(path, args, _) =>
           addLocation(loc, expr.exp_type, ConstructorDefn(path, cstr_name, cstr_loc));
           let (constructorName, typeTxt) = handleConstructor(path, txt);
