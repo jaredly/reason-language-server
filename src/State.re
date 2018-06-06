@@ -131,10 +131,7 @@ let topLocation = uri => {
 
 let resolveDefinition = (uri, defn, state) =>
   switch defn {
-  | `Local((_, loc, Definition.Type(t), docs, _), Some(suffix)) => {
-    Definition.getSuffix(t, suffix) |?>> loc => (loc, docs, uri)
-  }
-  | `Local((_, loc, item, docs, _), _) => Some((loc, docs, uri))
+  | `Local(_, loc, item, docs, _) => Some((loc, docs, uri))
   | `Global(top, children, suffix) =>
     {
       Log.log("Resolving global " ++ top);
@@ -195,7 +192,7 @@ let referencesForPos = (uri, pos, data, state) => {
         } else {
           getDefinitionData("file://" ++ src, state) |?> data => {
             Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
-              let realUses = Utils.filterMap(((path, loc)) => {
+              let realUses = Utils.filterMap(((path, loc, suffix/* TODO */)) => {
                 if (path == [exportedName]) {
                   Some((`Read, Utils.endOfLocation(loc, String.length(exportedName))))
                 } else {

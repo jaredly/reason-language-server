@@ -58,7 +58,7 @@ type moduleData = {
   stamps: Hashtbl.t(int, (string, Location.t, item, option(string), ((int, int), (int, int)))),
   /* TODO track constructor names, and record attribute names */
   internalReferences: Hashtbl.t(int, list(Location.t)),
-  externalReferences: Hashtbl.t(string, list((list(string), Location.t))),
+  externalReferences: Hashtbl.t(string, list((list(string), Location.t, option(string)))),
   exported: Hashtbl.t(string, int),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition)),
@@ -300,7 +300,7 @@ let getSuffix = (declaration, suffix) =>
     Utils.find(
       ({Types.ld_id: {name, stamp}, ld_loc}) =>
         if (name == suffix) {
-          Some(ld_loc)
+          Some((ld_loc, stamp))
         } else {
           None
         },
@@ -310,7 +310,7 @@ let getSuffix = (declaration, suffix) =>
     Utils.find(
       ({Types.cd_id: {name, stamp}, cd_loc}) =>
         if (name == suffix) {
-          Some(cd_loc)
+          Some((cd_loc, stamp))
         } else {
           None
         },
@@ -335,7 +335,7 @@ let resolveNamedPath = (data, path, suffix) =>
             | (_, None) => Some((name, loc, item, docs))
             | (Type(t), Some(suffix)) => {
               /* TODO this isn't the right `item` --- it'sstill the type  */
-              getSuffix(t, suffix) |?>> loc => (name, loc, item, docs)
+              getSuffix(t, suffix) |?>> ((loc, _)) => (name, loc, item, docs)
             }
             | _ => None
           }
@@ -406,13 +406,22 @@ let highlightsForStamp = (stamp, data) =>
     }
   );
 
-let rec stampAtPath = (path, data) =>
+let suffixForStamp = (stamp, suffix, data) => {
+  (maybeFound(Hashtbl.find(data.stamps), stamp) |?> ((name, loc, item, docs, range)) => {
+    switch item {
+      | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
+      | _ => None
+    }
+  })
+};
+
+let rec stampAtPath = (path, data, suffix) =>
   switch path {
-  | Path.Pident({stamp: 0, name}) => Some(`Global((name, [])))
-  | Path.Pident({stamp, name}) => Some(`Local(stamp))
+  | Path.Pident({stamp: 0, name}) => Some(`Global((name, [], suffix)))
+  | Path.Pident({stamp, name}) => fold(suffix, Some(`Local(stamp)), suffix => suffixForStamp(stamp, suffix, data) |?>> stamp => `Local(stamp))
   | Path.Pdot(inner, name, _) =>
-    switch (stampAtPath(inner, data)) {
-    | Some(`Global(top, subs)) => Some(`Global((top, subs @ [name])))
+    switch (stampAtPath(inner, data, None)) {
+    | Some(`Global(top, subs, _)) => Some(`Global((top, subs @ [name], suffix)))
     | Some(`Local(stamp)) =>
       maybeFound(Hashtbl.find(data.stamps), stamp)
       |?> (
@@ -428,15 +437,39 @@ let rec stampAtPath = (path, data) =>
   | _ => None
   };
 
+/* let suffixAtPath = (path, suffix, data) => {
+  stampAtPath(path, data) |?> stamp => switch stamp {
+    | `Global(name, children) => Some(`Global(name, children, suffix))
+    | `Local(stamp) => (maybeFound(Hashtbl.find(Collector.data.stamps), stamp) |?> ((name, loc, item, docs, range)) => {
+      switch item {
+        | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => `Local(stamp)
+        | _ => None
+      }
+    })
+  }
+}; */
+
 let stampAtPos = (pos, data) =>
   locationAtPos(pos, data)
   |?> (
     ((loc, expr, defn)) =>
       switch defn {
       | IsDefinition(stamp) => Some(stamp)
+      | AttributeDefn(path, name, _) =>
+        switch (stampAtPath(path, data, Some(name))) {
+        | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
+        | Some(`Local(stamp)) => Some(stamp)
+        | None => None
+        }
+      | ConstructorDefn(path, name, _) =>
+        switch (stampAtPath(path, data, Some(name))) {
+        | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
+        | Some(`Local(stamp)) => Some(stamp)
+        | None => None
+        }
       | Path(path) =>
-        switch (stampAtPath(path, data)) {
-        | Some(`Global(name, children)) => None /* TODO resolve cross-file */
+        switch (stampAtPath(path, data, None)) {
+        | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
         | Some(`Local(stamp)) => Some(stamp)
         | None => None
         }
@@ -447,10 +480,10 @@ let stampAtPos = (pos, data) =>
 let highlights = (pos, data) => stampAtPos(pos, data) |?> ((x) => highlightsForStamp(x, data));
 
 let resolvePath = (path, data, suffix) =>
-  switch (stampAtPath(path, data)) {
+  switch (stampAtPath(path, data, suffix)) {
   | None => None
-  | Some(`Global(name, children)) => Some(`Global((name, children, suffix)))
-  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> ((x) => `Local(x, suffix))
+  | Some(`Global(name, children, suffix)) => Some(`Global((name, children, suffix)))
+  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> i => `Local(i)
   };
 
 let findDefinition = (defn, data) => {
@@ -570,28 +603,39 @@ module Get = {
       if (! Hashtbl.mem(Collector.data.stamps, stamp)) {
         Hashtbl.replace(Collector.data.stamps, stamp, (name, loc, item, docs, currentScope()))
       };
+
     let addLocation = (loc, typ, definition) => {
       switch definition {
-      | Path(path) =>
-        switch (stampAtPath(path, Collector.data)) {
+      | ConstructorDefn(path, name, _) => Some((path, Some(name)))
+      | AttributeDefn(path, name, _) => Some((path, Some(name)))
+      | Path(path) => Some((path, None))
+      | _ => None
+      } |?< ((path, suffix)) =>
+        switch (stampAtPath(path, Collector.data, suffix)) {
         | None => ()
-        | Some(`Global(modname, children)) =>
+        | Some(`Global(modname, children, suffix)) =>
           let current = maybeFound(Hashtbl.find(Collector.data.externalReferences), modname) |? [];
           Hashtbl.replace(
             Collector.data.externalReferences,
             modname,
-            [(children, loc), ...current]
+            [(children, loc, suffix), ...current]
           )
-        | Some(`Local(stamp)) =>
-          let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
-          Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
+        | Some(`Local(stamp)) => {
+          /* let stamp = switch suffix {
+            | None => Some(stamp)
+            | Some(suffix) => (maybeFound(Hashtbl.find(Collector.data.stamps), stamp) |?> ((name, loc, item, docs, range)) => {
+              switch item {
+                | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
+                | _ => None
+              }
+            })
+          };
+          stamp |?< stamp => { */
+            let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
+            Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
+          /* } */
         }
-      /* | Path(Path.Pident({stamp, name})) when stamp != 0 => {
-           let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
-           Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
-         } */
-      | _ => ()
-      };
+        };
       Collector.data.locations = [(loc, typ, definition), ...Collector.data.locations]
     };
     let enter_signature_item = (item) =>
