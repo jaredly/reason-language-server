@@ -18,6 +18,8 @@ open Something;
 
 let y = x + 10;
 
+let z = x * x;
+
 let aThing = 10 + Other.later;
 
 /** Some docs about this **awesome** thing. */

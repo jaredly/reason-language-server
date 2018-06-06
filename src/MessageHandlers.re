@@ -107,13 +107,23 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open InfixResult;
     Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
       open Infix;
-      let references = (State.getDefinitionData(uri, state) |?> data => {
-        (Definition.openReferencesAtPos(data, pos) |?>> List.map(((_, _, loc)) => loc)) |?# lazy (
-          Definition.stampAtPos(pos, data) |?> stamp => Definition.highlightsForStamp(stamp, data) |?>> List.map(((_, loc)) => loc)
-        )
-      }) |? [];
-      open Rpc.J;
-      (state, l(references |> List.map(Protocol.locationOfLoc(~fname=uri))))
+      (State.getDefinitionData(uri, state)
+      |?> data => State.referencesForPos(uri, pos, data, state)
+      /* Definition.stampAtPos(pos, data) */
+      |?>> allReferences => {
+        open Rpc.J;
+        (
+          state,
+          l(
+            allReferences
+            |> List.map(
+                ((uri, references)) =>
+                  List.map(((_, loc)) => Protocol.locationOfLoc(~fname=uri, loc), references)
+              )
+            |> List.concat
+          )
+        );
+      }) |? (state, Json.Null)
     };
   }),
 
@@ -122,49 +132,19 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     Protocol.rPositionParams(params) |?> ((uri, pos)) => RJson.get("newName", params) |?> RJson.string
     |?> newName => {
       open Infix;
-      let thisModName = FindFiles.getName(uri);
       (State.getDefinitionData(uri, state)
-      |?> data => Definition.stampAtPos(pos, data)
-      |?> stamp => {
-        let externalChanges = (Definition.isStampExported(stamp, data) |?>> exportedName => {
-          optMap(((modname, (cmt, src))) => {
-            if (modname == thisModName) {
-              None
-            } else {
-              Log.log("in rename " ++ cmt);
-              State.getDefinitionData("file://" ++ src, state) |?> data => {
-                Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
-                  let realUses = Utils.filterMap(((path, loc)) => {
-                    if (path == [exportedName]) {
-                      Some((`Read, Utils.endOfLocation(loc, String.length(exportedName))))
-                    } else {
-                      None
-                    }
-                  }, uses);
-                  if (realUses == []) {
-                    None
-                  } else {
-                    Some(("file://" ++ src, realUses))
-                  }
-                }
-              }
-            }
-          }, state.State.localModules)
-          }) |? [];
-        (Definition.highlightsForStamp(stamp, data) |?>> positions => {
-
-          let allChanges = [(uri, positions), ...externalChanges];
+      |?> data => State.referencesForPos(uri, pos, data, state)
+      |?>> allReferences => {
 
         open Rpc.J;
         Ok((state, o([
-          ("changes", o(allChanges |> List.map(((uri, positions)) =>
+          ("changes", o(allReferences |> List.map(((uri, positions)) =>
             (uri, l(positions |> List.map(((_, loc)) => o([
               ("range", Protocol.rangeOfLoc(loc)),
               ("newText", s(newName)),
             ]))))
           )))
         ])))
-        })
       }) |? Ok((state, Json.Null))
     };
   }),
@@ -184,8 +164,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           switch item {
           | Definition.Module(_) => None
           | Type(t) => None
-          /* TODO maybe types are useful? but maybe it's redundant. */
-          /* | Type(t) => PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString |> s => Some((s, loc)) */
           | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
           }
         }) : [];

@@ -177,3 +177,36 @@ let getResolvedDefinition = (uri, defn, data, state) => {
 let definitionForPos = (uri, pos, data, state) =>
   Definition.locationAtPos(pos, data)
   |?> (((_, _, defn)) => getResolvedDefinition(uri, defn, data, state));
+
+let referencesForPos = (uri, pos, data, state) => {
+  /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
+  Definition.stampAtPos(pos, data)
+  |?> stamp => {
+    let externals = (Definition.isStampExported(stamp, data) |?>> exportedName => {
+      let thisModName = FindFiles.getName(uri);
+      optMap(((modname, (cmt, src))) => {
+        if (modname == thisModName) {
+          None
+        } else {
+          getDefinitionData("file://" ++ src, state) |?> data => {
+            Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
+              let realUses = Utils.filterMap(((path, loc)) => {
+                if (path == [exportedName]) {
+                  Some((`Read, Utils.endOfLocation(loc, String.length(exportedName))))
+                } else {
+                  None
+                }
+              }, uses);
+              if (realUses == []) {
+                None
+              } else {
+                Some(("file://" ++ src, realUses))
+              }
+            }
+          }
+        }
+      }, state.localModules)
+    }) |? [];
+    Definition.highlightsForStamp(stamp, data) |?>> positions => [(uri, positions), ...externals]
+  }
+};
