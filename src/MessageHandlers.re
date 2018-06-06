@@ -108,21 +108,25 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
       open Infix;
       (State.getDefinitionData(uri, state)
-      |?> data => State.referencesForPos(uri, pos, data, state)
-      /* Definition.stampAtPos(pos, data) */
-      |?>> allReferences => {
-        open Rpc.J;
-        (
-          state,
-          l(
-            allReferences
-            |> List.map(
-                ((uri, references)) =>
-                  List.map(((_, loc)) => Protocol.locationOfLoc(~fname=uri, loc), references)
+      |?> data =>
+      switch (Definition.openReferencesAtPos(data, pos)) {
+        | Some(references) => Some((state, Json.Array(references |> List.map(((_, _, loc)) => Protocol.locationOfLoc(~fname=uri, loc)))))
+        | None =>
+          State.referencesForPos(uri, pos, data, state)
+          |?>> allReferences => {
+            open Rpc.J;
+            (
+              state,
+              l(
+                allReferences
+                |> List.map(
+                    ((uri, references)) =>
+                      List.map(((_, loc)) => Protocol.locationOfLoc(~fname=uri, loc), references)
+                  )
+                |> List.concat
               )
-            |> List.concat
-          )
-        );
+            );
+          }
       }) |? (state, Json.Null)
     };
   }),
