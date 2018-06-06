@@ -120,8 +120,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
               l(
                 allReferences
                 |> List.map(
-                    ((uri, references)) =>
-                      List.map(((_, loc)) => Protocol.locationOfLoc(~fname=uri, loc), references)
+                    ((fname, references)) =>
+                      (fname == uri ? List.filter(((_, loc)) => !Protocol.locationContains(loc, pos), references) : references) |>
+                      List.map(((_, loc)) => Protocol.locationOfLoc(~fname, loc))
                   )
                 |> List.concat
               )

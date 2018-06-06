@@ -34,6 +34,11 @@ let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => o([
     ("character", i(pos_cnum - pos_bol))
 ]);
 
+let tupleOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => (
+    pos_lnum - 1,
+    pos_cnum - pos_bol
+);
+
 let markup = text => Json.Object([("kind", Json.String("markdown")), ("value", Json.String(text))]);
 
 let rangeOfLoc = ({Location.loc_start, loc_end}) => o([
@@ -50,3 +55,8 @@ let rangeOfInts = (l0, c0, l1, c1) => o([
     ("start", pos(~line=l0, ~character=c0)),
     ("end", pos(~line=l1, ~character=c1)),
 ]);
+
+let locationContains = ({Location.loc_start, loc_end}, pos) => {
+    tupleOfLexing(loc_start) <= pos &&
+    tupleOfLexing(loc_end) >= pos
+};
