@@ -1,18 +1,17 @@
 {
   "name": "@jaredly/reason-language-server",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "scripts": {
     "start": "bsb -make-world -backend native -w",
     "clean": "bsb -clean-world",
     "watch": "bsb -make-world -backend native -w",
-    "package": "npm run package:bundle",
-    "package:bundle": "cd client && npm i && vsce package",
+    "package": "cp lib/bs/native/bin.native client && cd client && vsce package",
     "postinstall": "bsb -make-world -backend native"
   },
   "keywords": [
-    "BuckleScript",
-    "documentation",
-    "generator"
+    "Reason",
+    "lsp",
+    "IDE"
   ],
   "repository": {
     "url": "jaredly/language-server",

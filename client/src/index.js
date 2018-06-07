@@ -17,7 +17,7 @@ const getLocation = (context) => {
         // I guess it's 9mb binary. I wonder if I can cut that down?
         binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
         if (!fs.existsSync(binaryLocation)) {
-            binaryLocation = context.asAbsolutePath('../bin.native')
+            binaryLocation = context.asAbsolutePath('./bin.native')
             if (!fs.existsSync(binaryLocation)) {
                 vscode.window.showErrorMessage('Reason Language Server not found! Please install the npm package @jaredly/reason-language-server to enable IDE functionality');
                 return null
@@ -92,7 +92,7 @@ function activate(context) {
         if (client) {
             client.stop();
         }
-        const location = getLocation()
+        const location = getLocation(context)
         if (!location) return
         client = new LanguageClient(
             'reason-language-server',
