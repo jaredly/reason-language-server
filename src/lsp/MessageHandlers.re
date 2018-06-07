@@ -8,7 +8,7 @@ let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @
 let log = Log.log;
 
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
-type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
+/* type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler; */
 
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
