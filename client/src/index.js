@@ -7,16 +7,20 @@ const vscode = require("vscode");
 const {LanguageClient} = require("vscode-languageclient");
 const path = require('path')
 const fs = require('fs')
-// const DEV = false;
 
-const getLocation = () => {
+const getLocation = (context) => {
     let config = vscode.workspace.getConfiguration('reason_language_server')
 
     let binaryLocation = config.get('location')
 
     if (!binaryLocation) {
-        binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
-        // binaryLocation = path.join(vscode.workspace.rootPath, '..', 'lib', 'bs', 'native', 'bin.native')
+        // see if it's bundled with the extension
+        // hmm actually I could bundle one for each platform & probably be fine
+        // I guess it's 9mb binary. I wonder if I can cut that down?
+        binaryLocation = context.asAbsolutePath('../bin.native')
+        if (!fs.existsSync(binaryLocation)) {
+            binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
+        }
     } else {
         if (!binaryLocation.startsWith('/')) {
             binaryLocation = path.join(vscode.workspace.rootPath, binaryLocation)
@@ -44,7 +48,6 @@ function activate(context) {
         synchronize: {
             // Synchronize the setting section 'reason_language_server' to the server
             configurationSection: 'reason_language_server',
-            // Notify the server about file changes to '.clientrc files contain in the workspace
             fileEvents: vscode.workspace.createFileSystemWatcher('**/bsconfig.json')
         }
     };
@@ -68,6 +71,16 @@ function activate(context) {
         }, 500);
         context.subscriptions.push({dispose: () => clearInterval(checkForBinaryChange)})
     }
+
+    /**
+     * client.sendRequest(...).then(response => {
+     * })
+     *
+     * client.sendNotification()....
+     * that could be a way to implement the code actions that I want to do.
+     *
+     * alsooo I think I want
+     */
 
     const restart = () => {
         if (client) {

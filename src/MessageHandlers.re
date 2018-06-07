@@ -244,6 +244,44 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
   }),
 
+  ("textDocument/documentSymbol", (state, params) => {
+    open InfixResult;
+    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
+    |?> uri => {
+      open Infix;
+      /* let items = */
+      let items = State.getCompilationResult(uri, state) |> AsYouType.getResult |?>> snd
+      |?# lazy(State.getLastDefinitions(uri, state))
+      |?>> ((({Definition.topLevel, stamps})) => {
+        let rec getItems = (path, stamp) => {
+          let (name, loc, item, docs, scopeRange) = Hashtbl.find(stamps, stamp);
+          let res = switch (item) {
+            | Module(contents) => {
+              let children = contents |> List.map(((_, stamp)) => getItems(path @ [name], stamp)) |> List.concat;
+              Some((`Module, children))
+            }
+            | Type(t) => Some((Protocol.typeKind(t), []))
+            | Constructor(_) => None
+            | Attribute(_) => None
+            | Value(v) => Some((Protocol.variableKind(v), []))
+          };
+          res |?>> ((((typ, children))) => [(name, typ, loc, path), ...children]) |? []
+        };
+        topLevel |> List.map(((name, stamp)) => getItems([], stamp)) |> List.concat;
+      });
+      (items |?>> items => {
+        open Rpc.J;
+        Ok((state, l(items |> List.map(((name, typ, loc, path)) => o([
+          ("name", s(name)),
+          ("kind", i(Protocol.symbolKind(typ))),
+          ("location", Protocol.locationOfLoc(loc)),
+          ("containerName", s(String.concat(".", path)))
+        ])))))
+
+      }) |? Ok((state, Json.Null))
+    }
+  }),
+
   ("textDocument/formatting", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string

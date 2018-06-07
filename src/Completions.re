@@ -66,7 +66,7 @@ let rec showItem = (name, item) =>
   }
   };
 
-let isCapitalized = name => name.[0] >= 'A' && name.[0] <= 'Z';
+let isCapitalized = name => name != "" && (name.[0] >= 'A' && name.[0] <= 'Z');
 
 open Infix;
 
@@ -159,6 +159,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
   };
   switch parts {
   | [] => []
+  | [""] => []
   | [single] =>
     let localResults = switch (localData) {
     | None => []

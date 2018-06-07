@@ -2,14 +2,11 @@
   "name": "@jaredly/reason-language-server",
   "version": "1.0.0",
   "scripts": {
-    "start": "bsb -make-world -backend native",
+    "start": "bsb -make-world -backend native -w",
     "clean": "bsb -clean-world",
     "watch": "bsb -make-world -backend native -w",
     "package": "npm run package:bundle",
-    "// package:cp": "rm -rf tmp; mkdir tmp; cp -r bsconfig.json package.json src omd odoc_parser bin lib tmp; mkdir tmp/node_modules; cp package.thin.json tmp/package.json",
-    "// package:remap": "sed -i .bak 's/file:\\.\\.\\//file:..\\/tmp/' client/package.json",
     "package:bundle": "cd client && npm i && vsce package",
-    "// package:done": "mv client/package.json.bak client/package.json && rm -rf tmp",
     "postinstall": "bsb -make-world -backend native"
   },
   "keywords": [
