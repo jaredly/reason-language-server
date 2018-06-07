@@ -9,21 +9,27 @@ const path = require('path')
 const fs = require('fs')
 
 const getLocation = (context) => {
-    let config = vscode.workspace.getConfiguration('reason_language_server')
-
-    let binaryLocation = config.get('location')
+    let binaryLocation = vscode.workspace.getConfiguration('reason_language_server').get('location')
 
     if (!binaryLocation) {
         // see if it's bundled with the extension
         // hmm actually I could bundle one for each platform & probably be fine
         // I guess it's 9mb binary. I wonder if I can cut that down?
-        binaryLocation = context.asAbsolutePath('../bin.native')
+        binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
         if (!fs.existsSync(binaryLocation)) {
-            binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
+            binaryLocation = context.asAbsolutePath('../bin.native')
+            if (!fs.existsSync(binaryLocation)) {
+                vscode.window.showErrorMessage('Reason Language Server not found! Please install the npm package @jaredly/reason-language-server to enable IDE functionality');
+                return null
+            }
         }
     } else {
         if (!binaryLocation.startsWith('/')) {
             binaryLocation = path.join(vscode.workspace.rootPath, binaryLocation)
+        }
+        if (!fs.existsSync(binaryLocation)) {
+            vscode.window.showErrorMessage('Reason Language Server not found! You specified ' + binaryLocation);
+            return null
         }
     }
     return binaryLocation
@@ -87,6 +93,7 @@ function activate(context) {
             client.stop();
         }
         const location = getLocation()
+        if (!location) return
         client = new LanguageClient(
             'reason-language-server',
             'Reason Language Server',
@@ -109,6 +116,12 @@ function activate(context) {
             interval = null
         }
     }
+
+    vscode.workspace.onDidChangeConfiguration(evt => {
+        if (evt.affectsConfiguration('reason_language_server.location')) {
+            restart()
+        }
+    })
 
     restart();
 
