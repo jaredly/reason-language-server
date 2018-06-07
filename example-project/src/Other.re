@@ -5,12 +5,12 @@
 
 let something = 10;
 
-type person = {firstName: string, age: int};
+type person = {name: string, age: int};
 
-type animals = Wolf(int) | Cat(string) | Mouse;
+type animals = Dogz(int) | Cat(string) | Mouse;
 
-let m = Wolf(1);
+let m = Dogz(1);
 
-let z = {firstName: "hi", age: 20};
+let z = {name: "hi", age: 20};
 
 /* let e = z.name; */

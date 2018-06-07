@@ -7,9 +7,9 @@ string_of_bool; */
 module Something = {
   open Other;
 
-  let m = {firstName: "Me", age: 0};
-  let animal = Wolf(10);
-  let other = Wolf(2);
+  let m = {name: "Me", age: 0};
+  let animal = Dogz(10);
+  let other = Dogz(2);
   let me = Cat("Hie");
   let x = something + 10;
 };

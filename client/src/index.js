@@ -7,18 +7,38 @@ const vscode = require("vscode");
 const {LanguageClient} = require("vscode-languageclient");
 const path = require('path')
 const fs = require('fs')
-const DEV = true;
+// const DEV = false;
+
+const getLocation = () => {
+    let config = vscode.workspace.getConfiguration('reason_language_server')
+
+    let binaryLocation = config.get('location')
+
+    if (!binaryLocation) {
+        binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
+        // binaryLocation = path.join(vscode.workspace.rootPath, '..', 'lib', 'bs', 'native', 'bin.native')
+    } else {
+        if (!binaryLocation.startsWith('/')) {
+            binaryLocation = path.join(vscode.workspace.rootPath, binaryLocation)
+        }
+    }
+    return binaryLocation
+}
+
+const newClient = (clientOptions, location) => {
+    return new LanguageClient(
+        'reason-language-server',
+        'Reason Language Server',
+        serverOptions,
+        clientOptions
+    )
+}
+
+const shouldReload = () => vscode.workspace.getConfiguration('reason_language_server').get('reloadOnChange')
 
 function activate(context) {
     // The server is implemented in reason
-    let binaryLocation = DEV
-    ? context.asAbsolutePath(path.join('..', 'lib', 'bs', 'native', 'bin.native'))
-    : context.asAbsolutePath(path.join('node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native'));
 
-    let serverOptions = {
-        command: binaryLocation,
-        args: [],
-    };
     let clientOptions = {
         documentSelector: [{scheme: 'file', language: 'reason'}],
         synchronize: {
@@ -28,35 +48,16 @@ function activate(context) {
             fileEvents: vscode.workspace.createFileSystemWatcher('**/bsconfig.json')
         }
     };
-    let client = new LanguageClient(
-        'reason-language-server',
-        'Reason Language Server',
-        serverOptions,
-        clientOptions
-    )
-    // Push the disposable to the context's subscriptions so that the
-    // client can be deactivated on extension deactivation
-    context.subscriptions.push(client.start());
 
-    let lastStartTime = Date.now();
-    const restart = () => {
-        client.stop();
-        client = new LanguageClient(
-            'reason-language-server',
-            'Reason Language Server',
-            serverOptions,
-            clientOptions
-        );
-        lastStartTime = Date.now()
-        context.subscriptions.push(client.start());
-        vscode.window.showInformationMessage('Reason language server restarted');
-    }
+    let client = null
+    let lastStartTime = null
+    let interval = null
 
-    if (DEV) {
+    const startChecking = (location) => {
         vscode.window.showInformationMessage('DEBUG MODE: Will auto-restart the reason language server if it recompiles');
-        const checkForBinaryChagne = setInterval(() => {
+        interval = setInterval(() => {
             try {
-                const stat = fs.statSync(binaryLocation)
+                const stat = fs.statSync(location)
                 const mtime = stat.mtime.getTime()
                 if (mtime > lastStartTime) {
                     restart()
@@ -67,6 +68,36 @@ function activate(context) {
         }, 500);
         context.subscriptions.push({dispose: () => clearInterval(checkForBinaryChange)})
     }
+
+    const restart = () => {
+        if (client) {
+            client.stop();
+        }
+        const location = getLocation()
+        client = new LanguageClient(
+            'reason-language-server',
+            'Reason Language Server',
+            {
+                command: location,
+                args: [],
+            },
+            clientOptions
+        );
+        lastStartTime = Date.now()
+        context.subscriptions.push(client.start());
+        vscode.window.showInformationMessage('Reason language server restarted');
+        if (shouldReload()) {
+            if (!interval) {
+                startChecking(location)
+            }
+        } else if (interval) {
+            vscode.window.showInformationMessage('DEBUG MODE OFF - no longer monitoring reason-language-server binary');
+            clearInterval(interval)
+            interval = null
+        }
+    }
+
+    restart();
 
     vscode.commands.registerCommand('reason-language-server.restart', restart);
 }
