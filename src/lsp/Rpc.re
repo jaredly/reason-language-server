@@ -13,7 +13,7 @@ module J = {
 
 open Infix;
 
-type jsonrpc = Message(Json.t, string, Json.t) | Notification(string, Json.t);
+type jsonrpc = Message(float, string, Json.t) | Notification(string, Json.t);
 
 let readMessage = (log, input) => {
   let clength = input_line(input);
@@ -30,7 +30,7 @@ let readMessage = (log, input) => {
     let json = try (Json.parse(raw)) {
     | Failure(message) => failwith("Unable to parse message " ++ raw ++ " as json: " ++ message)
     };
-    let id = Json.get("id", json);
+    let id = Json.get("id", json) |?> Json.number;
     let method = Json.get("method", json) |?> Json.string |! "method required";
     let params = Json.get("params", json) |! "params required";
     switch id {
@@ -52,7 +52,7 @@ let sendMessage = (log, output, id, result) => {
   open Json;
   open J;
   let content = Json.stringify(o([
-    ("id", id),
+    ("id", Number(id)),
     ("jsonrpc", s("2.0")),
     ("result", result)]));
   log("Sending response " ++ content);
@@ -63,7 +63,7 @@ let sendError = (log, output, id, error) => {
   open Json;
   open J;
   let content = Json.stringify(o([
-    ("id", id),
+    ("id", Number(id)),
     ("jsonrpc", s("2.0")),
     ("error", error)]));
   log("Sending response " ++ content);
