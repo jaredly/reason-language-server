@@ -1,5 +1,6 @@
 type state = {
   rootPath: string,
+  rootUri: string,
   compilerPath: string,
   refmtPath: string,
   localCompiledBase: string,
@@ -138,7 +139,7 @@ let resolveDefinition = (uri, defn, state) =>
         maybeFound(List.assoc(top), state.localModules)
         |?> (
           ((cmt, src)) => {
-            let uri = "file://" ++ src;
+            let uri = Utils.toUri(src);
             maybeFound(Hashtbl.find(state.compiledDocuments), uri)
             |?> AsYouType.getResult
             |?>> ((defn) => (defn, uri))
@@ -155,7 +156,7 @@ let resolveDefinition = (uri, defn, state) =>
         maybeFound(Hashtbl.find(state.pathsForModule), top)
         |?> (
           ((cmt, src)) => {
-            let uri = "file://" ++ src;
+            let uri = Utils.toUri(src);
             if (children == []) {
               Some((topLocation(uri), docsForCmt(cmt, src, state) |?> fst, uri))
             } else {
@@ -188,7 +189,7 @@ let referencesForPos = (uri, pos, data, state) => {
         if (modname == thisModName) {
           None
         } else {
-          getDefinitionData("file://" ++ src, state) |?> data => {
+          getDefinitionData(Utils.toUri(src), state) |?> data => {
             Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
               let realUses = Utils.filterMap(((path, loc, suffix)) => {
                 if (path == [exportedName] && suffix == suffixName) {
@@ -200,7 +201,7 @@ let referencesForPos = (uri, pos, data, state) => {
               if (realUses == []) {
                 None
               } else {
-                Some(("file://" ++ src, realUses))
+                Some((Utils.toUri(src), realUses))
               }
             }
           }

@@ -9,6 +9,14 @@ let sliceToEnd = (s, start) => {
   start <= l ? String.sub(s, start, l - start) : s;
 };
 
+let toUri = path => if (Sys.os_type == "Unix") {
+  "file://" ++ path
+} else {
+  "file://" ++ 
+  (Str.global_replace(Str.regexp_string("\\"), "/", path)
+|> Str.global_replace(Str.regexp_string("C:"), "/c%3A"))
+};
+
 let parseUri = uri => {
   if (startsWith(uri, "file://")) {
     let withoutScheme = sliceToEnd(uri, String.length("file://"));
