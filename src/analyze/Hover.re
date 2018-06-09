@@ -31,8 +31,8 @@ let getHover = (uri, line, character, state) => {
             }
           )
           ++ "\n\n*"
-          ++ (Utils.startsWith(docUri, "file://" ++ state.rootPath ++ "/")
-          ? Utils.sliceToEnd(docUri, String.length("file://" ++ state.rootPath ++ "/"))
+          ++ (Utils.startsWith(docUri, state.rootUri ++ "/")
+          ? Utils.sliceToEnd(docUri, String.length(state.rootUri ++ "/"))
           : uri) ++ "*"
         };
       Some((tooltip, loc));

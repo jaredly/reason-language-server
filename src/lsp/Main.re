@@ -67,18 +67,19 @@ let capabilities =
 open State;
 
 let getInitialState = (params) => {
-  let uri = Json.get("rootUri", params) |?> Json.string |?> Utils.parseUri |> resultOfOption("No root uri");
+  let uri = Json.get("rootUri", params) |?> Json.string |! "Must have a rootUri";
+  let path = uri |> Utils.parseUri |> resultOfOption("No root uri");
   open InfixResult;
-  uri |?> uri => {
-    Files.mkdirp(uri /+ "node_modules");
-    Files.mkdirp(uri /+ "node_modules/.lsp");
-    Log.setLocation(uri /+ "node_modules/.lsp/debug.log");
-    Files.readFile(uri /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
-      let compiledBase = FindFiles.getCompiledBase(uri, config);
-      let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, uri, config);
+  path |?> rootPath => {
+    Files.mkdirp(rootPath /+ "node_modules");
+    Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
+    Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
+    Files.readFile(rootPath /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
+      let compiledBase = FindFiles.getCompiledBase(rootPath, config);
+      let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
       let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
-      let localModules = FindFiles.findProjectFiles(~debug=false, None, uri, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-      let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, uri, config);
+      let localModules = FindFiles.findProjectFiles(~debug=false, None, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+      let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, rootPath, config);
       let cmtCache = Hashtbl.create(30);
       let documentText = Hashtbl.create(5);
 
@@ -99,13 +100,14 @@ let getInitialState = (params) => {
       });
 
       {
-        rootPath: uri,
+        rootPath: rootPath,
+        rootUri: uri,
         compilerPath: FindFiles.isNative(config) ?
-          uri /+ "node_modules/bs-platform/vendor/ocaml/ocamlopt.opt -c"
-          : uri /+ "node_modules/bs-platform/lib/bsc.exe",
+          rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+          : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
         refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
-          uri /+ "node_modules/bs-platform/lib/refmt3.exe",
-          uri /+ "node_modules/bs-platform/lib/refmt.exe",
+          rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
+          rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
         ]),
         documentText,
         localCompiledBase: compiledBase,
@@ -113,15 +115,15 @@ let getInitialState = (params) => {
         localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)),
         dependencyModules,
         cmtCache,
-        compilationFlags: MerlinFile.getFlags(uri) |> Result.withDefault([""]) |> String.concat(" "),
+        compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
         pathsForModule,
         compiledDocuments: Hashtbl.create(10),
         lastDefinitions: Hashtbl.create(10),
         documentTimers: Hashtbl.create(10),
         includeDirectories: [
           FindFiles.isNative(config)
-          ? uri /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml"
-          : uri /+ "node_modules/bs-platform/lib/ocaml",
+          ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
+          : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
           ...dependencyDirectories
         ] @ localCompiledDirs
         /* docs, */
@@ -252,5 +254,6 @@ let main = () => {
     ~getInitialState
   );
   log("Finished");
-  close_out(out^);
+  out^ |?< close_out;
+  /*  close_out(out^); */
 };

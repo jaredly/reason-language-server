@@ -74,7 +74,7 @@ let locationOfLoc = (~fname=?, {Location.loc_start: {Lexing.pos_fname}} as loc) 
       s(
         switch fname {
         | Some(x) => x
-        | None => "file://" ++ pos_fname
+        | None => Utils.toUri(pos_fname)
         }
       )
     )

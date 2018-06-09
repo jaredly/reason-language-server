@@ -1,13 +1,21 @@
-let out = ref(open_out("/tmp/lsp.log"));
+let out = ref(None);
 
-let setLocation = location => {
-  close_out(out^);
+/* out := Some(open_out("lsp.log")); */
+/*open_out("/tmp/lsp.log"));*/
+let setLocation = (location) => {
+  switch out^ {
+  | None => ()
+  | Some(out) => close_out(out)
+  };
   output_string(stderr, "Setting log location: " ++ location ++ "\n");
-  out := open_out(location);
+  out := Some(open_out(location))
 };
 
-let log = msg => {
+let log = (msg) =>
   /* output_string(stderr, msg ++ "\n"); */
-  output_string(out^, msg ++ "\n");
-  flush(out^);
-};
+  switch out^ {
+  | None => ()
+  | Some(out) =>
+    output_string(out, msg ++ "\n");
+    flush(out)
+  };

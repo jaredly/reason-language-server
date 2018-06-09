@@ -62,8 +62,8 @@ let getDependencyDirs = (base, config) => {
       let isNative = isNative(inner);
       let compiledBase = oneShouldExist("Cannot find directory for compiled artifacts.",
         isNative
-          ? [loc /+ "lib/bs/js", loc /+ "lib/bs/native"]
-          : [loc /+ "lib/bs", loc /+ "lib/ocaml"]
+          ? [loc /+ "lib" /+ "bs" /+ "js", loc /+ "lib" /+ "bs" /+ "native"]
+          : [loc /+ "lib" /+ "bs", loc /+ "lib" /+ "ocaml"]
       );
       /* if (List.mem("js", allowedKinds)) { */
         [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
@@ -121,8 +121,8 @@ let getNamespace = config => {
 
 let getCompiledBase = (root, config) => oneShouldExist("Cannot find directory for compiled artifacts.",
     isNative(config)
-      ? [root /+ "lib/bs/native"]
-      : [root /+ "lib/bs", root /+ "lib/ocaml"]
+      ? [root /+ "lib" /+ "bs" /+ "native"]
+      : [root /+ "lib" /+ "bs", root /+ "lib" /+ "ocaml"]
   );
 
 /**
@@ -183,12 +183,12 @@ let findDependencyFiles = (~debug, base, config) => {
   let (directories, files) = List.split(depFiles);
   let files = List.concat(files);
   let directories = List.concat(directories);
-  let results = files @ loadStdlib(base /+ "node_modules/bs-platform/lib/ocaml");
+  let results = files @ loadStdlib(base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml");
   (
     needsCompilerLibs(config)
-    ? [base /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml/compiler-libs", ...directories]
+    ? [base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs", ...directories]
     : directories,
     needsCompilerLibs(config)
-  ? loadStdlib(base /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml/compiler-libs") @ results
+  ? loadStdlib(base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs") @ results
   : results)
 };

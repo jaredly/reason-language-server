@@ -13,4 +13,6 @@ let m = Dogz(1);
 
 let z = {name: "hi", age: 20};
 
+let later = 20;
+
 /* let e = z.name; */

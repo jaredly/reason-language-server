@@ -14,17 +14,22 @@ module Something = {
   let x = something + 10;
 };
 
-/*
+
 open Something;
 
 let y = x + 10;
+
+switch me {
+| Dogz(n) => ()
+| _ => ()
+};
 
 let z = x * x;
 
 let aThing = 10 + Other.later;
 
 /** Some docs about this **awesome** thing. */
-let awesome = 100;
+let awesome = 100 + m.age;
 
 let thing = "thing";
 
@@ -118,4 +123,3 @@ switch (y) {
 /* let x = [%raw " hello"]; */
 
 let awesome = "hello";
-*/
