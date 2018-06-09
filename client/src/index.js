@@ -20,7 +20,7 @@ const getLocation = (context) => {
         if (!fs.existsSync(binaryLocation)) {
             binaryLocation = context.asAbsolutePath('bin.native' + ext)
             if (!fs.existsSync(binaryLocation)) {
-                vscode.window.showErrorMessage('Reason Language Server not found! Please install the npm package @jaredly/reason-language-server to enable IDE functionality  ' + binaryLocation);
+                vscode.window.showErrorMessage('Reason Language Server not found! Please install the npm package @jaredly/reason-language-server to enable IDE functionality');
                 return null
             }
         }
@@ -101,8 +101,8 @@ function activate(context) {
         );
         lastStartTime = Date.now()
         context.subscriptions.push(client.start());
-        vscode.window.showInformationMessage('Reason language server restarted');
         if (shouldReload()) {
+            vscode.window.showInformationMessage('Reason language server restarted');
             if (!interval) {
                 startChecking(location)
             }
