@@ -29,8 +29,8 @@ let relpath = (base, path) => {
     let baselen = String.length(base);
     let rest = String.sub(path, baselen, String.length(path) - baselen);
     if (rest == "") {
-      "./"
-    } else if (rest.[0] == '/') {
+      "." ++ Filename.dir_sep
+    } else if (rest.[0] == Filename.dir_sep.[0]) {
       if (String.length(rest) > 1 && rest.[1] == '.') {
         sliceToEnd(rest, 1)
       } else {
@@ -39,7 +39,7 @@ let relpath = (base, path) => {
     } else if (rest.[0] == '.') {
       rest
     } else {
-      "./" ++ rest
+      "." ++ Filename.dir_sep ++ rest
     }
   } else {
     let rec loop = (bp, pp) => {
@@ -50,8 +50,8 @@ let relpath = (base, path) => {
       | _ => (bp, pp)
       }
     };
-    let (base, path) = loop(split("/", base), split("/", path));
-    String.concat("/", (base == [] ? ["."] : List.map((_) => "..", base)) @ path) |> removeExtraDots
+    let (base, path) = loop(split(Filename.dir_sep, base), split(Filename.dir_sep, path));
+    String.concat(Filename.dir_sep, (base == [] ? ["."] : List.map((_) => "..", base)) @ path) |> removeExtraDots
   }
 };
 

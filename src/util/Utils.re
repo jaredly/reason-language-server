@@ -11,7 +11,15 @@ let sliceToEnd = (s, start) => {
 
 let parseUri = uri => {
   if (startsWith(uri, "file://")) {
-    Some(sliceToEnd(uri, String.length("file://")))
+    let withoutScheme = sliceToEnd(uri, String.length("file://"));
+      if (Sys.os_type == "Unix") {
+        Some(withoutScheme)
+      } else {
+        Some(
+        withoutScheme |> Str.global_replace(Str.regexp_string("/c%3A"), "C:")
+        |> Str.split(Str.regexp_string("/")) |> String.concat({|\|})
+        )
+      }
   } else {
     None
   }

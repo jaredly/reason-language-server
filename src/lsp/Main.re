@@ -71,8 +71,8 @@ let getInitialState = (params) => {
   open InfixResult;
   uri |?> uri => {
     Files.mkdirp(uri /+ "node_modules");
-    Files.mkdirp(uri /+ "node_modules/.lsp");
-    Log.setLocation(uri /+ "node_modules/.lsp/debug.log");
+    Files.mkdirp(uri /+ "node_modules" /+ ".lsp");
+    Log.setLocation(uri /+ "node_modules" /+ ".lsp" /+ "debug.log");
     Files.readFile(uri /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
       let compiledBase = FindFiles.getCompiledBase(uri, config);
       let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, uri, config);
@@ -101,11 +101,11 @@ let getInitialState = (params) => {
       {
         rootPath: uri,
         compilerPath: FindFiles.isNative(config) ?
-          uri /+ "node_modules/bs-platform/vendor/ocaml/ocamlopt.opt -c"
-          : uri /+ "node_modules/bs-platform/lib/bsc.exe",
+          uri /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+          : uri /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
         refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
-          uri /+ "node_modules/bs-platform/lib/refmt3.exe",
-          uri /+ "node_modules/bs-platform/lib/refmt.exe",
+          uri /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
+          uri /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
         ]),
         documentText,
         localCompiledBase: compiledBase,
@@ -120,8 +120,8 @@ let getInitialState = (params) => {
         documentTimers: Hashtbl.create(10),
         includeDirectories: [
           FindFiles.isNative(config)
-          ? uri /+ "node_modules/bs-platform/vendor/ocaml/lib/ocaml"
-          : uri /+ "node_modules/bs-platform/lib/ocaml",
+          ? uri /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
+          : uri /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
           ...dependencyDirectories
         ] @ localCompiledDirs
         /* docs, */
@@ -252,5 +252,6 @@ let main = () => {
     ~getInitialState
   );
   log("Finished");
-  close_out(out^);
+  out^ |?< close_out;
+  /*  close_out(out^); */
 };
