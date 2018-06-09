@@ -1,3 +1,14 @@
+
+
+let shellEscape = path => {
+  if (Sys.os_type == "Win32") {
+    /* TODO allow spaces in path...  */
+    path
+  } else {
+    Printf.sprintf("%S", path)
+  }
+};
+
 let execFull = (~input=?, ~env=Unix.environment(), cmd) => {
   let (cmd_out, cmd_in, cmd_err) = Unix.open_process_full(cmd, env);
 

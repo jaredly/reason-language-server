@@ -15,16 +15,18 @@ let getResult = result => switch result {
 
 let runRefmt = (~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ "lsp.ast";
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print binary --parse re > %S", refmt, target));
+  let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
+  let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
     Ok(target)
   } else {
+    Log.log("Failed to refmt " ++ cmd ++ " " ++ String.concat("\n", out @ error));
     Error(out @ error)
   }
 };
 
 let format = (text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%S --print re --parse re", refmt));
+  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --parse re", Commands.shellEscape(refmt)));
   if (success) {
     Ok(String.concat("\n", out))
   } else {

@@ -18,6 +18,9 @@
   "entries": [{
     "backend": "native",
     "main-module": "Bin"
+  }, {
+    "backend": "native",
+    "main-module": "TryThings"
   }],
   "refmt": 3
 }

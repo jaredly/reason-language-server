@@ -15,11 +15,12 @@ const getLocation = (context) => {
         // see if it's bundled with the extension
         // hmm actually I could bundle one for each platform & probably be fine
         // I guess it's 9mb binary. I wonder if I can cut that down?
-        binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native')
+        const ext = process.platform === 'win32' ? '.exe' : '';
+        binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native' + ext)
         if (!fs.existsSync(binaryLocation)) {
-            binaryLocation = context.asAbsolutePath('./bin.native')
+            binaryLocation = context.asAbsolutePath('bin.native' + ext)
             if (!fs.existsSync(binaryLocation)) {
-                vscode.window.showErrorMessage('Reason Language Server not found! Please install the npm package @jaredly/reason-language-server to enable IDE functionality');
+                vscode.window.showErrorMessage('Reason Language Server not found! Please install the npm package @jaredly/reason-language-server to enable IDE functionality  ' + binaryLocation);
                 return null
             }
         }
@@ -33,15 +34,6 @@ const getLocation = (context) => {
         }
     }
     return binaryLocation
-}
-
-const newClient = (clientOptions, location) => {
-    return new LanguageClient(
-        'reason-language-server',
-        'Reason Language Server',
-        serverOptions,
-        clientOptions
-    )
 }
 
 const shouldReload = () => vscode.workspace.getConfiguration('reason_language_server').get('reloadOnChange')
@@ -94,11 +86,15 @@ function activate(context) {
         }
         const location = getLocation(context)
         if (!location) return
+        const binLocation = process.platform === 'win32' ? location + '.hot.exe' : location 
+        if (binLocation != location) {
+            fs.writeFileSync(binLocation, fs.readFileSync(location))
+        }
         client = new LanguageClient(
             'reason-language-server',
             'Reason Language Server',
             {
-                command: location,
+                command: binLocation,
                 args: [],
             },
             clientOptions

@@ -62,8 +62,8 @@ let getDependencyDirs = (base, config) => {
       let isNative = isNative(inner);
       let compiledBase = oneShouldExist("Cannot find directory for compiled artifacts.",
         isNative
-          ? [loc /+ "lib/bs/js", loc /+ "lib/bs/native"]
-          : [loc /+ "lib/bs", loc /+ "lib/ocaml"]
+          ? [loc /+ "lib/bs/js", loc /+ "lib" /+ "bs" /+ "native"]
+          : [loc /+ "lib/bs", loc /+ "lib" /+ "ocaml"]
       );
       /* if (List.mem("js", allowedKinds)) { */
         [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
