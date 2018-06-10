@@ -3,6 +3,7 @@
   "version": "1.0.0-beta.1",
   "scripts": {
     "start": "bsb -make-world -backend native -w",
+    "build": "bsb -make-world -backend native",
     "clean": "bsb -clean-world",
     "watch": "bsb -make-world -backend native -w",
     "package": "cp lib/bs/native/bin.native client; cd client; vsce package",

@@ -87,7 +87,10 @@ let getCompilationResult = (uri, state) => {
     let text = Hashtbl.mem(state.documentText, uri) ? {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
       text
-    } : Utils.parseUri(uri) |! "not a uri";
+    } : {
+      let path = Utils.parseUri(uri) |! "not a uri";
+      Files.readFileExn(path)
+    };
     let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", state.compilerPath, state.refmtPath, state.includeDirectories, state.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
