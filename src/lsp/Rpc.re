@@ -26,7 +26,7 @@ let readMessage = (log, input) => {
     let offset = Sys.os_type == "Win32" ? 0 : -1; /* -1 for trailing \r */
     let num = String.sub(clength, cll, String.length(clength) - cll + offset);
     /* log("Num bytes to read: " ++ String.escaped(num)); */
-    let num = (num |> int_of_string) + 1;
+    let num = (num |> int_of_string) + (Sys.os_type == "Win32" ? 1 : 2);
     let buffer = Buffer.create(num);
     Buffer.add_channel(buffer, input, num);
     let raw = Buffer.contents(buffer);
