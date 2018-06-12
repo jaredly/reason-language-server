@@ -99,6 +99,14 @@ let getInitialState = (params) => {
         }
       });
 
+      let clientCapabilities = Infix.({
+        hoverMarkdown:
+          Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Utils.hasMarkdownCap |? true,
+        completionMarkdown:
+          Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params)
+            |?> Utils.hasMarkdownCap |? true,
+      });
+
       {
         rootPath: rootPath,
         rootUri: uri,
@@ -125,7 +133,8 @@ let getInitialState = (params) => {
           ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
           : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
           ...dependencyDirectories
-        ] @ localCompiledDirs
+        ] @ localCompiledDirs,
+        clientCapabilities,
         /* docs, */
       }
     };

@@ -1,3 +1,8 @@
+type clientCapabilities = {
+  hoverMarkdown: bool,
+  completionMarkdown: bool,
+};
+
 type state = {
   rootPath: string,
   rootUri: string,
@@ -23,6 +28,8 @@ type state = {
   lastDefinitions: Hashtbl.t(string, Definition.moduleData),
   documentTimers: Hashtbl.t(string, float),
   compilationFlags: string,
+
+  clientCapabilities: clientCapabilities,
   /* workspace folders... */
 };
 

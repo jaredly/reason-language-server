@@ -47,13 +47,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           let opens = PartialParser.findOpens(text, offset);
           /* */
           let localData = State.getLastDefinitions(uri, state);
+          let useMarkdown = state.clientCapabilities.completionMarkdown;
           Completions.get(currentModuleName, opens, parts, state, localData, pos) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n*" ++ (
+            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ (useMarkdown ? "*" : "") ++ (
               Utils.startsWith(uri, state.rootPath ++ "/") ? Utils.sliceToEnd(uri, String.length(state.rootPath ++ "/")) : uri
-              ) ++ "*") |?>> Protocol.markup |? null)),
+              ) ++ (useMarkdown ? "*" : "")) |?>> Protocol.markup |? null)),
             ("data", switch kind {
               | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src)), ("name", s(label))])
               | _ => null
