@@ -39,13 +39,17 @@ let capabilities =
         /* TODO list # as trigger character */
         ("triggerCharacters", l([s(".")]))
       ])),
-      ("signatureHelpProvider", t),
+      ("signatureHelpProvider", o([
+        ("triggerCharacters", l([s("(")]))
+      ])),
       ("definitionProvider", t),
       ("typeDefinitionProvider", t),
       ("referencesProvider", t),
       ("documentSymbolProvider", t),
       /* ("codeActionProvider", t), */
-      ("codeLensProvider", t),
+      ("codeLensProvider", o([
+        ("resolveProvider", t)
+      ])),
       ("documentHighlightProvider", t),
       ("renameProvider", t),
       ("documentRangeFormattingProvider", t),
