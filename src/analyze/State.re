@@ -10,10 +10,18 @@ type state = {
   rootUri: string,
   compilerPath: string,
   refmtPath: string,
+  documentText: Hashtbl.t(string, (string, int, bool)),
+  documentTimers: Hashtbl.t(string, float),
+  clientCapabilities: clientCapabilities,
+
+  /* Might change based on bsconfig.json / .merlin */
+  includeDirectories: list(string),
+  compilationFlags: string,
+
+  /* Depend on bsb having already run */
   localCompiledBase: string,
   localModules: list((string, (string, string))),
   localCompiledMap: list((string, string)),
-  includeDirectories: list(string),
   dependencyModules: list((FindFiles.modpath, (string, option(string)))),
   cmtCache:
     Hashtbl.t(
@@ -25,13 +33,9 @@ type state = {
       )
     ),
   pathsForModule: Hashtbl.t(string, (string, option(string))),
-  documentText: Hashtbl.t(string, (string, int, bool)),
   compiledDocuments: Hashtbl.t(string, AsYouType.result),
   lastDefinitions: Hashtbl.t(string, Definition.moduleData),
-  documentTimers: Hashtbl.t(string, float),
-  compilationFlags: string,
 
-  clientCapabilities: clientCapabilities,
   /* workspace folders... */
 };
 

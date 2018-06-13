@@ -1,6 +1,8 @@
 
 open Result;
 
+exception Exit(string);
+
 type messageSeverity =
   | Error
   | Warning
@@ -45,6 +47,13 @@ let handleMessage = (log, messageHandlers, id, method, params, state) => {
         ])));
       state
     }
+    | exception Exit(message) => {
+      Rpc.sendError(log, stdout, id, Rpc.J.(o([
+        ("code", i(-32603)), /* InternalError */
+        ("message", s(message))
+      ])));
+      exit(0)
+    }
     | exception e => {
         Rpc.sendError(log, stdout, id, Rpc.J.(o([
           ("code", i(-32603)), /* InternalError */
@@ -63,6 +72,10 @@ let handleNotification = (log, notificationHandlers, method, params, state) => {
     | handler => switch (handler(state, params)) {
     | Ok(state) => state
     | Error(string) => {showMessage(log, Error, string); state}
+    | exception Exit(message) => {
+      showMessage(log, Error, message);
+      exit(0)
+    }
     | exception e => {
       showMessage(log, Error, Printexc.to_string(e) ++ Printexc.get_backtrace());
       state
@@ -103,6 +116,13 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
         loop(state);
       }
       | Error(string) => Rpc.sendError(log, stdout, id, Json.String(string))
+      | exception Exit(message) => {
+        Rpc.sendError(log, stdout, id, Rpc.J.(o([
+          ("code", i(-32603)), /* InternalError */
+          ("message", s(message))
+        ])));
+        exit(0);
+      }
       | exception e => {
           Log.log("Failed to get initial state");
           Rpc.sendError(log, stdout, id, Rpc.J.(o([

@@ -119,10 +119,11 @@ let getNamespace = config => {
   isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
 };
 
-let getCompiledBase = (root, config) => oneShouldExist("Cannot find directory for compiled artifacts.",
-    isNative(config)
-      ? [root /+ "lib" /+ "bs" /+ "native"]
-      : [root /+ "lib" /+ "bs", root /+ "lib" /+ "ocaml"]
+let getCompiledBase = (root, config) =>
+  ifOneExists(
+    isNative(config) ?
+      [root /+ "lib" /+ "bs" /+ "native"] :
+      [root /+ "lib" /+ "bs", root /+ "lib" /+ "ocaml"],
   );
 
 /**
@@ -175,7 +176,7 @@ let findDependencyFiles = (~debug, base, config) => {
       let inner = Json.parse(text);
       let namespace = getNamespace(config);
       let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = getCompiledBase(loc, config);
+      let compiledBase = getCompiledBase(loc, config) |! "No compiled base found";
       let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
       let files = switch namespace {

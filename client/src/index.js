@@ -46,7 +46,10 @@ function activate(context) {
         synchronize: {
             // Synchronize the setting section 'reason_language_server' to the server
             configurationSection: 'reason_language_server',
-            fileEvents: vscode.workspace.createFileSystemWatcher('**/bsconfig.json')
+            fileEvents: [
+                vscode.workspace.createFileSystemWatcher('**/bsconfig.json'),
+                vscode.workspace.createFileSystemWatcher('**/.merlin')
+            ]
         }
     };
 
@@ -86,7 +89,7 @@ function activate(context) {
         }
         const location = getLocation(context)
         if (!location) return
-        const binLocation = process.platform === 'win32' ? location + '.hot.exe' : location 
+        const binLocation = process.platform === 'win32' ? location + '.hot.exe' : location
         if (binLocation != location) {
             fs.writeFileSync(binLocation, fs.readFileSync(location))
         }

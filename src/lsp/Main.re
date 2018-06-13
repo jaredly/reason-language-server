@@ -68,8 +68,6 @@ let capabilities =
     ])
 );
 
-open State;
-
 let getInitialState = (params) => {
   let uri = Json.get("rootUri", params) |?> Json.string |! "Must have a rootUri";
   let path = uri |> Utils.parseUri |> resultOfOption("No root uri");
@@ -80,6 +78,12 @@ let getInitialState = (params) => {
     Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
     Files.readFile(rootPath /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
       let compiledBase = FindFiles.getCompiledBase(rootPath, config);
+      let compiledBase = switch compiledBase {
+        | None => {
+          raise(BasicServer.Exit("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server."));
+        }
+        | Some(x) => x
+      };
       let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
       let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
       let localModules = FindFiles.findProjectFiles(~debug=false, None, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
@@ -103,7 +107,7 @@ let getInitialState = (params) => {
         }
       });
 
-      let clientCapabilities = Infix.({
+      let clientCapabilities = Infix.(State.{
         hoverMarkdown:
           Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true,
         completionMarkdown:
@@ -111,7 +115,7 @@ let getInitialState = (params) => {
             |?> Protocol.hasMarkdownCap |? true,
       });
 
-      {
+      State.{
         rootPath: rootPath,
         rootUri: uri,
         compilerPath: FindFiles.isNative(config) ?
@@ -144,6 +148,8 @@ let getInitialState = (params) => {
     };
   }
 };
+
+open State;
 
 let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
     |?> uri => Json.get("version", doc) |?> Json.number
