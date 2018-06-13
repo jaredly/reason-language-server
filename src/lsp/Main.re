@@ -78,16 +78,12 @@ let getInitialState = (params) => {
     Files.mkdirp(rootPath /+ "node_modules");
     Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
     Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
-    Log.log("Hello log file");
     Files.readFile(rootPath /+ "bsconfig.json") |> orError("No bsconfig.json found") |?>> Json.parse |?>> config => {
-      Log.log("got a config");
       let compiledBase = FindFiles.getCompiledBase(rootPath, config);
       let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
       let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
-      Log.log("finding project files");
       let localModules = FindFiles.findProjectFiles(~debug=false, None, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
       let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, rootPath, config);
-      Log.log("found dep files");
       let cmtCache = Hashtbl.create(30);
       let documentText = Hashtbl.create(5);
 
@@ -109,10 +105,10 @@ let getInitialState = (params) => {
 
       let clientCapabilities = Infix.({
         hoverMarkdown:
-          Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Utils.hasMarkdownCap |? true,
+          Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true,
         completionMarkdown:
           Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params)
-            |?> Utils.hasMarkdownCap |? true,
+            |?> Protocol.hasMarkdownCap |? true,
       });
 
       {
@@ -256,7 +252,6 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     }
   }),
 ];
-
 
 
 

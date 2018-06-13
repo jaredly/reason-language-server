@@ -9,6 +9,7 @@
   "sources": [
     {"dir": "src", "subdirs": true},
     {"dir": "bin", "type": "dev"},
+    {"dir": "tests", "type": "dev"},
     "omd",
     "odoc_parser"
   ],
@@ -20,7 +21,7 @@
     "main-module": "Bin"
   }, {
     "backend": "native",
-    "main-module": "TryThings"
+    "main-module": "Tester"
   }],
   "refmt": 3
 }

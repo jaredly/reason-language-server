@@ -138,3 +138,15 @@ let typeKind = (t) =>
   | Type_record(_) => `Interface
   | Type_variant(_) => `Enum
   };
+
+/*
+  returns true if a MarkupKind[] contains "markdown"
+  NOTE: maybe we should also check if "markdown" is first
+*/
+let hasMarkdownCap = (markupKind) =>
+  Infix.(
+    markupKind
+      |> Json.array
+      |?>> List.map(cap => Json.string(cap) |? "")
+      |?>> List.mem("markdown")
+  )

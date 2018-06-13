@@ -1,7 +1,8 @@
 let out = ref(None);
 
 /* out := Some(open_out("lsp.log")); */
-/*open_out("/tmp/lsp.log"));*/
+out := Some(open_out("/tmp/lsp.log"));
+
 let setLocation = (location) => {
   switch out^ {
   | None => ()

@@ -15,6 +15,16 @@ open Infix;
 
 type jsonrpc = Message(Json.t, string, Json.t) | Notification(string, Json.t);
 
+let messageFromJson = json => {
+  let id = Json.get("id", json);
+  let method = Json.get("method", json) |?> Json.string |! "method required";
+  let params = Json.get("params", json) |! "params required";
+  switch id {
+  | None => Notification(method, params)
+  | Some(id) => Message(id, method, params)
+  }
+};
+
 let readMessage = (log, input) => {
   let clength = input_line(input);
   let cl = "Content-Length: ";
@@ -33,13 +43,7 @@ let readMessage = (log, input) => {
     | Failure(message) => failwith("Unable to parse message " ++ raw ++ " as json: " ++ message)
     | err => failwith("Other failure " ++ raw ++ " message " ++ Printexc.to_string(err))
     };
-    let id = Json.get("id", json);
-    let method = Json.get("method", json) |?> Json.string |! "method required";
-    let params = Json.get("params", json) |! "params required";
-    switch id {
-    | None => Notification(method, params)
-    | Some(id) => Message(id, method, params)
-    }
+    messageFromJson(json)
   } else {
     failwith("Invalid header")
   }

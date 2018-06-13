@@ -1,8 +1,8 @@
-/* let someLongName = 10;
+let someLongName = 10;
 
 let otherLongName = "string";
 
-string_of_bool; */
+string_of_bool;
 
 module Something = {
   open Other;
@@ -26,7 +26,7 @@ switch me {
 
 let z = x * x;
 
-let aThing = 10 + Other.later;
+let aThing = 10 + Other.something;
 
 /** Some docs about this **awesome** thing. */
 let awesome = 100 + m.age;
