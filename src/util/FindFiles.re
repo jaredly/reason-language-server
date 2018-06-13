@@ -146,21 +146,16 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
 type modpath = Namespaced(string, string) | Plain(string);
 
 let loadStdlib = stdlib => {
-  Log.log("stdlib " ++ stdlib);
   let allFiles = Files.readDirectory(stdlib);
-  /* let compiledFiles = List.filter(isCompiledFile, allFiles); */
   let compileds = allFiles
   |> List.filter(isCompiledFile)
   |> filterDuplicates;
   let sources = allFiles |> List.filter(isSourceFile) |> filterDuplicates;
-  /* a |> List.iter(Log.log);
-  Log.log("yep"); */
   compileds
   |> List.map(path => {
     let modName = getName(path);
     (Plain(modName |> String.capitalize), (stdlib /+ path, Utils.find(name => getName(name) == modName ? Some(name) : None, sources)))
   })
-  /* |> ifDebug(true, "Debug", items => String.concat("\n", List.map(((_, (cmt, src))) => cmt ++ " : " ++ src, items))) */
   |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
   ;
 };
