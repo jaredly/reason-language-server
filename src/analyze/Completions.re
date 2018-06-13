@@ -5,7 +5,7 @@ type kind =
   | Function
   | Value
   | Struct
-  | RootModule(string, string);
+  | RootModule(string, option(string));
 
 let kindToInt = k =>
   switch k {
@@ -18,7 +18,7 @@ let kindToInt = k =>
 
 type item = {
   kind,
-  uri: string,
+  uri: option(string),
   label: string,
   detail: option(string),
   documentation: option(string),
@@ -164,9 +164,10 @@ let get = (topModule, opens, parts, state, localData, pos) => {
     let localResults = switch (localData) {
     | None => []
     | Some(moduleData) => {
-      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem("(current file)", name, loc, docs, Definition.docsItem(item, moduleData)))
+      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem(Some("(current file)"), name, loc, docs, Definition.docsItem(item, moduleData)))
     }
     };
+
 
     let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
       ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None
@@ -179,7 +180,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
         List.fold_left(
           (results, (k, (cmt, src))) =>
             Utils.startsWith(k, single) && k != topModule ?
-              [forModule(state, k, cmt, src), ...results] : results,
+              [forModule(state, k, cmt, Some(src)), ...results] : results,
           results,
           state.localModules
         );

@@ -1,10 +1,6 @@
 {
-  "reason.diagnostics.tools": [
-    "bsb"
-  ],
   "git.ignoreLimitWarning": true,
   "git.enabled": false,
-  "reason.path.bsb": "./node_modules/.bin/bsb",
   "editor.codeLens": true,
   "reason_language_server.location": "./lib/bs/native/bin.native",
   // "reason_language_server.location": "./lib/bs/native/bin.native.exe",

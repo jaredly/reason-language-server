@@ -19,8 +19,6 @@ let readMessage = (log, input) => {
   let clength = input_line(input);
   let cl = "Content-Length: ";
   let cll = String.length(cl);
-  /* output_string(stderr, "First line here: " ++ String.escaped(clength) ++ "\r\n"); */
-  log("Got the first line " ++ clength);
   if (String.sub(clength, 0, cll) == cl) {
     /* if on windows, dont need the extra -1 */
     let offset = Sys.os_type == "Win32" ? 0 : -1; /* -1 for trailing \r */

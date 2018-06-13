@@ -105,7 +105,7 @@ let convertItem = (currentModule, item) => {
   | `Code_block(text) => Omd.Code_block("ml", stripLeft(text))
   | `Verbatim(text) => Omd.Raw(text) /* TODO */
   | `Modules(modules) => {
-    print_endline("Unhandled modules");
+    Log.log("Unhandled modules");
     Omd.Raw("!!!! Modules please")
   }
   | `List(`Ordered, children) => Omd.Ol(List.map(List.map(stripLoc(convertNestable)), children))

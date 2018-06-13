@@ -104,6 +104,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
       }
       | Error(string) => Rpc.sendError(log, stdout, id, Json.String(string))
       | exception e => {
+          Log.log("Failed to get initial state");
           Rpc.sendError(log, stdout, id, Rpc.J.(o([
             ("code", i(-32603)), /* InternalError */
             ("message", s(Printexc.to_string(e) ++ Printexc.get_backtrace()))

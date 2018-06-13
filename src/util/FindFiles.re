@@ -71,7 +71,7 @@ let getDependencyDirs = (base, config) => {
         []
       } */
     | None =>
-      print_endline("Skipping nonexistent dependency: " ++ name);
+      Log.log("Skipping nonexistent dependency: " ++ name);
       []
     }
   }) |> List.concat
@@ -109,7 +109,7 @@ let filterDuplicates = cmts => {
 
 let ifDebug = (debug, name, fn, v) => {
   if (debug) {
-    print_endline(name ++ ": " ++ fn(v))
+    Log.log(name ++ ": " ++ fn(v))
   };
   v
 };
@@ -145,12 +145,25 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
 
 type modpath = Namespaced(string, string) | Plain(string);
 
-let loadStdlib = stdlib => Files.readDirectory(stdlib)
-  |> List.filter(isSourceFile)
-  |> filterDuplicates
-  |> List.map(path => (Plain(getName(path) |> String.capitalize), (stdlib /+ compiledName(~namespace=None, path), stdlib /+ path)))
+let loadStdlib = stdlib => {
+  Log.log("stdlib " ++ stdlib);
+  let allFiles = Files.readDirectory(stdlib);
+  /* let compiledFiles = List.filter(isCompiledFile, allFiles); */
+  let compileds = allFiles
+  |> List.filter(isCompiledFile)
+  |> filterDuplicates;
+  let sources = allFiles |> List.filter(isSourceFile) |> filterDuplicates;
+  /* a |> List.iter(Log.log);
+  Log.log("yep"); */
+  compileds
+  |> List.map(path => {
+    let modName = getName(path);
+    (Plain(modName |> String.capitalize), (stdlib /+ path, Utils.find(name => getName(name) == modName ? Some(name) : None, sources)))
+  })
+  /* |> ifDebug(true, "Debug", items => String.concat("\n", List.map(((_, (cmt, src))) => cmt ++ " : " ++ src, items))) */
   |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
   ;
+};
 
 let needsCompilerLibs = config => {
   config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> optMap(Json.string) |> List.mem("compiler-libs")
@@ -171,8 +184,8 @@ let findDependencyFiles = (~debug, base, config) => {
       let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
       let files = switch namespace {
-      | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, rel)), files)
-      | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, rel)))
+      | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, Some(rel))), files)
+      | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, Some(rel))))
       };
       (compiledDirectories, files)
     | None =>
@@ -189,6 +202,7 @@ let findDependencyFiles = (~debug, base, config) => {
     ? [base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs", ...directories]
     : directories,
     needsCompilerLibs(config)
-  ? loadStdlib(base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs") @ results
-  : results)
+    ? loadStdlib(base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs") @ results
+    : results
+  )
 };

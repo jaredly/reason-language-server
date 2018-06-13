@@ -1,3 +1,5 @@
+open Infix;
+
 type clientCapabilities = {
   hoverMarkdown: bool,
   completionMarkdown: bool,
@@ -12,7 +14,7 @@ type state = {
   localModules: list((string, (string, string))),
   localCompiledMap: list((string, string)),
   includeDirectories: list(string),
-  dependencyModules: list((FindFiles.modpath, (string, string))),
+  dependencyModules: list((FindFiles.modpath, (string, option(string)))),
   cmtCache:
     Hashtbl.t(
       string,
@@ -22,7 +24,7 @@ type state = {
         (option(string), list(Docs.full))
       )
     ),
-  pathsForModule: Hashtbl.t(string, (string, string)),
+  pathsForModule: Hashtbl.t(string, (string, option(string))),
   documentText: Hashtbl.t(string, (string, int, bool)),
   compiledDocuments: Hashtbl.t(string, AsYouType.result),
   lastDefinitions: Hashtbl.t(string, Definition.moduleData),
@@ -45,7 +47,8 @@ let docConverter = src => isMl(src) ? odocToMd : (x => x);
 
 let newDocs = (cmtCache, changed, cmt, src) => {
   let infos = Cmt_format.read_cmt(cmt);
-  switch (Docs.forCmt(docConverter(src), infos)) {
+  let converter = src |?>> docConverter |? odocToMd;
+  switch (Docs.forCmt(converter, infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some(docs) =>
     Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
@@ -122,7 +125,7 @@ let docsForModule = (modname, state) =>
   Infix.(
     if (Hashtbl.mem(state.pathsForModule, modname)) {
       let (cmt, src) = Hashtbl.find(state.pathsForModule, modname);
-      Log.log("FINDING " ++ cmt ++ " src " ++ src);
+      Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
       docsForCmt(cmt, src, state) |?>> d => (d, src)
     } else {
       Log.log("No path for module " ++ modname);
@@ -166,14 +169,16 @@ let resolveDefinition = (uri, defn, state) =>
         maybeFound(Hashtbl.find(state.pathsForModule), top)
         |?> (
           ((cmt, src)) => {
-            let uri = Utils.toUri(src);
-            if (children == []) {
-              Some((topLocation(uri), docsForCmt(cmt, src, state) |?> fst, uri))
-            } else {
-              docsForCmt(cmt, src, state)
-              |?>> snd
-              |?> Docs.findPath(children)
-              |?>> (((name, loc, docs, _)) => (loc, docs, uri))
+            src |?> src =>  {
+              let uri = Utils.toUri(src);
+              if (children == []) {
+                Some((topLocation(uri), docsForCmt(cmt, Some(src), state) |?> fst, uri))
+              } else {
+                docsForCmt(cmt, Some(src), state)
+                |?>> snd
+                |?> Docs.findPath(children)
+                |?>> (((name, loc, docs, _)) => (loc, docs, uri))
+              }
             }
           }
         )

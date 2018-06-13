@@ -52,11 +52,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ (useMarkdown ? "*" : "") ++ (
+            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(uri, "", uri => (useMarkdown ? "*" : "") ++ (
               Utils.startsWith(uri, state.rootPath ++ "/") ? Utils.sliceToEnd(uri, String.length(state.rootPath ++ "/")) : uri
-              ) ++ (useMarkdown ? "*" : "")) |?>> Protocol.markup |? null)),
+              ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.markup |? null)),
             ("data", switch kind {
-              | RootModule(cmt, src) => o([("cmt", s(cmt)), ("src", s(src)), ("name", s(label))])
+              | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
               | _ => null
               })
           ]))
@@ -76,7 +76,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       |?> cmt => Json.get("src", data) |?> Json.string
       |?> src => Json.get("name", data) |?> Json.string
       |?>> name => {
-        let (detail, docs) = Completions.getModuleResults(name, state, cmt, src);
+        let (detail, docs) = Completions.getModuleResults(name, state, cmt, Some(src));
 
         open Rpc.J;
         extend(params, [
