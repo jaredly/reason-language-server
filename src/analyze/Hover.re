@@ -15,10 +15,11 @@ let getHover = (uri, line, character, state) => {
     switch (Definition.locationAtPos((line, character), data)) {
     | None => None
     | Some((loc, expr, defn)) =>
+      let useMarkdown = state.clientCapabilities.hoverMarkdown;
       let typ =
         PrintType.default.expr(PrintType.default, expr)
         |> PrintType.prettyString;
-      let typ = "```\n" ++ typ ++ "\n```";
+      let typ = useMarkdown ? "```\n" ++ typ ++ "\n```" : typ;
       let tooltip =
         switch (State.getResolvedDefinition(uri, defn, data, state)) {
         | None => typ
@@ -30,10 +31,10 @@ let getHover = (uri, line, character, state) => {
             | None => ""
             }
           )
-          ++ "\n\n*"
+          ++ "\n\n" ++ (useMarkdown ? "*" : "")
           ++ (Utils.startsWith(docUri, state.rootUri ++ "/")
           ? Utils.sliceToEnd(docUri, String.length(state.rootUri ++ "/"))
-          : uri) ++ "*"
+          : uri) ++ (useMarkdown ? "*" : "")
         };
       Some((tooltip, loc));
     }

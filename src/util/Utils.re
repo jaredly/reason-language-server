@@ -87,3 +87,15 @@ let showLocation = ({Location.loc_start, loc_end}) =>
       loc_end.pos_cnum - loc_end.pos_bol
     )
   );
+
+/*
+  returns true if a MarkupKind[] contains "markdown"
+  NOTE: maybe we should also check if "markdown" is first
+*/
+let hasMarkdownCap = (markupKind) => 
+  Infix.(
+    markupKind
+      |> Json.array
+      |?>> List.map(cap => Json.string(cap) |? "")
+      |?>> List.mem("markdown")
+  )
