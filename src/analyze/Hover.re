@@ -15,7 +15,7 @@ let getHover = (uri, line, character, state) => {
     switch (Definition.locationAtPos((line, character), data)) {
     | None => None
     | Some((loc, expr, defn)) =>
-      let useMarkdown = state.clientCapabilities.hoverMarkdown;
+      let useMarkdown = !state.clientNeedsPlainText;
       let typ =
         PrintType.default.expr(PrintType.default, expr)
         |> PrintType.prettyString;

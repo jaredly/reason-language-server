@@ -1,10 +1,5 @@
 open Infix;
 
-type clientCapabilities = {
-  hoverMarkdown: bool,
-  completionMarkdown: bool,
-};
-
 type state = {
   rootPath: string,
   rootUri: string,
@@ -12,7 +7,7 @@ type state = {
   refmtPath: string,
   documentText: Hashtbl.t(string, (string, int, bool)),
   documentTimers: Hashtbl.t(string, float),
-  clientCapabilities: clientCapabilities,
+  clientNeedsPlainText: bool,
 
   /* Might change based on bsconfig.json / .merlin */
   includeDirectories: list(string),
@@ -42,16 +37,15 @@ type state = {
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
-let odocToMd = text => {
-  let top = MarkdownOfOCamldoc.convert(0, text);
-  Omd.to_markdown(top);
-};
+let newDocs = (cmtCache, changed, cmt, src, usePlainText) => {
+  let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
+  let docConverter = src => isMl(src) ? odocToMd : (s) => Omd.of_string(s);
+  
+  let converter = (str) => str
+    |> (src |?>> docConverter |? odocToMd)
+    |> (usePlainText ? Omd.to_text : Omd.to_markdown);
 
-let docConverter = src => isMl(src) ? odocToMd : (x => x);
-
-let newDocs = (cmtCache, changed, cmt, src) => {
   let infos = Cmt_format.read_cmt(cmt);
-  let converter = src |?>> docConverter |? odocToMd;
   switch (Docs.forCmt(converter, infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some(docs) =>
@@ -70,7 +64,7 @@ let docsForCmt = (cmt, src, state) =>
     | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
     | Some(changed) =>
       if (changed > mtime) {
-        newDocs(state.cmtCache, changed, cmt, src);
+        newDocs(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText);
       } else {
         Some(docs);
       }
@@ -78,7 +72,7 @@ let docsForCmt = (cmt, src, state) =>
   } else {
     switch (Files.getMtime(cmt)) {
     | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
-    | Some(changed) => newDocs(state.cmtCache, changed, cmt, src)
+    | Some(changed) => newDocs(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText)
     };
   };
 

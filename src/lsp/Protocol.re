@@ -60,8 +60,8 @@ let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) =>
 
 let tupleOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => (pos_lnum - 1, pos_cnum - pos_bol);
 
-let markup = (text) =>
-  Json.Object([("kind", Json.String("markdown")), ("value", Json.String(text))]);
+let contentKind = (useMarkdown, text) =>
+  Json.Object([("kind", Json.String(useMarkdown ? "markdown" : "text")), ("value", Json.String(text))]);
 
 let rangeOfLoc = ({Location.loc_start, loc_end}) =>
   o([("start", posOfLexing(loc_start)), ("end", posOfLexing(loc_end))]);
@@ -141,7 +141,6 @@ let typeKind = (t) =>
 
 /*
   returns true if a MarkupKind[] contains "markdown"
-  NOTE: maybe we should also check if "markdown" is first
 */
 let hasMarkdownCap = (markupKind) =>
   Infix.(
