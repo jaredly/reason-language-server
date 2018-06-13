@@ -21,8 +21,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         Error("Parse error, can't find definition")
       }
       | Some(data) => switch (State.definitionForPos(uri, position, data, state)) {
+      | Some((None, _, _)) | Some((_, _, None))
       | None => Ok((state, Json.Null))
-      | Some((loc, docs, uri)) => Ok((state, Json.Object([
+      | Some((Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
         ("uri", Json.String(uri)),
         ("range", Protocol.rangeOfLoc(loc)),
       ])))

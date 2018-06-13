@@ -143,9 +143,10 @@ let topLocation = uri => {
         loc_end: {Lexing.pos_fname: uri, pos_lnum: 1, pos_cnum: 1, pos_bol: 1},
       };
 
+/* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
 let resolveDefinition = (uri, defn, state) =>
   switch defn {
-  | `Local(_, loc, item, docs, _) => Some((loc, docs, uri))
+  | `Local(_, loc, item, docs, _) => Some((Some(loc), docs, Some(uri)))
   | `Global(top, children, suffix) =>
     {
       switch (
@@ -161,24 +162,22 @@ let resolveDefinition = (uri, defn, state) =>
       ) {
       | Some(((cmtInfos, data), uri)) =>
         if (children == []) {
-          Some((topLocation(uri), data.toplevelDocs, uri))
+          Some((Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
         } else {
-          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((loc, docs, uri)))
+          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((Some(loc), docs, Some(uri))))
         }
       | None =>
         maybeFound(Hashtbl.find(state.pathsForModule), top)
         |?> (
           ((cmt, src)) => {
-            src |?> src =>  {
-              let uri = Utils.toUri(src);
-              if (children == []) {
-                Some((topLocation(uri), docsForCmt(cmt, Some(src), state) |?> fst, uri))
-              } else {
-                docsForCmt(cmt, Some(src), state)
-                |?>> snd
-                |?> Docs.findPath(children)
-                |?>> (((name, loc, docs, _)) => (loc, docs, uri))
-              }
+            let uri = src |?>> Utils.toUri;
+            if (children == []) {
+              Some((uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
+            } else {
+              docsForCmt(cmt, src, state)
+              |?>> snd
+              |?> Docs.findPath(children)
+              |?>> (((name, loc, docs, _)) => (Some(loc), docs, uri))
             }
           }
         )

@@ -67,6 +67,7 @@ let filterMap = (fn, items) =>
     items
   );
 
+/** An optional List.find */
 let rec find = (fn, items) =>
   switch items {
   | [] => None
@@ -92,7 +93,7 @@ let showLocation = ({Location.loc_start, loc_end}) =>
   returns true if a MarkupKind[] contains "markdown"
   NOTE: maybe we should also check if "markdown" is first
 */
-let hasMarkdownCap = (markupKind) => 
+let hasMarkdownCap = (markupKind) =>
   Infix.(
     markupKind
       |> Json.array

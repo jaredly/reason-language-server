@@ -31,10 +31,10 @@ let getHover = (uri, line, character, state) => {
             | None => ""
             }
           )
-          ++ "\n\n" ++ (useMarkdown ? "*" : "")
+          ++ "\n\n" ++ (Infix.fold(docUri, "", docUri => (useMarkdown ? "*" : "")
           ++ (Utils.startsWith(docUri, state.rootUri ++ "/")
           ? Utils.sliceToEnd(docUri, String.length(state.rootUri ++ "/"))
-          : uri) ++ (useMarkdown ? "*" : "")
+          : uri) ++ (useMarkdown ? "*" : "")))
         };
       Some((tooltip, loc));
     }
