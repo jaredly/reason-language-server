@@ -41,7 +41,7 @@ let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
 let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
 
 let converter = (src, usePlainText) => {
-  let mdToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
+  let mlToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
   fold(
     src,
     mlToOutput,
