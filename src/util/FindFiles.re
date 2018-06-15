@@ -17,6 +17,13 @@ let ifOneExists = (items) => {
   loop(items)
 };
 
+let ifDebug = (debug, name, fn, v) => {
+  if (debug) {
+    Log.log(name ++ ": " ++ fn(v))
+  };
+  v
+};
+
 
 /**
  * Returns a list of paths, relative to the provided `base`
@@ -33,11 +40,14 @@ let getSourceDirectories = (~includeDev=false, base, config) => {
       if (typ == "dev") {
         []
       } else {
-        [current /+ dir, ...switch (item |> Json.get("subdirs")) {
-        | None => []
-        | Some(Json.True) => Files.collectDirs(base /+ current /+ dir) |> List.map(Files.relpath(base))
-        | Some(item) => handleItem(current /+ dir, item)
-        }]
+        switch (item |> Json.get("subdirs")) {
+        | None => [current /+ dir]
+        | Some(Json.True) => Files.collectDirs(base /+ current /+ dir)
+          /* |> ifDebug(true, "Subdirs", String.concat(" - ")) */
+          |> List.filter(name => name != Filename.current_dir_name)
+          |> List.map(Files.relpath(base))
+        | Some(item) => [current /+ dir, ...handleItem(current /+ dir, item)]
+        }
       }
     | _ => failwith("Invalid subdirs entry")
     };
@@ -106,13 +116,6 @@ let filterDuplicates = cmts => {
   });
 };
 
-let ifDebug = (debug, name, fn, v) => {
-  if (debug) {
-    Log.log(name ++ ": " ++ fn(v))
-  };
-  v
-};
-
 let getNamespace = config => {
   let isNamespaced = Json.get("namespace", config) |?> Json.bool |? false;
   isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
@@ -131,6 +134,7 @@ let getCompiledBase = (root, config) =>
 let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase) => {
   sourceDirectories
   |> List.map(Infix.fileConcat(root))
+  |> ifDebug(debug, "Source directories", String.concat(" - "))
   |> List.map(name => Files.collect(name, isSourceFile))
   |> List.concat
   |> ifDebug(debug, "Source files found", String.concat(" : "))

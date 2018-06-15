@@ -86,9 +86,10 @@ let getInitialState = (params) => {
       };
       let namespace = FindFiles.getNamespace(config);
       let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
+      Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
       let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
       let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
-      let localModules = FindFiles.findProjectFiles(~debug=false, None, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+      let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
       let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, rootPath, config);
       let cmtCache = Hashtbl.create(30);
       let documentText = Hashtbl.create(5);
@@ -115,7 +116,7 @@ let getInitialState = (params) => {
           && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
       );
 
-      State.{
+      let state = State.{
         rootPath: rootPath,
         rootUri: uri,
         compilerPath: FindFiles.isNative(config) ?
@@ -144,7 +145,9 @@ let getInitialState = (params) => {
         ] @ localCompiledDirs,
         clientNeedsPlainText,
         /* docs, */
-      }
+      };
+    Log.log(State.Show.state(state));
+    state
     };
   }
 };

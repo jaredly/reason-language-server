@@ -34,6 +34,21 @@ type state = {
   /* workspace folders... */
 };
 
+module Show = {
+  let _modPath = mp => switch mp {
+    | FindFiles.Plain(s) => s
+    | FindFiles.Namespaced(ns, name) => ns ++ "." ++ name
+  };
+  let state = ({rootPath, compilerPath, localModules, dependencyModules}) => {
+    "Root: " ++ rootPath ++
+    "\nLocal\n"++
+    (Belt.List.map(localModules, ((name, (cmt, src))) => Printf.sprintf("%s (%s : %s)", name, cmt, src)) |> String.concat("\n"))
+    ++
+    "\nDeps\n" ++ 
+    (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", _modPath(modpath), cmt, src |? "")) |> String.concat("\n"))
+  };
+};
+
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
