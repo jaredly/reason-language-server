@@ -36,7 +36,10 @@ function make(message, _) {
         ];
 }
 
+var x = 10;
+
 exports.component = component;
 exports.handleClick = handleClick;
+exports.x = x;
 exports.make = make;
 /* component Not a pure module */

@@ -5,6 +5,7 @@ let component = ReasonReact.statelessComponent("Page");
    then the `self` record, which contains state (none here), `handle`, `reduce`
    and other utilities */
 let handleClick = (_event, _self) => Js.log("clicked!");
+/* let x = () => */
 
 /* `make` is the function that mandatorily takes `children` (if you want to use
    `JSX). `message` is a named argument, which simulates ReactJS props. Usage:

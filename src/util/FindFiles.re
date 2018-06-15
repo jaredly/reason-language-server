@@ -59,11 +59,10 @@ let getDependencyDirs = (base, config) => {
     | Some(text) =>
       let inner = Json.parse(text);
       /* let allowedKinds = inner |> Json.get("allowed-build-kinds") |?> Json.array |?>> List.map(Json.string |.! "allowed-build-kinds must be strings") |? ["js"]; */
-      let isNative = isNative(inner);
       let compiledBase = oneShouldExist("Cannot find directory for compiled artifacts.",
-        isNative
+        isNative(inner)
           ? [loc /+ "lib" /+ "bs" /+ "js", loc /+ "lib" /+ "bs" /+ "native"]
-          : [loc /+ "lib" /+ "bs", loc /+ "lib" /+ "ocaml"]
+          : [loc /+ "lib" /+ "bs" /+ "js", loc /+ "lib" /+ "ocaml", loc /+ "lib" /+ "bs"]
       );
       /* if (List.mem("js", allowedKinds)) { */
         [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
@@ -123,7 +122,7 @@ let getCompiledBase = (root, config) =>
   ifOneExists(
     isNative(config) ?
       [root /+ "lib" /+ "bs" /+ "native"] :
-      [root /+ "lib" /+ "bs", root /+ "lib" /+ "ocaml"],
+      [root /+ "lib" /+ "bs" /+ "js", root /+ "lib" /+ "ocaml", root /+ "lib" /+ "bs"],
   );
 
 /**
@@ -178,6 +177,7 @@ let findDependencyFiles = (~debug, base, config) => {
       let directories = getSourceDirectories(~includeDev=false, loc, inner);
       let compiledBase = getCompiledBase(loc, config) |! "No compiled base found";
       let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
+      let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
       let files = switch namespace {
       | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, Some(rel))), files)

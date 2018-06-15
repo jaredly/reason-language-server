@@ -15,12 +15,14 @@ let getResult = result => switch result {
 
 let runRefmt = (~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ "lsp.ast";
+  /* let source = cacheLocation /+ "lsp.re"; */
+  /* Files.writeFileExn(source, text); */
   let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
     Ok(target)
   } else {
-    /* Log.log("Failed to refmt " ++ cmd ++ " " ++ String.concat("\n", out @ error)); */
+    /* Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n", out @ error)); */
     /* Log.log("The text:"); */
     /* Log.log(text); */
     Error(out @ error)
@@ -50,8 +52,9 @@ let parseTypeError = text => {
 };
 
 let justBscCommand = (compilerPath, sourceFile, includes, flags) => {
+  /* TODO make sure that bsc supports -color */
   Printf.sprintf(
-    {|%s %s -bin-annot %s -impl %s|},
+    {|%s %s -color never -bin-annot %s -impl %s|},
     compilerPath,
     includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
     flags,

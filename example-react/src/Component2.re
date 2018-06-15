@@ -4,6 +4,9 @@ type state = {
   show: bool,
 };
 
+let x = 10;
+let z = () => 2;
+
 /* Action declaration */
 type action =
   | Click

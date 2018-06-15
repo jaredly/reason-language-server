@@ -491,6 +491,8 @@ let findDefinition = (defn, data) => {
   };
 };
 
+let locationSize = ({Location.loc_start, loc_end}) => loc_end.Lexing.pos_cnum - loc_start.Lexing.pos_cnum;
+
 module Get = {
   /* TODO maybe return loc from this? or have a separate one that
    * finds a thing by name...
@@ -810,6 +812,14 @@ module Get = {
         addScope(rangeOfLoc(contents.exp_loc));
         addStamp(stamp, name, ppat_loc, Value(exp_type), None);
         popScope()
+      /* JSX fix */
+      | Texp_ident(
+          path,
+          {txt, loc},
+          _
+        )
+          when locationSize(loc) != String.length(Longident.flatten(txt) |> String.concat(".")) =>
+        ()
       | Texp_ident(path, {txt, loc}, _) =>
         addLocation(loc, expr.exp_type, Path(path));
         if (usesOpen(txt, path)) {
@@ -825,6 +835,8 @@ module Get = {
           }
         | _ => ()
         }
+      /* JSX string */
+      | Texp_constant(Const_string(text, None)) when locationSize(expr.exp_loc) != String.length(text) => ()
       | Texp_constant(_) => addLocation(expr.exp_loc, expr.exp_type, IsConstant)
       | Texp_record(items, ext) =>
         items
@@ -840,7 +852,14 @@ module Get = {
                | _ => ()
                }
            )
-      /* Skip array literals */
+      /* Skip list literals */
+      | Texp_construct(
+          {txt: Lident("()"), loc: {loc_start: {pos_cnum: cstart}, loc_end: {pos_cnum: cend}}},
+          {cstr_name, cstr_loc, cstr_res},
+          args
+        )
+          when cend - cstart != 2 =>
+        ()
       | Texp_construct(
           {txt: Lident("::"), loc: {loc_start: {pos_cnum: cstart}, loc_end: {pos_cnum: cend}}},
           {cstr_name, cstr_loc, cstr_res},

@@ -84,8 +84,10 @@ let getInitialState = (params) => {
         }
         | Some(x) => x
       };
+      let namespace = FindFiles.getNamespace(config);
       let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
       let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
+      let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
       let localModules = FindFiles.findProjectFiles(~debug=false, None, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
       let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, rootPath, config);
       let cmtCache = Hashtbl.create(30);
@@ -154,7 +156,10 @@ let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
     |?> version => Json.get("text", doc) |?> Json.string
     |?>> text => (uri, version, text);
 
+let stripAnsii = text => Str.global_replace(Str.regexp("\027\\[[0-9;]+m"), "", text);
+
 let runDiagnostics = (uri, state) => {
+  Log.log("Running diagnostics for " ++ uri);
   /* let (text, _, _) =  */
   let result = State.getCompilationResult(uri, state);
   open Rpc.J;
@@ -169,7 +174,7 @@ let runDiagnostics = (uri, state) => {
       };
       l([o([
         ("range", Protocol.rangeOfInts(l0, c0, l1, c1)),
-        ("message", s("Parse error: " ++ text)),
+        ("message", s("Parse error:\n" ++ text)),
         ("severity", i(1)),
       ])])
     }
@@ -205,7 +210,7 @@ let runDiagnostics = (uri, state) => {
           ("start", Protocol.pos(~line=l0, ~character=c0)),
           ("end", Protocol.pos(~line=l1, ~character=c1)),
         ])),
-        ("message", s("Type error! " ++ text)),
+        ("message", s("Type error!" ++ stripAnsii(text))),
         ("severity", i(1)),
       ])])
     }

@@ -57,6 +57,9 @@ function make(greeting, _) {
         ];
 }
 
+var x = 10;
+
+exports.x = x;
 exports.component = component;
 exports.make = make;
 /* component Not a pure module */
