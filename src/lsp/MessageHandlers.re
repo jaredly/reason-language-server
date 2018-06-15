@@ -48,14 +48,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           let opens = PartialParser.findOpens(text, offset);
           /* */
           let localData = State.getLastDefinitions(uri, state);
-          let useMarkdown = state.clientCapabilities.completionMarkdown;
+          let useMarkdown = !state.clientNeedsPlainText;
           Completions.get(currentModuleName, opens, parts, state, localData, pos) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
             ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(uri, "", uri => (useMarkdown ? "*" : "") ++ (
               Utils.startsWith(uri, state.rootPath ++ "/") ? Utils.sliceToEnd(uri, String.length(state.rootPath ++ "/")) : uri
-              ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.markup |? null)),
+              ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.contentKind(useMarkdown) |? null)),
             ("data", switch kind {
               | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
               | _ => null
@@ -82,7 +82,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         open Rpc.J;
         extend(params, [
           ("detail", detail |?>> s |? null),
-          ("documentation", docs |?>> Protocol.markup |? null),
+          ("documentation", docs |?>> Protocol.contentKind(!state.clientNeedsPlainText) |? null),
         ]) |? params
       }) |? params;
       Ok((state, result))
@@ -214,10 +214,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       | Some((text, loc)) =>
       (state, o([
         ("range", Protocol.rangeOfLoc(loc)),
-        ("contents", o([
-          ("kind", s("markdown")),
-          ("value", s(text))
-        ]))
+        ("contents",  text |> Protocol.contentKind(!state.clientNeedsPlainText))
       ]))
       }
     }

@@ -1,10 +1,5 @@
 open Infix;
 
-type clientCapabilities = {
-  hoverMarkdown: bool,
-  completionMarkdown: bool,
-};
-
 type state = {
   rootPath: string,
   rootUri: string,
@@ -12,7 +7,7 @@ type state = {
   refmtPath: string,
   documentText: Hashtbl.t(string, (string, int, bool)),
   documentTimers: Hashtbl.t(string, float),
-  clientCapabilities: clientCapabilities,
+  clientNeedsPlainText: bool,
 
   /* Might change based on bsconfig.json / .merlin */
   includeDirectories: list(string),
@@ -42,17 +37,21 @@ type state = {
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
-let odocToMd = text => {
-  let top = MarkdownOfOCamldoc.convert(0, text);
-  Omd.to_markdown(top);
+let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
+let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
+
+let converter = (src, usePlainText) => {
+  let mdToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
+  fold(
+    src,
+    mlToOutput,
+    src => isMl(src) ? mlToOutput : (usePlainText ? compose(Omd.of_string, Omd.to_text) : (x => x))
+  );
 };
 
-let docConverter = src => isMl(src) ? odocToMd : (x => x);
-
-let newDocs = (cmtCache, changed, cmt, src) => {
+let newDocs = (cmtCache, changed, cmt, src, usePlainText) => {
   let infos = Cmt_format.read_cmt(cmt);
-  let converter = src |?>> docConverter |? odocToMd;
-  switch (Docs.forCmt(converter, infos)) {
+  switch (Docs.forCmt(converter(src, usePlainText), infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some(docs) =>
     Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
@@ -70,7 +69,7 @@ let docsForCmt = (cmt, src, state) =>
     | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
     | Some(changed) =>
       if (changed > mtime) {
-        newDocs(state.cmtCache, changed, cmt, src);
+        newDocs(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText);
       } else {
         Some(docs);
       }
@@ -78,7 +77,7 @@ let docsForCmt = (cmt, src, state) =>
   } else {
     switch (Files.getMtime(cmt)) {
     | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
-    | Some(changed) => newDocs(state.cmtCache, changed, cmt, src)
+    | Some(changed) => newDocs(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText)
     };
   };
 

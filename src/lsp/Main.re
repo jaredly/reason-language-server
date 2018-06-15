@@ -107,13 +107,11 @@ let getInitialState = (params) => {
         }
       });
 
-      let clientCapabilities = Infix.(State.{
-        hoverMarkdown:
-          Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true,
-        completionMarkdown:
-          Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params)
-            |?> Protocol.hasMarkdownCap |? true,
-      });
+      /* if client needs plain text in any place, we disable markdown everywhere */
+      let clientNeedsPlainText = ! Infix.(
+          Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true
+          && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
+      );
 
       State.{
         rootPath: rootPath,
@@ -142,7 +140,7 @@ let getInitialState = (params) => {
           : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
           ...dependencyDirectories
         ] @ localCompiledDirs,
-        clientCapabilities,
+        clientNeedsPlainText,
         /* docs, */
       }
     };
