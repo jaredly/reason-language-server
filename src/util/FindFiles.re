@@ -169,13 +169,14 @@ let findDependencyFiles = (~debug, base, config) => {
   Log.log("Deps " ++ String.concat(", ", deps));
   let depFiles = deps |> List.map(name => {
     let loc = base /+ "node_modules" /+ name;
-    Log.log("Dep loc " ++ loc);
-    switch (Files.readFile(loc /+ "bsconfig.json")) {
+    let innerPath = loc /+ "bsconfig.json";
+    Log.log("Dep loc " ++ innerPath);
+    switch (Files.readFile(innerPath)) {
     | Some(text) =>
       let inner = Json.parse(text);
-      let namespace = getNamespace(config);
+      let namespace = getNamespace(inner);
       let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = getCompiledBase(loc, config) |! "No compiled base found";
+      let compiledBase = getCompiledBase(loc, inner) |! "No compiled base found";
       let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
       let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
