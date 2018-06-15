@@ -15,7 +15,10 @@ let toUri = (path) =>
     "file://"
     ++ (
       Str.global_replace(Str.regexp_string("\\"), "/", path)
-      |> Str.global_replace(Str.regexp_string("C:"), "/c%3A")
+      |> Str.substitute_first(Str.regexp("^([A-Z]):"), text => {
+        let name = Str.matched_group(1, text);
+        "/" ++ String.lowercase(name) ++ "%3A"
+      })
     )
   };
 
@@ -27,7 +30,11 @@ let parseUri = (uri) =>
     } else {
       Some(
         withoutScheme
-        |> Str.global_replace(Str.regexp_string("/c%3A"), "C:")
+        |> Str.substitute_first(Str.regexp("^/([a-z])%3A"), text => {
+          let name = Str.matched_group(1, text);
+          String.uppercase(name) ++ ":"
+        })
+        /* OCaml doesn't want to do a find & replace where the replacement is a single backslash. So this works */
         |> Str.split(Str.regexp_string("/"))
         |> String.concat({|\|})
       )

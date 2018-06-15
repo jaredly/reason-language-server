@@ -51,11 +51,11 @@ let parseTypeError = text => {
 
 let justBscCommand = (compilerPath, sourceFile, includes, flags) => {
   Printf.sprintf(
-    {|%s %s -bin-annot -impl %s %s|},
+    {|%s %s -bin-annot %s -impl %s|},
     compilerPath,
     includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
-    sourceFile,
-    flags
+    flags,
+    sourceFile
   )
 };
 

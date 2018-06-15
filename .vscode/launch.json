@@ -15,6 +15,18 @@
 			"sourceMaps": false,
 		},
 		{
+			"name": "Launch React Project",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/client",
+				"${workspaceRoot}/example-react"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
 			"name": "Launch Native Project",
 			"type": "extensionHost",
 			"request": "launch",

@@ -32,6 +32,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
   }),
 
+  /** TODO implement */
+  ("textDocument/signatureHelp", (state, params) => {
+    Ok((state, Json.Null))
+  }),
+
   ("textDocument/completion", (state, params) => {
     open InfixResult;
     (Protocol.rPositionParams(params) |?> ((uri, pos)) => (maybeHash(state.documentText, uri) |> orError("No document text found"))
