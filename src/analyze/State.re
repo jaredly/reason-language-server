@@ -37,16 +37,21 @@ type state = {
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
-let newDocs = (cmtCache, changed, cmt, src, usePlainText) => {
-  let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
-  let docConverter = src => isMl(src) ? odocToMd : (s) => Omd.of_string(s);
-  
-  let converter = (str) => str
-    |> (src |?>> docConverter |? odocToMd)
-    |> (usePlainText ? Omd.to_text : Omd.to_markdown);
+let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
+let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
 
+let converter = (src, usePlainText) => {
+  let mdToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
+  fold(
+    src,
+    mlToOutput,
+    src => isMl(src) ? mlToOutput : (usePlainText ? compose(Omd.of_string, Omd.to_text) : (x => x))
+  );
+};
+
+let newDocs = (cmtCache, changed, cmt, src, usePlainText) => {
   let infos = Cmt_format.read_cmt(cmt);
-  switch (Docs.forCmt(converter, infos)) {
+  switch (Docs.forCmt(converter(src, usePlainText), infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some(docs) =>
     Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
