@@ -12,7 +12,7 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 ## Contributing
 
 - open this project in vscode
-- install dependencies and build the example project `cd example-project && npm i && npm build && cd ..`
+- install dependencies and build the example project `cd example-project && npm i && npm run build && cd ..`
 - install the client's dependencies `cd client && npm i && cd ..`
 - install the server's dependencies & start it running `npm i && npm start`
 - select "Debug > Start Without Debugging" from the vscode menu
