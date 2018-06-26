@@ -124,11 +124,6 @@ let rec inDocs = (~resolveAlias, uri, parts, contents) =>
   | [] => []
   | [single] =>
     completionItems(uri, contents, single)
-    /* contents
-    |> Utils.filterMap(((name, loc, doc, item)) =>
-         Utils.startsWith(name, single) ?
-           Some(forItem((uri, name, loc, doc, item))) : None
-       ) */
   | [first, ...rest] =>
     contents
     |> Utils.find(((name, loc, doc, item)) =>
@@ -136,10 +131,14 @@ let rec inDocs = (~resolveAlias, uri, parts, contents) =>
          | Docs.Module(contents) when name == first =>
            Some(inDocs(~resolveAlias, uri, rest, contents))
          | Docs.ModuleAlias(path) when name == first =>
-           let res = resolveAlias(path, rest);
-           Some(res);
-         /* TODO TODO grab the stuff out of here */
-         /* Some([forItem(uri, "hi", Location.none, None, Module([]))]) */
+            switch (resolveAlias(path, rest)) {
+              | None => {
+                Log.log("Unable to resolve module alias!!! " ++ name);
+                Some([])
+              }
+              | Some((uri, contents, items)) =>
+             Some(inDocs(~resolveAlias, uri, items, contents))
+            }
          | _ => None
          }
        )
@@ -169,6 +168,17 @@ let resolveOpens = (opens, state) => {
     };
     loop(previous)
   }, [], opens);
+};
+
+let rec resolveAlias = (state, path, children) => {
+  let rec loop = (path, items) =>
+    switch (path) {
+    | Path.Pident({stamp: 0, name}) => State.docsForModule(name, state) |?>> (((_, contents), uri)) => (uri, contents, items)
+    | Path.Pident(_) => None
+    | Pdot(inner, name, _) => loop(inner, [name, ...items])
+    | Papply(_) => None
+    };
+  loop(path, children);
 };
 
 /** Some docs */
@@ -226,21 +236,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
       results
     }
   | [first, ...more] =>
-    let rec resolveAlias = (path, children) => {
-      let rec loop = (path, items) => {
-        switch (path) {
-        | Path.Pident({stamp: 0, name}) => {
-          State.docsForModule(name, state) |> x => fold(x, [], (((_, contents), uri)) => {
-            inDocs(~resolveAlias, uri, items, contents)
-          })
-        }
-        | Path.Pident(_) => []
-        | Pdot(inner, name, _) => loop(inner, [name, ...items])
-        | Papply(_) => []
-        }
-      };
-      loop(path, children)
-    };
+    let resolveAlias = resolveAlias(state);
     switch (Utils.find(((name, contents, uri)) => findSubModule(first, contents) |?>> x => (x, uri), opens)) {
     | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
     | None =>
