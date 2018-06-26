@@ -25,6 +25,6 @@
   "license": "ISC",
   "dependencies": {
     "bs-platform": "bsansouci/bsb-native#3.2.0",
-    "rex-json": "1.3.1"
+    "rex-json": "1.4.0"
   }
 }
