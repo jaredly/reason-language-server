@@ -145,10 +145,40 @@ let rec inDocs = (~resolveAlias, uri, parts, contents) =>
     |? []
   };
 
-let rec findSubModule = (name, contents) => switch contents {
+let rec resolveAlias = (state, path, children) => {
+  let rec loop = (path, items) =>
+    switch (path) {
+    | Path.Pident({stamp: 0, name}) => State.docsForModule(name, state) |?>> (((_, contents), uri)) => (uri, contents, items)
+    | Path.Pident(_) => None
+    | Pdot(inner, name, _) => loop(inner, [name, ...items])
+    | Papply(_) => None
+    };
+  loop(path, children);
+};
+
+let rec findSubModule = (state, name, contents) => switch contents {
   | [] => None
   | [(n, loc, doc, Docs.Module(innerContents)), ..._] when n == name => Some((n, loc, doc, innerContents))
-  | [_, ...rest] => findSubModule(name, rest)
+  | [(n, loc, doc, Docs.ModuleAlias(path)), ..._] when n == name => {
+    switch (resolveAlias(state, path, [])) {
+      | None => None
+      | Some((uri, contents, items)) => {
+        let rec loop = (items, contents) => switch items {
+          | [] => Some((n, loc, doc, contents))
+          | [single] => findSubModule(state, single, contents)
+          | [single, ...more] => {
+            switch (findSubModule(state, single, contents)) {
+              | None => None
+              | Some((n, loc, doc, inner)) => loop(more, inner)
+            }
+          }
+        };
+        loop(items, contents)
+      }
+    }
+    /* Some((n, loc, doc, innerContents)) */
+  }
+  | [_, ...rest] => findSubModule(state, name, rest)
 };
 
 /* TODO local opens */
@@ -161,24 +191,13 @@ let resolveOpens = (opens, state) => {
       | Some(((docs, contents), uri)) => previous @ [(name, contents, uri)]
       }
     | [(prevname, contents, uri), ...rest] =>
-      switch (findSubModule(name, contents)) {
+      switch (findSubModule(state, name, contents)) {
       | None => loop(rest)
       | Some((name, _loc, _, innerContents)) => previous @ [(name, innerContents, uri)]
       }
     };
     loop(previous)
   }, [], opens);
-};
-
-let rec resolveAlias = (state, path, children) => {
-  let rec loop = (path, items) =>
-    switch (path) {
-    | Path.Pident({stamp: 0, name}) => State.docsForModule(name, state) |?>> (((_, contents), uri)) => (uri, contents, items)
-    | Path.Pident(_) => None
-    | Pdot(inner, name, _) => loop(inner, [name, ...items])
-    | Papply(_) => None
-    };
-  loop(path, children);
 };
 
 /** Some docs */
@@ -237,7 +256,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
     }
   | [first, ...more] =>
     let resolveAlias = resolveAlias(state);
-    switch (Utils.find(((name, contents, uri)) => findSubModule(first, contents) |?>> x => (x, uri), opens)) {
+    switch (Utils.find(((name, contents, uri)) => findSubModule(state, first, contents) |?>> x => (x, uri), opens)) {
     | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
     | None =>
     switch (State.docsForModule(first, state)) {
