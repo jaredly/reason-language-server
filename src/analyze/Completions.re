@@ -105,22 +105,46 @@ let forItem = (uri, name, loc, doc, item) => {
   }
 };
 
-let rec inDocs = (~resolveAlias, uri, parts, contents) => {
-  switch parts {
-  | [] => []
-  | [single] => contents |> Utils.filterMap(((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None)
-  | [first, ...rest] => contents |> Utils.find(((name, loc, doc, item)) => switch item {
-    | Docs.Module(contents) when name == first => Some(inDocs(~resolveAlias, uri, rest, contents))
-    | Docs.ModuleAlias(path) when name == first => {
-      let res = resolveAlias(path, rest);
-      Some(res)
-      /* TODO TODO grab the stuff out of here */
-      /* Some([forItem(uri, "hi", Location.none, None, Module([]))]) */
+let completionItems = (uri, moduleContents, prefix) => {
+  moduleContents |> List.fold_left((results, (name, loc, doc, item)) => switch item {
+    | Docs.Type({type_kind: Type_variant(constructors)} as typ) => {
+      let results = (constructors |> Utils.filterMap(({Types.cd_id: {name}} as decl) => (
+        Utils.startsWith(name, prefix) ? Some(forItem(uri, name, loc, doc, Docs.Constructor(
+          decl, name, typ
+        ))) : None
+      ))) @ results;
+      Utils.startsWith(name, prefix) ? [forItem(uri, name, loc, doc, item), ...results] : results
     }
-    | _ => None
-  }) |? []
-  }
+    | _ => Utils.startsWith(name, prefix) ? [forItem(uri, name, loc, doc, item), ...results] : results
+  }, [])
 };
+
+let rec inDocs = (~resolveAlias, uri, parts, contents) =>
+  switch (parts) {
+  | [] => []
+  | [single] =>
+    completionItems(uri, contents, single)
+    /* contents
+    |> Utils.filterMap(((name, loc, doc, item)) =>
+         Utils.startsWith(name, single) ?
+           Some(forItem((uri, name, loc, doc, item))) : None
+       ) */
+  | [first, ...rest] =>
+    contents
+    |> Utils.find(((name, loc, doc, item)) =>
+         switch (item) {
+         | Docs.Module(contents) when name == first =>
+           Some(inDocs(~resolveAlias, uri, rest, contents))
+         | Docs.ModuleAlias(path) when name == first =>
+           let res = resolveAlias(path, rest);
+           Some(res);
+         /* TODO TODO grab the stuff out of here */
+         /* Some([forItem(uri, "hi", Location.none, None, Module([]))]) */
+         | _ => None
+         }
+       )
+    |? []
+  };
 
 let rec findSubModule = (name, contents) => switch contents {
   | [] => None
