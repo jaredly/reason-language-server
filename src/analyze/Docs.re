@@ -56,8 +56,8 @@ let rec forSignatureType = (processDoc, signature) => {
   List.fold_left((items, item) => switch item {
   | Sig_value({stamp, name}, {val_type, val_kind, val_attributes, val_loc}) => [(name, val_loc, findDocAttribute(val_attributes) |?>> processDoc, Value(val_type)), ...items]
   | Sig_type({stamp, name}, decl, _) => [(name, decl.type_loc, findDocAttribute(decl.type_attributes) |?>> processDoc, Type(decl)), ...items]
-  | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, ModuleAlias(path))]
-  | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, Module(forModuleType(processDoc, md_type)))]
+  | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, ModuleAlias(path)), ...items]
+  | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) => [(name, md_loc, findDocAttribute(md_attributes) |?>> processDoc, Module(forModuleType(processDoc, md_type))), ...items]
   | _ => items
   }, [], signature);
 } and forModuleType = (processDoc, modtype) => Types.(switch modtype {
