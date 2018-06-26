@@ -9,12 +9,12 @@
   "sources": [
     {"dir": "src", "subdirs": true},
   ],
-  "bs-dependencies": ["rex-json"],
+  "bs-dependencies": ["rex-json", "reprocessing"],
   "ocaml-dependencies": ["compiler-libs", "unix", "bigarray", "str"],
   "public": ["Main"],
   "entries": [{
     "backend": "native",
-    "main-module": "FindFiles"
+    "main-module": "Main"
   }],
   "refmt": 3
 }

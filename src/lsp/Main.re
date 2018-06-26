@@ -90,8 +90,7 @@ let getInitialState = (params) => {
       let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
       let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
       let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-      let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=false, rootPath, config);
-      let cmtCache = Hashtbl.create(30);
+      let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, rootPath, config);
       let documentText = Hashtbl.create(5);
 
       let pathsForModule = Hashtbl.create(30);
@@ -131,7 +130,8 @@ let getInitialState = (params) => {
         localModules,
         localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)),
         dependencyModules,
-        cmtCache,
+        cmtCache: Hashtbl.create(30),
+        cmiCache: Hashtbl.create(30),
         compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
         pathsForModule,
         compiledDocuments: Hashtbl.create(10),

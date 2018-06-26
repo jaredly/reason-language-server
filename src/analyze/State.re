@@ -27,6 +27,15 @@ type state = {
         (option(string), list(Docs.full))
       )
     ),
+  cmiCache:
+    Hashtbl.t(
+      string,
+      (
+        float, /* modified time */
+        Cmi_format.cmi_infos,
+        (option(string), list(Docs.full))
+      )
+    ),
   pathsForModule: Hashtbl.t(string, (string, option(string))),
   compiledDocuments: Hashtbl.t(string, AsYouType.result),
   lastDefinitions: Hashtbl.t(string, Definition.moduleData),
@@ -64,27 +73,39 @@ let converter = (src, usePlainText) => {
   );
 };
 
-let newDocs = (cmtCache, changed, cmt, src, usePlainText) => {
-  let infos = Cmt_format.read_cmt(cmt);
-  switch (Docs.forCmt(converter(src, usePlainText), infos)) {
-  | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
-  | Some(docs) =>
-    Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
-    Some(docs);
-  };
+let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
+    let infos = Cmt_format.read_cmt(cmt);
+    switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
+    | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
+    | Some(docs) =>
+      Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
+      Some(docs);
+    };
+};
+
+let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
+    let infos = Cmi_format.read_cmi(cmi);
+    switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
+    | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
+    | Some(docs) =>
+      Hashtbl.replace(cmiCache, cmi, (changed, infos, docs));
+      Some(docs);
+    };
 };
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 
-let docsForCmt = (cmt, src, state) =>
-  if (Hashtbl.mem(state.cmtCache, cmt)) {
-    let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
+let docsForCmt = (cmt, src, state) => {
+  if (Filename.check_suffix(cmt, ".cmi")) {
+
+  if (Hashtbl.mem(state.cmiCache, cmt)) {
+    let (mtime, infos, docs) = Hashtbl.find(state.cmiCache, cmt);
     /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
     | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
     | Some(changed) =>
       if (changed > mtime) {
-        newDocs(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText);
+        newDocsForCmi(state.cmiCache, changed, cmt, src, state.clientNeedsPlainText);
       } else {
         Some(docs);
       }
@@ -92,9 +113,35 @@ let docsForCmt = (cmt, src, state) =>
   } else {
     switch (Files.getMtime(cmt)) {
     | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
-    | Some(changed) => newDocs(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText)
+    | Some(changed) => newDocsForCmi(state.cmiCache, changed, cmt, src, state.clientNeedsPlainText)
     };
   };
+
+
+  } else {
+
+
+  if (Hashtbl.mem(state.cmtCache, cmt)) {
+    let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
+    /* TODO I should really throttle this mtime checking to like every 50 ms or so */
+    switch (Files.getMtime(cmt)) {
+    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
+    | Some(changed) =>
+      if (changed > mtime) {
+        newDocsForCmt(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText);
+      } else {
+        Some(docs);
+      }
+    };
+  } else {
+    switch (Files.getMtime(cmt)) {
+    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
+    | Some(changed) => newDocsForCmt(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText)
+    };
+  };
+
+  }
+};
 
 let updateContents = (uri, text, version, state) => {
   Hashtbl.remove(state.compiledDocuments, uri);

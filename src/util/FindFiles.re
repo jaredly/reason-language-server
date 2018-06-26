@@ -88,6 +88,7 @@ let getDependencyDirs = (base, config) => {
 
 let isCompiledFile = name =>
   Filename.check_suffix(name, ".cmt")
+  || Filename.check_suffix(name, ".cmi")
   || Filename.check_suffix(name, ".cmti");
 
 let isSourceFile = name =>
@@ -98,21 +99,36 @@ let isSourceFile = name =>
 
 let compiledNameSpace = name => Str.split(Str.regexp_string("-"), name) |> List.map(String.capitalize) |> String.concat("");
 
-let compiledName = (~namespace, name) =>
+let compiledBase = (~namespace, name) =>
   Filename.chop_extension(name)
-  ++ (switch namespace { | None => "" | Some(n) => "-" ++ compiledNameSpace(n) })
+  ++ (switch namespace { | None => "" | Some(n) => "-" ++ compiledNameSpace(n) });
+
+let cmtName = (~namespace, name) =>
+  compiledBase(~namespace, name)
   ++ (name.[String.length(name) - 1] == 'i' ? ".cmti" : ".cmt");
+
+let cmiName = (~namespace, name) =>
+  compiledBase(~namespace, name) ++ ".cmi";
 
 let getName = x => Filename.basename(x) |> Filename.chop_extension;
 
 let filterDuplicates = cmts => {
   /* Remove .cmt's that have .cmti's */
   let intfs = Hashtbl.create(100);
-  cmts |> List.iter(path => if (Filename.check_suffix(path, ".rei") || Filename.check_suffix(path, ".mli") || Filename.check_suffix(path, ".cmti")) {
+  cmts |> List.iter(path => if (
+    Filename.check_suffix(path, ".rei")
+    || Filename.check_suffix(path, ".mli")
+    || Filename.check_suffix(path, ".cmti")
+    ) {
     Hashtbl.add(intfs, getName(path), true)
   });
   cmts |> List.filter(path => {
-    !((Filename.check_suffix(path, ".re") || Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".cmt")) && Hashtbl.mem(intfs, getName(path)))
+    !((
+      Filename.check_suffix(path, ".re")
+      || Filename.check_suffix(path, ".ml")
+      || Filename.check_suffix(path, ".cmt")
+      || Filename.check_suffix(path, ".cmi")
+    ) && Hashtbl.mem(intfs, getName(path)))
   });
 };
 
@@ -139,9 +155,13 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   |> List.concat
   |> ifDebug(debug, "Source files found", String.concat(" : "))
   |> filterDuplicates
-  |> List.map(path => {
+  |> Utils.filterMap(path => {
     let rel = Files.relpath(root, path);
-    (compiledBase /+ compiledName(~namespace, rel), path)
+    ifOneExists([
+      compiledBase /+ cmiName(~namespace, rel),
+      compiledBase /+ cmiName(~namespace, rel),
+    ]) |?>> cm => (cm, path)
+    /* (compiledBase /+ cmiName(~namespace, rel), path) */
   })
   |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
   |> List.filter(((full, rel)) => Files.exists(full))

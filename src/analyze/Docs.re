@@ -176,3 +176,9 @@ let forCmt = (processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => sw
   | Interface(signature) => Some(forSignature(processDoc, signature.sig_items))
   | _ => None
   };
+
+let forCmi = (processDoc, {Cmi_format.cmi_name, cmi_sign}) => {
+  let items = forSignatureType(processDoc, cmi_sign);
+  /* TODO: want the toplevel docs... */
+  Some((None, items))
+};
