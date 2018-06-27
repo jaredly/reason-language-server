@@ -260,8 +260,10 @@ let get = (topModule, opens, parts, state, localData, pos) => {
       localData
       |?> (
         moduleData =>
-          Definition.completionPath(moduleData, first, more, pos)
-          |?>> List.map(((name, loc, item, docs)) =>
+          Definition.completionPath(
+            inDocs(~resolveAlias, Some("(current file)")),
+            moduleData, first, more, pos,
+            ((name, loc, item, docs, _range)) =>
               forItem(
                 Some("(current file)"),
                 name,

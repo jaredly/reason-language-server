@@ -24,7 +24,7 @@ open Infix;
 
 type item =
   | Module(list((string, int)))
-  /* | NonLocalModule(list((string, item))) */
+  | ModuleWithDocs(list(Docs.full))
   /* | ModuleAlias(Path.t) */
   | Type(Types.type_declaration)
   | Constructor(Types.constructor_declaration, string, Types.type_declaration)
@@ -75,6 +75,7 @@ let maybeFound = (fn, a) =>
 let rec docsItem = (item, data) =>
   switch item {
   | Type(t) => Docs.Type(t)
+  | ModuleWithDocs(docs) => Docs.Module(docs)
   | Constructor(a, b, c) => Docs.Constructor(a, b, c)
   | Attribute(a, b, c) => Docs.Attribute(a, b, c)
   | Value(t) => Docs.Value(t)
@@ -113,7 +114,7 @@ let completions = ({stamps}, prefix, pos) => {
   )
 };
 
-let completionPath = ({stamps}, first, children, pos) => {
+let completionPath = (inDocs, {stamps}, first, children, pos, toItem) => {
   let top = Hashtbl.fold(
     (_, (name, loc, item, docs, range), result) =>
       switch result {
@@ -132,6 +133,7 @@ let completionPath = ({stamps}, first, children, pos) => {
 
   top |?>> ((name, loc, item, docs)) => {
     switch item {
+      | ModuleWithDocs(docs) => inDocs(children, docs)
       | Module(contents) => {
         let rec loop = (contents, items) => {
           switch (items) {
@@ -140,8 +142,7 @@ let completionPath = ({stamps}, first, children, pos) => {
               contents
               |> List.filter(((name, stamp)) => Utils.startsWith(name, single))
               |> List.map(((name, stamp)) => {
-                let (name, loc, item, docs, range) = Hashtbl.find(stamps, stamp);
-                (name, loc, item, docs)
+                toItem(Hashtbl.find(stamps, stamp))
               })
             }
             | [first, ...more] => {
@@ -150,6 +151,7 @@ let completionPath = ({stamps}, first, children, pos) => {
                   let (name, loc, item, docs, range) = Hashtbl.find(stamps, stamp);
                   switch item {
                     | Module(contents) => loop(contents, more)
+                    | ModuleWithDocs(docs) => inDocs(more, docs)
                     | _ => []
                   }
                 }
@@ -762,9 +764,9 @@ module Get = {
           let docs = PrepareUtils.findDocAttribute(mb_attributes);
           addOpenScope();
           addStamp(stamp, name, loc, Module(stampNames(structure.str_items)), docs)
-        | Tstr_module({mb_attributes, mb_id: {stamp, name}, mb_name: {loc}}) =>
+        | Tstr_module({mb_attributes, mb_id: {stamp, name}, mb_name: {loc}, mb_expr: {mod_type}}) =>
           let docs = PrepareUtils.findDocAttribute(mb_attributes);
-          addStamp(stamp, name, loc, Module([]), docs)
+          addStamp(stamp, name, loc, ModuleWithDocs(Docs.forModuleType(x => x, mod_type)), docs)
         | Tstr_open({open_path, open_txt: {txt, loc}}) =>
           if (usesOpen(txt, open_path)) {
             addUse((open_path, TagModule), txt, loc)

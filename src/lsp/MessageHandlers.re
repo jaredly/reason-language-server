@@ -181,6 +181,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let lenses = showToplevelTypes ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
           switch item {
           | Definition.Module(_) => None
+          | ModuleWithDocs(_) => None
           | Type(t) => None
           | Constructor(_) => None
           | Attribute(_) => None
@@ -270,6 +271,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
               let children = contents |> List.map(((_, stamp)) => getItems(path @ [name], stamp)) |> List.concat;
               Some((`Module, children))
             }
+            | ModuleWithDocs(_) => Some((`Module, []))
             | Type(t) => Some((Protocol.typeKind(t), []))
             | Constructor(_) => None
             | Attribute(_) => None
