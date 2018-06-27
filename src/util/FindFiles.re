@@ -221,7 +221,10 @@ let findDependencyFiles = (~debug, base, config) => {
   });
   let (directories, files) = List.split(depFiles);
   let files = List.concat(files);
-  let stdlibDirectory = base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml";
+  let stdlibDirectory =
+    isNative(config) ?
+      base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native" :
+      base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml";
   let directories = [stdlibDirectory, ...List.concat(directories)];
   let results = files @ loadStdlib(stdlibDirectory);
   (
