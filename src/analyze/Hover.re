@@ -14,6 +14,7 @@ let getHover = (uri, line, character, state) => {
   | Ok(data) =>
     switch (Definition.locationAtPos((line, character), data)) {
     | None => None
+    | Some((loc, {desc: Types.Tnil}, _)) => None
     | Some((loc, expr, defn)) =>
       let useMarkdown = !state.clientNeedsPlainText;
       let typ =

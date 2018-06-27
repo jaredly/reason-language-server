@@ -96,8 +96,8 @@ let print_expr = (stringifier, typ) => {
   }
   | Tlink(inner) => loop(inner)
   | Tsubst(inner) => loop(inner)
+  | Tnil => str("(no type)")
   | Tfield(_, _, _, _)
-  | Tnil
   | Tvariant(_)
   | Tunivar(_)
   | Tpoly(_, _)
