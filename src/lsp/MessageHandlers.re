@@ -43,8 +43,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     |?> ((text, version, isClean)) => (PartialParser.positionToOffset(text, pos) |> orError("invalid offset")) |?>> offset => {
         open Rpc.J;
         let completions = switch (PartialParser.findCompletable(text, offset)) {
-        | Nothing => []
-        | Labeled(string) => []
+        | Nothing => {
+          Log.log("Nothing completable found :/");
+          []
+        }
+        | Labeled(string) => {
+          Log.log("don't yet support completion for argument labels, but I hope to soon!");
+          []
+        }
         | Lident(string) => {
           log("Completing for string " ++ string);
           let parts = Str.split(Str.regexp_string("."), string);

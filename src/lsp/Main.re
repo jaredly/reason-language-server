@@ -94,11 +94,6 @@ let getInitialState = (params) => {
       let documentText = Hashtbl.create(5);
 
       let pathsForModule = Hashtbl.create(30);
-      localModules |> List.iter(((modName, (cmt, source))) => {
-        Log.log("> Local " ++ cmt ++ " - " ++ source);
-        Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
-      });
-      Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
       dependencyModules |> List.iter(((modName, (cmt, source))) => {
         Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
@@ -108,6 +103,12 @@ let getInitialState = (params) => {
         | _ => ()
         }
       });
+
+      localModules |> List.iter(((modName, (cmt, source))) => {
+        Log.log("> Local " ++ cmt ++ " - " ++ source);
+        Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+      });
+      Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
       /* if client needs plain text in any place, we disable markdown everywhere */
       let clientNeedsPlainText = ! Infix.(

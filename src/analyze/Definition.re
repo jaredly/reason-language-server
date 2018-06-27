@@ -24,6 +24,7 @@ open Infix;
 
 type item =
   | Module(list((string, int)))
+  /* | NonLocalModule(list((string, item))) */
   /* | ModuleAlias(Path.t) */
   | Type(Types.type_declaration)
   | Constructor(Types.constructor_declaration, string, Types.type_declaration)
@@ -101,37 +102,67 @@ let completions = ({stamps}, prefix, pos) => {
   Hashtbl.fold(
     (_, (name, loc, item, docs, range), results) =>
       if (inRange(pos, range)) {
-        let results = if (Utils.startsWith(name, prefix)) {
+        if (Utils.startsWith(name, prefix)) {
           [(name, loc, item, docs), ...results]
         } else {
           results
         };
-        /* switch item {
-          | Type({type_kind: Type_variant(constructors)}) => {
-            List.fold_left((results, {Types.cd_id: {name, stamp}}) => {
-              if (Utils.startsWith(name, prefix)) {
-                [(name, loc, item, docs), ...results]
-              } else {
-                results
-              }
-            }, results, constructors)
-          }
-          | Type({type_kind: Type_record(labels, _)}) => {
-            List.fold_left((results, {Types.ld_id: {name, stamp}}) => {
-              if (Utils.startsWith(name, prefix)) {
-                [(name, loc, item, docs), ...results]
-              } else {
-                results
-              }
-            }, results, labels)
-          }
-          | _ => results
-        } */
-        results
       } else { results },
     stamps,
     []
   )
+};
+
+let completionPath = ({stamps}, first, children, pos) => {
+  let top = Hashtbl.fold(
+    (_, (name, loc, item, docs, range), result) =>
+      switch result {
+        | Some(x) => Some(x)
+        | None => {
+        if (inRange(pos, range) && name == first) {
+          Some((name, loc, item, docs))
+        } else {
+          None
+        }
+      }
+    },
+    stamps,
+    None
+  );
+
+  top |?>> ((name, loc, item, docs)) => {
+    switch item {
+      | Module(contents) => {
+        let rec loop = (contents, items) => {
+          switch (items) {
+            | [] => assert(false)
+            | [single] => {
+              contents
+              |> List.filter(((name, stamp)) => Utils.startsWith(name, single))
+              |> List.map(((name, stamp)) => {
+                let (name, loc, item, docs, range) = Hashtbl.find(stamps, stamp);
+                (name, loc, item, docs)
+              })
+            }
+            | [first, ...more] => {
+              switch (List.find(((name, stamp)) => name == first, contents)) {
+                | (name, stamp) => {
+                  let (name, loc, item, docs, range) = Hashtbl.find(stamps, stamp);
+                  switch item {
+                    | Module(contents) => loop(contents, more)
+                    | _ => []
+                  }
+                }
+                | exception Not_found => []
+              }
+            }
+          }
+        };
+        loop(contents, children)
+      }
+      | _ => []
+    }
+  }
 };
 
 module Opens = {
@@ -494,8 +525,7 @@ let findDefinition = (defn, data) => {
 let locationSize = ({Location.loc_start, loc_end}) => loc_end.Lexing.pos_cnum - loc_start.Lexing.pos_cnum;
 
 module Get = {
-  /* TODO maybe return loc from this? or have a separate one that
-   * finds a thing by name...
+  /* For a list of structure items, get the names and stamps of definted things in there.
    */
   let rec stampNames = (items) =>
     Typedtree.(
@@ -659,7 +689,7 @@ module Get = {
            let (stamps) = stampsFromTypedtreeInterface(addToPath(currentPath, name), signature.sig_items);
            [(stamp, addToPath(currentPath, name) |> toFullPath(PModule)), ...stamps]
          } */
-      | Tsig_module({md_id: {stamp, name}, md_loc}) =>
+      | Tsig_module({md_id: {stamp, name}, md_loc, md_type}) =>
         addStamp(stamp, name, md_loc, Module([]), None)
       | _ => ()
       };

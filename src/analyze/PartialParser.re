@@ -1,14 +1,37 @@
 
-type current = Comment(int) | String | Normal;
+type current = Comment(int) | String | Normal | Char;
 let hasUnterminatedCommentOrString = (text, ln) => {
-  let rec loop = (current, i) => i >= ln ? current != Normal : switch current {
-  | String => text.[i] == '"' ? loop(Normal, i + 1) : loop(String, text.[i] == '\\' ? i + 2 : i + 1)
-  | Comment(level) => i + 1 >= ln ? true : (text.[i] == '*' && text.[i + 1] == '/' ? loop(level == 0 ? Normal : Comment(level - 1), i + 2) : (
-      text.[i] == '/' && text.[i + 1] == '*' ? loop(Comment(level + 1), i + 2) : loop(Comment(level), i + 1)
-   ))
-   | Normal => text.[i] == '"' ? loop(String, i + 1) : (text.[i] == '/' && i + 1 < ln && text.[i + 1] == '*' ? loop(Comment(0), i + 2) : loop(Normal, i + 1))
-  };
-  loop(Normal, 0)
+  let rec loop = (current, i) =>
+    i >= ln ?
+      current != Normal :
+      (
+        switch (current) {
+        | String =>
+          text.[i] == '"' ?
+            loop(Normal, i + 1) :
+            loop(String, text.[i] == '\\' ? i + 2 : i + 1)
+        | Char =>
+          text.[i] == '\'' ?
+            loop(Normal, i + 1) :
+            loop(Char, text.[i] == '\\' ? i + 2 : i + 1)
+        | Comment(level) =>
+          i + 1 >= ln ?
+            true :
+            text.[i] == '*' && text.[i + 1] == '/' ?
+              loop(level == 0 ? Normal : Comment(level - 1), i + 2) :
+              text.[i] == '/' && text.[i + 1] == '*' ?
+                loop(Comment(level + 1), i + 2) :
+                loop(Comment(level), i + 1)
+        | Normal =>
+          text.[i] == '"' ?
+            loop(String, i + 1) :
+            text.[i] == '\'' ?
+              loop(Char, i + 1) :
+              text.[i] == '/' && i + 1 < ln && text.[i + 1] == '*' ?
+                loop(Comment(0), i + 2) : loop(Normal, i + 1)
+        }
+      );
+  loop(Normal, 0);
 };
 
 let rec findBack = (text, char, i) => {
@@ -151,6 +174,7 @@ type completable = Nothing | Labeled(string) | Lident(string);
 
 let findCompletable = (text, offset) => {
   if (hasUnterminatedCommentOrString(text, offset)) {
+    Log.log("Unterminated comment or string, can't do it. Sorry");
     Nothing
   } else {
     /** TODO handle being in the middle of an identifier */

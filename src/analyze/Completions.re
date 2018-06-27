@@ -250,18 +250,40 @@ let get = (topModule, opens, parts, state, localData, pos) => {
           state.dependencyModules
         );
       results;
-
     } else {
       results
     }
   | [first, ...more] =>
     let resolveAlias = resolveAlias(state);
+    /* TODO handle name overrides from local opens vs local modules */
+    let localResults =
+      localData
+      |?> (
+        moduleData =>
+          Definition.completionPath(moduleData, first, more, pos)
+          |?>> List.map(((name, loc, item, docs)) =>
+              forItem(
+                Some("(current file)"),
+                name,
+                loc,
+                docs,
+                Definition.docsItem(item, moduleData),
+              )
+            )
+      );
+    switch localResults {
+      | Some(r) => r
+      | None =>
     switch (Utils.find(((name, contents, uri)) => findSubModule(state, first, contents) |?>> x => (x, uri), opens)) {
     | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
     | None =>
     switch (State.docsForModule(first, state)) {
-    | None => [] /* TODO handle opens */
+    | None => {
+      Log.log("No docs found for " ++ first);
+      [] /* TODO handle opens */
+    }
     | Some(((_, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
+    }
     }
     }
   };
