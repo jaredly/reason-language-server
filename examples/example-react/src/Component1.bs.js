@@ -3,7 +3,7 @@
 
 var Curry = require("bs-platform/lib/js/curry.js");
 var React = require("react");
-var ReasonReact = require("/Users/jared/clone/tools/reason-language-server/example-react/node_modules/reason-react/src/ReasonReact.js");
+var ReasonReact = require("/Users/jared/clone/tools/reason-language-server/examples/example-react/node_modules/reason-react/src/ReasonReact.js");
 
 var component = ReasonReact.statelessComponent("Page");
 
@@ -36,10 +36,7 @@ function make(message, _) {
         ];
 }
 
-var x = 10;
-
 exports.component = component;
 exports.handleClick = handleClick;
-exports.x = x;
 exports.make = make;
 /* component Not a pure module */

@@ -4,7 +4,11 @@
 var Block = require("bs-platform/lib/js/block.js");
 var Curry = require("bs-platform/lib/js/curry.js");
 var React = require("react");
-var ReasonReact = require("/Users/jared/clone/tools/reason-language-server/example-react/node_modules/reason-react/src/ReasonReact.js");
+var ReasonReact = require("/Users/jared/clone/tools/reason-language-server/examples/example-react/node_modules/reason-react/src/ReasonReact.js");
+
+function z() {
+  return 2;
+}
 
 var component = ReasonReact.reducerComponent("Example");
 
@@ -60,6 +64,7 @@ function make(greeting, _) {
 var x = 10;
 
 exports.x = x;
+exports.z = z;
 exports.component = component;
 exports.make = make;
 /* component Not a pure module */

@@ -160,8 +160,6 @@ let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
     |?> version => Json.get("text", doc) |?> Json.string
     |?>> text => (uri, version, text);
 
-let stripAnsii = text => Str.global_replace(Str.regexp("\027\\[[0-9;]+m"), "", text);
-
 let runDiagnostics = (uri, state) => {
   Log.log("Running diagnostics for " ++ uri);
   /* let (text, _, _) =  */
@@ -204,17 +202,22 @@ let runDiagnostics = (uri, state) => {
       }
     }
     | TypeError(text, _, _) => {
-      let pos = AsYouType.parseTypeError(text);
+      let plain = Utils.stripAnsii(text);
+      let pos = AsYouType.parseTypeError(plain);
       let (l0, c0, l1, c1) = switch pos {
       | None => (0, 0, 0, 0)
       | Some((line, c0, c1)) => (line, c0, line, c1)
       };
+      /* This is to catch the recovering parser's stuff */
+      let message = List.length(Str.split(Str.regexp_string("merlin"), plain)) == 2
+      ? "Syntax error"
+      : "Type Error!\n" ++ plain;
       l([o([
         ("range", o([
           ("start", Protocol.pos(~line=l0, ~character=c0)),
           ("end", Protocol.pos(~line=l1, ~character=c1)),
         ])),
-        ("message", s("Type error!" ++ stripAnsii(text))),
+        ("message", s(message)),
         ("severity", i(1)),
       ])])
     }

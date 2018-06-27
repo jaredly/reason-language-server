@@ -17,7 +17,7 @@ let runRefmt = (~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ "lsp.ast";
   /* let source = cacheLocation /+ "lsp.re"; */
   /* Files.writeFileExn(source, text); */
-  let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
+  let cmd = Printf.sprintf("%s --print binary --recoverable --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
     Ok(target)
@@ -39,7 +39,7 @@ let format = (text, refmt) => {
 };
 
 let parseTypeError = text => {
-  let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:");
+  /* let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:"); */
   let rx = Str.regexp({|File "[^"]*", line \([0-9]+\), characters \([0-9]+\)-\([0-9]+\):|});
   if (Str.string_match(rx, text, 0)) {
     let line = Str.matched_group(1, text) |> int_of_string;
@@ -47,6 +47,7 @@ let parseTypeError = text => {
     let c1 = Str.matched_group(3, text) |> int_of_string;
     Some((line - 1, c0, c1))
   } else {
+    Log.log("Cannot parse type error: " ++ text);
     None
   }
 };
