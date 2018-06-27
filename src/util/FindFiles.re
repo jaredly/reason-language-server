@@ -141,7 +141,10 @@ let getCompiledBase = (root, config) =>
   ifOneExists(
     isNative(config) ?
       [root /+ "lib" /+ "bs" /+ "native"] :
-      [root /+ "lib" /+ "bs" /+ "js", root /+ "lib" /+ "ocaml", root /+ "lib" /+ "bs"],
+      [root /+ "lib" /+ "bs" /+ "js",
+      root /+ "lib" /+ "bs",
+      root /+ "lib" /+ "ocaml",
+      ],
   );
 
 /**
@@ -158,10 +161,9 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   |> Utils.filterMap(path => {
     let rel = Files.relpath(root, path);
     ifOneExists([
-      compiledBase /+ cmiName(~namespace, rel),
+      compiledBase /+ cmtName(~namespace, rel),
       compiledBase /+ cmiName(~namespace, rel),
     ]) |?>> cm => (cm, path)
-    /* (compiledBase /+ cmiName(~namespace, rel), path) */
   })
   |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
   |> List.filter(((full, rel)) => Files.exists(full))
@@ -201,6 +203,9 @@ let findDependencyFiles = (~debug, base, config) => {
       let namespace = getNamespace(inner);
       let directories = getSourceDirectories(~includeDev=false, loc, inner);
       let compiledBase = getCompiledBase(loc, inner) |! "No compiled base found";
+      if (debug) {
+        Log.log("Compiled base: " ++ compiledBase)
+      };
       let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
       let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);

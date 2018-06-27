@@ -1,8 +1,0 @@
-{
-  "reason.diagnostics.tools": [
-    "bsb"
-  ],
-  "git.ignoreLimitWarning": true,
-  "git.enabled": false,
-  "reason.path.bsb": "./node_modules/.bin/bsb"
-}
