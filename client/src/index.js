@@ -15,7 +15,9 @@ const getLocation = (context) => {
         // see if it's bundled with the extension
         // hmm actually I could bundle one for each platform & probably be fine
         // I guess it's 9mb binary. I wonder if I can cut that down?
-        const ext = process.platform === 'win32' ? '.exe' : '';
+        const ext = process.platform === 'win32'
+		? '.exe'
+		: (process.platform === 'linux' ? '.linux' : '');
         binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native' + ext)
         if (!fs.existsSync(binaryLocation)) {
             binaryLocation = context.asAbsolutePath('bin.native' + ext)

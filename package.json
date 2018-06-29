@@ -8,6 +8,7 @@
     "test": "./lib/bs/native/tester.native tests > tests/example.out",
     "watch": "bsb -make-world -backend native -w",
     "package": "cp lib/bs/native/bin.native client; cd client; vsce package",
+    "package:linux": "cp lib/bs/native/bin.native client/bin.native.linux; cd client; vsce package",
     "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe client & chdir client & vsce package",
     "postinstall": "bsb -make-world -backend native"
   },
