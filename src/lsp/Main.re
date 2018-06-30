@@ -170,9 +170,9 @@ let runDiagnostics = (uri, state) => {
     ("diagnostics", switch result {
     | AsYouType.ParseError(text) => {
       let pos = AsYouType.parseTypeError(text);
-      let (l0, c0, l1, c1) = switch pos {
-      | None => (0, 0, 0, 0)
-      | Some((line, c0, c1)) => (line, c0, line, c1)
+      let (l0, c0, l1, c1, text) = switch pos {
+      | None => (0, 0, 0, 0, text)
+      | Some((line, c0, c1, text)) => (line, c0, line, c1, text)
       };
       l([o([
         ("range", Protocol.rangeOfInts(l0, c0, l1, c1)),
@@ -187,7 +187,7 @@ let runDiagnostics = (uri, state) => {
         let rec loop = lines => switch lines {
         | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(loc)) {
           | None => loop([warning, ...rest])
-          | Some((line, c0, c1)) => {
+          | Some((line, c0, c1, text)) => {
             [o([
               ("range", Protocol.rangeOfInts(line, c0, line, c1)),
               ("message", s(warning)),
@@ -204,14 +204,14 @@ let runDiagnostics = (uri, state) => {
     | TypeError(text, _, _) => {
       let plain = Utils.stripAnsii(text);
       let pos = AsYouType.parseTypeError(plain);
-      let (l0, c0, l1, c1) = switch pos {
-      | None => (0, 0, 0, 0)
-      | Some((line, c0, c1)) => (line, c0, line, c1)
+      let (l0, c0, l1, c1, plain) = switch pos {
+      | None => (0, 0, 0, 0, plain)
+      | Some((line, c0, c1, plain)) => (line, c0, line, c1, plain)
       };
       /* This is to catch the recovering parser's stuff */
       let message = List.length(Str.split(Str.regexp_string("merlin"), plain)) == 2
       ? "Syntax error"
-      : "Type Error!\n" ++ plain;
+      : plain;
       l([o([
         ("range", o([
           ("start", Protocol.pos(~line=l0, ~character=c0)),
