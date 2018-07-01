@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 const vscode = require("vscode");
-const {LanguageClient} = require("vscode-languageclient");
+const {LanguageClient, RevealOutputChannelOn} = require("vscode-languageclient");
 const path = require('path')
 const fs = require('fs')
 
@@ -52,7 +52,8 @@ function activate(context) {
                 vscode.workspace.createFileSystemWatcher('**/bsconfig.json'),
                 vscode.workspace.createFileSystemWatcher('**/.merlin')
             ]
-        }
+        },
+    	revealOutputChannelOn: RevealOutputChannelOn.Never,
     };
 
     let client = null
