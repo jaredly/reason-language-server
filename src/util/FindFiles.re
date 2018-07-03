@@ -223,7 +223,10 @@ let findDependencyFiles = (~debug, base, config) => {
   let files = List.concat(files);
   let stdlibDirectory =
     isNative(config) ?
-      base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native" :
+      oneShouldExist("No ocaml native stdlib found", [
+        base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native",
+        base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml"
+      ]) :
       base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml";
   let directories = [stdlibDirectory, ...List.concat(directories)];
   let results = files @ loadStdlib(stdlibDirectory);
