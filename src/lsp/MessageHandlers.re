@@ -215,19 +215,20 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       ])))))
     }
   }),
+
   ("textDocument/hover", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?> ((uri, (line, character))) => State.getPackage(uri, state) |?>> package => {
-      open Rpc.J;
-      switch (Hover.getHover(uri, line, character, state, ~package)) {
-      | None => (state, Json.Null)
-      | Some((text, loc)) =>
+    let%try (uri, (line, character)) = Protocol.rPositionParams(params);
+    let%try package = State.getPackage(uri, state);
+    open Rpc.J;
+    open Infix;
+    Ok({
+      let%opt_wrap (text, loc) = Hover.getHover(uri, line, character, state, ~package);
       (state, o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("contents",  text |> Protocol.contentKind(!state.clientNeedsPlainText))
       ]))
-      }
-    }
+    } |? (state, Json.Null))
   }),
 
   ("textDocument/rangeFormatting", (state, params) => {
