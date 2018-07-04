@@ -127,10 +127,7 @@ let typeKind = (t) =>
 /*
   returns true if a MarkupKind[] contains "markdown"
 */
-let hasMarkdownCap = (markupKind) =>
-  Infix.(
-    markupKind
-      |> Json.array
-      |?>> List.map(cap => Json.string(cap) |? "")
-      |?>> List.mem("markdown")
-  )
+let hasMarkdownCap = (markupKind) => {
+  let%opt kinds = Json.array(markupKind) |?>> optMap(Json.string);
+  Some(List.mem("markdown", kinds))
+};

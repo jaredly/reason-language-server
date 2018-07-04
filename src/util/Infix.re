@@ -1,5 +1,10 @@
 
-let optMap = (fn, items) => List.fold_left((result, item) => switch (fn(item)) { | None => result | Some(res) => [res, ...result]}, [], items);
+/**
+ * This combines a filter and a map.
+ * You provide a function that turns an element into an optional of another element,
+ * and you get a list of all of the present results.
+ */
+let optMap: ('a => option('b), list('a)) => list('b) = (fn, items) => List.fold_left((result, item) => switch (fn(item)) { | None => result | Some(res) => [res, ...result]}, [], items);
 
 let (|!) = (o, d) => switch o { | None => failwith(d) | Some(v) => v };
 let (|?) = (o, d) => switch o { | None => d | Some(v) => v };
