@@ -81,6 +81,12 @@ module Show = {
   };
 };
 
+
+let newPackage = (uri) => {
+
+};
+
+
 let getPackage = (uri, state) => {
   Result.Ok(state.package);
 };

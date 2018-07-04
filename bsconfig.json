@@ -7,7 +7,8 @@
     "error": "+8"
   },
   "sources": [
-    {"dir": "src", "subdirs": true},
+    {"dir": "ppx", "type": "ppx"},
+    {"dir": "src", "subdirs": true, "ppx": "Ppx_Monads"},
     {"dir": "bin", "type": "dev"},
     {"dir": "tests", "type": "dev"},
     "omd",
@@ -19,6 +20,10 @@
   "entries": [{
     "backend": "native",
     "main-module": "Bin"
+  }, {
+    "backend": "native",
+    "type": "ppx",
+    "main-module": "Ppx_Monads"
   }, {
     "backend": "native",
     "main-module": "Tester"
