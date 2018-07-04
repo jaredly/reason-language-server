@@ -145,10 +145,10 @@ let rec inDocs = (~resolveAlias, uri, parts, contents) =>
     |? []
   };
 
-let rec resolveAlias = (state, path, children) => {
+let rec resolveAlias = (state, path, children, ~package) => {
   let rec loop = (path, items) =>
     switch (path) {
-    | Path.Pident({stamp: 0, name}) => State.docsForModule(name, state) |?>> (((_, contents), uri)) => (uri, contents, items)
+    | Path.Pident({stamp: 0, name}) => State.docsForModule(name, state, ~package) |?>> (((_, contents), uri)) => (uri, contents, items)
     | Path.Pident(_) => None
     | Pdot(inner, name, _) => loop(inner, [name, ...items])
     | Papply(_) => None
@@ -156,18 +156,18 @@ let rec resolveAlias = (state, path, children) => {
   loop(path, children);
 };
 
-let rec findSubModule = (state, name, contents) => switch contents {
+let rec findSubModule = (state, name, contents, ~package) => switch contents {
   | [] => None
   | [(n, loc, doc, Docs.Module(innerContents)), ..._] when n == name => Some((n, loc, doc, innerContents))
   | [(n, loc, doc, Docs.ModuleAlias(path)), ..._] when n == name => {
-    switch (resolveAlias(state, path, [])) {
+    switch (resolveAlias(state, path, [], ~package)) {
       | None => None
       | Some((uri, contents, items)) => {
         let rec loop = (items, contents) => switch items {
           | [] => Some((n, loc, doc, contents))
-          | [single] => findSubModule(state, single, contents)
+          | [single] => findSubModule(state, single, contents, ~package)
           | [single, ...more] => {
-            switch (findSubModule(state, single, contents)) {
+            switch (findSubModule(state, single, contents, ~package)) {
               | None => None
               | Some((n, loc, doc, inner)) => loop(more, inner)
             }
@@ -178,20 +178,20 @@ let rec findSubModule = (state, name, contents) => switch contents {
     }
     /* Some((n, loc, doc, innerContents)) */
   }
-  | [_, ...rest] => findSubModule(state, name, rest)
+  | [_, ...rest] => findSubModule(state, name, rest, ~package)
 };
 
 /* TODO local opens */
-let resolveOpens = (opens, state) => {
+let resolveOpens = (opens, state, ~package) => {
   List.fold_left((previous, name) => {
     let rec loop = prev => switch prev {
     | [] =>
-      switch (State.docsForModule(name, state)) {
+      switch (State.docsForModule(name, state, ~package)) {
       | None => previous /* TODO warn? */
       | Some(((docs, contents), uri)) => previous @ [(name, contents, uri)]
       }
     | [(prevname, contents, uri), ...rest] =>
-      switch (findSubModule(state, name, contents)) {
+      switch (findSubModule(state, name, contents, ~package)) {
       | None => loop(rest)
       | Some((name, _loc, _, innerContents)) => previous @ [(name, innerContents, uri)]
       }
@@ -201,9 +201,9 @@ let resolveOpens = (opens, state) => {
 };
 
 /** Some docs */
-let get = (topModule, opens, parts, state, localData, pos) => {
-  let opens = resolveOpens(opens, state);
-  let opens = switch (State.docsForModule("Pervasives", state)) {
+let get = (topModule, opens, parts, state, localData, pos, ~package) => {
+  let opens = resolveOpens(opens, state, ~package);
+  let opens = switch (State.docsForModule("Pervasives", state, ~package)) {
   | None => {
     Log.log("No pervasives found...");
     opens
@@ -221,7 +221,6 @@ let get = (topModule, opens, parts, state, localData, pos) => {
     }
     };
 
-
     let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
       ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None
     )) |> List.concat;
@@ -235,7 +234,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
             Utils.startsWith(k, single) && k != topModule ?
               [forModule(state, k, cmt, Some(src)), ...results] : results,
           results,
-          state.package.localModules
+          package.localModules
         );
       let results =
         List.fold_left(
@@ -247,7 +246,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
             | _ => results
             },
           results,
-          state.package.dependencyModules
+          package.dependencyModules
         );
       results;
     } else {
@@ -261,7 +260,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
       |?> (
         moduleData =>
           Definition.completionPath(
-            inDocs(~resolveAlias, Some("(current file)")),
+            inDocs(~resolveAlias=resolveAlias(~package), Some("(current file)")),
             moduleData, first, more, pos,
             ((name, loc, item, docs, _range)) =>
               forItem(
@@ -276,15 +275,15 @@ let get = (topModule, opens, parts, state, localData, pos) => {
     switch localResults {
       | Some(r) => r
       | None =>
-    switch (Utils.find(((name, contents, uri)) => findSubModule(state, first, contents) |?>> x => (x, uri), opens)) {
-    | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
+    switch (Utils.find(((name, contents, uri)) => findSubModule(state, first, contents, ~package) |?>> x => (x, uri), opens)) {
+    | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
     | None =>
-    switch (State.docsForModule(first, state)) {
+    switch (State.docsForModule(first, state, ~package)) {
     | None => {
       Log.log("No docs found for " ++ first);
       [] /* TODO handle opens */
     }
-    | Some(((_, contents), uri)) => inDocs(~resolveAlias, uri, more, contents)
+    | Some(((_, contents), uri)) => inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
     }
     }
     }

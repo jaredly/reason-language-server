@@ -1,7 +1,7 @@
 open Result;
 
-let getHover = (uri, line, character, state) => {
-  let result = State.getCompilationResult(uri, state);
+let getHover = (uri, line, character, state, ~package) => {
+  let result = State.getCompilationResult(uri, state, ~package);
   let result =
     switch result {
     | AsYouType.ParseError(text) =>
@@ -22,7 +22,7 @@ let getHover = (uri, line, character, state) => {
         |> PrintType.prettyString;
       let typ = useMarkdown ? "```\n" ++ typ ++ "\n```" : typ;
       let tooltip =
-        switch (State.getResolvedDefinition(uri, defn, data, state)) {
+        switch (State.getResolvedDefinition(uri, defn, data, state, ~package)) {
         | None => typ
         | Some((loc, docs, docUri)) =>
           typ

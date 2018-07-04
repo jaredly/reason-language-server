@@ -15,12 +15,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
     |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
-    |?> position => {
-      switch (State.getDefinitionData(uri, state)) {
+    |?> position => State.getPackage(uri, state) |?> package => {
+      switch (State.getDefinitionData(uri, state, ~package)) {
       | None => {
         Error("Parse error, can't find definition")
       }
-      | Some(data) => switch (State.definitionForPos(uri, position, data, state)) {
+      | Some(data) => switch (State.definitionForPos(uri, position, data, state, ~package)) {
       | Some((None, _, _)) | Some((_, _, None))
       | None => Ok((state, Json.Null))
       | Some((Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
@@ -40,7 +40,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/completion", (state, params) => {
     open InfixResult;
     (Protocol.rPositionParams(params) |?> ((uri, pos)) => (maybeHash(state.documentText, uri) |> orError("No document text found"))
-    |?> ((text, version, isClean)) => (PartialParser.positionToOffset(text, pos) |> orError("invalid offset")) |?>> offset => {
+    |?> ((text, version, isClean)) => State.getPackage(uri, state) |?> package => (PartialParser.positionToOffset(text, pos) |> orError("invalid offset")) |?>> offset => {
         open Rpc.J;
         let completions = switch (PartialParser.findCompletable(text, offset)) {
         | Nothing => {
@@ -60,7 +60,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           /* */
           let localData = State.getLastDefinitions(uri, state);
           let useMarkdown = !state.clientNeedsPlainText;
-          Completions.get(currentModuleName, opens, parts, state, localData, pos) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
+          Completions.get(currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
@@ -102,9 +102,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/documentHighlight", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
+    Protocol.rPositionParams(params) |?> ((uri, pos)) => State.getPackage(uri, state) |?>> package => {
       open Infix;
-      let highlights = (State.getDefinitionData(uri, state) |?> data => Definition.highlights(pos, data)) |? [];
+      let highlights = (State.getDefinitionData(uri, state, ~package) |?> data => Definition.highlights(pos, data)) |? [];
       open Rpc.J;
       (state, l(highlights |> List.map(((t, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
@@ -118,14 +118,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/references", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?>> ((uri, pos)) => {
+    Protocol.rPositionParams(params) |?> ((uri, pos)) => State.getPackage(uri, state) |?>> package => {
       open Infix;
-      (State.getDefinitionData(uri, state)
+      (State.getDefinitionData(uri, state, ~package)
       |?> data =>
       switch (Definition.openReferencesAtPos(data, pos)) {
         | Some(references) => Some((state, Json.Array(references |> List.map(((_, _, loc)) => Protocol.locationOfLoc(~fname=uri, loc)))))
         | None =>
-          State.referencesForPos(uri, pos, data, state)
+          State.referencesForPos(uri, pos, data, state, ~package)
           |?>> allReferences => {
             open Rpc.J;
             (
@@ -147,11 +147,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/rename", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?> ((uri, pos)) => RJson.get("newName", params) |?> RJson.string
+    Protocol.rPositionParams(params) |?> ((uri, pos)) => State.getPackage(uri, state) |?> package => RJson.get("newName", params) |?> RJson.string
     |?> newName => {
       open Infix;
-      (State.getDefinitionData(uri, state)
-      |?> data => State.referencesForPos(uri, pos, data, state)
+      (State.getDefinitionData(uri, state, ~package)
+      |?> data => State.referencesForPos(uri, pos, data, state, ~package)
       |?>> allReferences => {
 
         open Rpc.J;
@@ -170,10 +170,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/codeLens", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => {
+    |?> uri => State.getPackage(uri, state) |?> package => {
       open Infix;
       /* let items = */
-      let items = State.getCompilationResult(uri, state) |> AsYouType.getResult |?>> snd
+      let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
       |?# lazy(State.getLastDefinitions(uri, state))
       |?>> (((moduleData)) => {
 
@@ -219,9 +219,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
   ("textDocument/hover", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?>> ((uri, (line, character))) => {
+    Protocol.rPositionParams(params) |?> ((uri, (line, character))) => State.getPackage(uri, state) |?>> package => {
       open Rpc.J;
-      switch (Hover.getHover(uri, line, character, state)) {
+      switch (Hover.getHover(uri, line, character, state, ~package)) {
       | None => (state, Json.Null)
       | Some((text, loc)) =>
       (state, o([
@@ -258,10 +258,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/documentSymbol", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => {
+    |?> uri => State.getPackage(uri, state) |?> package => {
       open Infix;
       /* let items = */
-      let items = State.getCompilationResult(uri, state) |> AsYouType.getResult |?>> snd
+      let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
       |?# lazy(State.getLastDefinitions(uri, state))
       |?>> ((({Definition.topLevel, stamps})) => {
         let rec getItems = (path, stamp) => {

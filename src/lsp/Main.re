@@ -151,8 +151,8 @@ let getInitialState = (params) => {
         clientNeedsPlainText,
         /* docs, */
       };
-    Log.log(State.Show.state(state, state.package));
-    state
+      /* Log.log(State.Show.state(state, state.package)); */
+      state
     };
   }
 };
@@ -164,10 +164,10 @@ let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
     |?> version => Json.get("text", doc) |?> Json.string
     |?>> text => (uri, version, text);
 
-let runDiagnostics = (uri, state) => {
+let runDiagnostics = (uri, state, ~package) => {
   Log.log("Running diagnostics for " ++ uri);
   /* let (text, _, _) =  */
-  let result = State.getCompilationResult(uri, state);
+  let result = State.getCompilationResult(uri, state, ~package);
   open Rpc.J;
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
     ("uri", s(uri)),
@@ -234,7 +234,10 @@ let checkDocumentTimers = state => {
   let now = Unix.gettimeofday();
   let removed = Hashtbl.fold((uri, timer, removed) => {
     if (now > timer) {
-      runDiagnostics(uri, state);
+      switch (State.getPackage(uri, state)) {
+        | Ok(package) => runDiagnostics(uri, state, ~package);
+        | Error(_) => () /* ignore... TODO should I do something */
+      };
       [uri, ...removed]
     } else {
       removed

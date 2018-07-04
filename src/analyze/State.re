@@ -80,6 +80,10 @@ module Show = {
   };
 };
 
+let getPackage = (uri, state) => {
+  Result.Ok(state.package);
+};
+
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
@@ -177,7 +181,7 @@ let getContents = (uri, state) => {
 };
 
 open Infix;
-let getCompilationResult = (uri, state) => {
+let getCompilationResult = (uri, state, ~package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
     Hashtbl.find(state.compiledDocuments, uri)
   } else {
@@ -188,7 +192,7 @@ let getCompilationResult = (uri, state) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", state.compilerPath, state.refmtPath, state.package.includeDirectories, state.package.compilationFlags);
+    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", state.compilerPath, state.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()
@@ -203,15 +207,15 @@ let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefiniti
 | data => Some(data)
 };
 
-let getDefinitionData = (uri, state) => switch (getCompilationResult(uri, state)) {
+let getDefinitionData = (uri, state, ~package) => switch (getCompilationResult(uri, state, ~package)) {
 | Success(_, _, data) | TypeError(_, _, data) => Some(data)
 | _ => None
 };
 
-let docsForModule = (modname, state) =>
+let docsForModule = (modname, state, ~package) =>
   Infix.(
-    if (Hashtbl.mem(state.package.pathsForModule, modname)) {
-      let (cmt, src) = Hashtbl.find(state.package.pathsForModule, modname);
+    if (Hashtbl.mem(package.pathsForModule, modname)) {
+      let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
       docsForCmt(cmt, src, state) |?>> d => (d, src)
     } else {
@@ -231,13 +235,13 @@ let topLocation = uri => {
       };
 
 /* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
-let resolveDefinition = (uri, defn, state) =>
+let resolveDefinition = (uri, defn, state, ~package) =>
   switch defn {
   | `Local(_, loc, item, docs, _) => Some((Some(loc), docs, Some(uri)))
   | `Global(top, children, suffix) =>
     {
       switch (
-        maybeFound(List.assoc(top), state.package.localModules)
+        maybeFound(List.assoc(top), package.localModules)
         |?> (
           ((cmt, src)) => {
             let uri = Utils.toUri(src);
@@ -254,7 +258,7 @@ let resolveDefinition = (uri, defn, state) =>
           Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((Some(loc), docs, Some(uri))))
         }
       | None =>
-        maybeFound(Hashtbl.find(state.package.pathsForModule), top)
+        maybeFound(Hashtbl.find(package.pathsForModule), top)
         |?> (
           ((cmt, src)) => {
             let uri = src |?>> Utils.toUri;
@@ -272,15 +276,15 @@ let resolveDefinition = (uri, defn, state) =>
     }
   };
 
-let getResolvedDefinition = (uri, defn, data, state) => {
-  Definition.findDefinition(defn, data) |?> x => resolveDefinition(uri, x, state)
+let getResolvedDefinition = (uri, defn, data, state, ~package) => {
+  Definition.findDefinition(defn, data) |?> x => resolveDefinition(uri, x, state, ~package)
 };
 
-let definitionForPos = (uri, pos, data, state) =>
+let definitionForPos = (uri, pos, data, state, ~package) =>
   Definition.locationAtPos(pos, data)
-  |?> (((_, _, defn)) => getResolvedDefinition(uri, defn, data, state));
+  |?> (((_, _, defn)) => getResolvedDefinition(uri, defn, data, state, ~package));
 
-let referencesForPos = (uri, pos, data, state) => {
+let referencesForPos = (uri, pos, data, state, ~package) => {
   /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
   Definition.stampAtPos(pos, data)
   |?> stamp => {
@@ -290,7 +294,7 @@ let referencesForPos = (uri, pos, data, state) => {
         if (modname == thisModName) {
           None
         } else {
-          getDefinitionData(Utils.toUri(src), state) |?> data => {
+          getDefinitionData(Utils.toUri(src), state, ~package) |?> data => {
             Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
               let realUses = Utils.filterMap(((path, loc, suffix)) => {
                 if (path == [exportedName] && suffix == suffixName) {
@@ -307,7 +311,7 @@ let referencesForPos = (uri, pos, data, state) => {
             }
           }
         }
-      }, state.package.localModules)
+      }, package.localModules)
     }) |? [];
     Definition.highlightsForStamp(stamp, data) |?>> positions => [(uri, positions), ...externals]
   }
