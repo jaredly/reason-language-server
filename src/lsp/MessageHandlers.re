@@ -169,42 +169,42 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/codeLens", (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => State.getPackage(uri, state) |?> package => {
-      open Infix;
-      /* let items = */
-      let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
-      |?# lazy(State.getLastDefinitions(uri, state))
-      |?>> (((moduleData)) => {
+    let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
+    let%try package = State.getPackage(uri, state);
+    open Infix;
+    let items = {
+      let%opt moduleData = {
+        let%opt (_, moduleData) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+        Some(moduleData)
+      } |?# lazy(State.getLastDefinitions(uri, state));
 
-        let showToplevelTypes = false; /* TODO config option */
-        let lenses = showToplevelTypes ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
-          switch item {
-          | Definition.Module(_) => None
-          | ModuleWithDocs(_) => None
-          | Type(t) => None
-          | Constructor(_) => None
-          | Attribute(_) => None
-          | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
-          }
-        }) : [];
+      let showToplevelTypes = false; /* TODO config option */
+      let lenses = showToplevelTypes ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
+        switch item {
+        | Definition.Module(_) => None
+        | ModuleWithDocs(_) => None
+        | Type(t) => None
+        | Constructor(_) => None
+        | Attribute(_) => None
+        | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
+        }
+      }) : [];
 
-        let showOpens = true;
-        let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
+      let showOpens = true;
+      let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
 
-        let showDependencies = true;
-        let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
-          Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
-          Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
-          loc_ghost: false,
-        }), ...lenses] : lenses;
+      let showDependencies = true;
+      let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
+        Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+        Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+        loc_ghost: false,
+      }), ...lenses] : lenses;
 
-        lenses
-      });
-      switch items {
-      | None => Error("Could not get compilation data")
-      | Some(items) => {
-
+      Some(lenses)
+    };
+    switch items {
+    | None => Error("Could not get compilation data")
+    | Some(items) =>
       open Rpc.J;
       Ok((state, l(items |> List.map(((text, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
@@ -213,9 +213,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           ("command", s(""))
         ]))
       ])))))
-      }
-      }
-    };
+    }
   }),
   ("textDocument/hover", (state, params) => {
     open InfixResult;

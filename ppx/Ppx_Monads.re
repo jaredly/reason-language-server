@@ -60,7 +60,7 @@ let mapper = _argv =>
           | _ => assert(false)
         };
         let (pat, expr) = process_bindings(bindings);
-        [%expr [%e front]([%e expr], ~f=([%p pat]) => [%e mapper.expr(mapper, continuation)])]
+        [%expr [%e front]([%e mapper.expr(mapper, expr)], ~f=([%p pat]) => [%e mapper.expr(mapper, continuation)])]
       }
       | _ => Ast_mapper.default_mapper.expr(mapper, expr)
       }
