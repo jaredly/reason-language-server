@@ -24,14 +24,15 @@ type package = {
   /* localCompiledMap: list((string, string)), */
   dependencyModules: list((FindFiles.modpath, (string, option(string)))),
   pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
+
+  compilerPath: filePath,
+  refmtPath: filePath,
 };
 
 type state = {
   rootPath: filePath,
   rootUri: uri,
   buildSystem,
-  compilerPath: filePath,
-  refmtPath: filePath,
   clientNeedsPlainText: bool,
 
   documentText: Hashtbl.t(uri, (string, int, bool)),
@@ -70,7 +71,7 @@ module Show = {
     | FindFiles.Plain(s) => s
     | FindFiles.Namespaced(ns, name) => ns ++ "." ++ name
   };
-  let state = ({rootPath, compilerPath}, {localModules, dependencyModules}) => {
+  let state = ({rootPath}, {localModules, compilerPath, dependencyModules}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, ((name, (cmt, src))) => Printf.sprintf("%s (%s : %s)", name, cmt, src)) |> String.concat("\n"))
@@ -192,7 +193,7 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", state.compilerPath, state.refmtPath, package.includeDirectories, package.compilationFlags);
+    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()

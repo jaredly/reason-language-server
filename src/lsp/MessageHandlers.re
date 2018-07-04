@@ -235,7 +235,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/rangeFormatting", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => RJson.get("range", params) |?> Protocol.rgetRange
+    |?> uri => State.getPackage(uri, state)
+    |?> package => RJson.get("range", params) |?> Protocol.rgetRange
     |?> ((start, end_)) => {
       let text = State.getContents(uri, state);
       open Infix;
@@ -244,7 +245,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       |?>> endPos => {
         let substring = String.sub(text, startPos, endPos - startPos);
         open InfixResult;
-        AsYouType.format(substring, state.refmtPath) |?>> text => {
+        AsYouType.format(substring, package.refmtPath) |?>> text => {
           open Rpc.J;
           (state, l([o([
             ("range", Infix.(|!)(Json.get("range", params), "what")),
@@ -297,9 +298,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/formatting", (state, params) => {
     open InfixResult;
     params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => {
+    |?> uri => State.getPackage(uri, state)
+    |?> package => {
       let text = State.getContents(uri, state);
-      AsYouType.format(text, state.refmtPath) |?>> newText => {
+      AsYouType.format(text, package.refmtPath) |?>> newText => {
         open Rpc.J;
         (state, text == newText ? Json.Null : l([o([
           ("range", Protocol.rangeOfInts(
