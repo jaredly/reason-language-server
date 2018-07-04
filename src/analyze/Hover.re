@@ -2,17 +2,12 @@ open Result;
 
 let getHover = (uri, line, character, state, ~package) => {
   let result = State.getCompilationResult(uri, state, ~package);
-  let result =
-    switch result {
-    | AsYouType.ParseError(text) =>
-      Error("Cannot hover -- parser error: " ++ text)
-    | TypeError(_, cmt, data) => Ok(data)
-    | Success(_, cmt, data) => Ok(data)
-    };
+  /* TODO report errors better if we're beyond where the parser error occurred */
   switch result {
-  | Error(t) => Some((t, Location.none))
-  | Ok(data) =>
-    switch (Definition.locationAtPos((line, character), data)) {
+  | AsYouType.ParseError(text) => Error("Cannot hover -- parser error: " ++ text)
+  | TypeError(_, cmt, data)
+  | Success(_, cmt, data) =>
+    Ok(switch (Definition.locationAtPos((line, character), data)) {
     | None => None
     | Some((loc, {desc: Types.Tnil}, _)) => None
     | Some((loc, expr, defn)) =>
@@ -38,6 +33,6 @@ let getHover = (uri, line, character, state, ~package) => {
           : uri) ++ (useMarkdown ? "*" : "")))
         };
       Some((tooltip, loc));
-    }
+    })
   };
 };

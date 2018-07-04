@@ -221,14 +221,17 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (uri, (line, character)) = Protocol.rPositionParams(params);
     let%try package = State.getPackage(uri, state);
     open Rpc.J;
-    open Infix;
+    let%try result = Hover.getHover(uri, line, character, state, ~package);
     Ok({
-      let%opt_wrap (text, loc) = Hover.getHover(uri, line, character, state, ~package);
-      (state, o([
-        ("range", Protocol.rangeOfLoc(loc)),
-        ("contents",  text |> Protocol.contentKind(!state.clientNeedsPlainText))
-      ]))
-    } |? (state, Json.Null))
+      switch result {
+      | None => (state, Json.Null)
+      | Some((text, loc)) =>
+        (state, o([
+          ("range", Protocol.rangeOfLoc(loc)),
+          ("contents",  text |> Protocol.contentKind(!state.clientNeedsPlainText))
+        ]))
+      }
+    })
   }),
 
   ("textDocument/rangeFormatting", (state, params) => {
