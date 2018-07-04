@@ -1,10 +1,21 @@
+open Infix;
 
-let parseMerlin = (text) => {
+/** This is a dirty hack to get around the bug in bsb native that doesn't do the proper ppx flags for ppxs */
+let fixPpx = (flg, base) => {
+  switch (Str.split(Str.regexp_string(" "), flg)) {
+    | ["-ppx", ppx] when Str.string_match(Str.regexp("[a-zA-Z_]+"), ppx, 0) => {
+      "-ppx " ++ (base /+ "lib" /+ "bs" /+ "native" /+ String.lowercase(ppx) ++ ".native")
+    }
+    | _ => flg
+  }
+};
+
+let parseMerlin = (base, text) => {
   let lines = Str.split(Str.regexp_string("\n"), text);
   List.fold_left(
     ((source, build, flags), line) => {
       if (Utils.startsWith(line, "FLG ")) {
-        (source, build, [Utils.chopPrefix(line, "FLG "), ...flags])
+        (source, build, [fixPpx(Utils.chopPrefix(line, "FLG "), base), ...flags])
       } else if (Utils.startsWith(line, "S ")) {
         ([Utils.chopPrefix(line, "S "), ...source], build, flags)
       } else if (Utils.startsWith(line, "B ")) {
@@ -21,7 +32,7 @@ let parseMerlin = (text) => {
 let maybeConcat = (base, path) => path.[0] == '/' ? path : Filename.concat(base, path);
 
 let getModulesFromMerlin = (base, text) => {
-  let (source, build, flags) = parseMerlin(text);
+  let (source, build, flags) = parseMerlin(base, text);
   let sourceMap = Hashtbl.create(20);
   let buildMap = Hashtbl.create(20);
 
@@ -74,5 +85,5 @@ let use = base => {
 
 let getFlags = base => {
   open Result.InfixResult;
-  Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> parseMerlin |?>> ((_, _, flags)) => List.rev(flags)
+  Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> parseMerlin(base) |?>> ((_, _, flags)) => List.rev(flags)
 };

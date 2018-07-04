@@ -8,12 +8,13 @@
   },
   "sources": [
     {"dir": "ppx", "type": "ppx"},
-    {"dir": "src", "subdirs": true, "ppx": "Ppx_Monads"},
+    {"dir": "src", "subdirs": true},
     {"dir": "bin", "type": "dev"},
     {"dir": "tests", "type": "dev"},
     "omd",
     "odoc_parser"
   ],
+  "ppx-flags": ["Ppx_Monads"],
   "bs-dependencies": ["rex-json"],
   "ocaml-dependencies": ["compiler-libs", "unix", "bigarray", "str"],
   "public": ["Main"],

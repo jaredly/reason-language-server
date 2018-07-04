@@ -283,7 +283,12 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   }),
 ];
 
-
+let mmm = () => {
+  module Let_syntax = Monads.Option;
+  let%opt value = Some(10);
+  let%opt_wrap first = Some(10);
+  first + value
+};
 
 let main = () => {
   log("Booting up");

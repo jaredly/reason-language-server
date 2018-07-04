@@ -6,54 +6,39 @@ let range = (~start, ~end_) => o([("start", start), ("end", end_)]);
 
 open Infix;
 
-let getTextDocument = (doc) =>
-  Json.get("uri", doc)
-  |?> Json.string
-  |?> (
-    (uri) =>
-      Json.get("version", doc)
-      |?> Json.number
-      |?> (
-        (version) => Json.get("text", doc) |?> Json.string |?>> ((text) => (uri, version, text))
-      )
-  );
+let getTextDocument = doc => {
+  let%opt uri = Json.get("uri", doc) |?> Json.string;
+  let%opt version = Json.get("version", doc) |?> Json.number;
+  let%opt text = Json.get("text", doc) |?> Json.string;
+  Some((uri, version, text))
+};
 
-let getPosition = (pos) =>
-  Json.get("line", pos)
-  |?> Json.number
-  |?> (
-    (line) =>
-      Json.get("character", pos)
-      |?> Json.number
-      |?>> ((character) => (int_of_float(line), int_of_float(character)))
-  );
+let getPosition = (pos) => {
+  let%opt line = Json.get("line", pos) |?> Json.number;
+  let%opt character = Json.get("character", pos) |?> Json.number;
+  Some((int_of_float(line), int_of_float(character)))
+};
 
-let rgetPosition = (pos) =>
-  Result.InfixResult.(
-    RJson.get("line", pos)
-    |?> RJson.number
-    |?> (
-      (line) =>
-        RJson.get("character", pos)
-        |?> RJson.number
-        |?>> ((character) => (int_of_float(line), int_of_float(character)))
-    )
-  );
+let rgetPosition = (pos) => {
+  open Result.InfixResult;
+  let%try line = RJson.get("line", pos) |?> RJson.number;
+  let%try character = RJson.get("character", pos) |?> RJson.number;
+  Ok((int_of_float(line), int_of_float(character)))
+};
 
-let rgetRange = (pos) =>
-  Result.InfixResult.(
-    RJson.get("start", pos)
-    |?> rgetPosition
-    |?> ((start) => RJson.get("end", pos) |?> rgetPosition |?>> ((end_) => (start, end_)))
-  );
+let rgetRange = (pos) => {
+  open Result.InfixResult;
+  let%try start = RJson.get("start", pos) |?> rgetPosition;
+  let%try end_ = RJson.get("end", pos) |?> rgetPosition;
+  Ok((start, end_))
+};
 
-let rPositionParams = (params) =>
-  Result.InfixResult.(
-    RJson.get("textDocument", params)
-    |?> RJson.get("uri")
-    |?> RJson.string
-    |?> ((uri) => RJson.get("position", params) |?> rgetPosition |?>> ((pos) => (uri, pos)))
-  );
+let rPositionParams = (params) =>{
+  open Result.InfixResult;
+  let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
+  let%try pos = RJson.get("position", params) |?> rgetPosition;
+  Ok((uri, pos))
+};
 
 let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) =>
   o([("line", i(pos_lnum - 1)), ("character", i(pos_cnum - pos_bol))]);
