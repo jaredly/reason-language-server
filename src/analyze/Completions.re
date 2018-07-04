@@ -235,7 +235,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
             Utils.startsWith(k, single) && k != topModule ?
               [forModule(state, k, cmt, Some(src)), ...results] : results,
           results,
-          state.localModules
+          state.package.localModules
         );
       let results =
         List.fold_left(
@@ -247,7 +247,7 @@ let get = (topModule, opens, parts, state, localData, pos) => {
             | _ => results
             },
           results,
-          state.dependencyModules
+          state.package.dependencyModules
         );
       results;
     } else {

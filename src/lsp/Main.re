@@ -118,6 +118,7 @@ let getInitialState = (params) => {
 
       let state = State.{
         rootPath: rootPath,
+        buildSystem: Bsb,
         rootUri: uri,
         compilerPath: FindFiles.isNative(config) ?
           rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
@@ -127,27 +128,30 @@ let getInitialState = (params) => {
           rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
         ]),
         documentText,
-        localCompiledBase: compiledBase,
-        localModules,
-        localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)),
-        dependencyModules,
+        documentTimers: Hashtbl.create(10),
+        package: {
+          basePath: rootPath,
+          /* localCompiledBase: compiledBase, */
+          localModules,
+          /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
+          dependencyModules,
+          pathsForModule,
+          compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
+          includeDirectories: [
+            FindFiles.isNative(config)
+            ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
+            : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
+            ...dependencyDirectories
+          ] @ localCompiledDirs,
+        },
         cmtCache: Hashtbl.create(30),
         cmiCache: Hashtbl.create(30),
-        compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
-        pathsForModule,
         compiledDocuments: Hashtbl.create(10),
         lastDefinitions: Hashtbl.create(10),
-        documentTimers: Hashtbl.create(10),
-        includeDirectories: [
-          FindFiles.isNative(config)
-          ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
-          : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
-          ...dependencyDirectories
-        ] @ localCompiledDirs,
         clientNeedsPlainText,
         /* docs, */
       };
-    Log.log(State.Show.state(state));
+    Log.log(State.Show.state(state, state.package));
     state
     };
   }

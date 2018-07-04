@@ -1,26 +1,49 @@
 open Infix;
 
-type state = {
-  rootPath: string,
-  rootUri: string,
-  compilerPath: string,
-  refmtPath: string,
-  documentText: Hashtbl.t(string, (string, int, bool)),
-  documentTimers: Hashtbl.t(string, float),
-  clientNeedsPlainText: bool,
+type buildSystem =
+  | Dune
+  | Bsb
+  /* The bool is "Is Bytecode" */
+  | BsbNative(bool);
+
+/* Aliases to make the intents clearer */
+type uri = string;
+type filePath = string;
+type moduleName = string;
+
+/* Here are the things that will be different between jbuilder things */
+type package = {
+  basePath: filePath,
 
   /* Might change based on bsconfig.json / .merlin */
-  includeDirectories: list(string),
+  includeDirectories: list(filePath),
   compilationFlags: string,
 
   /* Depend on bsb having already run */
-  localCompiledBase: string,
-  localModules: list((string, (string, string))),
-  localCompiledMap: list((string, string)),
+  localModules: list((moduleName, (filePath, filePath))),
+  /* localCompiledMap: list((string, string)), */
   dependencyModules: list((FindFiles.modpath, (string, option(string)))),
+  pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
+};
+
+type state = {
+  rootPath: filePath,
+  rootUri: uri,
+  buildSystem,
+  compilerPath: filePath,
+  refmtPath: filePath,
+  clientNeedsPlainText: bool,
+
+  documentText: Hashtbl.t(uri, (string, int, bool)),
+  documentTimers: Hashtbl.t(uri, float),
+
+  package,
+  /* packagesByRoot: Hashtbl.t(uri, package), */
+
+  /* localCompiledBase: string, */
   cmtCache:
     Hashtbl.t(
-      string,
+      filePath,
       (
         float, /* modified time */
         Cmt_format.cmt_infos,
@@ -29,16 +52,15 @@ type state = {
     ),
   cmiCache:
     Hashtbl.t(
-      string,
+      filePath,
       (
         float, /* modified time */
         Cmi_format.cmi_infos,
         (option(string), list(Docs.full))
       )
     ),
-  pathsForModule: Hashtbl.t(string, (string, option(string))),
-  compiledDocuments: Hashtbl.t(string, AsYouType.result),
-  lastDefinitions: Hashtbl.t(string, Definition.moduleData),
+  compiledDocuments: Hashtbl.t(uri, AsYouType.result),
+  lastDefinitions: Hashtbl.t(uri, Definition.moduleData),
 
   /* workspace folders... */
 };
@@ -48,7 +70,7 @@ module Show = {
     | FindFiles.Plain(s) => s
     | FindFiles.Namespaced(ns, name) => ns ++ "." ++ name
   };
-  let state = ({rootPath, compilerPath, localModules, dependencyModules}) => {
+  let state = ({rootPath, compilerPath}, {localModules, dependencyModules}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, ((name, (cmt, src))) => Printf.sprintf("%s (%s : %s)", name, cmt, src)) |> String.concat("\n"))
@@ -166,7 +188,7 @@ let getCompilationResult = (uri, state) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", state.compilerPath, state.refmtPath, state.includeDirectories, state.compilationFlags);
+    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", state.compilerPath, state.refmtPath, state.package.includeDirectories, state.package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()
@@ -188,8 +210,8 @@ let getDefinitionData = (uri, state) => switch (getCompilationResult(uri, state)
 
 let docsForModule = (modname, state) =>
   Infix.(
-    if (Hashtbl.mem(state.pathsForModule, modname)) {
-      let (cmt, src) = Hashtbl.find(state.pathsForModule, modname);
+    if (Hashtbl.mem(state.package.pathsForModule, modname)) {
+      let (cmt, src) = Hashtbl.find(state.package.pathsForModule, modname);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
       docsForCmt(cmt, src, state) |?>> d => (d, src)
     } else {
@@ -215,7 +237,7 @@ let resolveDefinition = (uri, defn, state) =>
   | `Global(top, children, suffix) =>
     {
       switch (
-        maybeFound(List.assoc(top), state.localModules)
+        maybeFound(List.assoc(top), state.package.localModules)
         |?> (
           ((cmt, src)) => {
             let uri = Utils.toUri(src);
@@ -232,7 +254,7 @@ let resolveDefinition = (uri, defn, state) =>
           Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((Some(loc), docs, Some(uri))))
         }
       | None =>
-        maybeFound(Hashtbl.find(state.pathsForModule), top)
+        maybeFound(Hashtbl.find(state.package.pathsForModule), top)
         |?> (
           ((cmt, src)) => {
             let uri = src |?>> Utils.toUri;
@@ -285,7 +307,7 @@ let referencesForPos = (uri, pos, data, state) => {
             }
           }
         }
-      }, state.localModules)
+      }, state.package.localModules)
     }) |? [];
     Definition.highlightsForStamp(stamp, data) |?>> positions => [(uri, positions), ...externals]
   }
