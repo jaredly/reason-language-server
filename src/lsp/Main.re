@@ -70,98 +70,102 @@ let capabilities =
 
 let getInitialState = (params) => {
   let uri = Json.get("rootUri", params) |?> Json.string |! "Must have a rootUri";
-  let path = uri |> Utils.parseUri |> resultOfOption("No root uri");
+  let%try rootPath = uri |> Utils.parseUri |> resultOfOption("No root uri");
+
+  /* Files.mkdirp(rootPath /+ "node_modules"); */
+  Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
+  Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
+
   open InfixResult;
-  path |?> rootPath => {
 
-    /* Files.mkdirp(rootPath /+ "node_modules"); */
-    Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
-    Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
-    Files.readFile(rootPath /+ "bsconfig.json")
-    |> orError("No bsconfig.json found")
-    |?>> Json.parse |?>> config => {
+  let packagesByRoot = Hashtbl.create(1);
 
-      let package = {
-        let compiledBase = FindFiles.getCompiledBase(rootPath, config);
-        let compiledBase = switch compiledBase {
-          | None => {
-            raise(BasicServer.Exit("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server."));
-          }
-          | Some(x) => x
-        };
-        let namespace = FindFiles.getNamespace(config);
-        let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
-        Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
-        let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
-        let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
-
-        let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-        let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, rootPath, config);
-        let pathsForModule = Hashtbl.create(30);
-        dependencyModules |> List.iter(((modName, (cmt, source))) => {
-          Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-          switch (modName) {
-          | FindFiles.Plain(name) =>
-          Hashtbl.replace(pathsForModule, name, (cmt, source))
-          | _ => ()
-          }
-        });
-
-        localModules |> List.iter(((modName, (cmt, source))) => {
-          Log.log("> Local " ++ cmt ++ " - " ++ source);
-          Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
-        });
-        Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
-
-        State.{
-          basePath: rootPath,
-          /* localCompiledBase: compiledBase, */
-          localModules,
-          /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
-          dependencyModules,
-          pathsForModule,
-          compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
-          includeDirectories: [
-            FindFiles.isNative(config)
-            ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
-            : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
-            ...dependencyDirectories
-          ] @ localCompiledDirs,
-          compilerPath: FindFiles.isNative(config) ?
-            rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
-            : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
-          refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
-            rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
-            rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
-          ]),
-        };
-      };
-
-      let documentText = Hashtbl.create(5);
-      /* if client needs plain text in any place, we disable markdown everywhere */
-      let clientNeedsPlainText = ! Infix.(
-          Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true
-          && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
-      );
-
-      let state = State.{
-        rootPath: rootPath,
-        buildSystem: Bsb,
-        rootUri: uri,
-        documentText,
-        documentTimers: Hashtbl.create(10),
-        package: package,
-        cmtCache: Hashtbl.create(30),
-        cmiCache: Hashtbl.create(30),
-        compiledDocuments: Hashtbl.create(10),
-        lastDefinitions: Hashtbl.create(10),
-        clientNeedsPlainText,
-        /* docs, */
-      };
-      /* Log.log(State.Show.state(state, state.package)); */
-      state
+  let package = {
+    let%try_consume config =
+      Files.readFile(rootPath /+ "bsconfig.json")
+      |> orError("No bsconfig.json found")
+      |?>> Json.parse;
+    let compiledBase = FindFiles.getCompiledBase(rootPath, config);
+    let compiledBase = switch compiledBase {
+      | None => {
+        raise(BasicServer.Exit("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server."));
+      }
+      | Some(x) => x
     };
-  }
+    let namespace = FindFiles.getNamespace(config);
+    let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
+    Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
+    let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
+    let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
+
+    let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+    let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, rootPath, config);
+    let pathsForModule = Hashtbl.create(30);
+    dependencyModules |> List.iter(((modName, (cmt, source))) => {
+      Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
+      switch (modName) {
+      | FindFiles.Plain(name) =>
+      Hashtbl.replace(pathsForModule, name, (cmt, source))
+      | _ => ()
+      }
+    });
+
+    localModules |> List.iter(((modName, (cmt, source))) => {
+      Log.log("> Local " ++ cmt ++ " - " ++ source);
+      Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+    });
+    Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
+
+    let package = State.{
+      basePath: rootPath,
+      /* localCompiledBase: compiledBase, */
+      localModules,
+      /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
+      dependencyModules,
+      pathsForModule,
+      compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
+      includeDirectories: [
+        FindFiles.isNative(config)
+        ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
+        : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
+        ...dependencyDirectories
+      ] @ localCompiledDirs,
+      compilerPath: FindFiles.isNative(config) ?
+        rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+        : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
+      refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
+        rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
+        rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
+      ]),
+    };
+    Hashtbl.replace(packagesByRoot, rootPath, package)
+  };
+
+
+  /* if client needs plain text in any place, we disable markdown everywhere */
+  let clientNeedsPlainText = ! Infix.(
+      Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true
+      && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
+  );
+
+  let state = State.{
+    rootPath: rootPath,
+    buildSystem: Bsb,
+    rootUri: uri,
+    documentText: Hashtbl.create(5),
+    documentTimers: Hashtbl.create(10),
+    packagesByRoot,
+    rootForUri: Hashtbl.create(30),
+    /* package: package, */
+    cmtCache: Hashtbl.create(30),
+    cmiCache: Hashtbl.create(30),
+    compiledDocuments: Hashtbl.create(10),
+    lastDefinitions: Hashtbl.create(10),
+    clientNeedsPlainText,
+    /* docs, */
+  };
+  /* Log.log(State.Show.state(state, state.package)); */
+  Ok(state)
 };
 
 open State;

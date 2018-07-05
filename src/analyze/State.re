@@ -38,8 +38,9 @@ type state = {
   documentText: Hashtbl.t(uri, (string, int, bool)),
   documentTimers: Hashtbl.t(uri, float),
 
-  package,
-  /* packagesByRoot: Hashtbl.t(uri, package), */
+  /* package, */
+  packagesByRoot: Hashtbl.t(string, package),
+  rootForUri: Hashtbl.t(uri, string),
 
   /* localCompiledBase: string, */
   cmtCache:
@@ -81,14 +82,100 @@ module Show = {
   };
 };
 
+let findBsConfig = (uri, packagesByRoot) => {
+  let%opt path = Utils.parseUri(uri);
+  let rec loop = path => {
+    if (path == "/") {
+      None
+    } else if (Hashtbl.mem(packagesByRoot, path)) {
+      Some(path)
+    } else if (Files.exists(path /+ "basconfig.json")) {
+      Some(path)
+    } else {
+      loop(Filename.dirname(path))
+    }
+  };
+  loop(Filename.dirname(path))
+};
 
-let newPackage = (uri) => {
+/* TODO this should return result, and report exceptional circumstances */
+let newPackage = (rootPath) => {
+  let config = Files.readFileExn(rootPath /+ "bsconfig.json") |> Json.parse;
+
+  let compiledBase = FindFiles.getCompiledBase(rootPath, config);
+  let compiledBase = switch compiledBase {
+    | None => {
+      raise(BasicServer.Exit("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server."));
+    }
+    | Some(x) => x
+  };
+
+  let namespace = FindFiles.getNamespace(config);
+  let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
+  Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
+  let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
+  let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
+
+  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, rootPath, config);
+  let pathsForModule = Hashtbl.create(30);
+  dependencyModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
+    switch (modName) {
+    | FindFiles.Plain(name) =>
+    Hashtbl.replace(pathsForModule, name, (cmt, source))
+    | _ => ()
+    }
+  });
+
+  localModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("> Local " ++ cmt ++ " - " ++ source);
+    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+  });
+  Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
+
+  {
+    basePath: rootPath,
+    /* localCompiledBase: compiledBase, */
+    localModules,
+    /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
+    dependencyModules,
+    pathsForModule,
+    compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
+    includeDirectories: [
+      FindFiles.isNative(config)
+      ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
+      : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
+      ...dependencyDirectories
+    ] @ localCompiledDirs,
+    compilerPath: FindFiles.isNative(config) ?
+      rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+      : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
+    refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
+      rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
+      rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
+    ]),
+  };
 
 };
 
 
 let getPackage = (uri, state) => {
-  Result.Ok(state.package);
+  if (Hashtbl.mem(state.rootForUri, uri)) {
+    Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
+  } else {
+    let%try rootPath = findBsConfig(uri, state.packagesByRoot) |> Result.orError("No bsconfig.json found");
+    if (Hashtbl.mem(state.packagesByRoot, rootPath)) {
+      Hashtbl.replace(state.rootForUri, uri, rootPath);
+      Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
+    } else {
+      let package = newPackage(uri);
+      Hashtbl.replace(state.rootForUri, uri, package.basePath);
+      Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      Result.Ok(package)
+    };
+    /* Result.Error("No package detectable for uri " ++ uri ++ ". Have you run bsb or dune already?") */
+  }
 };
 
 let isMl = path =>

@@ -154,17 +154,19 @@ let mapper = _argv =>
     expr: (mapper, expr) =>
       switch expr.pexp_desc {
       | Pexp_extension(({txt: (
-        "opt" | "opt_wrap" | "opt_consume"
-        | "try" | "try_wrap" | "try_consume"
+        "opt" | "opt_wrap" | "opt_consume" | "opt_force"
+        | "try" | "try_wrap" | "try_consume" | "try_force"
         | "await" | "await_wrap" | "await_consume"
         ) as txt, loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, attributes)}]))) => {
         let (front, explanation) = switch (txt) {
           | "opt" => ([%expr Monads.Option.bind], opt_explanation)
           | "opt_wrap" => ([%expr Monads.Option.map], opt_wrap_explanation)
           | "opt_consume" => ([%expr Monads.Option.consume], opt_consume_explanation)
+          | "opt_force" => ([%expr Monads.Option.force], "Force an optional. Throws an error if None")
           | "try" => ([%expr Monads.Result.bind], "Sugar for the Result type")
           | "try_wrap" => ([%expr Monads.Result.map], "Sugar for the Result type - auto-wraps in `Ok()`")
           | "try_consume" => ([%expr Monads.Result.consume], "Sugar for the Result type - side-effectful version")
+          | "try_force" => ([%expr Monads.Result.force], "Sugar for the Result type - force a result")
           | "await" => ([%expr Monads.Promise.bind], "Sugar for Promises")
           | "await_wrap" => ([%expr Monads.Promise.map], "Sugar for Promises - auto-wraps in `Promise.resolve`")
           | "await_consume" => ([%expr Monads.Promise.consume], "Sugar for Promises - just for side effects. Throws on error")

@@ -168,6 +168,11 @@ module Option = {
     | Some(x) => use(x)
     | None => ()
     };
+  let force = (value, ~f as use) =>
+    switch value {
+    | Some(x) => use(x)
+    | None => failwith("Tried to unwrap an empty optional")
+    };
   let join2 = (one, two) =>
     switch one {
     | None => None
@@ -208,7 +213,13 @@ module Result = {
     (value, ~f as use) =>
       switch value {
       | Ok(x) => use(x)
-      | Error(_) => assert false /* TODO maybe have a different fail pattern? */
+      | Error(_) => ()
+      };
+  let force: (result('a, 'b), ~f: 'a => 'c) => 'c =
+    (value, ~f as use) =>
+      switch value {
+      | Ok(x) => use(x)
+      | Error(error) => failwith(error)
       };
   let join2 = (one, two) =>
     switch one {
