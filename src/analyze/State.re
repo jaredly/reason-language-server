@@ -1,11 +1,5 @@
 open Infix;
 
-type buildSystem =
-  | Dune
-  | Bsb
-  /* The bool is "Is Bytecode" */
-  | BsbNative(bool);
-
 /* Aliases to make the intents clearer */
 type uri = string;
 type filePath = string;
@@ -25,6 +19,7 @@ type package = {
   dependencyModules: list((FindFiles.modpath, (string, option(string)))),
   pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
 
+  buildSystem: BuildSystem.t,
   compilerPath: filePath,
   refmtPath: filePath,
 };
@@ -32,7 +27,6 @@ type package = {
 type state = {
   rootPath: filePath,
   rootUri: uri,
-  buildSystem,
   clientNeedsPlainText: bool,
 
   documentText: Hashtbl.t(uri, (string, int, bool)),
@@ -98,12 +92,16 @@ let findBsConfig = (uri, packagesByRoot) => {
   loop(Filename.dirname(path))
 };
 
+let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
+
 /* TODO this should return result, and report exceptional circumstances */
 let newPackage = (rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
-  let compiledBase = FindFiles.getCompiledBase(rootPath, config);
+  let%try buildSystem = BuildSystem.detect(rootPath, config);
+
+  let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
   let namespace = FindFiles.getNamespace(config);
@@ -113,13 +111,12 @@ let newPackage = (rootPath) => {
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
   let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, rootPath, config);
+  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let pathsForModule = Hashtbl.create(30);
   dependencyModules |> List.iter(((modName, (cmt, source))) => {
     Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
     switch (modName) {
-    | FindFiles.Plain(name) =>
-    Hashtbl.replace(pathsForModule, name, (cmt, source))
+    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
     | _ => ()
     }
   });
@@ -133,28 +130,18 @@ let newPackage = (rootPath) => {
   {
     basePath: rootPath,
     localModules,
-    /* localCompiledBase: compiledBase, */
-    /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
     dependencyModules,
     pathsForModule,
+    buildSystem,
     compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
     includeDirectories: [
-      FindFiles.isNative(config)
-      ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
-      : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
+      BuildSystem.getStdlib(rootPath, buildSystem),
       ...dependencyDirectories
     ] @ localCompiledDirs,
-    compilerPath: FindFiles.isNative(config) ?
-      rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
-      : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
-    refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
-      rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
-      rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
-    ]),
+    compilerPath: BuildSystem.getCompiler(rootPath, buildSystem),
+    refmtPath: BuildSystem.getRefmt(rootPath, buildSystem),
   };
-
 };
-
 
 let getPackage = (uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {

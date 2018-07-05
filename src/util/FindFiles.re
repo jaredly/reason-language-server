@@ -56,12 +56,10 @@ let getSourceDirectories = (~includeDev=false, base, config) => {
 };
 
 
-let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
-
 /**
  * Use this to get the directories you need to `-I` include to get things to compile.
  */
-let getDependencyDirs = (base, config) => {
+let getDependencyDirs = (base, config, ~buildSystem) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
   deps |> List.map(name => {
     let loc = base /+ "node_modules" /+ name;
@@ -69,11 +67,7 @@ let getDependencyDirs = (base, config) => {
     | Some(text) =>
       let inner = Json.parse(text);
       /* let allowedKinds = inner |> Json.get("allowed-build-kinds") |?> Json.array |?>> List.map(Json.string |.! "allowed-build-kinds must be strings") |? ["js"]; */
-      let compiledBase = oneShouldExist("Cannot find directory for compiled artifacts.",
-        isNative(inner)
-          ? [loc /+ "lib" /+ "bs" /+ "js", loc /+ "lib" /+ "bs" /+ "native"]
-          : [loc /+ "lib" /+ "bs" /+ "js", loc /+ "lib" /+ "ocaml", loc /+ "lib" /+ "bs"]
-      );
+      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "Cannot find directory for compiled artifacts.";
       /* if (List.mem("js", allowedKinds)) { */
         [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
       /* } else {
@@ -137,16 +131,6 @@ let getNamespace = config => {
   isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
 };
 
-let getCompiledBase = (root, config) =>
-  ifOneExists(
-    isNative(config) ?
-      [root /+ "lib" /+ "bs" /+ "native"] :
-      [root /+ "lib" /+ "bs" /+ "js",
-      root /+ "lib" /+ "bs",
-      root /+ "lib" /+ "ocaml",
-      ],
-  );
-
 /**
  * returns a list of (absolute path to cmt(i), relative path from base to source file)
  */
@@ -190,7 +174,7 @@ let needsCompilerLibs = config => {
   config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> optMap(Json.string) |> List.mem("compiler-libs")
 };
 
-let findDependencyFiles = (~debug, base, config) => {
+let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
   Log.log("Deps " ++ String.concat(", ", deps));
   let depFiles = deps |> List.map(name => {
@@ -202,7 +186,7 @@ let findDependencyFiles = (~debug, base, config) => {
       let inner = Json.parse(text);
       let namespace = getNamespace(inner);
       let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = getCompiledBase(loc, inner) |! "No compiled base found";
+      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "No compiled base found";
       if (debug) {
         Log.log("Compiled base: " ++ compiledBase)
       };
@@ -221,13 +205,7 @@ let findDependencyFiles = (~debug, base, config) => {
   });
   let (directories, files) = List.split(depFiles);
   let files = List.concat(files);
-  let stdlibDirectory =
-    isNative(config) ?
-      oneShouldExist("No ocaml native stdlib found", [
-        base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native",
-        base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml"
-      ]) :
-      base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml";
+  let stdlibDirectory = BuildSystem.getStdlib(base, buildSystem);
   let directories = [stdlibDirectory, ...List.concat(directories)];
   let results = files @ loadStdlib(stdlibDirectory);
   (

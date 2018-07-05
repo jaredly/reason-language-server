@@ -72,7 +72,6 @@ let getInitialState = (params) => {
   let uri = Json.get("rootUri", params) |?> Json.string |! "Must have a rootUri";
   let%try rootPath = uri |> Utils.parseUri |> resultOfOption("No root uri");
 
-  /* Files.mkdirp(rootPath /+ "node_modules"); */
   Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
   Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
 
@@ -93,21 +92,18 @@ let getInitialState = (params) => {
 
   let state = State.{
     rootPath: rootPath,
-    buildSystem: Bsb,
     rootUri: uri,
     documentText: Hashtbl.create(5),
     documentTimers: Hashtbl.create(10),
     packagesByRoot,
     rootForUri: Hashtbl.create(30),
-    /* package: package, */
     cmtCache: Hashtbl.create(30),
     cmiCache: Hashtbl.create(30),
     compiledDocuments: Hashtbl.create(10),
     lastDefinitions: Hashtbl.create(10),
     clientNeedsPlainText,
-    /* docs, */
   };
-  /* Log.log(State.Show.state(state, state.package)); */
+
   Ok(state)
 };
 
@@ -120,7 +116,6 @@ let getTextDocument = doc => Json.get("uri", doc) |?> Json.string
 
 let runDiagnostics = (uri, state, ~package) => {
   Log.log("Running diagnostics for " ++ uri);
-  /* let (text, _, _) =  */
   let result = State.getCompilationResult(uri, state, ~package);
   open Rpc.J;
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
@@ -181,7 +176,6 @@ let runDiagnostics = (uri, state, ~package) => {
     }
     })
   ]));
-
 };
 
 let checkDocumentTimers = state => {
