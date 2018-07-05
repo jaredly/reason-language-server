@@ -170,8 +170,26 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/codeLens", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
-    let%try package = State.getPackage(uri, state);
-    open Infix;
+    /* let%try package = State.getPackage(uri, state); */
+    switch (State.getPackage(uri, state)) {
+      | Result.Error(message) => {
+        let items = [("Unable to load compilation data: " ++ message, {
+          Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+          Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+          loc_ghost: false,
+        })];
+        open Rpc.J;
+        Ok((state, l(items |> List.map(((text, loc)) => o([
+          ("range", Protocol.rangeOfLoc(loc)),
+          ("command", o([
+            ("title", s(text)),
+            ("command", s(""))
+          ]))
+        ])))))
+
+      }
+      | Ok(package) =>
+      open Infix;
     let items = {
       let%opt moduleData = {
         let%opt (_, moduleData) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
@@ -213,6 +231,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           ("command", s(""))
         ]))
       ])))))
+    }
     }
   }),
 

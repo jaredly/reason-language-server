@@ -89,7 +89,7 @@ let findBsConfig = (uri, packagesByRoot) => {
       None
     } else if (Hashtbl.mem(packagesByRoot, path)) {
       Some(path)
-    } else if (Files.exists(path /+ "basconfig.json")) {
+    } else if (Files.exists(path /+ "bsconfig.json")) {
       Some(path)
     } else {
       loop(Filename.dirname(path))
@@ -103,12 +103,7 @@ let newPackage = (rootPath) => {
   let config = Files.readFileExn(rootPath /+ "bsconfig.json") |> Json.parse;
 
   let compiledBase = FindFiles.getCompiledBase(rootPath, config);
-  let compiledBase = switch compiledBase {
-    | None => {
-      raise(BasicServer.Exit("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server."));
-    }
-    | Some(x) => x
-  };
+  let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
   let namespace = FindFiles.getNamespace(config);
   let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
@@ -136,8 +131,8 @@ let newPackage = (rootPath) => {
 
   {
     basePath: rootPath,
-    /* localCompiledBase: compiledBase, */
     localModules,
+    /* localCompiledBase: compiledBase, */
     /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
     dependencyModules,
     pathsForModule,
@@ -169,7 +164,7 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     } else {
-      let package = newPackage(uri);
+      let%try package = newPackage(rootPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
