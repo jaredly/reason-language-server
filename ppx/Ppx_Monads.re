@@ -107,39 +107,76 @@ Alternatively, if you are just performing a side effect, and want
 the result of the whole thing to be unit, use `let%consume`.
 |};
 
+let opt_wrap_explanation = {|
+Optional declaration sugar:
+```
+let%opt_wrap name = value;
+otherStuff
+```
+is transformed into
+```
+switch (value) {
+| None => None
+| Some(name) => Some({
+    otherStuff
+  })
+}
+```
+The `wrap` suffix means that the `otherStuff` will be automatically
+wrapped in a `Some`.
+
+If you don't want this wrapping, then use `let%opt`.
+Alternatively, if you are just performing a side effect, and want
+the result of the whole thing to be unit, use `let%consume`.
+|};
+
+let opt_consume_explanation = {|
+Optional declaration sugar:
+```
+let%consume name = value;
+otherStuff
+```
+is transformed into
+```
+switch (value) {
+| None => ()
+| Some(name) =>
+  otherStuff
+}
+```
+This is intented for performing side-effects only -- `otherStuff`
+must end up as type `unit`.
+|};
+
 let mapper = _argv =>
   Parsetree.{
     ...Ast_mapper.default_mapper,
     expr: (mapper, expr) =>
       switch expr.pexp_desc {
-      | Pexp_extension(({txt: "opt", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, attributes)}]))) => {
-        let (pat, expr) = process_bindings(bindings);
-        Ast_helper.Exp.attr(
-          [%expr Monads.Option.bind([%e mapper.expr(mapper, expr)], ~f=([%p pat]) => [%e mapper.expr(mapper, continuation)])],
-          ({txt: "ocaml.explanation", loc}, PStr([
-            Ast_helper.Str.eval(Ast_helper.Exp.constant(Const_string(opt_explanation, None)))
-          ]))
-        )
-      }
       | Pexp_extension(({txt: (
         "opt" | "opt_wrap" | "opt_consume"
         | "try" | "try_wrap" | "try_consume"
         | "await" | "await_wrap" | "await_consume"
-        ) as txt}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, attributes)}]))) => {
-        let front = switch (txt) {
-          | "opt" => [%expr Monads.Option.bind]
-          | "opt_wrap" => [%expr Monads.Option.map]
-          | "opt_consume" => [%expr Monads.Option.consume]
-          | "try" => [%expr Monads.Result.bind]
-          | "try_wrap" => [%expr Monads.Result.map]
-          | "try_consume" => [%expr Monads.Result.consume]
-          | "await" => [%expr Monads.Promise.bind]
-          | "await_wrap" => [%expr Monads.Promise.map]
-          | "await_consume" => [%expr Monads.Promise.consume]
+        ) as txt, loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, attributes)}]))) => {
+        let (front, explanation) = switch (txt) {
+          | "opt" => ([%expr Monads.Option.bind], opt_explanation)
+          | "opt_wrap" => ([%expr Monads.Option.map], opt_wrap_explanation)
+          | "opt_consume" => ([%expr Monads.Option.consume], opt_consume_explanation)
+          | "try" => ([%expr Monads.Result.bind], "Sugar for the Result type")
+          | "try_wrap" => ([%expr Monads.Result.map], "Sugar for the Result type - auto-wraps in `Ok()`")
+          | "try_consume" => ([%expr Monads.Result.consume], "Sugar for the Result type - side-effectful version")
+          | "await" => ([%expr Monads.Promise.bind], "Sugar for Promises")
+          | "await_wrap" => ([%expr Monads.Promise.map], "Sugar for Promises - auto-wraps in `Promise.resolve`")
+          | "await_consume" => ([%expr Monads.Promise.consume], "Sugar for Promises - just for side effects. Throws on error")
           | _ => assert(false)
         };
         let (pat, expr) = process_bindings(bindings);
-        [%expr [%e front]([%e mapper.expr(mapper, expr)], ~f=([%p pat]) => [%e mapper.expr(mapper, continuation)])]
+        Ast_helper.Exp.attr(
+          [%expr [%e front]([%e mapper.expr(mapper, expr)], ~f=([%p pat]) => [%e mapper.expr(mapper, continuation)])],
+          ({txt: "ocaml.explanation", loc}, PStr([
+            Ast_helper.Str.eval(Ast_helper.Exp.constant(Const_string(explanation, None)))
+          ]))
+        )
       }
       | _ => Ast_mapper.default_mapper.expr(mapper, expr)
       }
