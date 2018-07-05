@@ -8,7 +8,11 @@ let getHover = (uri, line, character, state, ~package) => {
   | TypeError(_, cmt, data)
   | Success(_, cmt, data) =>
     Ok(switch (Definition.locationAtPos((line, character), data)) {
-    | None => None
+    | None => switch (Definition.explanationAtPos((line, character), data)) {
+        | None => None
+        | Some((loc, text)) =>
+          Some((text, loc))
+      }
     | Some((loc, {desc: Types.Tnil}, _)) => None
     | Some((loc, expr, defn)) =>
       let useMarkdown = !state.clientNeedsPlainText;

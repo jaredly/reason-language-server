@@ -63,6 +63,7 @@ type moduleData = {
   mutable exportedSuffixes: list((int, string, string)),
   mutable topLevel: list((string, int)),
   mutable locations: list((Location.t, Types.type_expr, definition)),
+  mutable explanations: list((Location.t, string)),
   mutable allOpens: list(anOpen)
 };
 
@@ -115,11 +116,11 @@ let completions = ({stamps}, prefix, pos) => {
 };
 
 let completionPath = (inDocs, {stamps}, first, children, pos, toItem) => {
-  let top = Hashtbl.fold(
+  let%opt_wrap (name, loc, item, docs) = Hashtbl.fold(
     (_, (name, loc, item, docs, range), result) =>
       switch result {
-        | Some(x) => Some(x)
-        | None => {
+      | Some(x) => Some(x)
+      | None => {
         if (inRange(pos, range) && name == first) {
           Some((name, loc, item, docs))
         } else {
@@ -131,39 +132,37 @@ let completionPath = (inDocs, {stamps}, first, children, pos, toItem) => {
     None
   );
 
-  top |?>> ((name, loc, item, docs)) => {
-    switch item {
-      | ModuleWithDocs(docs) => inDocs(children, docs)
-      | Module(contents) => {
-        let rec loop = (contents, items) => {
-          switch (items) {
-            | [] => assert(false)
-            | [single] => {
-              contents
-              |> List.filter(((name, stamp)) => Utils.startsWith(name, single))
-              |> List.map(((name, stamp)) => {
-                toItem(Hashtbl.find(stamps, stamp))
-              })
-            }
-            | [first, ...more] => {
-              switch (List.find(((name, stamp)) => name == first, contents)) {
-                | (name, stamp) => {
-                  let (name, loc, item, docs, range) = Hashtbl.find(stamps, stamp);
-                  switch item {
-                    | Module(contents) => loop(contents, more)
-                    | ModuleWithDocs(docs) => inDocs(more, docs)
-                    | _ => []
-                  }
+  switch item {
+    | ModuleWithDocs(docs) => inDocs(children, docs)
+    | Module(contents) => {
+      let rec loop = (contents, items) => {
+        switch (items) {
+          | [] => assert(false)
+          | [single] => {
+            contents
+            |> List.filter(((name, stamp)) => Utils.startsWith(name, single))
+            |> List.map(((name, stamp)) => {
+              toItem(Hashtbl.find(stamps, stamp))
+            })
+          }
+          | [first, ...more] => {
+            switch (List.find(((name, stamp)) => name == first, contents)) {
+              | (name, stamp) => {
+                let (name, loc, item, docs, range) = Hashtbl.find(stamps, stamp);
+                switch item {
+                  | Module(contents) => loop(contents, more)
+                  | ModuleWithDocs(docs) => inDocs(more, docs)
+                  | _ => []
                 }
-                | exception Not_found => []
               }
+              | exception Not_found => []
             }
           }
-        };
-        loop(contents, children)
-      }
-      | _ => []
+        }
+      };
+      loop(contents, children)
     }
+    | _ => []
   }
 };
 
@@ -368,7 +367,8 @@ let resolveNamedPath = (data, path, suffix) =>
             | (_, None) => Some((name, loc, item, docs))
             | (Type(t), Some(suffix)) => {
               /* TODO this isn't the right `item` --- it'sstill the type  */
-              getSuffix(t, suffix) |?>> ((loc, _)) => (name, loc, item, docs)
+              let%opt_wrap (loc, _) = getSuffix(t, suffix);
+              (name, loc, item, docs)
             }
             | _ => None
           }
@@ -398,6 +398,17 @@ let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}
     }
   );
 
+let explanationAtPos = ((line, char), data) => {
+  let pos = (line + 1, char);
+  let rec loop = (locations) =>
+    switch locations {
+    | [] => None
+    | [(loc, explanation), ..._] when checkPos(pos, loc) => Some((loc, explanation))
+    | [_, ...rest] => loop(rest)
+    };
+  loop(data.explanations)
+};
+
 let locationAtPos = ((line, char), data) => {
   let pos = (line + 1, char);
   let rec loop = (locations) =>
@@ -410,16 +421,18 @@ let locationAtPos = ((line, char), data) => {
 };
 
 let openReferencesAtPos = ({allOpens} as data, pos) => {
-  locationAtPos(pos, data) |?> ((loc, expr, defn)) => switch defn {
-    | Open(path) => {
-      let rec loop = opens => switch opens {
-        | [] => None
-        | [one, ..._] when one.loc == loc => Some(one)
-        | [_, ...rest] => loop(rest)
-      };
-      loop(allOpens) |?>> openn => openn.used
-    }
-    | _ => None
+  let%opt (loc, _expr, defn) = locationAtPos(pos, data);
+  switch defn {
+  | Open(path) => {
+    let rec loop = opens => switch opens {
+      | [] => None
+      | [one, ..._] when one.loc == loc => Some(one)
+      | [_, ...rest] => loop(rest)
+    };
+    let%opt openn = loop(allOpens);
+    Some(openn.used)
+  }
+  | _ => None
   }
 };
 
@@ -433,22 +446,18 @@ let isStampExported = (needle, data) =>
     | None => data.exportedSuffixes |> Utils.find(((suffixStamp, mainName, suffixName)) => suffixStamp == needle ? Some((mainName, Some(suffixName))) : None)
   };
 
-let highlightsForStamp = (stamp, data) =>
-  maybeFound(Hashtbl.find(data.stamps), stamp)
-  |?> (
-    ((_, defnLoc, _, _, _)) => {
-      let usages = maybeFound(Hashtbl.find(data.internalReferences), stamp) |? [];
-      Some([(`Write, defnLoc), ...List.map((l) => (`Read, l), usages)])
-    }
-  );
+let highlightsForStamp = (stamp, data) =>{
+  let%opt (_, defnLoc, _,_, _) = maybeFound(Hashtbl.find(data.stamps), stamp);
+  let usages = maybeFound(Hashtbl.find(data.internalReferences), stamp) |? [];
+  Some([(`Write, defnLoc), ...List.map((l) => (`Read, l), usages)])
+};
 
 let suffixForStamp = (stamp, suffix, data) => {
-  (maybeFound(Hashtbl.find(data.stamps), stamp) |?> ((name, loc, item, docs, range)) => {
-    switch item {
-      | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
-      | _ => None
-    }
-  })
+  let%opt (name, loc, item, docs, range) = maybeFound(Hashtbl.find(data.stamps), stamp);
+  switch item {
+    | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
+    | _ => None
+  }
 };
 
 let rec stampAtPath = (path, data, suffix) =>
@@ -459,47 +468,42 @@ let rec stampAtPath = (path, data, suffix) =>
     switch (stampAtPath(inner, data, None)) {
     | Some(`Global(top, subs, _)) => Some(`Global((top, subs @ [name], suffix)))
     | Some(`Local(stamp)) =>
-      maybeFound(Hashtbl.find(data.stamps), stamp)
-      |?> (
-        (x) =>
-          switch x {
-          | (_, _, Module(contents), _, _) =>
-            maybeFound(List.assoc(name), contents) |?>> ((stamp) => `Local(stamp))
-          | _ => None
-          }
-      )
+      let%opt x = maybeFound(Hashtbl.find(data.stamps), stamp);
+      switch x {
+      | (_, _, Module(contents), _, _) =>
+        maybeFound(List.assoc(name), contents) |?>> ((stamp) => `Local(stamp))
+      | _ => None
+      }
     | _ => None
     }
   | _ => None
   };
 
-let stampAtPos = (pos, data) =>
-  locationAtPos(pos, data)
-  |?> (
-    ((loc, expr, defn)) =>
-      switch defn {
-      | IsDefinition(stamp) => Some(stamp)
-      | AttributeDefn(path, name, _) =>
-        switch (stampAtPath(path, data, Some(name))) {
-        | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
-        | Some(`Local(stamp)) => Some(stamp)
-        | None => None
-        }
-      | ConstructorDefn(path, name, _) =>
-        switch (stampAtPath(path, data, Some(name))) {
-        | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
-        | Some(`Local(stamp)) => Some(stamp)
-        | None => None
-        }
-      | Path(path) =>
-        switch (stampAtPath(path, data, None)) {
-        | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
-        | Some(`Local(stamp)) => Some(stamp)
-        | None => None
-        }
-      | _ => None
-      }
-  );
+let stampAtPos = (pos, data) => {
+  let%opt (loc, expr, defn) = locationAtPos(pos, data);
+  switch defn {
+  | IsDefinition(stamp) => Some(stamp)
+  | AttributeDefn(path, name, _) =>
+    switch (stampAtPath(path, data, Some(name))) {
+    | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
+    | Some(`Local(stamp)) => Some(stamp)
+    | None => None
+    }
+  | ConstructorDefn(path, name, _) =>
+    switch (stampAtPath(path, data, Some(name))) {
+    | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
+    | Some(`Local(stamp)) => Some(stamp)
+    | None => None
+    }
+  | Path(path) =>
+    switch (stampAtPath(path, data, None)) {
+    | Some(`Global(name, children, _)) => None /* TODO resolve cross-file */
+    | Some(`Local(stamp)) => Some(stamp)
+    | None => None
+    }
+  | _ => None
+  }
+};
 
 let highlights = (pos, data) => stampAtPos(pos, data) |?> ((x) => highlightsForStamp(x, data));
 
@@ -652,8 +656,14 @@ module Get = {
         };
       Collector.data.locations = [(loc, typ, definition), ...Collector.data.locations]
     };
+    let addExplanation = (loc, text) => {
+      Collector.data.explanations = [(loc, text), ...Collector.data.explanations]
+    };
     let enter_signature_item = (item) =>
       switch item.sig_desc {
+        | Tsig_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
+          addExplanation(loc, doc)
+        }
         | Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
           if (Collector.data.toplevelDocs == None) {
             Collector.data.toplevelDocs = Some(doc)
@@ -698,6 +708,9 @@ module Get = {
     let enter_structure_item = (item) =>
       Typedtree.(
         switch item.str_desc {
+        | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
+          addExplanation(loc, doc)
+        }
         | Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
           if (Collector.data.toplevelDocs == None) {
             Collector.data.toplevelDocs = Some(doc)
@@ -837,7 +850,14 @@ module Get = {
            )
       | _ => ()
       };
-    let enter_expression = (expr) =>
+    let enter_expression = (expr) => {
+      expr.exp_attributes |> List.iter(attr => switch attr {
+        | ({Asttypes.txt: "ocaml.explanation", loc}, Parsetree.PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])) => {
+          addExplanation(loc, doc)
+        }
+        | _ => ()
+      });
+
       switch expr.exp_desc {
       | Texp_for({stamp, name}, {ppat_loc}, {exp_type}, _, _, contents) =>
         addLocation(ppat_loc, exp_type, IsDefinition(stamp));
@@ -917,6 +937,7 @@ module Get = {
       | Texp_function(label, cases, _) => addScope(rangeOfLoc(expr.exp_loc))
       | _ => ()
       };
+    };
     let leave_expression = (expr) =>
       switch expr.exp_desc {
       | Texp_let(recFlag, bindings, expr) => popScope()
@@ -935,7 +956,8 @@ module Get = {
       exported: Hashtbl.create(10),
       allOpens: [],
       topLevel: [],
-      locations: []
+      locations: [],
+      explanations: [],
     };
     let allOpens = ref([]);
     module IterIter =
@@ -993,6 +1015,7 @@ module Get = {
     | _ => failwith("Not a valid cmt file")
     };
     data.locations = List.rev(data.locations);
+    data.explanations = List.rev(data.explanations);
     /* allOpens^ |> List.iter(({used, path, loc}) => {
          Log.log("An Open! " ++ string_of_int(List.length(used)));
        }); */
