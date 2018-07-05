@@ -1,0 +1,6 @@
+{
+  "editor.codeLens": true,
+  "reason_language_server.location": "../../lib/bs/native/bin.native",
+  // "reason_language_server.location": "../lib/bs/native/bin.native.exe",
+  // "reason_language_server.reloadOnChange": false
+}
