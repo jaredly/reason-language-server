@@ -96,6 +96,11 @@ let readFileExn = path => switch (readFile(path)) {
 | Some(text) => text
 };
 
+let readFileResult = path => switch (readFile(path)) {
+| None => Result.Error("Unable to read " ++ path)
+| Some(text) => Result.Ok(text)
+};
+
 let writeFile = (path, contents) => {
   try {
     let out = open_out(path);

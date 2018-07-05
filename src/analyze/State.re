@@ -100,7 +100,8 @@ let findBsConfig = (uri, packagesByRoot) => {
 
 /* TODO this should return result, and report exceptional circumstances */
 let newPackage = (rootPath) => {
-  let config = Files.readFileExn(rootPath /+ "bsconfig.json") |> Json.parse;
+  let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
+  let config = Json.parse(raw);
 
   let compiledBase = FindFiles.getCompiledBase(rootPath, config);
   let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");

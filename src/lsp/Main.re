@@ -81,66 +81,9 @@ let getInitialState = (params) => {
   let packagesByRoot = Hashtbl.create(1);
 
   let package = {
-    let%try_consume config =
-      Files.readFile(rootPath /+ "bsconfig.json")
-      |> orError("No bsconfig.json found")
-      |?>> Json.parse;
-    let compiledBase = FindFiles.getCompiledBase(rootPath, config);
-    let compiledBase = switch compiledBase {
-      | None => {
-        raise(BasicServer.Exit("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server."));
-      }
-      | Some(x) => x
-    };
-    let namespace = FindFiles.getNamespace(config);
-    let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
-    Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
-    let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
-    let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
-
-    let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-    let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, rootPath, config);
-    let pathsForModule = Hashtbl.create(30);
-    dependencyModules |> List.iter(((modName, (cmt, source))) => {
-      Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-      switch (modName) {
-      | FindFiles.Plain(name) =>
-      Hashtbl.replace(pathsForModule, name, (cmt, source))
-      | _ => ()
-      }
-    });
-
-    localModules |> List.iter(((modName, (cmt, source))) => {
-      Log.log("> Local " ++ cmt ++ " - " ++ source);
-      Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
-    });
-    Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
-
-    let package = State.{
-      basePath: rootPath,
-      /* localCompiledBase: compiledBase, */
-      localModules,
-      /* localCompiledMap: localModules |> List.map(((_, (cmt, src))) => (src, cmt)), */
-      dependencyModules,
-      pathsForModule,
-      compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
-      includeDirectories: [
-        FindFiles.isNative(config)
-        ? rootPath /+ "node_modules" /+ "bs-platform/" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"
-        : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml",
-        ...dependencyDirectories
-      ] @ localCompiledDirs,
-      compilerPath: FindFiles.isNative(config) ?
-        rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
-        : rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe",
-      refmtPath: FindFiles.oneShouldExist("Can't find refmt", [
-        rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe",
-        rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe",
-      ]),
-    };
+    let%try_consume package = State.newPackage(rootPath);
     Hashtbl.replace(packagesByRoot, rootPath, package)
   };
-
 
   /* if client needs plain text in any place, we disable markdown everywhere */
   let clientNeedsPlainText = ! Infix.(

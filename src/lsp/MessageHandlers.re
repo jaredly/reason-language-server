@@ -186,7 +186,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             ("command", s(""))
           ]))
         ])))))
-
       }
       | Ok(package) =>
       open Infix;
