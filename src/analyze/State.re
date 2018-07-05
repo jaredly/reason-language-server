@@ -198,53 +198,78 @@ let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 
-let docsForCmt = (cmt, src, state) => {
+let docsForCmt = (cmt, src, state) =>
   if (Filename.check_suffix(cmt, ".cmi")) {
-
-  if (Hashtbl.mem(state.cmiCache, cmt)) {
-    let (mtime, infos, docs) = Hashtbl.find(state.cmiCache, cmt);
-    /* TODO I should really throttle this mtime checking to like every 50 ms or so */
-    switch (Files.getMtime(cmt)) {
-    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
-    | Some(changed) =>
-      if (changed > mtime) {
-        newDocsForCmi(state.cmiCache, changed, cmt, src, state.clientNeedsPlainText);
-      } else {
-        Some(docs);
-      }
+    if (Hashtbl.mem(state.cmiCache, cmt)) {
+      let (mtime, infos, docs) = Hashtbl.find(state.cmiCache, cmt);
+      /* TODO I should really throttle this mtime checking to like every 50 ms or so */
+      switch (Files.getMtime(cmt)) {
+      | None =>
+        Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+        None;
+      | Some(changed) =>
+        if (changed > mtime) {
+          newDocsForCmi(
+            state.cmiCache,
+            changed,
+            cmt,
+            src,
+            state.clientNeedsPlainText,
+          );
+        } else {
+          Some(docs);
+        }
+      };
+    } else {
+      switch (Files.getMtime(cmt)) {
+      | None =>
+        Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+        None;
+      | Some(changed) =>
+        newDocsForCmi(
+          state.cmiCache,
+          changed,
+          cmt,
+          src,
+          state.clientNeedsPlainText,
+        )
+      };
     };
-  } else {
-    switch (Files.getMtime(cmt)) {
-    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
-    | Some(changed) => newDocsForCmi(state.cmiCache, changed, cmt, src, state.clientNeedsPlainText)
-    };
-  };
-
-
-  } else {
-
-
-  if (Hashtbl.mem(state.cmtCache, cmt)) {
+  } else if (Hashtbl.mem(state.cmtCache, cmt)) {
     let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
     /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
-    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
+    | None =>
+      Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+      None;
     | Some(changed) =>
       if (changed > mtime) {
-        newDocsForCmt(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText);
+        newDocsForCmt(
+          state.cmtCache,
+          changed,
+          cmt,
+          src,
+          state.clientNeedsPlainText,
+        );
       } else {
         Some(docs);
       }
     };
   } else {
     switch (Files.getMtime(cmt)) {
-    | None => {Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt); None}
-    | Some(changed) => newDocsForCmt(state.cmtCache, changed, cmt, src, state.clientNeedsPlainText)
+    | None =>
+      Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+      None;
+    | Some(changed) =>
+      newDocsForCmt(
+        state.cmtCache,
+        changed,
+        cmt,
+        src,
+        state.clientNeedsPlainText,
+      )
     };
   };
-
-  }
-};
 
 let updateContents = (uri, text, version, state) => {
   Hashtbl.remove(state.compiledDocuments, uri);
