@@ -59,7 +59,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           let opens = PartialParser.findOpens(text, offset);
           /* */
           let localData = State.getLastDefinitions(uri, state);
-          let useMarkdown = !state.clientNeedsPlainText;
+          let useMarkdown = !state.settings.clientNeedsPlainText;
           Completions.get(currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
@@ -93,7 +93,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         open Rpc.J;
         extend(params, [
           ("detail", detail |?>> s |? null),
-          ("documentation", docs |?>> Protocol.contentKind(!state.clientNeedsPlainText) |? null),
+          ("documentation", docs |?>> Protocol.contentKind(!state.settings.clientNeedsPlainText) |? null),
         ]) |? params
       }) |? params;
       Ok((state, result))
@@ -195,7 +195,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         Some(moduleData)
       } |?# lazy(State.getLastDefinitions(uri, state));
 
-      let showToplevelTypes = false; /* TODO config option */
+      let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
       let lenses = showToplevelTypes ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
         switch item {
         | Definition.Module(_) => None
@@ -207,10 +207,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         }
       }) : [];
 
-      let showOpens = true;
+      let showOpens = state.settings.opensCodelens;
       let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
 
-      let showDependencies = true;
+      let showDependencies = state.settings.dependenciesCodelens;
       let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
         Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
@@ -246,7 +246,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       | Some((text, loc)) =>
         (state, o([
           ("range", Protocol.rangeOfLoc(loc)),
-          ("contents",  text |> Protocol.contentKind(!state.clientNeedsPlainText))
+          ("contents",  text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
         ]))
       }
     })

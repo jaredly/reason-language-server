@@ -34,6 +34,21 @@
 					"type": "string",
 					"description": "Provide a custom location for the language server binary"
 				},
+				"reason_language_server.per_value_codelens": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the type for each top-level value in a codelens"
+				},
+				"reason_language_server.dependencies_codelens": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the dependencies for a file at the top"
+				},
+				"reason_language_server.opens_codelens": {
+					"type": "boolean",
+					"default": true,
+					"description": "Indicate what values have been used from an open"
+				},
 				"reason_language_server.reloadOnChange": {
 					"type": "boolean",
 					"default": false,

@@ -101,7 +101,12 @@ let getInitialState = (params) => {
     cmiCache: Hashtbl.create(30),
     compiledDocuments: Hashtbl.create(10),
     lastDefinitions: Hashtbl.create(10),
-    clientNeedsPlainText,
+    settings: {
+      perValueCodelens: false,
+      opensCodelens: true,
+      dependenciesCodelens: true,
+      clientNeedsPlainText,
+    },
   };
 
   Ok(state)
@@ -208,6 +213,13 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
       state
     }) |> orError("Invalid params")
+  }),
+  ("workspace/didChangeConfiguration", (state, params) => {
+    let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
+    let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
+    let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? false;
+    let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? false;
+    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, dependenciesCodelens}})
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;

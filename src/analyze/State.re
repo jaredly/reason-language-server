@@ -24,10 +24,17 @@ type package = {
   refmtPath: filePath,
 };
 
+type settings = {
+  perValueCodelens: bool,
+  opensCodelens: bool,
+  dependenciesCodelens: bool,
+  clientNeedsPlainText: bool,
+};
+
 type state = {
   rootPath: filePath,
   rootUri: uri,
-  clientNeedsPlainText: bool,
+  settings,
 
   documentText: Hashtbl.t(uri, (string, int, bool)),
   documentTimers: Hashtbl.t(uri, float),
@@ -214,7 +221,7 @@ let docsForCmt = (cmt, src, state) =>
             changed,
             cmt,
             src,
-            state.clientNeedsPlainText,
+            state.settings.clientNeedsPlainText,
           );
         } else {
           Some(docs);
@@ -231,7 +238,7 @@ let docsForCmt = (cmt, src, state) =>
           changed,
           cmt,
           src,
-          state.clientNeedsPlainText,
+          state.settings.clientNeedsPlainText,
         )
       };
     };
@@ -249,7 +256,7 @@ let docsForCmt = (cmt, src, state) =>
           changed,
           cmt,
           src,
-          state.clientNeedsPlainText,
+          state.settings.clientNeedsPlainText,
         );
       } else {
         Some(docs);
@@ -266,7 +273,7 @@ let docsForCmt = (cmt, src, state) =>
         changed,
         cmt,
         src,
-        state.clientNeedsPlainText,
+        state.settings.clientNeedsPlainText,
       )
     };
   };

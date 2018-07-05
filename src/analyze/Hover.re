@@ -15,7 +15,7 @@ let getHover = (uri, line, character, state, ~package) => {
       }
     | Some((loc, {desc: Types.Tnil}, _)) => None
     | Some((loc, expr, defn)) =>
-      let useMarkdown = !state.clientNeedsPlainText;
+      let useMarkdown = !state.settings.clientNeedsPlainText;
       let typ =
         PrintType.default.expr(PrintType.default, expr)
         |> PrintType.prettyString;
