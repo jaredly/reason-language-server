@@ -1,5 +1,5 @@
 
-type result('ok, 'error) = Ok('ok) | Error('error);
+type result('ok, 'error) = Belt.Result.t('ok, 'error) = Ok('ok) | Error('error);
 
 let resultOfOption = (err, v) => switch v { | Some(v) => Ok(v) | None => Error(err)};
 let orError = resultOfOption;

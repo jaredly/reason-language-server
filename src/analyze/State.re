@@ -294,7 +294,7 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let result = AsYouType.process(text, ~cacheLocation=state.rootPath /+ "node_modules" /+ ".lsp", package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let result = AsYouType.process(text, ~cacheLocation=BuildSystem.hiddenLocation(package.basePath, package.buildSystem), package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()

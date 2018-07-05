@@ -69,7 +69,7 @@ let getModulesFromMerlin = (base, text) => {
 
   let nm = Filename.concat(base, "node_modules");
   Hashtbl.fold((modname, path, (local, deps)) => {
-    let item = ("", "TODO");
+    let item = (path, None);
     if (Utils.startsWith(path, nm)) {
       (local, [item, ...deps])
     } else {

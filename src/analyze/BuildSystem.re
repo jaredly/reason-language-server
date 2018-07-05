@@ -62,7 +62,8 @@ let getCompiler = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | BsbNative(_, Js)
     | Bsb(_) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe"
-    | BsbNative(_, Native|Bytecode) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+    | BsbNative(_, Native) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+    | BsbNative(_, Bytecode) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
     | Dune => failwith("Don't know how to find the dune compiler")
   };
 };
@@ -73,5 +74,13 @@ let getRefmt = (rootPath, buildSystem) => {
     | Bsb(version) when version > "2.2.0" => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
     | Bsb(_) | BsbNative(_, _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe"
     | Dune => "refmt"
+  };
+};
+
+let hiddenLocation = (rootPath, buildSystem) => {
+  switch (buildSystem) {
+    | Bsb(_)
+    | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
+    | Dune => rootPath /+ "_build" /+ ".lsp"
   };
 };
