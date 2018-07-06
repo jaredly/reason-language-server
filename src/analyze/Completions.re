@@ -203,13 +203,28 @@ let resolveOpens = (opens, state, ~package) => {
 /** Some docs */
 let get = (topModule, opens, parts, state, localData, pos, ~package) => {
   let opens = resolveOpens(opens, state, ~package);
-  let opens = switch (State.docsForModule("Pervasives", state, ~package)) {
+  let packageOpens = ["Pervasives", ...package.opens];
+  let opens = List.fold_left(
+    (opens, name) => switch (State.docsForModule(name, state, ~package)) {
+      | None => {
+        Log.log("Auto open " ++ name ++ " not found...");
+        opens
+      }
+      | Some(((_, contents), uri)) => {
+        Log.log("Found auto open " ++ name);
+        [(name, contents, uri), ...opens]
+      }
+      },
+      opens,
+      packageOpens
+  );
+  /* let opens = switch (State.docsForModule("Pervasives", state, ~package)) {
   | None => {
     Log.log("No pervasives found...");
     opens
   }
   | Some(((_, contents), uri)) => [("Pervasives", contents, uri), ...opens]
-  };
+  }; */
   switch parts {
   | [] => []
   | [""] => []

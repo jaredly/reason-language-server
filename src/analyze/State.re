@@ -19,6 +19,8 @@ type package = {
   dependencyModules: list((FindFiles.modpath, (string, option(string)))),
   pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
 
+  opens: list(string),
+
   tmpPath: string,
 
   buildSystem: BuildSystem.t,
@@ -125,6 +127,7 @@ let newBsPackage = (rootPath) => {
     dependencyModules,
     pathsForModule,
     buildSystem,
+    opens: [],
     tmpPath: BuildSystem.hiddenLocation(rootPath, buildSystem),
     compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
     includeDirectories: 
@@ -184,7 +187,7 @@ let newJbuilderPackage = (rootPath) => {
   let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename) |> String.capitalize;
-    (name, (compiledBase /+ Filename.chop_extension(filename) ++ ".cmt", rootPath /+ filename))
+    (libraryName ++ "__" ++ name, (compiledBase /+ libraryName ++ "__" ++ Filename.chop_extension(filename) ++ ".cmt", rootPath /+ filename))
   });
 
   let dependencyDirectories = source |> List.filter(s => s !== ".");
@@ -217,6 +220,7 @@ let newJbuilderPackage = (rootPath) => {
   });
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
+  Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
   Ok({
     basePath: rootPath,
@@ -224,6 +228,8 @@ let newJbuilderPackage = (rootPath) => {
     dependencyModules,
     pathsForModule,
     buildSystem,
+    /* TODO check if there's a module called that */
+    opens: [libraryName ++ "__"],
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...dependencyDirectories],
