@@ -190,13 +190,14 @@ let newJbuilderPackage = (rootPath) => {
     (libraryName ++ "__" ++ name, (compiledBase /+ libraryName ++ "__" ++ Filename.chop_extension(filename) ++ ".cmt", rootPath /+ filename))
   });
 
-  let dependencyDirectories = source |> List.filter(s => s !== ".");
+  let dependencyDirectories = source |> List.filter(s => s != ".");
 
   let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
   let dependencyModules = dependencyDirectories
   |> List.map(path => {
+    Log.log(">> Collecting deps for " ++ path);
     Files.collect(path, FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
