@@ -139,10 +139,6 @@ let findLibraryName = jbuildConfig => {
   Log.log("finding");
   let rec loop = items => switch items {
     | [] => None
-    /* | [`List([`Ident("library"), ..._]), ..._] => {
-      Log.log("Yeah");
-      None
-    } */
     | [`List([`Ident("library"), `List(items), ..._]), ..._] =>
     Log.log("In lib");
       let rec get = items => switch items {
@@ -187,7 +183,7 @@ let newJbuilderPackage = (rootPath) => {
   let rel = Files.relpath(projectRoot, rootPath);
   let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
   let localModules = sourceFiles |> List.map(filename => {
-    let name = FindFiles.getName(filename) |> String.uppercase;
+    let name = FindFiles.getName(filename) |> String.capitalize;
     (name, (compiledBase /+ Filename.chop_extension(filename) ++ ".cmt", rootPath /+ filename))
   });
 
@@ -201,7 +197,7 @@ let newJbuilderPackage = (rootPath) => {
     Files.collect(path, FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (FindFiles.Plain(Filename.chop_extension(name) |> String.uppercase), (compiled, Some(path /+ name)));
+      (FindFiles.Plain(Filename.chop_extension(name) |> String.capitalize), (compiled, Some(path /+ name)));
     })
   })
   |> List.concat;
@@ -234,28 +230,6 @@ let newJbuilderPackage = (rootPath) => {
     compilerPath: BuildSystem.getCompiler(projectRoot, buildSystem),
     refmtPath: BuildSystem.getRefmt(projectRoot, buildSystem),
   });
-
-  /* Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
-  let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
-  let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
-
-  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
-  let pathsForModule = Hashtbl.create(30);
-  dependencyModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-    switch (modName) {
-    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
-    | _ => ()
-    }
-  });
-
-  localModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("> Local " ++ cmt ++ " - " ++ source);
-    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
-  });
-  Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories)); */
-
 };
 
 

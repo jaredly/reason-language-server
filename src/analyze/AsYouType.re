@@ -57,7 +57,8 @@ let parseTypeError = text => {
 let justBscCommand = (compilerPath, sourceFile, includes, flags) => {
   /* TODO make sure that bsc supports -color */
   Printf.sprintf(
-    {|%s %s -color never -bin-annot %s -impl %s|},
+    /* {|%s %s -color never -bin-annot %s -impl %s|}, */
+    {|%s %s -bin-annot %s -impl %s|},
     compilerPath,
     includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
     flags,
