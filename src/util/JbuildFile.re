@@ -36,7 +36,7 @@ let parseString = (text, pos) => {
                 Buffer.add_char(buffer, '\012');
                 loop(i + 2)
               | _ =>
-                /* Buffer.add_string(buffer, Scanf.unescaped(String.sub(text, i, 2))); */
+                Buffer.add_string(buffer, Scanf.unescaped(String.sub(text, i, 2)));
                 loop(i + 2)
               }
             )
@@ -116,4 +116,5 @@ let parse = raw => {
       [atom, ...loop(i)]
     }
   };
+  loop(0)
 };

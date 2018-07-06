@@ -19,6 +19,8 @@ type package = {
   dependencyModules: list((FindFiles.modpath, (string, option(string)))),
   pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
 
+  tmpPath: string,
+
   buildSystem: BuildSystem.t,
   compilerPath: filePath,
   refmtPath: filePath,
@@ -123,6 +125,7 @@ let newBsPackage = (rootPath) => {
     dependencyModules,
     pathsForModule,
     buildSystem,
+    tmpPath: BuildSystem.hiddenLocation(rootPath, buildSystem),
     compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
     includeDirectories: 
       BuildSystem.getStdlib(rootPath, buildSystem) @ 
@@ -132,18 +135,42 @@ let newBsPackage = (rootPath) => {
   };
 };
 
+let findLibraryName = jbuildConfig => {
+  Log.log("finding");
+  let rec loop = items => switch items {
+    | [] => None
+    /* | [`List([`Ident("library"), ..._]), ..._] => {
+      Log.log("Yeah");
+      None
+    } */
+    | [`List([`Ident("library"), `List(items), ..._]), ..._] =>
+    Log.log("In lib");
+      let rec get = items => switch items {
+        | [] => None
+        | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
+        | [_, ...rest] => get(rest)
+      };
+      get(items)
+    | [item, ...rest] => {
+      Log.log("Skipping " ++ JbuildFile.atomToString(item));
+      loop(rest)
+    }
+  };
+  loop(jbuildConfig)
+};
 
-/* let newJbuilderPackage = (rootPath) => {
-  let rec findBuild = path => {
+let newJbuilderPackage = (rootPath) => {
+  let rec findJbuilderProjectRoot = path => {
     if (path == "/") {
       Result.Error("Unable to find _build directory")
     } else if (Files.exists(path /+ "_build")) {
       Ok(path)
     } else {
-      findBuild(Filename.dirname(path))
+      findJbuilderProjectRoot(Filename.dirname(path))
     }
   };
-  let%try buildDir = findBuild(Filename.dirname(rootPath));
+  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
+  let buildDir = projectRoot /+ "_build";
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
   let (source, build, flags) = MerlinFile.parseMerlin("", merlinRaw);
 
@@ -151,7 +178,62 @@ let newBsPackage = (rootPath) => {
 
   let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
   let atoms = JbuildFile.parse(jbuildRaw);
-  /* atoms |> List.iter(atom => Log.log(JbuildFile.atomToString(atom))); */
+  atoms |> List.iter(atom => Log.log(JbuildFile.atomToString(atom)));
+  let%try libraryName = findLibraryName(atoms) |> Result.orError("Unable to determine library name from jbuild file");
+
+  let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
+
+  let sourceFiles = Files.readDirectory(rootPath) |> List.filter(FindFiles.isSourceFile);
+  let rel = Files.relpath(projectRoot, rootPath);
+  let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
+  let localModules = sourceFiles |> List.map(filename => {
+    let name = FindFiles.getName(filename) |> String.uppercase;
+    (name, (compiledBase /+ Filename.chop_extension(filename) ++ ".cmt", rootPath /+ filename))
+  });
+
+  let dependencyDirectories = source |> List.filter(s => s !== ".");
+
+  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  Files.mkdirp(hiddenLocation);
+
+  let dependencyModules = dependencyDirectories
+  |> List.map(path => {
+    Files.collect(path, FindFiles.isSourceFile)
+    |> List.map(name => {
+      let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
+      (FindFiles.Plain(Filename.chop_extension(name) |> String.uppercase), (compiled, Some(path /+ name)));
+    })
+  })
+  |> List.concat;
+
+  let pathsForModule = Hashtbl.create(30);
+  dependencyModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
+    switch (modName) {
+    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
+    | _ => ()
+    }
+  });
+
+  localModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("> Local " ++ cmt ++ " - " ++ source);
+    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+  });
+  Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
+
+
+  Ok({
+    basePath: rootPath,
+    localModules,
+    dependencyModules,
+    pathsForModule,
+    buildSystem,
+    tmpPath: hiddenLocation,
+    compilationFlags: flags |> String.concat(" "),
+    includeDirectories: [compiledBase, ...dependencyDirectories],
+    compilerPath: BuildSystem.getCompiler(projectRoot, buildSystem),
+    refmtPath: BuildSystem.getRefmt(projectRoot, buildSystem),
+  });
 
   /* Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
   let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
@@ -174,21 +256,7 @@ let newBsPackage = (rootPath) => {
   });
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories)); */
 
-  {
-    basePath: rootPath,
-    localModules,
-    dependencyModules,
-    pathsForModule,
-    buildSystem,
-    compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
-    includeDirectories: [
-      BuildSystem.getStdlib(rootPath, buildSystem),
-      ...dependencyDirectories
-    ] @ localCompiledDirs,
-    compilerPath: BuildSystem.getCompiler(rootPath, buildSystem),
-    refmtPath: BuildSystem.getRefmt(rootPath, buildSystem),
-  };
-}; */
+};
 
 
 
@@ -229,7 +297,11 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
     | `Jbuilder(path) =>
-      Result.Error("Jbuilder not yet supported sry")
+      let%try package = newJbuilderPackage(path);
+      Hashtbl.replace(state.rootForUri, uri, package.basePath);
+      Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      Result.Ok(package)
+      /* Result.Error("Jbuilder not yet supported sry") */
     }
   }
 };
@@ -367,7 +439,7 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let result = AsYouType.process(text, ~cacheLocation=BuildSystem.hiddenLocation(package.basePath, package.buildSystem), package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let result = AsYouType.process(text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()

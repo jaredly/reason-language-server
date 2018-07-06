@@ -12,6 +12,13 @@ type t =
 
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
 
+let getLine = (cmd, ~pwd) => {
+  switch (Commands.execFull(~pwd, cmd)) {
+    | ([line], _, true) => Result.Ok(line)
+    | (out, err, _) => Error("Invalid response for " ++ cmd ++ "\n\n" ++ String.concat("\n", out @ err))
+  }
+};
+
 open Infix;
 let detect = (rootPath, bsconfig) => {
   let%try_wrap bsbVersion = {
@@ -66,7 +73,10 @@ let getCompiler = (rootPath, buildSystem) => {
     | Bsb(_) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe"
     | BsbNative(_, Native) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
     | BsbNative(_, Bytecode) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
-    | Dune => failwith("Don't know how to find the dune compiler")
+    | Dune => {
+      let%try_force ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
+      ocamlopt ++ " -c"
+    }
   };
 };
 
@@ -75,7 +85,10 @@ let getRefmt = (rootPath, buildSystem) => {
     | BsbNative("3.2.0", _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
     | Bsb(version) when version > "2.2.0" => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
     | Bsb(_) | BsbNative(_, _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe"
-    | Dune => "refmt"
+    | Dune => {
+      let%try_force refmt = getLine("esy which refmt", ~pwd=rootPath);
+      refmt
+    }
   };
 };
 
