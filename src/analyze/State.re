@@ -301,7 +301,6 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
-      /* Result.Error("Jbuilder not yet supported sry") */
     }
   }
 };
