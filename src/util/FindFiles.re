@@ -131,6 +131,21 @@ let getNamespace = config => {
   isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
 };
 
+let collectFiles = (directory) => {
+  let allFiles = Files.readDirectory(directory);
+  let compileds = allFiles
+  |> List.filter(isCompiledFile)
+  |> filterDuplicates;
+  let sources = allFiles |> List.filter(isSourceFile) |> filterDuplicates;
+  compileds
+  |> List.map(path => {
+    let modName = getName(path);
+    (modName |> String.capitalize, (directory /+ path, Utils.find(name => getName(name) == modName ? Some(name) : None, sources)))
+  })
+  /* |> List.filter(((_, (cmt, src))) => Files.exists(cmt)) */
+  ;
+};
+
 /**
  * returns a list of (absolute path to cmt(i), relative path from base to source file)
  */
@@ -156,7 +171,10 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
 type modpath = Namespaced(string, string) | Plain(string);
 
 let loadStdlib = stdlib => {
-  let allFiles = Files.readDirectory(stdlib);
+  collectFiles(stdlib)
+  |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
+  |> List.map(((name, s)) => (Plain(name), s))
+  /* let allFiles = Files.readDirectory(stdlib);
   let compileds = allFiles
   |> List.filter(isCompiledFile)
   |> filterDuplicates;
@@ -167,7 +185,7 @@ let loadStdlib = stdlib => {
     (Plain(modName |> String.capitalize), (stdlib /+ path, Utils.find(name => getName(name) == modName ? Some(name) : None, sources)))
   })
   |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
-  ;
+  ; */
 };
 
 let needsCompilerLibs = config => {

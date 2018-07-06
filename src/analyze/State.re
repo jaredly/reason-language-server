@@ -87,7 +87,23 @@ module Show = {
   };
 };
 
-let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
+let makePathsForModule = (localModules, dependencyModules) => {
+  let pathsForModule = Hashtbl.create(30);
+  dependencyModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
+    switch (modName) {
+    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
+    | _ => ()
+    }
+  });
+
+  localModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("> Local " ++ cmt ++ " - " ++ source);
+    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+  });
+  pathsForModule
+
+};
 
 let newBsPackage = (rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
@@ -106,19 +122,7 @@ let newBsPackage = (rootPath) => {
 
   let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
   let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
-  let pathsForModule = Hashtbl.create(30);
-  dependencyModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-    switch (modName) {
-    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
-    | _ => ()
-    }
-  });
-
-  localModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("> Local " ++ cmt ++ " - " ++ source);
-    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
-  });
+  let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   {
@@ -178,16 +182,37 @@ let newJbuilderPackage = (rootPath) => {
   let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
   let atoms = JbuildFile.parse(jbuildRaw);
   atoms |> List.iter(atom => Log.log(JbuildFile.atomToString(atom)));
-  let%try libraryName = findLibraryName(atoms) |> Result.orError("Unable to determine library name from jbuild file");
+  let libraryName = findLibraryName(atoms);
 
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
 
+  /* TODO support binaries, and other directories */
+
   let sourceFiles = Files.readDirectory(rootPath) |> List.filter(FindFiles.isSourceFile);
   let rel = Files.relpath(projectRoot, rootPath);
-  let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
+  let compiledBase = switch libraryName {
+    | None => buildDir /+ "default" /+ rel
+    | Some(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs"
+  };
+
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename) |> String.capitalize;
-    (libraryName ++ "__" ++ name, (compiledBase /+ libraryName ++ "__" ++ Filename.chop_extension(filename) ++ ".cmt", rootPath /+ filename))
+    let namespaced = switch libraryName {
+      | None => name
+      | Some(libraryName) => libraryName ++ "__" ++ name
+    };
+    (
+      namespaced,
+      (
+        compiledBase
+        /+ (
+          fold(libraryName, "", l => l ++ "__")
+          ++ Filename.chop_extension(filename)
+          ++ ".cmt"
+        ),
+        rootPath /+ filename,
+      ),
+    );
   });
 
   let dependencyDirectories = source |> List.filter(s => s != ".");
@@ -206,22 +231,10 @@ let newJbuilderPackage = (rootPath) => {
   })
   |> List.concat;
 
-  let pathsForModule = Hashtbl.create(30);
-  dependencyModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-    switch (modName) {
-    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
-    | _ => ()
-    }
-  });
-
-  localModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("> Local " ++ cmt ++ " - " ++ source);
-    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
-  });
+  let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
-  Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
+  libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
   Ok({
     basePath: rootPath,
@@ -230,7 +243,7 @@ let newJbuilderPackage = (rootPath) => {
     pathsForModule,
     buildSystem,
     /* TODO check if there's a module called that */
-    opens: [libraryName ++ "__"],
+    opens: fold(libraryName, [], libraryName => [libraryName ++ "__"]),
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...dependencyDirectories],
