@@ -68,20 +68,21 @@ let getModulesFromMerlin = (base, text) => {
   });
 
   let nm = Filename.concat(base, "node_modules");
-  Hashtbl.fold((modname, path, (local, deps)) => {
+  let (local, deps) = Hashtbl.fold((modname, path, (local, deps)) => {
     let item = (path, None);
-    if (Utils.startsWith(path, nm)) {
+    if (Utils.startsWith(path, nm) || !Utils.startsWith(path, base)) {
       (local, [item, ...deps])
     } else {
       ([item, ...local], deps)
     }
   }, buildMap, ([], []));
+  (local, deps, flags)
 };
 
-let use = base => {
+/* let use = base => {
   open Result.InfixResult;
   Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> getModulesFromMerlin(base)
-};
+}; */
 
 let getFlags = base => {
   open Result.InfixResult;

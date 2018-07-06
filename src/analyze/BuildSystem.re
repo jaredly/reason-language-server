@@ -42,19 +42,21 @@ let getCompiledBase = (root, buildSystem) =>
 let getStdlib = (base, buildSystem) =>
   switch (buildSystem) {
   | BsbNative(_, Js)
-  | Bsb(_) => base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml"
+  | Bsb(_) => [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml"]
   | BsbNative("3.2.0", Native) =>
-    base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native"
+    [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native",
+    base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
   | BsbNative("3.2.0", Bytecode) =>
-    base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "bytecode"
+    [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "bytecode",
+    base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
   | BsbNative(_, Bytecode | Native) =>
-    base
+    [base
     /+ "node_modules"
     /+ "bs-platform"
     /+ "vendor"
     /+ "ocaml"
     /+ "lib"
-    /+ "ocaml"
+    /+ "ocaml"]
   | Dune => failwith("Don't know how to find the dune stdlib")
   };
 

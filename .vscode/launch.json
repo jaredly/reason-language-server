@@ -73,6 +73,18 @@
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,
+		},
+		{
+			"name": "Esy",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/client",
+				"${workspaceRoot}/examples/markdown-reason-react"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
 		}
 	]
 }

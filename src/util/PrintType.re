@@ -102,7 +102,17 @@ let print_expr = (stringifier, typ) => {
   | Tunivar(_)
   | Tpoly(_, _)
   | Tpackage(_, _, _)
-  | Tobject(_, _) => str({Printtyp.type_expr(Format.str_formatter, typ); Format.flush_str_formatter()} |> htmlEscape)
+  | Tobject(_, _) => {
+    let txt = {
+      try {
+        Printtyp.type_expr(Format.str_formatter, typ);
+      } { 
+        | _ => Format.fprintf(Format.str_formatter, "Unable to print type")
+      };
+      Format.flush_str_formatter()
+    };
+    str(txt |> htmlEscape)
+  }
   }
 };
 

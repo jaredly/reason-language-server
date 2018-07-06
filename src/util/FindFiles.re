@@ -205,9 +205,9 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
   });
   let (directories, files) = List.split(depFiles);
   let files = List.concat(files);
-  let stdlibDirectory = BuildSystem.getStdlib(base, buildSystem);
-  let directories = [stdlibDirectory, ...List.concat(directories)];
-  let results = files @ loadStdlib(stdlibDirectory);
+  let stdlibDirectories = BuildSystem.getStdlib(base, buildSystem);
+  let directories = stdlibDirectories @ List.concat(directories);
+  let results = files @ List.concat(List.map(loadStdlib,stdlibDirectories));
   (
     needsCompilerLibs(config)
     ? [base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs", ...directories]

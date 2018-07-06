@@ -83,26 +83,9 @@ module Show = {
   };
 };
 
-let findBsConfig = (uri, packagesByRoot) => {
-  let%opt path = Utils.parseUri(uri);
-  let rec loop = path => {
-    if (path == "/") {
-      None
-    } else if (Hashtbl.mem(packagesByRoot, path)) {
-      Some(path)
-    } else if (Files.exists(path /+ "bsconfig.json")) {
-      Some(path)
-    } else {
-      loop(Filename.dirname(path))
-    }
-  };
-  loop(Filename.dirname(path))
-};
-
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
 
-/* TODO this should return result, and report exceptional circumstances */
-let newPackage = (rootPath) => {
+let newBsPackage = (rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
@@ -141,6 +124,63 @@ let newPackage = (rootPath) => {
     pathsForModule,
     buildSystem,
     compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
+    includeDirectories: 
+      BuildSystem.getStdlib(rootPath, buildSystem) @ 
+      dependencyDirectories @ localCompiledDirs,
+    compilerPath: BuildSystem.getCompiler(rootPath, buildSystem),
+    refmtPath: BuildSystem.getRefmt(rootPath, buildSystem),
+  };
+};
+
+
+/* let newJbuilderPackage = (rootPath) => {
+  let rec findBuild = path => {
+    if (path == "/") {
+      Result.Error("Unable to find _build directory")
+    } else if (Files.exists(path /+ "_build")) {
+      Ok(path)
+    } else {
+      findBuild(Filename.dirname(path))
+    }
+  };
+  let%try buildDir = findBuild(Filename.dirname(rootPath));
+  let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
+  let (source, build, flags) = MerlinFile.parseMerlin("", merlinRaw);
+
+  let buildSystem = BuildSystem.Dune;
+
+  let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
+  let atoms = JbuildFile.parse(jbuildRaw);
+  /* atoms |> List.iter(atom => Log.log(JbuildFile.atomToString(atom))); */
+
+  /* Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
+  let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
+  let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
+
+  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
+  let pathsForModule = Hashtbl.create(30);
+  dependencyModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
+    switch (modName) {
+    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
+    | _ => ()
+    }
+  });
+
+  localModules |> List.iter(((modName, (cmt, source))) => {
+    Log.log("> Local " ++ cmt ++ " - " ++ source);
+    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+  });
+  Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories)); */
+
+  {
+    basePath: rootPath,
+    localModules,
+    dependencyModules,
+    pathsForModule,
+    buildSystem,
+    compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
     includeDirectories: [
       BuildSystem.getStdlib(rootPath, buildSystem),
       ...dependencyDirectories
@@ -148,23 +188,49 @@ let newPackage = (rootPath) => {
     compilerPath: BuildSystem.getCompiler(rootPath, buildSystem),
     refmtPath: BuildSystem.getRefmt(rootPath, buildSystem),
   };
+}; */
+
+
+
+
+
+
+let findRoot = (uri, packagesByRoot) => {
+  let%opt path = Utils.parseUri(uri);
+  let rec loop = path => {
+    if (path == "/") {
+      None
+    } else if (Hashtbl.mem(packagesByRoot, path)) {
+      Some(`Root(path))
+    } else if (Files.exists(path /+ "bsconfig.json")) {
+      Some(`Bs(path))
+      /* jbuilder */
+    } else if (Files.exists(path /+ ".merlin")) {
+      Some(`Jbuilder(path))
+    } else {
+      loop(Filename.dirname(path))
+    }
+  };
+  loop(Filename.dirname(path))
 };
 
 let getPackage = (uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {
     Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
   } else {
-    let%try rootPath = findBsConfig(uri, state.packagesByRoot) |> Result.orError("No bsconfig.json found");
-    if (Hashtbl.mem(state.packagesByRoot, rootPath)) {
+    let%try root = findRoot(uri, state.packagesByRoot) |> Result.orError("No root directory found");
+    switch root {
+    | `Root(rootPath) =>
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
-    } else {
-      let%try package = newPackage(rootPath);
+    | `Bs(rootPath) =>
+      let%try package = newBsPackage(rootPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
-    };
-    /* Result.Error("No package detectable for uri " ++ uri ++ ". Have you run bsb or dune already?") */
+    | `Jbuilder(path) =>
+      Result.Error("Jbuilder not yet supported sry")
+    }
   }
 };
 

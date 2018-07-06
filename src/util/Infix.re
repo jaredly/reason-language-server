@@ -28,4 +28,12 @@ let fileConcat = (a, b) => {
   }
 };
 
+let maybeConcat = (a, b) => {
+  if (b != "" && b.[0] == '/') {
+    b
+  } else {
+    fileConcat(a, b)
+  }
+};
+
 let (/+) = fileConcat;

@@ -35,7 +35,7 @@ let hasUnterminatedCommentOrString = (text, ln) => {
 };
 
 let rec findBack = (text, char, i) => {
-  if (i < 0) { 0 } else if (text.[i] == char) {
+  if (i < 0) { 0 } else if (text.[i] == char && (i == 0 || text.[i-1] != '/')) {
     i - 1
   } else {
     findBack(text, char, i - 1)
@@ -63,6 +63,7 @@ let rec findBackSkippingCommentsAndStrings = (text, char, pair, i, level) => {
   } else {
     switch (text.[i]) {
     | '"' => loop(findBack(text, '"', i - 1), level)
+    | '\'' => loop(findBack(text, '\'', i - 1), level)
     | '/' when (i >= 1 && text.[i - 1] == '*') => loop(findOpenComment(text, i - 2), level)
     | _ => loop(i - 1, level)
     }
@@ -173,10 +174,12 @@ let findJsxTag = text => {
 type completable = Nothing | Labeled(string) | Lident(string);
 
 let findCompletable = (text, offset) => {
+  Log.log("Finding completable");
   if (hasUnterminatedCommentOrString(text, offset)) {
     Log.log("Unterminated comment or string, can't do it. Sorry");
     Nothing
   } else {
+    Log.log("Not unterminated");
     /** TODO handle being in the middle of an identifier */
     let rec loop = i => {
       i < 0 ? Nothing : switch (text.[i]) {

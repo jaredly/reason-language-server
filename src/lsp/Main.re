@@ -80,7 +80,7 @@ let getInitialState = (params) => {
   let packagesByRoot = Hashtbl.create(1);
 
   let package = {
-    let%try_consume package = State.newPackage(rootPath);
+    let%try_consume package = State.newBsPackage(rootPath);
     Hashtbl.replace(packagesByRoot, rootPath, package)
   };
 
