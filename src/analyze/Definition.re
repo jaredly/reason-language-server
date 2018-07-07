@@ -447,9 +447,9 @@ let isStampExported = (needle, data) =>
   };
 
 let highlightsForStamp = (stamp, data) =>{
-  let%opt (_, defnLoc, _,_, _) = maybeFound(Hashtbl.find(data.stamps), stamp);
+  let%opt (name, defnLoc, _,_, _) = maybeFound(Hashtbl.find(data.stamps), stamp);
   let usages = maybeFound(Hashtbl.find(data.internalReferences), stamp) |? [];
-  Some([(`Write, defnLoc), ...List.map((l) => (`Read, l), usages)])
+  Some([(`Write, defnLoc), ...List.map((l) => (`Read, Utils.endOfLocation(l, String.length(name))), usages)])
 };
 
 let suffixForStamp = (stamp, suffix, data) => {
