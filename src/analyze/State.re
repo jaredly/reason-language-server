@@ -160,7 +160,8 @@ let newJbuilderPackage = (rootPath) => {
   let buildSystem = BuildSystem.Dune;
 
   let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
-  let packageName = JbuildFile.findName(JbuildFile.parse(jbuildRaw));
+  let jbuildConfig = JbuildFile.parse(jbuildRaw);
+  let packageName = JbuildFile.findName(jbuildConfig);
 
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
 
@@ -198,7 +199,7 @@ let newJbuilderPackage = (rootPath) => {
     );
   });
 
-  let dependencyDirectories = source |> List.filter(s => s != ".");
+  let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "."))];
 
   let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
@@ -206,7 +207,8 @@ let newJbuilderPackage = (rootPath) => {
   let dependencyModules = dependencyDirectories
   |> List.map(path => {
     Log.log(">> Collecting deps for " ++ path);
-    Files.collect(path, FindFiles.isSourceFile)
+    Files.readDirectory(Infix.maybeConcat(rootPath, path))
+    |> List.filter(FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
       (FindFiles.Plain(Filename.chop_extension(name) |> String.capitalize), (compiled, Some(path /+ name)));
