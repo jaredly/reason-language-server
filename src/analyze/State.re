@@ -204,13 +204,20 @@ let newJbuilderPackage = (rootPath) => {
     let res = {
       let%try jbuildRaw = Files.readFileResult(otherPath /+ "jbuild");
       let jbuildConfig = JbuildFile.parse(jbuildRaw);
-      let%try name = JbuildFile.findName(jbuildConfig) |> n => switch n {
+      let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
         | `Library(name) => Result.Ok(name)
         | _ => Error("Not a library")
       };
       let rel = Files.relpath(projectRoot, otherPath);
-      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ name ++ ".objs";
-      Ok((buildDir, FindFiles.collectFiles(~sourceDirectory=otherPath, compiledBase) |> List.map(((name, p)) => (FindFiles.Plain(name), p))));
+      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
+      Log.log("Other directory: " ++ compiledBase);
+      Ok((buildDir, FindFiles.collectFiles(~compiledTransform=modName => {
+        if (modName == libraryName) {
+          modName
+        } else {
+          libraryName ++ "__" ++ modName
+        }
+      }, ~sourceDirectory=otherPath, compiledBase) |> List.map(((name, p)) => (FindFiles.Plain(name), p))));
     };
     switch res {
       | Error(message) => {

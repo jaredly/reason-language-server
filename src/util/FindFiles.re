@@ -131,7 +131,7 @@ let getNamespace = config => {
   isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
 };
 
-let collectFiles = (~sourceDirectory=?, directory) => {
+let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) => {
   let allFiles = Files.readDirectory(directory);
   let compileds = allFiles
   |> List.filter(isCompiledFile)
@@ -143,7 +143,7 @@ let collectFiles = (~sourceDirectory=?, directory) => {
     let modName = getName(path);
     let moduleName = modName |> String.capitalize;
     let compiled = directory /+ path;
-    let source = Utils.find(name => getName(name) == modName ? Some(name) : None, sources);
+    let source = Utils.find(name => compiledTransform(getName(name)) == modName ? Some(sourceBase /+ name) : None, sources);
     (moduleName, (compiled, source))
   });
 };
