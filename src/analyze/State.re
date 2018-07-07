@@ -142,26 +142,6 @@ let newBsPackage = (rootPath) => {
   };
 };
 
-let findLibraryName = jbuildConfig => {
-  Log.log("finding");
-  let rec loop = items => switch items {
-    | [] => None
-    | [`List([`Ident("library"), `List(items), ..._]), ..._] =>
-    Log.log("In lib");
-      let rec get = items => switch items {
-        | [] => None
-        | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
-        | [_, ...rest] => get(rest)
-      };
-      get(items)
-    | [item, ...rest] => {
-      Log.log("Skipping " ++ JbuildFile.atomToString(item));
-      loop(rest)
-    }
-  };
-  loop(jbuildConfig)
-};
-
 let newJbuilderPackage = (rootPath) => {
   let rec findJbuilderProjectRoot = path => {
     if (path == "/") {
@@ -180,9 +160,7 @@ let newJbuilderPackage = (rootPath) => {
   let buildSystem = BuildSystem.Dune;
 
   let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
-  let atoms = JbuildFile.parse(jbuildRaw);
-  atoms |> List.iter(atom => Log.log(JbuildFile.atomToString(atom)));
-  let libraryName = findLibraryName(atoms);
+  let packageName = JbuildFile.findName(JbuildFile.parse(jbuildRaw));
 
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
 
@@ -190,16 +168,21 @@ let newJbuilderPackage = (rootPath) => {
 
   let sourceFiles = Files.readDirectory(rootPath) |> List.filter(FindFiles.isSourceFile);
   let rel = Files.relpath(projectRoot, rootPath);
-  let compiledBase = switch libraryName {
-    | None => buildDir /+ "default" /+ rel
-    | Some(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs"
+  let compiledBase = switch packageName {
+    | `NoName => buildDir /+ "default" /+ rel
+    | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs"
+    | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs"
+  };
+  let libraryName = switch packageName {
+    | `Library(n) => Some(n)
+    | _ => None
   };
 
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename) |> String.capitalize;
-    let namespaced = switch libraryName {
-      | None => name
-      | Some(libraryName) => libraryName ++ "__" ++ name
+    let namespaced = switch packageName {
+      | `NoName | `Executable(_) => name
+      | `Library(libraryName) => libraryName ++ "__" ++ name
     };
     (
       namespaced,

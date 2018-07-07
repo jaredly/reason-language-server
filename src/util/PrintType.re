@@ -111,7 +111,7 @@ let print_expr = (stringifier, typ) => {
       };
       Format.flush_str_formatter()
     };
-    str(txt |> htmlEscape)
+    str(txt)
   }
   }
 };

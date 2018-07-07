@@ -1,5 +1,49 @@
 
 
+let findLibraryName = jbuildConfig => {
+  let rec loop = items => switch items {
+    | [] => None
+    | [`List([`Ident("library"), `List(items), ..._]), ..._] =>
+      let rec get = items => switch items {
+        | [] => None
+        | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
+        | [_, ...rest] => get(rest)
+      };
+      get(items)
+    | [item, ...rest] => {
+      loop(rest)
+    }
+  };
+  loop(jbuildConfig)
+};
+
+let findExecutableName = jbuildConfig => {
+  let rec loop = items => switch items {
+    | [] => None
+    | [`List([`Ident("executable"), `List(items), ..._]), ..._] =>
+      let rec get = items => switch items {
+        | [] => None
+        | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
+        | [_, ...rest] => get(rest)
+      };
+      get(items)
+    | [item, ...rest] => {
+      loop(rest)
+    }
+  };
+  loop(jbuildConfig)
+};
+
+let findName = jbuildConfig => {
+  switch (findLibraryName(jbuildConfig)) {
+    | Some(name) => `Library(name)
+    | None => switch (findExecutableName(jbuildConfig)) {
+      | Some(name) => `Executable(name)
+      | None => `NoName
+    }
+  }
+};
+
 /**
 (jbuild_version 1)
 
