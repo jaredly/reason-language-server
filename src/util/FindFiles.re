@@ -131,19 +131,21 @@ let getNamespace = config => {
   isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
 };
 
-let collectFiles = (directory) => {
+let collectFiles = (~sourceDirectory=?, directory) => {
   let allFiles = Files.readDirectory(directory);
   let compileds = allFiles
   |> List.filter(isCompiledFile)
   |> filterDuplicates;
-  let sources = allFiles |> List.filter(isSourceFile) |> filterDuplicates;
+  let sources = fold(sourceDirectory, allFiles, Files.readDirectory) |> List.filter(isSourceFile) |> filterDuplicates;
+  let sourceBase = sourceDirectory |? directory;
   compileds
   |> List.map(path => {
     let modName = getName(path);
-    (modName |> String.capitalize, (directory /+ path, Utils.find(name => getName(name) == modName ? Some(name) : None, sources)))
-  })
-  /* |> List.filter(((_, (cmt, src))) => Files.exists(cmt)) */
-  ;
+    let moduleName = modName |> String.capitalize;
+    let compiled = directory /+ path;
+    let source = Utils.find(name => getName(name) == modName ? Some(name) : None, sources);
+    (moduleName, (compiled, source))
+  });
 };
 
 /**

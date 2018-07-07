@@ -199,7 +199,29 @@ let newJbuilderPackage = (rootPath) => {
     );
   });
 
-  let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "."))];
+  let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
+    let otherPath = rootPath /+ name;
+    let res = {
+      let%try jbuildRaw = Files.readFileResult(otherPath /+ "jbuild");
+      let jbuildConfig = JbuildFile.parse(jbuildRaw);
+      let%try name = JbuildFile.findName(jbuildConfig) |> n => switch n {
+        | `Library(name) => Result.Ok(name)
+        | _ => Error("Not a library")
+      };
+      let rel = Files.relpath(projectRoot, otherPath);
+      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ name ++ ".objs";
+      Ok((buildDir, FindFiles.collectFiles(~sourceDirectory=otherPath, compiledBase) |> List.map(((name, p)) => (FindFiles.Plain(name), p))));
+    };
+    switch res {
+      | Error(message) => {
+        Log.log(message);
+        None
+      }
+      | Ok(res) => Some(res)
+    }
+  }) |> List.split;
+
+  let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "" && s.[0] != '.'))];
 
   let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
@@ -216,6 +238,7 @@ let newJbuilderPackage = (rootPath) => {
   })
   |> List.concat;
 
+  let dependencyModules = List.concat(otherFiles) @ dependencyModules;
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
@@ -231,7 +254,7 @@ let newJbuilderPackage = (rootPath) => {
     opens: fold(libraryName, [], libraryName => [libraryName ++ "__"]),
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
-    includeDirectories: [compiledBase, ...dependencyDirectories],
+    includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
     compilerPath: BuildSystem.getCompiler(projectRoot, buildSystem),
     refmtPath: BuildSystem.getRefmt(projectRoot, buildSystem),
   });
