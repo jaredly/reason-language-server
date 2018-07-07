@@ -211,7 +211,7 @@ let newJbuilderPackage = (rootPath) => {
       let rel = Files.relpath(projectRoot, otherPath);
       let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
       Log.log("Other directory: " ++ compiledBase);
-      Ok((buildDir, FindFiles.collectFiles(~compiledTransform=modName => {
+      Ok((compiledBase, FindFiles.collectFiles(~compiledTransform=modName => {
         if (modName == libraryName) {
           modName
         } else {
