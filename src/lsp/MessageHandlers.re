@@ -156,7 +156,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       (State.getDefinitionData(uri, state, ~package)
       |?> data => State.referencesForPos(uri, pos, data, state, ~package)
       |?>> allReferences => {
-
         open Rpc.J;
         Ok((state, o([
           ("changes", o(allReferences |> List.map(((uri, positions)) =>

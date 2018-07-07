@@ -578,33 +578,27 @@ let definitionForPos = (uri, pos, data, state, ~package) =>
 
 let referencesForPos = (uri, pos, data, state, ~package) => {
   /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
-  Definition.stampAtPos(pos, data)
-  |?> stamp => {
-    let externals = (Definition.isStampExported(stamp, data) |?>> ((exportedName, suffixName)) => {
-      let thisModName = FindFiles.getName(uri);
-      optMap(((modname, (cmt, src))) => {
-        if (modname == thisModName) {
-          None
-        } else {
-          getDefinitionData(Utils.toUri(src), state, ~package) |?> data => {
-            Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName) |?> uses => {
-              let realUses = Utils.filterMap(((path, loc, suffix)) => {
-                if (path == [exportedName] && suffix == suffixName) {
-                  Some((`Read, Utils.endOfLocation(loc, String.length(suffixName |? exportedName))))
-                } else {
-                  None
-                }
-              }, uses);
-              if (realUses == []) {
-                None
-              } else {
-                Some((Utils.toUri(src), realUses))
-              }
-            }
+  let%opt stamp = Definition.stampAtPos(pos, data);
+  let externals = {
+    let%opt_wrap (exportedName, suffixName) = Definition.isStampExported(stamp, data);
+    let thisModName = FindFiles.getName(uri);
+    optMap(((modname, (cmt, src))) => {
+      if (modname == thisModName) {
+        None
+      } else {
+        let%opt data = getDefinitionData(Utils.toUri(src), state, ~package);
+        let%opt uses = Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName);
+        let realUses = Utils.filterMap(((path, loc, suffix)) => {
+          if (path == [exportedName] && suffix == suffixName) {
+            Some((`Read, Utils.endOfLocation(loc, String.length(suffixName |? exportedName))))
+          } else {
+            None
           }
-        }
-      }, package.localModules)
-    }) |? [];
-    Definition.highlightsForStamp(stamp, data) |?>> positions => [(uri, positions), ...externals]
-  }
+        }, uses);
+        realUses == [] ? None : Some((Utils.toUri(src), realUses))
+      }
+    }, package.localModules)
+  } |? [];
+  let%opt_wrap positions = Definition.highlightsForStamp(stamp, data);
+  [(uri, positions), ...externals]
 };
