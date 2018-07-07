@@ -447,7 +447,7 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let result = AsYouType.process(text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let%try_force result = AsYouType.process(text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()

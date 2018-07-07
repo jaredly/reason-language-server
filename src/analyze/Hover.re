@@ -4,7 +4,7 @@ let getHover = (uri, line, character, state, ~package) => {
   let result = State.getCompilationResult(uri, state, ~package);
   /* TODO report errors better if we're beyond where the parser error occurred */
   switch result {
-  | AsYouType.ParseError(text) => Error("Cannot hover -- parser error: " ++ text)
+  /* | AsYouType.ParseError(text) => Error("Cannot hover -- parser error: " ++ text) */
   | TypeError(_, cmt, data)
   | Success(_, cmt, data) =>
     Ok(switch (Definition.locationAtPos((line, character), data)) {

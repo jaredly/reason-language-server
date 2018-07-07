@@ -1,6 +1,6 @@
 
 type result =
-  | ParseError(string)
+  /* | ParseError(string) */
   | TypeError(string, Cmt_format.cmt_infos, Definition.moduleData)
   | Success(list(string), Cmt_format.cmt_infos, Definition.moduleData)
 ;
@@ -8,24 +8,30 @@ open Infix;
 open Result;
 
 let getResult = result => switch result {
-| ParseError(_) => None
+/* | ParseError(_) => None */
 | TypeError(_, cmt, data) => Some((cmt, data))
 | Success(_, cmt, data) => Some((cmt, data))
 };
 
 let runRefmt = (~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ "lsp.ast";
-  /* let source = cacheLocation /+ "lsp.re"; */
-  /* Files.writeFileExn(source, text); */
-  let cmd = Printf.sprintf("%s --print binary --recoverable --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
+  let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
-    Ok(target)
+    Ok((None, target))
   } else {
+    let goodError = Some(out @ error);
+    let cmd = Printf.sprintf("%s --print binary --recoverable --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
+    let (out, error, success) = Commands.execFull(~input=text, cmd);
     /* Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error)); */
     /* Log.log("The text:"); */
     /* Log.log(text); */
-    Error(out @ error)
+    if (!success) {
+      Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
+      Error("Unable to run refmt")
+    } else {
+      Ok((goodError, target))
+    }
   }
 };
 
@@ -81,17 +87,18 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 
 let process = (text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   open InfixResult;
-  switch (runRefmt(~cacheLocation, text, refmtPath)) {
-  | Error(lines) => ParseError(String.concat("\n", lines))
-  | Ok(fname) => switch (runBsc(compilerPath, fname, includes, flags)) {
+  let%try_wrap (syntaxError, astFile) = runRefmt(~cacheLocation, text, refmtPath);
+  /* switch () {
+  | Error(lines) => ParseError(String.concat("\n", lines)) */
+  switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
-      TypeError(String.concat("\n", lines), cmt, Definition.process(cmt.Cmt_format.cmt_annots))
+      let message = Infix.(syntaxError |? lines);
+      TypeError(String.concat("\n", message), cmt, Definition.process(cmt.Cmt_format.cmt_annots))
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
       Success(lines, cmt, Definition.process(cmt.Cmt_format.cmt_annots))
     }
-  }
   }
 };
