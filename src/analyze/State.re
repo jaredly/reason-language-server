@@ -440,7 +440,8 @@ let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
       let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
-      docsForCmt(cmt, src, state) |?>> d => (d, src)
+      let%opt_wrap docs = docsForCmt(cmt, src, state);
+      (docs, src)
     } else {
       Log.log("No path for module " ++ modname);
       None;
@@ -451,18 +452,45 @@ let maybeFound = Definition.maybeFound;
 
 open Infix;
 
+let rec resolveAlias = (state, path, children, ~package) => {
+  let rec loop = (path, items) =>
+    switch (path) {
+    | Path.Pident({stamp: 0, name}) => {
+      let%opt ((_docs, contents), uri) = docsForModule(name, state, ~package);
+      Some((uri, contents, items))
+    }
+    | Path.Pident(_) => None
+    | Pdot(inner, name, _) => loop(inner, [name, ...items])
+    | Papply(_) => None
+    };
+  loop(path, children);
+};
+
 let topLocation = uri => {
-        Location.loc_ghost: false,
-        loc_start: {Lexing.pos_fname: uri, pos_lnum: 1, pos_cnum: 1, pos_bol: 1},
-        loc_end: {Lexing.pos_fname: uri, pos_lnum: 1, pos_cnum: 1, pos_bol: 1},
-      };
+  Location.loc_ghost: false,
+  loc_start: {
+    Lexing.pos_fname: uri,
+    pos_lnum: 1,
+    pos_cnum: 1,
+    pos_bol: 1,
+  },
+  loc_end: {
+    Lexing.pos_fname: uri,
+    pos_lnum: 1,
+    pos_cnum: 1,
+    pos_bol: 1,
+  },
+};
 
 /* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
 let resolveDefinition = (uri, defn, state, ~package) =>
   switch defn {
-  | `Local(_, loc, item, docs, _) => Some((Some(loc), docs, Some(uri)))
+  | `Local(_, loc, item, docs, _) => {
+    Some((Some(loc), docs, Some(uri)))
+  }
   | `Global(top, children, suffix) =>
     {
+      /* Log.log("It's global folx: " ++ top); */
       switch (
         maybeFound(List.assoc(top), package.localModules)
         |?> (
@@ -481,17 +509,20 @@ let resolveDefinition = (uri, defn, state, ~package) =>
           Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((Some(loc), docs, Some(uri))))
         }
       | None =>
+        /* Log.log("Not in the localModules"); */
         maybeFound(Hashtbl.find(package.pathsForModule), top)
         |?> (
           ((cmt, src)) => {
+            /* Log.log("But in the paths For module: " ++ cmt); */
             let uri = src |?>> Utils.toUri;
             if (children == []) {
+              Log.log("No children");
               Some((uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
             } else {
-              docsForCmt(cmt, src, state)
-              |?>> snd
-              |?> Docs.findPath(children)
-              |?>> (((name, loc, docs, _)) => (Some(loc), docs, uri))
+              let%opt (_, contents) = docsForCmt(cmt, src, state);
+              let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
+              let%opt (name, loc, docs, _) = Docs.find(last, contents);
+              Some((Some(loc), docs, srcPath |?>> Utils.toUri))
             }
           }
         )
@@ -500,12 +531,18 @@ let resolveDefinition = (uri, defn, state, ~package) =>
   };
 
 let getResolvedDefinition = (uri, defn, data, state, ~package) => {
-  Definition.findDefinition(defn, data) |?> x => resolveDefinition(uri, x, state, ~package)
+  Definition.findDefinition(defn, data) |?> x => {
+    /* Log.log("have a definition"); */
+    resolveDefinition(uri, x, state, ~package)
+  }
 };
 
 let definitionForPos = (uri, pos, data, state, ~package) =>
   Definition.locationAtPos(pos, data)
-  |?> (((_, _, defn)) => getResolvedDefinition(uri, defn, data, state, ~package));
+  |?> (((_, _, defn)) => {
+    /* Log.log("Figured out the location"); */
+    getResolvedDefinition(uri, defn, data, state, ~package)
+  });
 
 let referencesForPos = (uri, pos, data, state, ~package) => {
   /* TODO handle cross-file stamps, e.g. the location isn't a stamp */

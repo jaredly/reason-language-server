@@ -217,8 +217,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("workspace/didChangeConfiguration", (state, params) => {
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
-    let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? false;
-    let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? false;
+    let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
+    let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
     Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, dependenciesCodelens}})
   }),
   ("textDocument/didChange", (state, params) => {

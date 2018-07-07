@@ -119,41 +119,11 @@ let completionItems = (uri, moduleContents, prefix) => {
   }, [])
 };
 
-let rec inDocs = (~resolveAlias, uri, parts, contents) =>
-  switch (parts) {
-  | [] => []
-  | [single] =>
-    completionItems(uri, contents, single)
-  | [first, ...rest] =>
-    contents
-    |> Utils.find(((name, loc, doc, item)) =>
-         switch (item) {
-         | Docs.Module(contents) when name == first =>
-           Some(inDocs(~resolveAlias, uri, rest, contents))
-         | Docs.ModuleAlias(path) when name == first =>
-            switch (resolveAlias(path, rest)) {
-              | None => {
-                Log.log("Unable to resolve module alias!!! " ++ name);
-                Some([])
-              }
-              | Some((uri, contents, items)) =>
-             Some(inDocs(~resolveAlias, uri, items, contents))
-            }
-         | _ => None
-         }
-       )
-    |? []
-  };
-
-let rec resolveAlias = (state, path, children, ~package) => {
-  let rec loop = (path, items) =>
-    switch (path) {
-    | Path.Pident({stamp: 0, name}) => State.docsForModule(name, state, ~package) |?>> (((_, contents), uri)) => (uri, contents, items)
-    | Path.Pident(_) => None
-    | Pdot(inner, name, _) => loop(inner, [name, ...items])
-    | Papply(_) => None
-    };
-  loop(path, children);
+let inDocs = (~resolveAlias, uri, parts, contents) => {
+  switch (Docs.resolveDocsPath(~resolveAlias, uri, parts, contents)) {
+    | None => []
+    | Some((uri, contents, single)) => completionItems(uri, contents, single)
+  }
 };
 
 let rec findSubModule = (state, name, contents, ~package) => switch contents {
@@ -218,13 +188,6 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
       opens,
       packageOpens
   );
-  /* let opens = switch (State.docsForModule("Pervasives", state, ~package)) {
-  | None => {
-    Log.log("No pervasives found...");
-    opens
-  }
-  | Some(((_, contents), uri)) => [("Pervasives", contents, uri), ...opens]
-  }; */
   switch parts {
   | [] => []
   | [""] => []
@@ -287,20 +250,27 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
               )
             )
       );
-    switch localResults {
-      | Some(r) => r
-      | None =>
-    switch (Utils.find(((name, contents, uri)) => findSubModule(state, first, contents, ~package) |?>> x => (x, uri), opens)) {
-    | Some(((_, _, _, contents), uri)) => inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
+    switch (localResults) {
+    | Some(r) => r
     | None =>
-    switch (State.docsForModule(first, state, ~package)) {
-    | None => {
-      Log.log("No docs found for " ++ first);
-      [] /* TODO handle opens */
-    }
-    | Some(((_, contents), uri)) => inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
-    }
-    }
-    }
+      switch (
+        Utils.find(
+          ((name, contents, uri)) =>
+            findSubModule(state, first, contents, ~package) |?>> (x => (x, uri)),
+          opens,
+        )
+      ) {
+      | Some(((_, _, _, contents), uri)) =>
+        inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
+      | None =>
+        switch (State.docsForModule(first, state, ~package)) {
+        | None =>
+          Log.log("No docs found for " ++ first);
+          []; /* TODO handle opens */
+        | Some(((_, contents), uri)) =>
+          inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
+        }
+      }
+    };
   };
 };

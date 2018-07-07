@@ -42,14 +42,40 @@ let rec find = (name, docs) => switch docs {
 | [_, ...rest] => find(name, rest)
 };
 
-let rec findPath = (children, docs) => switch (children) {
+/* let rec findPath = (children, docs) => switch (children) {
 | [] => None
 | [single] => find(single, docs)
 | [first, ...rest] => switch (find(first, docs)) {
 | Some((_, _, _, Module(contents))) => findPath(rest, contents)
+| Some((_, _, _, ModuleAlias(path))) => {
+  Log.log("Finding a path in docs and it's through an alias");
+  None
+}
 | _ => None
 }
-};
+}; */
+
+let rec resolveDocsPath = (~resolveAlias, uri, parts, contents) =>
+  switch (parts) {
+  | [] => None
+  | [single] => Some((uri, contents, single))
+  | [first, ...rest] =>
+    contents
+    |> Utils.find(((name, loc, doc, item)) =>
+         switch (item) {
+         | Module(contents) when name == first => Some(resolveDocsPath(~resolveAlias, uri, rest, contents))
+         | ModuleAlias(path) when name == first =>
+            switch (resolveAlias(path, rest)) {
+              | None => {
+                Log.log("Unable to resolve module alias!!! " ++ name);
+                Some(None)
+              }
+              | Some((uri, contents, items)) => Some(resolveDocsPath(~resolveAlias, uri, items, contents))
+            }
+         | _ => None
+         }
+       ) |? None
+  };
 
 let rec forSignatureType = (processDoc, signature) => {
   open Types;
