@@ -97,6 +97,65 @@ let inRange = ((l, c), ((l0, c0), (l1, c1))) => {
   (l0 < l || l0 == l && c0 <= c) && (l1 == (-1) && c1 == (-1) || l1 > l || l1 == l && c1 > c)
 };
 
+let rec dig = (typ) =>
+  switch typ.Types.desc {
+  | Types.Tlink(inner) => dig(inner)
+  | Types.Tsubst(inner) => dig(inner)
+  | _ => typ
+  };
+
+let getSuffix = (declaration, suffix) =>
+  switch declaration.Types.type_kind {
+  | Type_record(attributes, _) =>
+    Utils.find(
+      ({Types.ld_id: {name, stamp}, ld_loc}) =>
+        if (name == suffix) {
+          Some((ld_loc, stamp))
+        } else {
+          None
+        },
+      attributes
+    )
+  | Type_variant(constructors) =>
+    Utils.find(
+      ({Types.cd_id: {name, stamp}, cd_loc}) =>
+        if (name == suffix) {
+          Some((cd_loc, stamp))
+        } else {
+          None
+        },
+      constructors
+    )
+  | _ => None
+  };
+
+let suffixForStamp = (stamp, suffix, data) => {
+  let%opt (name, loc, item, docs, range) = maybeFound(Hashtbl.find(data.stamps), stamp);
+  switch item {
+    | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
+    | _ => None
+  }
+};
+
+let rec stampAtPath = (path, data, suffix) =>
+  switch path {
+  | Path.Pident({stamp: 0, name}) => Some(`Global((name, [], suffix)))
+  | Path.Pident({stamp, name}) => fold(suffix, Some(`Local(stamp)), suffix => suffixForStamp(stamp, suffix, data) |?>> stamp => `Local(stamp))
+  | Path.Pdot(inner, name, _) =>
+    switch (stampAtPath(inner, data, None)) {
+    | Some(`Global(top, subs, _)) => Some(`Global((top, subs @ [name], suffix)))
+    | Some(`Local(stamp)) =>
+      let%opt x = maybeFound(Hashtbl.find(data.stamps), stamp);
+      switch x {
+      | (_, _, Module(contents), _, _) =>
+        maybeFound(List.assoc(name), contents) |?>> ((stamp) => `Local(stamp))
+      | _ => None
+      }
+    | _ => None
+    }
+  | _ => None
+  };
+
 /* TODO this is not perfect, because if the user edits and gets outside of the original scope, then
    we no longer give you the completions you need. This is annoying :/
    Not sure how annoying in practice? One hack would be to forgive going a few lines over... */
@@ -115,7 +174,7 @@ let completions = ({stamps}, prefix, pos) => {
   )
 };
 
-let completionPath = (inDocs, {stamps}, first, children, pos, toItem) => {
+let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toItem) => {
   let%opt_wrap (name, loc, item, docs) = Hashtbl.fold(
     (_, (name, loc, item, docs, range), result) =>
       switch result {
@@ -161,6 +220,18 @@ let completionPath = (inDocs, {stamps}, first, children, pos, toItem) => {
         }
       };
       loop(contents, children)
+    }
+    | Value(t) => {
+      let rec loop = (t, children) => {
+        switch (dig(t).Types.desc) {
+          | Types.Tconstr(path, args, _abbrev) => {
+            let%opt stamp = stampAtPath(path, moduleData, None);
+            None
+          }
+          | _ => None
+        };
+      };
+      loop(t, children) |? []
     }
     | _ => []
   }
@@ -326,31 +397,6 @@ let handleRecord = (path, txt) => {
   )
 };
 
-let getSuffix = (declaration, suffix) =>
-  switch declaration.Types.type_kind {
-  | Type_record(attributes, _) =>
-    Utils.find(
-      ({Types.ld_id: {name, stamp}, ld_loc}) =>
-        if (name == suffix) {
-          Some((ld_loc, stamp))
-        } else {
-          None
-        },
-      attributes
-    )
-  | Type_variant(constructors) =>
-    Utils.find(
-      ({Types.cd_id: {name, stamp}, cd_loc}) =>
-        if (name == suffix) {
-          Some((cd_loc, stamp))
-        } else {
-          None
-        },
-      constructors
-    )
-  | _ => None
-  };
-
 let resolveNamedPath = (data, path, suffix) =>
   switch path {
   | [] => None
@@ -452,33 +498,6 @@ let highlightsForStamp = (stamp, data) =>{
   Some([(`Write, defnLoc), ...List.map((l) => (`Read, Utils.endOfLocation(l, String.length(name))), usages)])
 };
 
-let suffixForStamp = (stamp, suffix, data) => {
-  let%opt (name, loc, item, docs, range) = maybeFound(Hashtbl.find(data.stamps), stamp);
-  switch item {
-    | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
-    | _ => None
-  }
-};
-
-let rec stampAtPath = (path, data, suffix) =>
-  switch path {
-  | Path.Pident({stamp: 0, name}) => Some(`Global((name, [], suffix)))
-  | Path.Pident({stamp, name}) => fold(suffix, Some(`Local(stamp)), suffix => suffixForStamp(stamp, suffix, data) |?>> stamp => `Local(stamp))
-  | Path.Pdot(inner, name, _) =>
-    switch (stampAtPath(inner, data, None)) {
-    | Some(`Global(top, subs, _)) => Some(`Global((top, subs @ [name], suffix)))
-    | Some(`Local(stamp)) =>
-      let%opt x = maybeFound(Hashtbl.find(data.stamps), stamp);
-      switch x {
-      | (_, _, Module(contents), _, _) =>
-        maybeFound(List.assoc(name), contents) |?>> ((stamp) => `Local(stamp))
-      | _ => None
-      }
-    | _ => None
-    }
-  | _ => None
-  };
-
 let stampAtPos = (pos, data) => {
   let%opt (loc, expr, defn) = locationAtPos(pos, data);
   switch defn {
@@ -514,17 +533,17 @@ let resolvePath = (path, data, suffix) =>
   | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> i => `Local(i)
   };
 
-let findDefinition = (defn, data) => {
+let findDefinition = (defn, data, resolve) => {
   /* Log.log("😍 resolving a definition"); */
   switch defn {
   | IsConstant => None
   | IsDefinition(stamp) =>
     Log.log("Is a definition");
     None
-  | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name))
-  | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name))
+  | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
+  | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
   | Open(path)
-  | Path(path) => resolvePath(path, data, None)
+  | Path(path) => resolvePath(path, data, None) |?> resolve
   };
 };
 
@@ -812,12 +831,6 @@ module Get = {
       /* Collector.ident((path, Type), loc) */
       | _ => ()
       };
-    let rec dig = (typ) =>
-      switch typ.Types.desc {
-      | Types.Tlink(inner) => dig(inner)
-      | Types.Tsubst(inner) => dig(inner)
-      | _ => typ
-      };
     let enter_pattern = (pat) =>
       switch pat.pat_desc {
       | Tpat_alias(_, {stamp, name}, {txt, loc})
@@ -1025,9 +1038,3 @@ module Get = {
 };
 
 let process = Get.process;
-/* let resolveDefinition = (defn, data) => switch (findDefinition(defn, data)) {
-   | None => None
-   | Some(`Global(top, children)) => {
-   }
-   | Some(`Local(defn)) => Some(defn)
-   }; */

@@ -23,7 +23,7 @@ let getHover = (uri, line, character, state, ~package) => {
       let tooltip =
         switch (State.getResolvedDefinition(uri, defn, data, state, ~package)) {
         | None => typ
-        | Some((loc, docs, docUri)) =>
+        | Some((item, loc, docs, docUri)) =>
           typ
           ++ (
             switch docs {

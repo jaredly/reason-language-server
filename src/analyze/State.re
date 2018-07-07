@@ -464,7 +464,6 @@ let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefiniti
 
 let getDefinitionData = (uri, state, ~package) => switch (getCompilationResult(uri, state, ~package)) {
 | Success(_, _, data) | TypeError(_, _, data) => Some(data)
-| _ => None
 };
 
 let docsForModule = (modname, state, ~package) =>
@@ -515,10 +514,10 @@ let topLocation = uri => {
 };
 
 /* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
-let resolveDefinition = (uri, defn, state, ~package) =>
+let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
   switch defn {
   | `Local(_, loc, item, docs, _) => {
-    Some((Some(loc), docs, Some(uri)))
+    Some((item |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri)))
   }
   | `Global(top, children, suffix) =>
     {
@@ -536,9 +535,9 @@ let resolveDefinition = (uri, defn, state, ~package) =>
       ) {
       | Some(((cmtInfos, data), uri)) =>
         if (children == []) {
-          Some((Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
+          Some((Docs.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
         } else {
-          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, _, docs)) => Some((Some(loc), docs, Some(uri))))
+          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, defn, docs)) => Some((defn |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri))))
         }
       | None =>
         /* Log.log("Not in the localModules"); */
@@ -549,12 +548,12 @@ let resolveDefinition = (uri, defn, state, ~package) =>
             let uri = src |?>> Utils.toUri;
             if (children == []) {
               Log.log("No children");
-              Some((uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
+              Some((Docs.Module([]), uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
             } else {
               let%opt (_, contents) = docsForCmt(cmt, src, state);
               let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
-              let%opt (name, loc, docs, _) = Docs.find(last, contents);
-              Some((Some(loc), docs, srcPath |?>> Utils.toUri))
+              let%opt (name, loc, docs, item) = Docs.find(last, contents);
+              Some((item, Some(loc), docs, srcPath |?>> Utils.toUri))
             }
           }
         )
@@ -563,10 +562,7 @@ let resolveDefinition = (uri, defn, state, ~package) =>
   };
 
 let getResolvedDefinition = (uri, defn, data, state, ~package) => {
-  Definition.findDefinition(defn, data) |?> x => {
-    /* Log.log("have a definition"); */
-    resolveDefinition(uri, x, state, ~package)
-  }
+  Definition.findDefinition(defn, data, resolveDefinition(uri, state, ~package, data))
 };
 
 let definitionForPos = (uri, pos, data, state, ~package) =>

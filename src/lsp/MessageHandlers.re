@@ -23,10 +23,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       | Some(data) =>
         Log.log("Ok have definition data for " ++ uri);
         switch (State.definitionForPos(uri, position, data, state, ~package)) {
-        | Some((None, _, _))
-        | Some((_, _, None))
+        | Some((_, None, _, _))
+        | Some((_, _, _, None))
         | None => Ok((state, Json.Null))
-        | Some((Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
+        | Some((_, Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
           ("uri", Json.String(uri)),
           ("range", Protocol.rangeOfLoc(loc)),
         ])))

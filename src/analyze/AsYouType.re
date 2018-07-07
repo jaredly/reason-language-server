@@ -77,10 +77,8 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
   Log.log("running bsc " ++ cmd);
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
-    /* Log.log("Its fine " ++ String.concat("\n", out @ error)); */
     Ok(out @ error)
   } else {
-    /* Log.log("Failed type error " ++ String.concat("\n", out @ error)); */
     Error(out @ error)
   }
 };
@@ -88,8 +86,6 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 let process = (text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   open InfixResult;
   let%try_wrap (syntaxError, astFile) = runRefmt(~cacheLocation, text, refmtPath);
-  /* switch () {
-  | Error(lines) => ParseError(String.concat("\n", lines)) */
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
