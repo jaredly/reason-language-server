@@ -231,14 +231,13 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
       results
     }
   | [first, ...more] =>
-    let resolveAlias = resolveAlias(state);
     /* TODO handle name overrides from local opens vs local modules */
     let localResults =
       localData
       |?> (
         moduleData =>
           Definition.completionPath(
-            inDocs(~resolveAlias=resolveAlias(~package), Some("(current file)")),
+            inDocs(~resolveAlias=resolveAlias(~package, state), Some("(current file)")),
             moduleData, first, more, pos,
             ((name, loc, item, docs, _range)) =>
               forItem(
@@ -247,7 +246,8 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
                 loc,
                 docs,
                 Definition.docsItem(item, moduleData),
-              )
+              ),
+            State.resolveDefinition("current file", state, ~package, moduleData)
             )
       );
     switch (localResults) {
@@ -261,14 +261,14 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
         )
       ) {
       | Some(((_, _, _, contents), uri)) =>
-        inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
+        inDocs(~resolveAlias=resolveAlias(~package, state), uri, more, contents)
       | None =>
         switch (State.docsForModule(first, state, ~package)) {
         | None =>
           Log.log("No docs found for " ++ first);
           []; /* TODO handle opens */
         | Some(((_, contents), uri)) =>
-          inDocs(~resolveAlias=resolveAlias(~package), uri, more, contents)
+          inDocs(~resolveAlias=resolveAlias(~package, state), uri, more, contents)
         }
       }
     };

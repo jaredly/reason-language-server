@@ -174,7 +174,28 @@ let completions = ({stamps}, prefix, pos) => {
   )
 };
 
-let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toItem) => {
+let resolvePath = (path, data, suffix) =>
+  switch (stampAtPath(path, data, suffix)) {
+  | None => None
+  | Some(`Global(name, children, suffix)) => Some(`Global((name, children, suffix)))
+  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> i => `Local(i)
+  };
+
+let findDefinition = (defn, data, resolve) => {
+  /* Log.log("😍 resolving a definition"); */
+  switch defn {
+  | IsConstant => None
+  | IsDefinition(stamp) =>
+    Log.log("Is a definition");
+    None
+  | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
+  | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
+  | Open(path)
+  | Path(path) => resolvePath(path, data, None) |?> resolve
+  };
+};
+
+let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toItem, ~resolveDefinition) => {
   let%opt_wrap (name, loc, item, docs) = Hashtbl.fold(
     (_, (name, loc, item, docs, range), result) =>
       switch result {
@@ -226,6 +247,7 @@ let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toIt
         switch (dig(t).Types.desc) {
           | Types.Tconstr(path, args, _abbrev) => {
             let%opt stamp = stampAtPath(path, moduleData, None);
+            let%opt (item, loc, _, _) = findDefinition(Path(path), moduleData, resolveDefinition);
             None
           }
           | _ => None
@@ -525,27 +547,6 @@ let stampAtPos = (pos, data) => {
 };
 
 let highlights = (pos, data) => stampAtPos(pos, data) |?> ((x) => highlightsForStamp(x, data));
-
-let resolvePath = (path, data, suffix) =>
-  switch (stampAtPath(path, data, suffix)) {
-  | None => None
-  | Some(`Global(name, children, suffix)) => Some(`Global((name, children, suffix)))
-  | Some(`Local(stamp)) => maybeFound(Hashtbl.find(data.stamps), stamp) |?>> i => `Local(i)
-  };
-
-let findDefinition = (defn, data, resolve) => {
-  /* Log.log("😍 resolving a definition"); */
-  switch defn {
-  | IsConstant => None
-  | IsDefinition(stamp) =>
-    Log.log("Is a definition");
-    None
-  | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
-  | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
-  | Open(path)
-  | Path(path) => resolvePath(path, data, None) |?> resolve
-  };
-};
 
 let locationSize = ({Location.loc_start, loc_end}) => loc_end.Lexing.pos_cnum - loc_start.Lexing.pos_cnum;
 
