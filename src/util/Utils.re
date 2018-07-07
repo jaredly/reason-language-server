@@ -1,3 +1,7 @@
+/**
+ * `startsWith(string, prefix)`
+ * true if the string starts with the prefix
+ */
 let startsWith = (s, prefix) => {
   let p = String.length(prefix);
   p <= String.length(s) && String.sub(s, 0, p) == prefix

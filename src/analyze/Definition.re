@@ -248,7 +248,30 @@ let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toIt
           | Types.Tconstr(path, args, _abbrev) => {
             let%opt stamp = stampAtPath(path, moduleData, None);
             let%opt (item, loc, _, _) = findDefinition(Path(path), moduleData, resolveDefinition);
-            None
+            switch item {
+              | Docs.Type({type_kind: Type_record(labels, _)} as declaration) => {
+                switch children {
+                  | [] => None
+                  | [single] => labels |> List.filter(({Types.ld_id: {name}}) => Utils.startsWith(name, single))
+                  |> List.map(({Types.ld_id: {name}, ld_type, ld_loc}) => toItem((name, ld_loc, Attribute(
+                    ld_type, 
+                    name,
+                    declaration
+                  ), None, ((0,0),(0,0))))) |. Some
+                  | [first, ...rest] => {
+                    labels |> Utils.find(({Types.ld_id: {name}, ld_type, ld_loc}) => {
+                      if (name == first) {
+                        loop(ld_type, rest)
+                      } else {
+                        None
+                      }
+                    })
+                  }
+                }
+              }
+              /* This really should never happen */
+              | _ => None
+            }
           }
           | _ => None
         };
