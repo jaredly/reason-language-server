@@ -15,4 +15,4 @@ let z = {name: "hi", age: 20};
 
 let later = 20;
 
-/* let e = z.name; */
+let concat = (~first, ~second) => first + second;

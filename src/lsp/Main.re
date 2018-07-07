@@ -143,12 +143,12 @@ let runDiagnostics = (uri, state, ~package) => {
         l([])
       } else {
         let rec loop = lines => switch lines {
-        | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(loc)) {
+        | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(Utils.stripAnsii(loc))) {
           | None => loop([warning, ...rest])
           | Some((line, c0, c1, text)) => {
             [o([
               ("range", Protocol.rangeOfInts(line, c0, line, c1)),
-              ("message", s(warning)),
+              ("message", s(Utils.stripAnsii(warning))),
               ("severity", i(2)),
             ]), ...loop(rest)]
           }

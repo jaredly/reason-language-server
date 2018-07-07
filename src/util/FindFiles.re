@@ -176,18 +176,6 @@ let loadStdlib = stdlib => {
   collectFiles(stdlib)
   |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
   |> List.map(((name, s)) => (Plain(name), s))
-  /* let allFiles = Files.readDirectory(stdlib);
-  let compileds = allFiles
-  |> List.filter(isCompiledFile)
-  |> filterDuplicates;
-  let sources = allFiles |> List.filter(isSourceFile) |> filterDuplicates;
-  compileds
-  |> List.map(path => {
-    let modName = getName(path);
-    (Plain(modName |> String.capitalize), (stdlib /+ path, Utils.find(name => getName(name) == modName ? Some(name) : None, sources)))
-  })
-  |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
-  ; */
 };
 
 let needsCompilerLibs = config => {

@@ -71,8 +71,10 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
   Log.log("running bsc " ++ cmd);
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
+    /* Log.log("Its fine " ++ String.concat("\n", out @ error)); */
     Ok(out @ error)
   } else {
+    /* Log.log("Failed type error " ++ String.concat("\n", out @ error)); */
     Error(out @ error)
   }
 };
