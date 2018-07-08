@@ -514,6 +514,9 @@ let topLocation = uri => {
 };
 
 /* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
+/**
+ * returns `(Docs.item, location, docstring, uri)`
+ */
 let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
   switch defn {
   | `Local(_, loc, item, docs, _) => {
@@ -534,6 +537,7 @@ let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
         )
       ) {
       | Some(((cmtInfos, data), uri)) =>
+        Log.log("Resolving definition, in local modules " ++ uri);
         if (children == []) {
           Some((Docs.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
         } else {

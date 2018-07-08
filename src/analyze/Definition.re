@@ -140,7 +140,10 @@ let suffixForStamp = (stamp, suffix, data) => {
 let rec stampAtPath = (path, data, suffix) =>
   switch path {
   | Path.Pident({stamp: 0, name}) => Some(`Global((name, [], suffix)))
-  | Path.Pident({stamp, name}) => fold(suffix, Some(`Local(stamp)), suffix => suffixForStamp(stamp, suffix, data) |?>> stamp => `Local(stamp))
+  | Path.Pident({stamp, name}) => {
+    /* Log.log("Local path here " ++ string_of_int(stamp) ++ " named " ++ name); */
+    fold(suffix, Some(`Local(stamp)), suffix => suffixForStamp(stamp, suffix, data) |?>> stamp => `Local(stamp))
+  }
   | Path.Pdot(inner, name, _) =>
     switch (stampAtPath(inner, data, None)) {
     | Some(`Global(top, subs, _)) => Some(`Global((top, subs @ [name], suffix)))
@@ -195,7 +198,7 @@ let findDefinition = (defn, data, resolve) => {
   };
 };
 
-let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toItem, ~resolveDefinition) => {
+let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toItem, ~uri, ~resolveDefinition) => {
   let%opt_wrap (name, loc, item, docs) = Hashtbl.fold(
     (_, (name, loc, item, docs, range), result) =>
       switch result {
@@ -243,25 +246,37 @@ let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toIt
       loop(contents, children)
     }
     | Value(t) => {
-      let rec loop = (t, children) => {
+      let rec loop = (t, children, uri) => {
+        Log.log("attribute search");
         switch (dig(t).Types.desc) {
           | Types.Tconstr(path, args, _abbrev) => {
             let%opt stamp = stampAtPath(path, moduleData, None);
-            let%opt (item, loc, _, _) = findDefinition(Path(path), moduleData, resolveDefinition);
+            /* TODO need to propagate moduleData from resolveDefinition.
+             * Buuuut only localModules have moduleData.
+             * And to track things I only need Docs.items, not Definition.moduleData
+             */
+            let%opt (item, loc, docstring, uri) = findDefinition(Path(path), moduleData, resolveDefinition(uri));
+            uri |?< uri => Log.log("now in uri " ++ uri);
             switch item {
               | Docs.Type({type_kind: Type_record(labels, _)} as declaration) => {
                 switch children {
                   | [] => None
-                  | [single] => labels |> List.filter(({Types.ld_id: {name}}) => Utils.startsWith(name, single))
+                  | [single] => 
+                  labels |> List.filter(({Types.ld_id: {name}}) => Utils.startsWith(name, single))
                   |> List.map(({Types.ld_id: {name}, ld_type, ld_loc}) => toItem((name, ld_loc, Attribute(
                     ld_type, 
                     name,
                     declaration
                   ), None, ((0,0),(0,0))))) |. Some
                   | [first, ...rest] => {
+                    Log.log("Drillling in " ++ first);
                     labels |> Utils.find(({Types.ld_id: {name}, ld_type, ld_loc}) => {
                       if (name == first) {
-                        loop(ld_type, rest)
+                        Log.log("Found " ++ name);
+                        let s = PrintType.default.expr(PrintType.default, ld_type) |> PrintType.prettyString;
+                        Log.log("Of type " ++ s);
+                        let%opt uri = uri;
+                        loop(ld_type, rest, uri)
                       } else {
                         None
                       }
@@ -269,14 +284,28 @@ let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toIt
                   }
                 }
               }
+              | Docs.Value(expr) => {
+                let s = PrintType.default.expr(PrintType.default, expr) |> PrintType.prettyString;
+                Log.log("Foudn a calue: " ++ s);
+                {
+                  let%opt_consume loc = loc;
+                  let (fname, line, col) = Location.get_pos_info(loc.Location.loc_start);
+                  Log.log(Printf.sprintf("File %s: (%d, %d)", fname, line, col));
+                };
+                None
+
+              }
               /* This really should never happen */
-              | _ => None
+              | _ => {
+                Log.log("We found the definition, and it wasn't a type: " ++ Docs.show(item));
+                None
+              }
             }
           }
           | _ => None
         };
       };
-      loop(t, children) |? []
+      loop(t, children, uri) |? []
     }
     | _ => []
   }

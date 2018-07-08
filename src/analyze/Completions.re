@@ -231,6 +231,9 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
       results
     }
   | [first, ...more] =>
+  /* state.settings. */
+  /* state.settings. */
+/* state.settings. */
     /* TODO handle name overrides from local opens vs local modules */
     let localResults =
       localData
@@ -247,7 +250,8 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
                 docs,
                 Definition.docsItem(item, moduleData),
               ),
-            State.resolveDefinition("current file", state, ~package, moduleData)
+              ~uri="current file TODO fix",
+            ~resolveDefinition=uri => State.resolveDefinition(uri, state, ~package, moduleData)
             )
       );
     switch (localResults) {

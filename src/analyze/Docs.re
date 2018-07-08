@@ -36,6 +36,16 @@ type item =
 and full = (string, Location.t, option(string), item);
 /* TODO module types n that jazz also functors I guess */
 
+let show = item => switch item {
+  | Module(m) => "Module"
+  | ModuleAlias(_) => "ModuleAlias"
+  | Function(_, _) => "Function"
+  | Value(_) => "Value"
+  | Type(_) => "Type"
+  | Constructor(_) => "Constructor"
+  | Attribute(_)  => "Attribute"
+};
+
 let rec find = (name, docs) => switch docs {
 | [] => None
 | [(n, _, _, _) as doc, ..._] when n == name => Some(doc)
