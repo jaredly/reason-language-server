@@ -28,6 +28,9 @@
   }, {
     "backend": "native",
     "main-module": "Tester"
+  }, {
+    "backend": "native",
+    "main-module": "CompletionFixtures"
   }],
   "refmt": 3
 }

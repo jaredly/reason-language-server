@@ -28,7 +28,7 @@ let runRefmt = (~cacheLocation, text, refmt) => {
     /* Log.log(text); */
     if (!success) {
       Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
-      Error("Unable to run refmt")
+      Error("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error))
     } else {
       Ok((goodError, target))
     }

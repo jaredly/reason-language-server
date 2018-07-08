@@ -180,23 +180,23 @@ let rec forSignature = (processDoc, signature) => {
   };
   (doc, List.map(forSignatureItem(processDoc), items) |> List.concat)
 } and forSignatureItem = (processDoc, item) => Typedtree.(switch (item.sig_desc) {
-  | Tsig_value({val_name: {txt, loc}, val_val, val_attributes, val_loc}) =>
-      [{stamp: 0, name: txt, loc: val_loc, docstring: findDocAttribute(val_attributes) |?>> processDoc, kind: Value(val_val.val_type)}]
+  | Tsig_value({val_id: {stamp}, val_name: {txt, loc}, val_val, val_attributes, val_loc}) =>
+      [{stamp, name: txt, loc: val_loc, docstring: findDocAttribute(val_attributes) |?>> processDoc, kind: Value(val_val.val_type)}]
   | Tsig_include({incl_loc, incl_mod, incl_attributes, incl_type}) => {
       switch incl_mod.mty_desc {
       | Tmty_ident(path, _) | Tmty_alias(path, _) => forSignatureType(processDoc, incl_type)
       | _ => forSignatureType(processDoc, incl_type)
       }
   }
-  | Tsig_type(decls) => foldOpt(({typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
-      Some({stamp: 0, name: txt, loc: typ_loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type)})
-    , decls, [])
-  | Tsig_module({md_attributes, md_loc, md_name: {txt, loc}, md_type: {mty_desc: Tmty_alias(path, _) | Tmty_ident(path, _)}}) => {
-      [{stamp: 0, name: txt, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: ModuleAlias(path)}]
+  | Tsig_type(decls) => List.map(({typ_id: {stamp}, typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
+      {stamp, name: txt, loc: typ_loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type)}
+    , decls)
+  | Tsig_module({md_id: {stamp}, md_attributes, md_loc, md_name: {txt, loc}, md_type: {mty_desc: Tmty_alias(path, _) | Tmty_ident(path, _)}}) => {
+      [{stamp, name: txt, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: ModuleAlias(path)}]
     }
-  | Tsig_module({md_attributes, md_loc, md_name: {txt, loc}, md_type: module_type}) => {
+  | Tsig_module({md_id: {stamp}, md_attributes, md_loc, md_name: {txt, loc}, md_type: module_type}) => {
       let (docc, contents) = forModuleSig(processDoc, module_type);
-      [{stamp: 0, name: txt, loc: md_loc, docstring: either(docc, findDocAttribute(md_attributes) |?>> processDoc), kind: Module(contents)}]
+      [{stamp, name: txt, loc: md_loc, docstring: either(docc, findDocAttribute(md_attributes) |?>> processDoc), kind: Module(contents)}]
     }
   | _ => []
   })
@@ -225,12 +225,12 @@ let rec forStructure = (processDoc, structure) => {
 } and forItem = (processDoc, item) => Typedtree.(switch (item.str_desc) {
 | Tstr_value(_, bindings) => foldOpt(({vb_loc, vb_expr, vb_pat, vb_attributes}) =>
     switch (vb_pat.pat_desc) {
-    | Tpat_var({Ident.stamp}, {Asttypes.txt}) => Some({stamp, name: txt, loc: vb_loc, docstring: findDocAttribute(vb_attributes) |?>> processDoc, kind: Value(vb_pat.pat_type)})
+    | Tpat_var({Ident.stamp}, {Asttypes.txt, loc}) => Some({stamp, name: txt, loc, docstring: findDocAttribute(vb_attributes) |?>> processDoc, kind: Value(vb_pat.pat_type)})
     | _ => None
     }
     , bindings, [])
 | Tstr_primitive({val_id: {stamp}, val_name: {txt, loc}, val_val, val_attributes, val_loc}) => {
-  [{stamp, name: txt, loc: val_loc, docstring: findDocAttribute(val_attributes) |?>> processDoc, kind: Value(val_val.val_type)}]
+  [{stamp, name: txt, loc, docstring: findDocAttribute(val_attributes) |?>> processDoc, kind: Value(val_val.val_type)}]
 }
 | Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) => {
   switch incl_mod.mod_desc {
@@ -238,15 +238,15 @@ let rec forStructure = (processDoc, structure) => {
   | _ => forSignatureType(processDoc, incl_type)
   }
 }
-| Tstr_type(decls) => foldOpt(({typ_id: {stamp}, typ_name: {txt}, typ_loc, typ_attributes, typ_type}) =>
-    Some({stamp, name: txt, loc: typ_loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type)})
+| Tstr_type(decls) => foldOpt(({typ_id: {stamp}, typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
+    Some({stamp, name: txt, loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type)})
   , decls, [])
-| Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: {txt}, mb_expr: {mod_desc: Tmod_ident(path, _)}}) => {
-  [{stamp, name: txt, loc: mb_loc, docstring: findDocAttribute(mb_attributes) |?>> processDoc, kind: ModuleAlias(path)}]
+| Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: {txt, loc}, mb_expr: {mod_desc: Tmod_ident(path, _)}}) => {
+  [{stamp, name: txt, loc, docstring: findDocAttribute(mb_attributes) |?>> processDoc, kind: ModuleAlias(path)}]
 }
-| Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: {txt}, mb_expr}) => {
+| Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: {txt, loc}, mb_expr}) => {
   let (docc, contents) = forModule(processDoc, mb_expr);
-  [{stamp, name: txt, loc: mb_loc, docstring: either(docc, findDocAttribute(mb_attributes) |?>> processDoc), kind: contents}]
+  [{stamp, name: txt, loc, docstring: either(docc, findDocAttribute(mb_attributes) |?>> processDoc), kind: contents}]
 }
 | _ => []
 })

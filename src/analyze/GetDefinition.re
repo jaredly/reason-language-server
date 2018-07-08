@@ -144,29 +144,6 @@ module Get = {
             ()
           }
         }
-      /* | Tsig_value({val_id: {stamp, name}, val_val: {val_type}, val_loc}) =>
-        addStamp(stamp, name, val_loc, Value(val_type), None) */
-      /* | Tsig_type(decls) =>
-        List.iter(
-          ({typ_id: {stamp, name}, typ_loc, typ_type}) => {
-            addStamp(stamp, name, typ_loc, Type(typ_type), None);
-            switch (typ_type.type_kind) {
-              | Types.Type_record(labels, _) => {
-                labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
-                  addStamp(stamp, lname, ld_loc, Attribute(ld_type, name, typ_type), None)
-                })
-              }
-              | Types.Type_variant(constructors) => {
-                constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
-                  addStamp(stamp, cname, cd_loc, Constructor(cd, name, typ_type), None)
-                })
-
-              }
-              | _ => ()
-            }
-          },
-          decls
-        ) */
       /* TODO add support for these */
       /* | Tsig_include({incl_mod, incl_type}) => stampsFromTypesSignature(currentPath, incl_type) */
       /* | Tsig_module({md_id: {stamp, name}, md_type: {mty_desc: Tmty_signature(signature)}}) => {
@@ -439,11 +416,24 @@ module Get = {
         )
       );
     let rec stampContents = item => {
-      Hashtbl.replace(data.stamps, item.stamp, (item.name, item.loc, item.kind, item.docstring, (
-        (-1, -1), (-1, -1)
-      )));
+      let scope = ((-1, -1), (-1, -1));
+      Hashtbl.replace(data.stamps, item.stamp, (item.name, item.loc, item.kind, item.docstring, scope));
       switch (item.kind) {
       | Module(contents) => List.iter(stampContents, contents)
+      | Type(typ) =>
+        switch (typ.type_kind) {
+          | Types.Type_record(labels, _) => {
+            labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
+              Hashtbl.replace(data.stamps, stamp, (lname, ld_loc, Attribute(ld_type, item.name, typ), None, scope))
+            })
+          }
+          | Types.Type_variant(constructors) => {
+            constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
+              Hashtbl.replace(data.stamps, stamp, (cname, cd_loc, Constructor(cd, item.name, typ), None, scope))
+            })
+          }
+          | _ => ()
+        }
       | _ => ()
       };
     };
@@ -451,6 +441,7 @@ module Get = {
       let (docs, contents) = Docs.forStructure(x => x, items);
       data.topLevel = contents;
       contents |> List.iter(({Docs.T.name, stamp}) => Hashtbl.replace(data.exported, name, stamp));
+      contents |> List.iter(stampContents);
       List.iter(IterIter.iter_structure_item, items)
     };
     let iter_part = (part) =>
@@ -490,6 +481,7 @@ module Get = {
       /* TODO TODO */
       let contents = Array.map(iter_part, parts) |> Array.to_list |> List.concat;
       contents |> List.iter(({name, stamp}) => Hashtbl.replace(data.exported, name, stamp));
+      contents |> List.iter(stampContents);
       data.topLevel = contents;
       ()
     | _ => failwith("Not a valid cmt file")
