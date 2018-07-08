@@ -90,11 +90,11 @@ let process = (text, ~cacheLocation, compilerPath, refmtPath, includes, flags) =
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
       let message = Infix.(syntaxError |? lines);
-      TypeError(String.concat("\n", message), cmt, Definition.process(cmt.Cmt_format.cmt_annots))
+      TypeError(String.concat("\n", message), cmt, GetDefinition.process(cmt.Cmt_format.cmt_annots))
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
-      Success(lines, cmt, Definition.process(cmt.Cmt_format.cmt_annots))
+      Success(lines, cmt, GetDefinition.process(cmt.Cmt_format.cmt_annots))
     }
   }
 };

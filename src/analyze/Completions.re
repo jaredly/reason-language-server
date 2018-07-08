@@ -26,7 +26,7 @@ type item = {
 };
 
 let itemKind = doc => switch doc {
-| Docs.Module(_) => Module
+| Docs.T.Module(_) => Module
 | ModuleAlias(_) => Module
 | Function(_) => Function
 | Constructor(_) => Value
@@ -37,12 +37,12 @@ let itemKind = doc => switch doc {
 
 let rec showItem = (name, item) =>
   switch item {
-  | Docs.Module(contents) =>
+  | Docs.T.Module(contents) =>
     "module "
     ++ name
     ++ " {\n"
     ++ (
-      List.map(({Docs.name, kind}) => showItem(name, kind), contents)
+      List.map(({Docs.T.name, kind}) => showItem(name, kind), contents)
       |> String.concat("\n")
     )
     ++ "\n}"
@@ -73,9 +73,9 @@ open Infix;
 let getModuleResults = (name, state, cmt, src) => {
   State.docsForCmt(cmt, src, state)
   |?>> (
-    ((doc, items)) => (
-      Some(showItem(name, Docs.Module(items))),
-      Some(doc |? "(no documentation)")
+    ({Docs.T.docstring, topLevel}) => (
+      Some(showItem(name, Docs.T.Module(topLevel))),
+      Some(docstring |? "(no documentation)")
     )
   )
   |? (None, None);
@@ -106,10 +106,10 @@ let forItem = (uri, name, loc, doc, item) => {
 };
 
 let completionItems = (uri, moduleContents, prefix) => {
-  moduleContents |> List.fold_left((results, {Docs.name, loc, docstring, kind}) => switch kind {
-    | Docs.Type({type_kind: Type_variant(constructors)} as typ) => {
+  moduleContents |> List.fold_left((results, {Docs.T.name, loc, docstring, kind}) => switch kind {
+    | Docs.T.Type({type_kind: Type_variant(constructors)} as typ) => {
       let results = (constructors |> Utils.filterMap(({Types.cd_id: {name}} as decl) => (
-        Utils.startsWith(name, prefix) ? Some(forItem(uri, name, loc, docstring, Docs.Constructor(
+        Utils.startsWith(name, prefix) ? Some(forItem(uri, name, loc, docstring, Docs.T.Constructor(
           decl, name, typ
         ))) : None
       ))) @ results;
@@ -128,8 +128,8 @@ let inDocs = (~resolveAlias, uri, parts, contents) => {
 
 let rec findSubModule = (state, needle, contents, ~package) => switch contents {
   | [] => None
-  | [{Docs.name, loc, docstring, kind: Docs.Module(innerContents)}, ..._] when needle == name => Some((name, loc, docstring, innerContents))
-  | [{name, loc, docstring, kind: Docs.ModuleAlias(path)}, ..._] when needle == name => {
+  | [{Docs.T.name, loc, docstring, kind: Docs.T.Module(innerContents)}, ..._] when needle == name => Some((name, loc, docstring, innerContents))
+  | [{name, loc, docstring, kind: Docs.T.ModuleAlias(path)}, ..._] when needle == name => {
     switch (resolveAlias(state, path, [], ~package)) {
       | None => None
       | Some((uri, contents, items)) => {
@@ -158,7 +158,7 @@ let resolveOpens = (opens, state, ~package) => {
     | [] =>
       switch (State.docsForModule(name, state, ~package)) {
       | None => previous /* TODO warn? */
-      | Some(((docs, contents), uri)) => previous @ [(name, contents, uri)]
+      | Some(({Docs.T.topLevel}, uri)) => previous @ [(name, topLevel, uri)]
       }
     | [(prevname, contents, uri), ...rest] =>
       switch (findSubModule(state, name, contents, ~package)) {
@@ -180,9 +180,9 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
         Log.log("Auto open " ++ name ++ " not found...");
         opens
       }
-      | Some(((_, contents), uri)) => {
+      | Some(({Docs.T.topLevel}, uri)) => {
         Log.log("Found auto open " ++ name);
-        [(name, contents, uri), ...opens]
+        [(name, topLevel, uri), ...opens]
       }
       },
       opens,
@@ -195,12 +195,12 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
     let localResults = switch (localData) {
     | None => []
     | Some(moduleData) => {
-      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem(Some("(current file)"), name, loc, docs, Definition.docsItem(item, moduleData)))
+      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem(Some("(current file)"), name, loc, docs, item))
     }
     };
 
     let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
-      ({Docs.name, loc, docstring, kind}) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, docstring, kind)) : None
+      ({Docs.T.name, loc, docstring, kind}) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, docstring, kind)) : None
     )) |> List.concat;
 
     let results = localResults @ results;
@@ -248,7 +248,7 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
                 name,
                 loc,
                 docs,
-                Definition.docsItem(item, moduleData),
+                item,
               ),
               ~uri="current file TODO fix",
             ~resolveDefinition=uri => State.resolveDefinition(uri, state, ~package, moduleData)
@@ -271,8 +271,8 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
         | None =>
           Log.log("No docs found for " ++ first);
           []; /* TODO handle opens */
-        | Some(((_, contents), uri)) =>
-          inDocs(~resolveAlias=resolveAlias(~package, state), uri, more, contents)
+        | Some(({Docs.T.topLevel}, uri)) =>
+          inDocs(~resolveAlias=resolveAlias(~package, state), uri, more, topLevel)
         }
       }
     };

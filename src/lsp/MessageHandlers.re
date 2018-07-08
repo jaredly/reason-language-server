@@ -198,14 +198,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       } |?# lazy(State.getLastDefinitions(uri, state));
 
       let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
-      let lenses = showToplevelTypes ? Definition.listTopLevel(moduleData) |> Utils.filterMap(((name, loc, item, docs, scope)) => {
-        switch item {
-        | Definition.Module(_) => None
-        | ModuleWithDocs(_) => None
-        | Type(t) => None
-        | Constructor(_) => None
-        | Attribute(_) => None
-        | Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
+      let lenses = showToplevelTypes ? moduleData.Definition.topLevel |> Utils.filterMap(({Docs.T.name, loc, kind, docstring}) => {
+        switch kind {
+        | Docs.T.Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
+        | _ => None
         }
       }) : [];
 
@@ -286,23 +282,21 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       /* let items = */
       let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
       |?# lazy(State.getLastDefinitions(uri, state))
-      |?>> ((({Definition.topLevel, stamps})) => {
-        let rec getItems = (path, stamp) => {
-          let (name, loc, item, docs, scopeRange) = Hashtbl.find(stamps, stamp);
-          let res = switch (item) {
-            | Module(contents) => {
-              let children = contents |> List.map(((_, stamp)) => getItems(path @ [name], stamp)) |> List.concat;
+      |?>> ((({Definition.topLevel})) => {
+        let rec getItems = (path, item) => {
+          /* let (name, loc, item, docs, scopeRange) = Hashtbl.find(stamps, stamp); */
+          let res = switch (item.Docs.T.kind) {
+            | Docs.T.Module(contents) => {
+              let children = contents |> List.map(getItems(path @ [item.name])) |> List.concat;
               Some((`Module, children))
             }
-            | ModuleWithDocs(_) => Some((`Module, []))
             | Type(t) => Some((Protocol.typeKind(t), []))
-            | Constructor(_) => None
-            | Attribute(_) => None
             | Value(v) => Some((Protocol.variableKind(v), []))
+            | _ => None
           };
-          res |?>> ((((typ, children))) => [(name, typ, loc, path), ...children]) |? []
+          res |?>> ((((typ, children))) => [(item.name, typ, item.loc, path), ...children]) |? []
         };
-        topLevel |> List.map(((name, stamp)) => getItems([], stamp)) |> List.concat;
+        topLevel |> List.map(getItems([])) |> List.concat;
       });
       (items |?>> items => {
         open Rpc.J;

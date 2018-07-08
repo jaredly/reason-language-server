@@ -25,6 +25,8 @@ and "find all references"
 */
 open PrepareUtils;
 
+module T = {
+
 type item = {
   name: string,
   kind,
@@ -46,6 +48,13 @@ type moduleDocs = {
   docstring: option(string),
   stamps: Hashtbl.t(int, item),
   mutable topLevel: list(item),
+};
+};
+
+open T;
+
+let moduleDocs = (docstring, items) => {
+  {docstring, topLevel: items, stamps: Hashtbl.create(1)}
 };
 
 module Definitions = {
@@ -147,14 +156,16 @@ let rec forSignatureType = (processDoc, signature) => {
   List.fold_left((items, item) => switch item {
   | Sig_value({stamp, name}, {val_type, val_kind, val_attributes, val_loc: loc}) => [{stamp, name, loc, docstring: findDocAttribute(val_attributes) |?>> processDoc, kind: Value(val_type)}, ...items]
   | Sig_type({stamp, name}, decl, _) => [{stamp, name, loc: decl.type_loc, docstring: findDocAttribute(decl.type_attributes) |?>> processDoc, kind: Type(decl)}, ...items]
-  | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) => [{stamp, name, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: ModuleAlias(path)}, ...items]
-  | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) => [{stamp, name, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: Module(forModuleType(processDoc, md_type))}, ...items]
+  | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) =>
+    [{stamp, name, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: ModuleAlias(path)}, ...items]
+  | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) =>
+    [{stamp, name, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: forModuleType(processDoc, md_type)}, ...items]
   | _ => items
   }, [], signature);
 } and forModuleType = (processDoc, modtype) => Types.(switch modtype {
-  | Mty_ident(path) | Mty_alias(path) => [] /* TODO resolve */
+  | Mty_ident(path) | Mty_alias(path) => ModuleAlias(path)
   | Mty_functor(_, _, tt) => forModuleType(processDoc, tt)
-  | Mty_signature(sign) => forSignatureType(processDoc, sign)
+  | Mty_signature(sign) => Module(forSignatureType(processDoc, sign))
 });
 
 
@@ -235,7 +246,7 @@ let rec forStructure = (processDoc, structure) => {
 }
 | Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: {txt}, mb_expr}) => {
   let (docc, contents) = forModule(processDoc, mb_expr);
-  [{stamp, name: txt, loc: mb_loc, docstring: either(docc, findDocAttribute(mb_attributes) |?>> processDoc), kind: Module(contents)}]
+  [{stamp, name: txt, loc: mb_loc, docstring: either(docc, findDocAttribute(mb_attributes) |?>> processDoc), kind: contents}]
 }
 | _ => []
 })
@@ -244,7 +255,7 @@ and forModule = (processDoc, {Typedtree.mod_desc, mod_attributes, mod_loc}) => {
   switch mod_desc {
   | Tmod_structure(structure) => {
     let (docc, contents) = forStructure(processDoc, structure.str_items);
-    (docc, contents)
+    (docc, Module(contents))
   }
   | Tmod_constraint(mmod, mtyp, _, _) => {
     /* TODO this should probably be the mtyp. why? */
@@ -253,7 +264,7 @@ and forModule = (processDoc, {Typedtree.mod_desc, mod_attributes, mod_loc}) => {
   }
   | Tmod_ident(path, _) => {
     /* TODO resolve */
-    (findDocAttribute(mod_attributes) |?>> processDoc, [])
+    (findDocAttribute(mod_attributes) |?>> processDoc, ModuleAlias(path))
   }
   | Tmod_functor(_, _, _, result) => forModule(processDoc, result) |> mapFst(either(findDocAttribute(mod_attributes) |?>> processDoc))
   | Tmod_apply(inner, _, _) => forModule(processDoc, inner) |> mapFst(either(findDocAttribute(mod_attributes) |?>> processDoc))

@@ -54,7 +54,7 @@ type state = {
       (
         float, /* modified time */
         Cmt_format.cmt_infos,
-        (option(string), list(Docs.item))
+        Docs.T.moduleDocs
       )
     ),
   cmiCache:
@@ -63,7 +63,7 @@ type state = {
       (
         float, /* modified time */
         Cmi_format.cmi_infos,
-        (option(string), list(Docs.item))
+        Docs.T.moduleDocs
       )
     ),
   compiledDocuments: Hashtbl.t(uri, AsYouType.result),
@@ -333,7 +333,8 @@ let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
     let infos = Cmt_format.read_cmt(cmt);
     switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
     | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
-    | Some(docs) =>
+    | Some((docstring, items)) =>
+      let docs = Docs.moduleDocs(docstring, items);
       Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
       Some(docs);
     };
@@ -343,7 +344,8 @@ let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
     let infos = Cmi_format.read_cmi(cmi);
     switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
     | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
-    | Some(docs) =>
+    | Some((docstring, items)) =>
+      let docs = Docs.moduleDocs(docstring, items);
       Hashtbl.replace(cmiCache, cmi, (changed, infos, docs));
       Some(docs);
     };
@@ -487,8 +489,8 @@ let rec resolveAlias = (state, path, children, ~package) => {
   let rec loop = (path, items) =>
     switch (path) {
     | Path.Pident({stamp: 0, name}) => {
-      let%opt ((_docs, contents), uri) = docsForModule(name, state, ~package);
-      Some((uri, contents, items))
+      let%opt ({Docs.T.topLevel}, uri) = docsForModule(name, state, ~package);
+      Some((uri, topLevel, items))
     }
     | Path.Pident(_) => None
     | Pdot(inner, name, _) => loop(inner, [name, ...items])
@@ -520,7 +522,7 @@ let topLocation = uri => {
 let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
   switch defn {
   | `Local(_, loc, item, docs, _) => {
-    Some((item |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri)))
+    Some((item, Some(loc), docs, Some(uri)))
   }
   | `Global(top, children, suffix) =>
     {
@@ -539,9 +541,10 @@ let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
       | Some(((cmtInfos, data), uri)) =>
         Log.log("Resolving definition, in local modules " ++ uri);
         if (children == []) {
-          Some((Docs.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
+          /* TODO fill in */
+          Some((Docs.T.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
         } else {
-          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, defn, docs)) => Some((defn |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri))))
+          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, defn, docs)) => Some((defn, Some(loc), docs, Some(uri))))
         }
       | None =>
         /* Log.log("Not in the localModules"); */
@@ -552,9 +555,9 @@ let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
             let uri = src |?>> Utils.toUri;
             if (children == []) {
               Log.log("No children");
-              Some((Docs.Module([]), uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
+              Some((Docs.T.Module([]), uri |?>> topLocation, docsForCmt(cmt, src, state) |?> d => d.Docs.T.docstring, uri))
             } else {
-              let%opt (_, contents) = docsForCmt(cmt, src, state);
+              let%opt {Docs.T.topLevel: contents} = docsForCmt(cmt, src, state);
               let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
               let%opt {name, loc, docstring, kind} = Docs.find(last, contents);
               Some((kind, Some(loc), docstring, srcPath |?>> Utils.toUri))
