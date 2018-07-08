@@ -42,7 +42,7 @@ let rec showItem = (name, item) =>
     ++ name
     ++ " {\n"
     ++ (
-      List.map(((name, _loc, _, item)) => showItem(name, item), contents)
+      List.map(({Docs.name, kind}) => showItem(name, kind), contents)
       |> String.concat("\n")
     )
     ++ "\n}"
@@ -106,16 +106,16 @@ let forItem = (uri, name, loc, doc, item) => {
 };
 
 let completionItems = (uri, moduleContents, prefix) => {
-  moduleContents |> List.fold_left((results, (name, loc, doc, item)) => switch item {
+  moduleContents |> List.fold_left((results, {Docs.name, loc, docstring, kind}) => switch kind {
     | Docs.Type({type_kind: Type_variant(constructors)} as typ) => {
       let results = (constructors |> Utils.filterMap(({Types.cd_id: {name}} as decl) => (
-        Utils.startsWith(name, prefix) ? Some(forItem(uri, name, loc, doc, Docs.Constructor(
+        Utils.startsWith(name, prefix) ? Some(forItem(uri, name, loc, docstring, Docs.Constructor(
           decl, name, typ
         ))) : None
       ))) @ results;
-      Utils.startsWith(name, prefix) ? [forItem(uri, name, loc, doc, item), ...results] : results
+      Utils.startsWith(name, prefix) ? [forItem(uri, name, loc, docstring, kind), ...results] : results
     }
-    | _ => Utils.startsWith(name, prefix) ? [forItem(uri, name, loc, doc, item), ...results] : results
+    | _ => Utils.startsWith(name, prefix) ? [forItem(uri, name, loc, docstring, kind), ...results] : results
   }, [])
 };
 
@@ -126,20 +126,20 @@ let inDocs = (~resolveAlias, uri, parts, contents) => {
   }
 };
 
-let rec findSubModule = (state, name, contents, ~package) => switch contents {
+let rec findSubModule = (state, needle, contents, ~package) => switch contents {
   | [] => None
-  | [(n, loc, doc, Docs.Module(innerContents)), ..._] when n == name => Some((n, loc, doc, innerContents))
-  | [(n, loc, doc, Docs.ModuleAlias(path)), ..._] when n == name => {
+  | [{Docs.name, loc, docstring, kind: Docs.Module(innerContents)}, ..._] when needle == name => Some((name, loc, docstring, innerContents))
+  | [{name, loc, docstring, kind: Docs.ModuleAlias(path)}, ..._] when needle == name => {
     switch (resolveAlias(state, path, [], ~package)) {
       | None => None
       | Some((uri, contents, items)) => {
         let rec loop = (items, contents) => switch items {
-          | [] => Some((n, loc, doc, contents))
+          | [] => Some((name, loc, docstring, contents))
           | [single] => findSubModule(state, single, contents, ~package)
           | [single, ...more] => {
             switch (findSubModule(state, single, contents, ~package)) {
               | None => None
-              | Some((n, loc, doc, inner)) => loop(more, inner)
+              | Some((name, loc, docstring, inner)) => loop(more, inner)
             }
           }
         };
@@ -148,7 +148,7 @@ let rec findSubModule = (state, name, contents, ~package) => switch contents {
     }
     /* Some((n, loc, doc, innerContents)) */
   }
-  | [_, ...rest] => findSubModule(state, name, rest, ~package)
+  | [_, ...rest] => findSubModule(state, needle, rest, ~package)
 };
 
 /* TODO local opens */
@@ -200,7 +200,7 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
     };
 
     let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
-      ((name, loc, doc, item)) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, doc, item)) : None
+      ({Docs.name, loc, docstring, kind}) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, docstring, kind)) : None
     )) |> List.concat;
 
     let results = localResults @ results;

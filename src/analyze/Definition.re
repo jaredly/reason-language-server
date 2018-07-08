@@ -24,7 +24,7 @@ open Infix;
 
 type item =
   | Module(list((string, int)))
-  | ModuleWithDocs(list(Docs.full))
+  | ModuleWithDocs(list(Docs.item))
   /* | ModuleAlias(Path.t) */
   | Type(Types.type_declaration)
   | Constructor(Types.constructor_declaration, string, Types.type_declaration)
@@ -85,8 +85,8 @@ let rec docsItem = (item, data) =>
       items
       |> List.map(
            ((name, stamp)) => {
-             let (name, loc, item, docs, _) = Hashtbl.find(data.stamps, stamp);
-             (name, loc, docs, docsItem(item, data))
+             let (name, loc, item, docstring, _) = Hashtbl.find(data.stamps, stamp);
+             {Docs.name, stamp, loc, docstring, kind: docsItem(item, data)}
            }
          )
     )

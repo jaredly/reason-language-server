@@ -54,7 +54,7 @@ type state = {
       (
         float, /* modified time */
         Cmt_format.cmt_infos,
-        (option(string), list(Docs.full))
+        (option(string), list(Docs.item))
       )
     ),
   cmiCache:
@@ -63,7 +63,7 @@ type state = {
       (
         float, /* modified time */
         Cmi_format.cmi_infos,
-        (option(string), list(Docs.full))
+        (option(string), list(Docs.item))
       )
     ),
   compiledDocuments: Hashtbl.t(uri, AsYouType.result),
@@ -556,8 +556,8 @@ let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
             } else {
               let%opt (_, contents) = docsForCmt(cmt, src, state);
               let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
-              let%opt (name, loc, docs, item) = Docs.find(last, contents);
-              Some((item, Some(loc), docs, srcPath |?>> Utils.toUri))
+              let%opt {name, loc, docstring, kind} = Docs.find(last, contents);
+              Some((kind, Some(loc), docstring, srcPath |?>> Utils.toUri))
             }
           }
         )
