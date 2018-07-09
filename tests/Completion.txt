@@ -5,7 +5,7 @@ let awesome = 10;
 let x = awe<*>
 -->
 awesome
-- uri: (current file)
+- uri: /path/to/Test.re
 > let awesome: int
 
 === In Module
@@ -15,7 +15,7 @@ module M = {
 let x = M.awe<*>
 -->
 awesome
-- uri: (current file)
+- uri: /path/to/Test.re
 > let awesome: int
 
 === Above module
@@ -34,12 +34,12 @@ let m = {name: 2, nose: 1.4};
 m.n<*>
 -->
 name
-- uri: (current file)
+- uri: /path/to/Test.re
 > name: int
 > 
 > type name = {name: int, nose: float}
 nose
-- uri: (current file)
+- uri: /path/to/Test.re
 > nose: float
 > 
 > type nose = {name: int, nose: float}

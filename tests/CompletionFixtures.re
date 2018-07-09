@@ -88,13 +88,13 @@ let getOutput = (files, text) => {
     let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
     let opens = PartialParser.findOpens(text, offset);
     let useMarkdown = !state.settings.clientNeedsPlainText;
-    Completions.get("Test", [], parts, state, Some(moduleData), pos, ~package);
+    Completions.get(~currentPath="/path/to/Test.re", "Test", [], parts, state, Some(moduleData), pos, ~package);
   }
   };
 
   completions |> List.map((item: Completions.item) => {
     item.label
-    ++ fold(item.uri, "", uri => "\n- uri: " ++ uri)
+    ++ fold(item.path, "", uri => "\n- uri: " ++ uri)
     ++ fold(item.detail, "", detail => "\n> " ++ (Str.split(Str.regexp_string("\n"), detail) |> String.concat("\n> ")))
   }) |> String.concat("\n");
 };

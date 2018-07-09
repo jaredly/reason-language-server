@@ -63,12 +63,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           /* */
           let localData = State.getLastDefinitions(uri, state);
           let useMarkdown = !state.settings.clientNeedsPlainText;
-          Completions.get(currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, uri, label, detail, documentation}) => o([
+          Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
             ("label", s(label)),
             ("kind", i(Completions.kindToInt(kind))),
             ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(uri, "", uri => (useMarkdown ? "*" : "") ++ (
-              Utils.startsWith(uri, state.rootPath ++ "/") ? Utils.sliceToEnd(uri, String.length(state.rootPath ++ "/")) : uri
+            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(path, "", path => (useMarkdown ? "*" : "") ++ (
+              Utils.startsWith(path, state.rootPath ++ "/") ? Utils.sliceToEnd(path, String.length(state.rootPath ++ "/")) : path
               ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.contentKind(useMarkdown) |? null)),
             ("data", switch kind {
               | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])

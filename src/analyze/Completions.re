@@ -18,7 +18,7 @@ let kindToInt = k =>
 
 type item = {
   kind,
-  uri: option(string),
+  path: option(filePath),
   label: string,
   detail: option(string),
   documentation: option(string),
@@ -91,13 +91,13 @@ let forModule = (state, k, cmt, src) => {
         None
       );
     };
-  {kind: RootModule(cmt, src), uri: src, label: k, detail, documentation, deprecated: false};
+  {kind: RootModule(cmt, src), path: src, label: k, detail, documentation, deprecated: false};
 };
 
-let forItem = (uri, name, loc, doc, item) => {
+let forItem = (path, name, loc, doc, item) => {
   {
     detail: Some(showItem(name, item)),
-    uri,
+    path: path,
     documentation: Some(doc |? "(no documentation)"),
     kind: itemKind(item),
     deprecated: false, /* TODO */
@@ -171,7 +171,7 @@ let resolveOpens = (opens, state, ~package) => {
 };
 
 /** Some docs */
-let get = (topModule, opens, parts, state, localData, pos, ~package) => {
+let get = (~currentPath, topModule, opens, parts, state, localData, pos, ~package) => {
   let opens = resolveOpens(opens, state, ~package);
   let packageOpens = ["Pervasives", ...package.opens];
   let opens = List.fold_left(
@@ -195,12 +195,12 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
     let localResults = switch (localData) {
     | None => []
     | Some(moduleData) => {
-      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem(Some("(current file)"), name, loc, docs, item))
+      Definition.completions(moduleData, single, pos) |> List.map(((name, loc, item, docs)) => forItem(Some(currentPath), name, loc, docs, item))
     }
     };
 
-    let results = opens |> List.map(((_, contents, uri)) => contents |> Utils.filterMap(
-      ({Docs.T.name, loc, docstring, kind}) => Utils.startsWith(name, single) ? Some(forItem(uri, name, loc, docstring, kind)) : None
+    let results = opens |> List.map(((_, contents, path)) => contents |> Utils.filterMap(
+      ({Docs.T.name, loc, docstring, kind}) => Utils.startsWith(name, single) ? Some(forItem(path, name, loc, docstring, kind)) : None
     )) |> List.concat;
 
     let results = localResults @ results;
@@ -240,17 +240,17 @@ let get = (topModule, opens, parts, state, localData, pos, ~package) => {
       |?> (
         moduleData =>
           Definition.completionPath(
-            inDocs(~resolveAlias=resolveAlias(~package, state), Some("(current file)")),
+            inDocs(~resolveAlias=resolveAlias(~package, state), Some(currentPath)),
             moduleData, first, more, pos,
             ((name, loc, item, docs, _range)) =>
               forItem(
-                Some("(current file)"),
+                Some(currentPath),
                 name,
                 loc,
                 docs,
                 item,
               ),
-              ~uri="current file TODO fix",
+              ~uri=currentPath,
             ~resolveDefinition=uri => State.resolveDefinition(uri, state, ~package, moduleData)
             )
       );
