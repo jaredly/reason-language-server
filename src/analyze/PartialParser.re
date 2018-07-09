@@ -182,7 +182,7 @@ let findCompletable = (text, offset) => {
     Log.log("Not unterminated");
     /** TODO handle being in the middle of an identifier */
     let rec loop = i => {
-      i < 0 ? Nothing : switch (text.[i]) {
+      i < 0 ? Lident(String.sub(text, i + 1, offset - (i + 1))) : switch (text.[i]) {
       | '~' => Labeled(String.sub(text, i + 1, offset - (i + 1)))
       | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' => loop(i - 1)
       | _ => {

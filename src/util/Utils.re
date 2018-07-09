@@ -13,7 +13,7 @@ let stripAnsii = text => Str.global_replace(Str.regexp("\027\\[[0-9;]+m"), "", t
 
 let sliceToEnd = (s, start) => {
   let l = String.length(s);
-  start <= l ? String.sub(s, start, l - start) : s
+  start <= l ? String.sub(s, start, l - start) : ""
 };
 
 let toUri = (path) =>

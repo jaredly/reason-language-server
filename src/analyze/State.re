@@ -98,7 +98,7 @@ let makePathsForModule = (localModules, dependencyModules) => {
   });
 
   localModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("> Local " ++ cmt ++ " - " ++ source);
+    Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
     Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
   });
   pathsForModule
@@ -360,7 +360,7 @@ let docsForCmt = (cmt, src, state) =>
       /* TODO I should really throttle this mtime checking to like every 50 ms or so */
       switch (Files.getMtime(cmt)) {
       | None =>
-        Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+        Log.log("⚠️ cannot get docs for nonexistant cmi " ++ cmt);
         None;
       | Some(changed) =>
         if (changed > mtime) {
@@ -378,7 +378,7 @@ let docsForCmt = (cmt, src, state) =>
     } else {
       switch (Files.getMtime(cmt)) {
       | None =>
-        Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+        Log.log("⚠️ cannot get docs for nonexistant cmi " ++ cmt);
         None;
       | Some(changed) =>
         newDocsForCmi(

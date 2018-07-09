@@ -47,7 +47,7 @@ let awesome = "hello";
 let awkward = 4.1;
 ---
 Lib.<*>
---->
+-->
 awesome
 > let awesome: string
 awkward
@@ -59,7 +59,7 @@ let awesome = "hello";
 let awkward = 4.1;
 ---
 Lib.aw<*>
---->
+-->
 awesome
 > let awesome: string
 awkward
