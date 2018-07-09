@@ -7,24 +7,42 @@ let ensure = (v, m) => {
   }
 };
 
-let test = ((text, expected)) => {
+let getOutput = ((files, text)) => {
   let state = TestUtils.getState();
-  let package = TestUtils.getPackage([("Test.re", ("/path/to/Test.cmti", "/path/to/Test.re"))]);
+  let package = TestUtils.getPackage([
+    ("Test.re", ("/path/to/Test.cmt", "/path/to/Test.re")),
+    ...(files |> List.map(((name, _)) => (
+      name,
+      ("/path/to/" ++ Filename.chop_extension(name) ++ ".cmt", "/path/to/" ++ name)
+    )))
+  ]);
 
-  let (text, offset, pos) = {
-    let clean = Str.substitute_first(Str.regexp_string("<*>"), x => "", text);
-    let char = Str.match_beginning();
-    let pre = String.sub(text, 0, char);
-    let lines = Str.split(Str.regexp_string("\n"), pre);
-    (clean, char, (List.length(lines), String.length(List.hd(List.rev(lines)))))
-  };
+  files |> List.iter(((name, contents)) => {
+    let moduleName = Filename.chop_extension(name);
+    let%try_force result = AsYouType.process(
+      ~moduleName,
+      contents,
+      ~cacheLocation=TestUtils.tmp,
+      "./node_modules/.bin/bsc",
+      "./node_modules/bs-platform/lib/refmt.exe",
+      [TestUtils.tmp],
+      ""
+    );
+    let uri = "file://path/to/" ++ name;
+    Hashtbl.replace(state.compiledDocuments, uri, result);
+    let%opt_consume (_, data) = AsYouType.getResult(result);
+    Hashtbl.replace(state.lastDefinitions, uri, data)
+  });
+
+  let (text, offset, pos) = TestUtils.extractPosition(text);
 
   let%try_force result = AsYouType.process(
+    ~moduleName="Test",
     text,
     ~cacheLocation=TestUtils.tmp,
     "./node_modules/.bin/bsc",
     "./node_modules/bs-platform/lib/refmt.exe",
-    [],
+    [TestUtils.tmp],
     ""
   );
 
@@ -57,64 +75,13 @@ let test = ((text, expected)) => {
   }
   };
 
-  if (List.length(expected) != List.length(completions)) {
-    Printf.printf("Different lengths. %d expected vs %d found\n", List.length(expected), List.length(completions))
-  } else {
-    List.combine(expected, completions) |> List.iter((((name, detail), item: Completions.item)) => {
-      ensure(name == item.label, "Wrong label");
-      ensure(detail == item.detail, "Wrong detail " ++ (item.detail |? ""));
-    });
-  }
+  completions |> List.map((item: Completions.item) => {
+    item.label
+    ++ fold(item.uri, "", uri => "- uri: " ++ uri)
+    ++ fold(item.detail, "", detail => "> " ++ (Str.split(Str.regexp_string("\n"), detail) |> String.concat("\n> ")))
+  }) |> String.concat("\n");
 };
 
-let cases = [
-  (
-    {|
-let awesome = 10;
-let x = awe<*>
-|},
-    [("awesome", Some("let awesome: int"))],
-  ),
-  (
-    {|
-module M = {
-  let awesome = 10;
-};
-let x = M.awe<*>
-|},
-    [("awesome", Some("let awesome: int"))],
-  ),
-  ({|
-let x = awe<*>
-module M = {
-  let awesome = 10;
-};
-|}, []),
-  (
-    {|
-type t = {name: int, nose: float};
-let m = {name: 2, nose: 1.4};
-m.n<*>
-|},
-    [
-      ("name", Some("name: int\n\ntype name = {name: int, nose: float}")),
-      ("nose", Some("nose: float\n\ntype nose = {name: int, nose: float}")),
-    ],
-  ),
-];
-
-let failing = [
-  (
-    {|
-type t = {name: int, nose: float};
-let m = {name: 2, nose: 1.4};
-m.<*>
-|},
-    [
-      ("name", Some("name: int\n\ntype name = {name: int, nose: float}")),
-      ("nose", Some("nose: float\n\ntype nose = {name: int, nose: float}")),
-    ],
-  ),
-];
-
-cases |> List.iter(test)
+let raw = Files.readFileExn("./tests/Completion.txt") |> Utils.splitLines;
+/* let cases =  */
+/* cases |> List.iter(test) */

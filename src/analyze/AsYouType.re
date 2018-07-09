@@ -13,8 +13,8 @@ let getResult = result => switch result {
 | Success(_, cmt, data) => Some((cmt, data))
 };
 
-let runRefmt = (~cacheLocation, text, refmt) => {
-  let target = cacheLocation /+ "lsp.ast";
+let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
+  let target = cacheLocation /+ moduleName ++ ".ast";
   let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
@@ -83,17 +83,17 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
   }
 };
 
-let process = (text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+let process = (~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   open InfixResult;
-  let%try_wrap (syntaxError, astFile) = runRefmt(~cacheLocation, text, refmtPath);
+  let%try_wrap (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       let message = Infix.(syntaxError |? lines);
       TypeError(String.concat("\n", message), cmt, GetDefinition.process(cmt.Cmt_format.cmt_annots))
     }
     | Ok(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       Success(lines, cmt, GetDefinition.process(cmt.Cmt_format.cmt_annots))
     }
   }

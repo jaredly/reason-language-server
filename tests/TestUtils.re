@@ -18,6 +18,14 @@ let getPackage = (localModules) => {
   
 };
 
+let extractPosition = text => {
+  let clean = Str.substitute_first(Str.regexp_string("<*>"), x => "", text);
+  let char = Str.match_beginning();
+  let pre = String.sub(text, 0, char);
+  let lines = Str.split(Str.regexp_string("\n"), pre);
+  (clean, char, (List.length(lines), String.length(List.hd(List.rev(lines)))))
+};
+
 let getState = () => {
   let packagesByRoot = Hashtbl.create(1);
 
