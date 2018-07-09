@@ -181,7 +181,6 @@ let get = (~currentPath, topModule, opens, parts, state, localData, pos, ~packag
         opens
       }
       | Some(({Docs.T.topLevel}, uri)) => {
-        Log.log("Found auto open " ++ name);
         [(name, topLevel, uri), ...opens]
       }
       },

@@ -192,7 +192,7 @@ let findDefinition = (defn, data, resolve) => {
   switch defn {
   | IsConstant => None
   | IsDefinition(stamp) =>
-    Log.log("Is a definition");
+    /* Log.log("Is a definition"); */
     None
   | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
   | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
@@ -203,7 +203,9 @@ let findDefinition = (defn, data, resolve) => {
 
 let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toItem, ~uri, ~resolveDefinition) => {
   let%opt_wrap (name, loc, item, docs) = Hashtbl.fold(
-    (_, (name, loc, item, docs, range), result) =>
+    (_, (name, loc, item, docs, range), result) => {
+
+      /* Log.log(name); */
       switch result {
       | Some(x) => Some(x)
       | None => {
@@ -213,6 +215,7 @@ let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toIt
           None
         }
       }
+    }
     },
     stamps,
     None

@@ -19,7 +19,7 @@ awesome
 > let awesome: int
 
 === Above module
-let x = M.awe<*>
+let x = M.awe<*>;
 module M = {
   let awesome = 10;
 };
@@ -43,6 +43,24 @@ nose
 > nose: float
 > 
 > type nose = {name: int, nose: float}
+
+=== Just dot
+type t = {name: int, party: float};
+let m = {name: 2, party: 1.4};
+let x = {
+  m.<*>
+};
+-->
+name
+- uri: /path/to/Test.re
+> name: int
+> 
+> type name = {name: int, party: float}
+party
+- uri: /path/to/Test.re
+> party: float
+> 
+> type party = {name: int, party: float}
 
 ### MultiFile
 

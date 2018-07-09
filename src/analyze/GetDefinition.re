@@ -480,6 +480,9 @@ module Get = {
     | Cmt_format.Partial_interface(parts) =>
       /* TODO TODO */
       let contents = Array.map(iter_part, parts) |> Array.to_list |> List.concat;
+      if (contents == []) {
+        Log.log("No type information, probably due to a syntax error.");
+      };
       contents |> List.iter(({name, stamp}) => Hashtbl.replace(data.exported, name, stamp));
       contents |> List.iter(stampContents);
       data.topLevel = contents;

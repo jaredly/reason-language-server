@@ -101,14 +101,23 @@ let getOutput = (files, text) => {
 
 let process = lines => {
   let sections = TestParser.parseSections(lines);
+  let hasOnly = Belt.List.some(sections, s => switch s {
+    | `Test(name, _, _, _) => Utils.startsWith(name, "*")
+    | _ => false
+  });
   sections |> List.map(section => switch section {
     | `Header(name) => "### " ++ name ++ "\n"
     | `Test(name, mainFile, files, result) => {
-      print_endline("Running " ++ name);
-      files |> List.iter(((name, _)) => print_endline("File: " ++ name));
-      let newResult = getOutput(files, mainFile);
-      "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-      ++ "-->\n" ++ newResult ++ "\n"
+      if (hasOnly && !Utils.startsWith(name, "*")) {
+        "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+        ++ "-->\n" ++ String.concat("\n", result)
+      } else {
+        print_endline("Running " ++ name);
+        files |> List.iter(((name, _)) => print_endline("File: " ++ name));
+        let newResult = getOutput(files, mainFile);
+        "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+        ++ "-->\n" ++ newResult ++ "\n"
+      }
     }
   })
 };
