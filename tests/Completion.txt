@@ -5,6 +5,7 @@ let awesome = 10;
 let x = awe<*>
 -->
 awesome
+- uri: (current file)
 > let awesome: int
 
 === In Module
@@ -14,6 +15,7 @@ module M = {
 let x = M.awe<*>
 -->
 awesome
+- uri: (current file)
 > let awesome: int
 
 === Above module
@@ -23,6 +25,7 @@ module M = {
 };
 -->
 
+
 ### Attributes
 
 === Basic
@@ -31,12 +34,14 @@ let m = {name: 2, nose: 1.4};
 m.n<*>
 -->
 name
+- uri: (current file)
 > name: int
->
+> 
 > type name = {name: int, nose: float}
 nose
+- uri: (current file)
 > nose: float
->
+> 
 > type nose = {name: int, nose: float}
 
 ### MultiFile
@@ -48,10 +53,12 @@ let awkward = 4.1;
 ---
 Lib.<*>
 -->
-awesome
-> let awesome: string
 awkward
+- uri: /path/to/Lib.re
 > let awkward: float
+awesome
+- uri: /path/to/Lib.re
+> let awesome: string
 
 === 2
 --- Lib.re
@@ -60,8 +67,9 @@ let awkward = 4.1;
 ---
 Lib.aw<*>
 -->
-awesome
-> let awesome: string
 awkward
+- uri: /path/to/Lib.re
 > let awkward: float
-
+awesome
+- uri: /path/to/Lib.re
+> let awesome: string
