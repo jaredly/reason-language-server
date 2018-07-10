@@ -91,3 +91,40 @@ awkward
 awesome
 - uri: /path/to/Lib.re
 > let awesome: string
+
+=== Mutli-attribute
+--- A.re
+type a = { name: string, nose: int };
+--- B.re
+type b = { person: A.a, age: float, };
+---
+let x = (v: B.b) => {
+  v.p<*>
+};
+-->
+person
+- uri: /path/to/Test.re
+> person: A.a
+> 
+> type person = {person: A.a, age: float}
+
+=== Mutli-attribute 2 - wrong URIs
+--- A.re
+type a = { name: string, nose: int };
+--- B.re
+type b = { person: A.a, age: float };
+---
+let x = (v: B.b) => {
+  v.person.n<*>
+};
+-->
+name
+- uri: /path/to/Test.re
+> name: string
+> 
+> type name = {name: string, nose: int}
+nose
+- uri: /path/to/Test.re
+> nose: int
+> 
+> type nose = {name: string, nose: int}
