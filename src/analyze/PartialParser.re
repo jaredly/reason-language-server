@@ -179,7 +179,7 @@ let findCompletable = (text, offset) => {
     Log.log("Unterminated comment or string, can't do it. Sorry");
     Nothing
   } else {
-    Log.log("Not unterminated");
+    /* Log.log("Not unterminated"); */
     /** TODO handle being in the middle of an identifier */
     let rec loop = i => {
       i < 0 ? Lident(String.sub(text, i + 1, offset - (i + 1))) : switch (text.[i]) {

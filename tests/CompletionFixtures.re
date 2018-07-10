@@ -122,7 +122,10 @@ let process = lines => {
   })
 };
 
-print_endline(Log.initial_dest);
+let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
+Log.setLocation(logDest);
+
+print_endline(logDest);
 let testFile = "./tests/Completion.txt";
 let raw = Files.readFileExn(testFile) |> Utils.splitLines;
 let newRaw = process(raw) |> String.concat("\n");
