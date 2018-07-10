@@ -1,19 +1,3 @@
-/* 
-let getOutput = (files, text) => {
-  let (text, offset, pos) = TestUtils.extractPosition(text);
-  let (state, package, moduleData) = TestUtils.setUp(files, text)
-  let completions = switch (PartialParser.findCompletable(text, offset)) {
-  | Nothing => failwith("Nothing completable found")
-  | Labeled(string) => failwith("Can't do labeled completions yet")
-  | Lident(string) =>
-    print_endline("Complete: " ++ string);
-    let parts = Str.split(Str.regexp_string("."), string);
-    let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
-    let opens = PartialParser.findOpens(text, offset);
-    let useMarkdown = !state.settings.clientNeedsPlainText;
-    Completions.get(~currentPath="/path/to/Test.re", "Test", [], parts, state, Some(moduleData), pos, ~package);
-  };
-}; */
 
 let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
 Log.setLocation(logDest);
@@ -29,7 +13,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
   let (text, waypoints) = TestUtils.extractWaypoints(mainFile);
   let waypoints = waypoints |> List.map(((tag, offset, pos)) => (tag, (TestUtils.uriForName("Test.re"), offset, pos)));
   let (files, otherWaypoints) = TestUtils.extractAllWaypoints(files);
-  let (state, package, moduleData) = TestUtils.setUp(files, text);
+  let (state, package, _) = TestUtils.setUp(files, text);
   let waypoints = waypoints @ otherWaypoints;
   let num = List.length(waypoints) / 2;
   let process = i => {
