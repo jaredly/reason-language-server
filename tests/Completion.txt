@@ -26,6 +26,23 @@ module M = {
 -->
 
 
+### Constructors
+
+=== Basic
+type t = Awesome | Awkward(int, float);
+A<*>
+-->
+Awesome
+- uri: /path/to/Test.re
+> Awesome
+> 
+> type t = | Awesome | Awkward(int, float)
+Awkward
+- uri: /path/to/Test.re
+> Awkward(int, float)
+> 
+> type t = | Awesome | Awkward(int, float)
+
 ### Attributes
 
 === Basic
@@ -70,20 +87,6 @@ let awesome = "hello";
 let awkward = 4.1;
 ---
 Lib.<*>
--->
-awkward
-- uri: /path/to/Lib.re
-> let awkward: float
-awesome
-- uri: /path/to/Lib.re
-> let awesome: string
-
-=== 2
---- Lib.re
-let awesome = "hello";
-let awkward = 4.1;
----
-Lib.aw<*>
 -->
 awkward
 - uri: /path/to/Lib.re

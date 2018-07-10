@@ -19,7 +19,7 @@ let getOutput = (files, text) => {
 
   files |> List.iter(((name, contents)) => {
     let moduleName = Filename.chop_extension(name);
-    print_endline("Compiling " ++ moduleName);
+    /* print_endline("Compiling " ++ moduleName); */
     let%try_force result = AsYouType.process(
       ~moduleName,
       contents,
@@ -112,8 +112,8 @@ let process = lines => {
         "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
         ++ "-->\n" ++ String.concat("\n", result)
       } else {
-        print_endline("Running " ++ name);
-        files |> List.iter(((name, _)) => print_endline("File: " ++ name));
+        /* print_endline("Running " ++ name); */
+        /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
         let newResult = getOutput(files, mainFile);
         "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
         ++ "-->\n" ++ newResult ++ "\n"
