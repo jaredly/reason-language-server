@@ -186,7 +186,7 @@ module Get = {
           |> List.iter(
                ({typ_attributes, typ_id: {stamp, name}, typ_type, typ_name: {loc}}) => {
                  let docs = PrepareUtils.findDocAttribute(typ_attributes);
-                 addStamp(stamp, name, loc, Type(typ_type), docs);
+                 addStamp(stamp, name, loc, Type(typ_type, None), docs);
 
                   switch (typ_type.type_kind) {
                     | Types.Type_record(labels, _) => {
@@ -420,11 +420,11 @@ module Get = {
       Hashtbl.replace(data.stamps, item.stamp, (item.name, item.loc, item.kind, item.docstring, scope));
       switch (item.kind) {
       | Module(contents) => List.iter(stampContents, contents)
-      | Type(typ) =>
+      | Type(typ, extra) =>
         switch (typ.type_kind) {
           | Types.Type_record(labels, _) => {
             labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
-              Hashtbl.replace(data.stamps, stamp, (lname, ld_loc, Attribute(ld_type, item.name, typ), None, scope))
+              Hashtbl.replace(data.stamps, stamp, (lname, Utils.clampLocation(ld_loc, String.length(lname)), Attribute(ld_type, item.name, typ), None, scope))
             })
           }
           | Types.Type_variant(constructors) => {

@@ -134,7 +134,7 @@ let getSuffix = (declaration, suffix) =>
 let suffixForStamp = (stamp, suffix, data) => {
   let%opt (name, loc, item, docs, range) = maybeFound(Hashtbl.find(data.stamps), stamp);
   switch item {
-    | Type(t) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
+    | Type(t, extra) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
     | _ => None
   }
 };
@@ -264,7 +264,7 @@ let completionPath = (inDocs, {stamps} as moduleData, first, children, pos, toIt
             let%opt (item, loc, docstring, uri) = findDefinition(Path(path), moduleData, resolveDefinition(uri));
             uri |?< uri => Log.log("now in uri " ++ uri);
             switch item {
-              | Type({type_kind: Type_record(labels, _)} as declaration) => {
+              | Type({type_kind: Type_record(labels, _)} as declaration, extra) => {
                 switch children {
                   | [] => None
                   | [single] => 
@@ -491,7 +491,7 @@ let resolveNamedPath = (data, path, suffix) =>
           switch (path, item) {
           | ([], _) => switch (item, suffix) {
             | (_, None) => Some((name, loc, item, docs))
-            | (Type(t), Some(suffix)) => {
+            | (Type(t, extra), Some(suffix)) => {
               /* TODO this isn't the right `item` --- it'sstill the type  */
               let%opt_wrap (loc, _) = getSuffix(t, suffix);
               (name, loc, item, docs)

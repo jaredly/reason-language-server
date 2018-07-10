@@ -1,3 +1,21 @@
+=== Basic
+let <c1>x = 10;
+let y = <t1>x + <t1>x;
+type <c4>record = {
+  <c2>name: string,
+};
+type m = <t4>record;
+let me = {<t2>name: "Hi"};
+switch None {
+  | Some({<t2><t3>name}) => print_endline(<c3>name)
+  | _ => ()
+};
+-->
+1: PASS
+2: PASS
+3: PASS
+4: No definition! at 2, 5
+
 === Kitchen sink
 --- Lib.re
 type <c1>record = {
@@ -18,4 +36,18 @@ let z = string_of_int(m);
 Other.contain.r.<t3>age;
 let m = <t4>A(2,3);
 -->
+1: No definition! at 0, 5
+2: FAIL
+not found - file:///path/to/Other.re 92 (1, 54)
+not found - file:///path/to/Other.re 63 (1, 25)
+not found - file:///path/to/Other.re 17 (0, 17)
+
+3: FAIL
+not found - file:///path/to/Test.re 93 (3, 16)
+not found - file:///path/to/Other.re 105 (1, 67)
+not found - file:///path/to/Other.re 78 (1, 40)
+not found - file:///path/to/Other.re 29 (0, 29)
+
+4: FAIL
+not found - file:///path/to/Test.re 106 (4, 8)
 

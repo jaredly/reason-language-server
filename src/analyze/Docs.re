@@ -27,6 +27,9 @@ open PrepareUtils;
 
 module T = {
 
+type typeExtra =
+| Attributes(list((int, Location.loc(string), (Location.t, Types.type_expr))));
+
 type item = {
   name: string,
   kind,
@@ -40,7 +43,7 @@ and kind =
   | ModuleAlias(Path.t)
   | Function(list(Types.type_expr), Types.type_expr)
   | Value(Types.type_expr)
-  | Type(Types.type_declaration)
+  | Type(Types.type_declaration, option(typeExtra))
   | Constructor(Types.constructor_declaration, string, Types.type_declaration)
   | Attribute(Types.type_expr, string, Types.type_declaration);
 
@@ -52,6 +55,18 @@ type moduleDocs = {
 };
 
 open T;
+
+let typeExtra = (t) => {
+  open Typedtree;
+  switch t {
+    | Ttype_record(lbls) => Some(Attributes(lbls |> List.map(({ld_id, ld_mutable, ld_name, ld_type, ld_loc}) => (
+      ld_id.stamp,
+      ld_name,
+      (ld_type.ctyp_loc, ld_type.ctyp_type),
+    ))))
+    | _ => None
+  }
+};
 
 let moduleDocs = (docstring, items) => {
   {docstring, topLevel: items, stamps: Hashtbl.create(1)}
@@ -105,7 +120,7 @@ let show = item => switch item {
   | ModuleAlias(_) => "ModuleAlias"
   | Function(_, _) => "Function"
   | Value(_) => "Value"
-  | Type(_) => "Type"
+  | Type(_, _) => "Type"
   | Constructor(_) => "Constructor"
   | Attribute(_)  => "Attribute"
 };
@@ -155,7 +170,7 @@ let rec forSignatureType = (processDoc, signature) => {
   open Types;
   List.fold_left((items, item) => switch item {
   | Sig_value({stamp, name}, {val_type, val_kind, val_attributes, val_loc: loc}) => [{stamp, name, loc, docstring: findDocAttribute(val_attributes) |?>> processDoc, kind: Value(val_type)}, ...items]
-  | Sig_type({stamp, name}, decl, _) => [{stamp, name, loc: decl.type_loc, docstring: findDocAttribute(decl.type_attributes) |?>> processDoc, kind: Type(decl)}, ...items]
+  | Sig_type({stamp, name}, decl, _) => [{stamp, name, loc: decl.type_loc, docstring: findDocAttribute(decl.type_attributes) |?>> processDoc, kind: Type(decl, None)}, ...items]
   | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) =>
     [{stamp, name, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: ModuleAlias(path)}, ...items]
   | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) =>
@@ -189,7 +204,7 @@ let rec forSignature = (processDoc, signature) => {
       }
   }
   | Tsig_type(decls) => List.map(({typ_id: {stamp}, typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
-      {stamp, name: txt, loc: typ_loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type)}
+      {stamp, name: txt, loc: typ_loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type, None)}
     , decls)
   | Tsig_module({md_id: {stamp}, md_attributes, md_loc, md_name: {txt, loc}, md_type: {mty_desc: Tmty_alias(path, _) | Tmty_ident(path, _)}}) => {
       [{stamp, name: txt, loc: md_loc, docstring: findDocAttribute(md_attributes) |?>> processDoc, kind: ModuleAlias(path)}]
@@ -238,8 +253,8 @@ let rec forStructure = (processDoc, structure) => {
   | _ => forSignatureType(processDoc, incl_type)
   }
 }
-| Tstr_type(decls) => foldOpt(({typ_id: {stamp}, typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type}) =>
-    Some({stamp, name: txt, loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type)})
+| Tstr_type(decls) => foldOpt(({typ_id: {stamp}, typ_name: {txt, loc}, typ_loc, typ_attributes, typ_type, typ_kind}) =>
+    Some({stamp, name: txt, loc, docstring: findDocAttribute(typ_attributes) |?>> processDoc, kind: Type(typ_type, typeExtra(typ_kind))})
   , decls, [])
 | Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: {txt, loc}, mb_expr: {mod_desc: Tmod_ident(path, _)}}) => {
   [{stamp, name: txt, loc, docstring: findDocAttribute(mb_attributes) |?>> processDoc, kind: ModuleAlias(path)}]

@@ -10,11 +10,8 @@ let showPos = ((l, c)) => string_of_int(l) ++ ", " ++ string_of_int(c);
 let testFile = "./tests/Definition.txt";
 let lines = Files.readFileExn(testFile) |> Utils.splitLines;
 let output = TestUtils.process(lines, (files, mainFile) => {
-  let (text, waypoints) = TestUtils.extractWaypoints(mainFile);
-  let waypoints = waypoints |> List.map(((tag, offset, pos)) => (tag, (TestUtils.uriForName("Test.re"), offset, pos)));
-  let (files, otherWaypoints) = TestUtils.extractAllWaypoints(files);
+  let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _) = TestUtils.setUp(files, text);
-  let waypoints = waypoints @ otherWaypoints;
   let num = List.length(waypoints) / 2;
   let process = i => {
       let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);

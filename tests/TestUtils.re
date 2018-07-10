@@ -61,6 +61,14 @@ let extractAllWaypoints = files => {
   }, ([], []))
 };
 
+let combinedWaypoints = (files, mainFile) => {
+  let (text, waypoints) = extractWaypoints(mainFile);
+  let waypoints = waypoints |> List.map(((tag, offset, pos)) => (tag, (uriForName("Test.re"), offset, pos)));
+  let (files, otherWaypoints) = extractAllWaypoints(files);
+  let waypoints = waypoints @ otherWaypoints;
+  (files, text, waypoints)
+};
+
 let getState = () => {
   let packagesByRoot = Hashtbl.create(1);
 

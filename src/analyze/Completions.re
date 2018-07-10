@@ -32,7 +32,7 @@ let itemKind = doc => switch doc {
 | Constructor(_) => Value
 | Attribute(_) => Value
 | Value(_) => Value
-| Type(_) => Struct
+| Type(_, _) => Struct
 };
 
 let rec showItem = (name, item) =>
@@ -51,7 +51,7 @@ let rec showItem = (name, item) =>
   | Value(t) =>
     PrintType.default.value(PrintType.default, name, name, t)
     |> PrintType.prettyString
-  | Type(t) =>
+  | Type(t, extra) =>
     PrintType.default.decl(PrintType.default, name, name, t)
     |> PrintType.prettyString
   | Constructor(decl, parentName, t) => {
@@ -107,7 +107,7 @@ let forItem = (path, name, loc, doc, item) => {
 
 let completionItems = (uri, moduleContents, prefix) => {
   moduleContents |> List.fold_left((results, {Docs.T.name, loc, docstring, kind}) => switch kind {
-    | Docs.T.Type({type_kind: Type_variant(constructors)} as typ) => {
+    | Docs.T.Type({type_kind: Type_variant(constructors)} as typ, _extra) => {
       let results = (constructors |> Utils.filterMap(({Types.cd_id: {name}} as decl) => (
         Utils.startsWith(name, prefix) ? Some(forItem(uri, name, loc, docstring, Docs.T.Constructor(
           decl, name, typ

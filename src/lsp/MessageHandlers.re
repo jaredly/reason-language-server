@@ -290,7 +290,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
               let children = contents |> List.map(getItems(path @ [item.name])) |> List.concat;
               Some((`Module, children))
             }
-            | Type(t) => Some((Protocol.typeKind(t), []))
+            | Type(t, _extra) => Some((Protocol.typeKind(t), []))
             | Value(v) => Some((Protocol.variableKind(v), []))
             | _ => None
           };
