@@ -188,11 +188,11 @@ let resolvePath = (path, data, suffix) =>
   };
 
 let findDefinition = (defn, data, resolve) => {
-  /* Log.log("😍 resolving a definition"); */
+  Log.log("😍 resolving a definition");
   switch defn {
   | IsConstant => None
   | IsDefinition(stamp) =>
-    /* Log.log("Is a definition"); */
+    Log.log("Is a definition");
     None
   | ConstructorDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
   | AttributeDefn(path, name, _) => resolvePath(path, data, Some(name)) |?> resolve
@@ -543,7 +543,10 @@ let locationAtPos = ((line, char), data) => {
     switch locations {
     | [] => None
     | [(loc, expr, defn), ..._] when checkPos(pos, loc) => Some((loc, expr, defn))
-    | [_, ...rest] => loop(rest)
+    | [(loc, _, _), ...rest] => {
+      /* Log.log(Printf.sprintf("Loc at %d", loc.Location.loc_start.pos_cnum)); */
+      loop(rest)
+    }
     };
   loop(data.locations)
 };

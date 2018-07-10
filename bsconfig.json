@@ -31,6 +31,9 @@
   }, {
     "backend": "native",
     "main-module": "CompletionFixtures"
+  }, {
+    "backend": "native",
+    "main-module": "TestDefinition"
   }],
   "refmt": 3
 }

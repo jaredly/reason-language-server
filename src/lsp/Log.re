@@ -9,14 +9,20 @@ let setLocation = (location) => {
   | Some(out) => close_out(out)
   };
   output_string(stderr, "Setting log location: " ++ location ++ "\n");
+  flush(stderr);
   out := Some(open_out(location))
 };
 
+let spamError = ref(false);
+
 let log = (msg) =>
-  /* output_string(stderr, msg ++ "\n"); */
   switch out^ {
   | None => ()
   | Some(out) =>
     output_string(out, msg ++ "\n");
+    if (spamError^) {
+      output_string(stderr, msg ++ "\n");
+      flush(stderr)
+    };
     flush(out)
   };

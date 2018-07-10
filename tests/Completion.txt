@@ -23,7 +23,7 @@ let x = M.awe<*>;
 module M = {
   let awesome = 10;
 };
--->
+
 
 
 ### Constructors

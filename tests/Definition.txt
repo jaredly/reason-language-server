@@ -1,0 +1,26 @@
+=== Kitchen sink
+--- Lib.re
+/* I think c5 should take you to v the age definition */
+type <t5><t7>record = {
+  <t6>name: string,
+  age: int
+};
+type variant = A(int, float) | B(record);
+type <t4>container = {v: variant, r: <c7>record};
+let here = {<c6>name: "fred", age: 3};
+--- Other.re
+let thing = {Lib.name: "hi", age: 2};
+let <t3>contain = {Lib.v: B({name: "inner", age: 1}), r: {name: "one", age: 5}};
+---
+let <t1>awesome_awesome = 10;
+let <t2>m = <c1>awesome_awesome;
+let z = string_of_int(<c2>m);
+Other.<c3>contain.<c4>r.a<c5>ge;
+-->
+1: PASS
+2: PASS
+3: PASS
+4: PASS
+5: PASS
+6: PASS
+7: PASS

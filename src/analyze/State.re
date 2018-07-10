@@ -560,7 +560,7 @@ let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
               let%opt {Docs.T.topLevel: contents} = docsForCmt(cmt, src, state);
               let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
               let%opt {name, loc, docstring, kind} = Docs.find(last, contents);
-              Some((kind, Some(loc), docstring, srcPath |?>> Utils.toUri))
+              Some((kind, Some(loc), docstring, srcPath))
             }
           }
         )
