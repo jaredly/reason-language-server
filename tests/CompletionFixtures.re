@@ -94,7 +94,7 @@ let getOutput = (files, text) => {
 
   completions |> List.map((item: Completions.item) => {
     item.label
-    ++ fold(item.path, "", uri => "\n- uri: " ++ uri)
+    ++ fold(item.path, "", path => "\n- path: " ++ path)
     ++ fold(item.detail, "", detail => "\n> " ++ (Str.split(Str.regexp_string("\n"), detail) |> String.concat("\n> ")))
   }) |> String.concat("\n");
 };
