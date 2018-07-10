@@ -1,12 +1,6 @@
 
 open Infix;
 
-let ensure = (v, m) => {
-  if (!v) {
-    print_endline("Error: " ++ m);
-  }
-};
-
 let getOutput = (files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
   let (state, package, moduleData) = TestUtils.setUp(files, text)
