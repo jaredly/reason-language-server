@@ -18,14 +18,6 @@ awesome
 - path: /path/to/Test.re
 > let awesome: int
 
-=== Above module
-let x = M.awe<*>;
-module M = {
-  let awesome = 10;
-};
-
-
-
 ### Constructors
 
 === Basic
@@ -131,3 +123,22 @@ nose
 > nose: int
 > 
 > type nose = {name: string, nose: int}
+
+=== Includes
+module Outer = {
+  module M = {
+    let vinner = 10;
+  };
+};
+module N = {
+  include Outer.M;
+  let vmiddle = 20;
+};
+N.v<*>
+-->
+vinner
+- path: /path/to/Test.re
+> let vinner: int
+vmiddle
+- path: /path/to/Test.re
+> let vmiddle: int
