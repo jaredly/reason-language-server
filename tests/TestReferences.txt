@@ -16,6 +16,15 @@ switch None {
 3: PASS
 4: No definition! at 2, 5
 
+=== Mutable
+type r = {
+  mutable <t1><c2>n: string,
+};
+let m = {<c1><t2>n: "hello"};
+-->
+1: PASS
+2: PASS
+
 === Kitchen sink
 --- Lib.re
 type <c1>record = {

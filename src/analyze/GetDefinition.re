@@ -184,30 +184,35 @@ module Get = {
         | Tstr_type(decls) =>
           decls
           |> List.iter(
-               ({typ_attributes, typ_id: {stamp, name}, typ_type, typ_name: {loc}}) => {
+               ({typ_attributes, typ_id: {stamp, name}, typ_type, typ_kind, typ_name: {loc}}) => {
                  let docs = PrepareUtils.findDocAttribute(typ_attributes);
                  addStamp(stamp, name, loc, Type(typ_type, None), docs);
 
-                  switch (typ_type.type_kind) {
-                    | Types.Type_record(labels, _) => {
-                      labels |> List.iter(({Types.ld_id: {stamp: lstamp, name: lname}, ld_type, ld_loc}) => {
-                        let shortLoc = Utils.clampLocation(ld_loc, String.length(lname));
-                        addStamp(lstamp, lname, shortLoc, Attribute(ld_type, name, typ_type), docs);
+                  switch (typ_kind) {
+                    | Ttype_record(labels) => {
+                      labels |> List.iter(({ld_id: {stamp: lstamp, name: lname}, ld_type, ld_name: {loc}}) => {
+                        /* let shortLoc = Utils.clampLocation(ld_loc, String.length(lname)); */
+                        addStamp(lstamp, lname, loc, Attribute(ld_type.ctyp_type, name, typ_type), docs);
                         if (maybeFound(Hashtbl.find(Collector.data.exported), name) == Some(stamp)) {
                           Collector.data.exportedSuffixes = [(lstamp, name, lname), ...Collector.data.exportedSuffixes];
                         };
-                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(lstamp));
+                        addLocation(loc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(lstamp));
                       })
                     }
-                    | Types.Type_variant(constructors) => {
-                      constructors |> List.iter(({Types.cd_id: {stamp: cstamp, name: cname}, cd_loc} as cd) => {
-                        let shortLoc = Utils.clampLocation(cd_loc, String.length(cname));
-                        addStamp(cstamp, cname, shortLoc, Constructor(cd, name, typ_type), docs);
-                        addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(cstamp));
-                        if (maybeFound(Hashtbl.find(Collector.data.exported), name) == Some(stamp)) {
-                          Collector.data.exportedSuffixes = [(cstamp, name, cname), ...Collector.data.exportedSuffixes];
-                        };
-                      })
+                    | Ttype_variant(_) => {
+                      switch (typ_type.type_kind) {
+                        | Types.Type_variant(constructors) => {
+                          constructors |> List.iter(({Types.cd_id: {stamp: cstamp, name: cname}, cd_loc} as cd) => {
+                            let shortLoc = Utils.clampLocation(cd_loc, String.length(cname));
+                            addStamp(cstamp, cname, shortLoc, Constructor(cd, name, typ_type), docs);
+                            addLocation(shortLoc, {Types.desc: Types.Tnil, level: 0, id: 0}, IsDefinition(cstamp));
+                            if (maybeFound(Hashtbl.find(Collector.data.exported), name) == Some(stamp)) {
+                              Collector.data.exportedSuffixes = [(cstamp, name, cname), ...Collector.data.exportedSuffixes];
+                            };
+                          })
+                        }
+                        | _ => ()
+                      }
                     }
                     | _ => ()
                   }
