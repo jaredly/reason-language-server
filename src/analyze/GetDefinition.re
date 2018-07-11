@@ -421,18 +421,26 @@ module Get = {
       switch (item.kind) {
       | Module(contents) => List.iter(stampContents, contents)
       | Type(typ, extra) =>
-        switch (typ.type_kind) {
-          | Types.Type_record(labels, _) => {
-            labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
-              Hashtbl.replace(data.stamps, stamp, (lname, Utils.clampLocation(ld_loc, String.length(lname)), Attribute(ld_type, item.name, typ), None, scope))
+        switch extra {
+          | Some(Attributes(attributes)) =>
+            attributes |> List.iter(((stamp, {Location.loc, txt}, (bodyLoc, body))) => {
+              Hashtbl.replace(data.stamps, stamp, (txt, loc, Attribute(body, item.name, typ), None, scope))
+
             })
-          }
-          | Types.Type_variant(constructors) => {
-            constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
-              Hashtbl.replace(data.stamps, stamp, (cname, cd_loc, Constructor(cd, item.name, typ), None, scope))
-            })
-          }
-          | _ => ()
+          | None =>
+            switch (typ.type_kind) {
+              | Types.Type_record(labels, _) => {
+                labels |> List.iter(({Types.ld_id: {stamp, name: lname}, ld_type, ld_loc}) => {
+                  Hashtbl.replace(data.stamps, stamp, (lname, Utils.clampLocation(ld_loc, String.length(lname)), Attribute(ld_type, item.name, typ), None, scope))
+                })
+              }
+              | Types.Type_variant(constructors) => {
+                constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
+                  Hashtbl.replace(data.stamps, stamp, (cname, cd_loc, Constructor(cd, item.name, typ), None, scope))
+                })
+              }
+              | _ => ()
+            }
         }
       | _ => ()
       };
