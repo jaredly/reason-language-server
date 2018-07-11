@@ -25,6 +25,38 @@ let m = {<c1><t2>n: "hello"};
 1: PASS
 2: PASS
 
+=== Constructor
+type a = | <c1>A(int) | <t2>B(float);
+let b = <t1>A(1);
+let c = <t1>A(3);
+let d = <c2>B(1.);
+
+-->
+1: PASS
+2: PASS
+
+=== Cross-module Constructor
+--- Lib.re
+type a = | <c1>A(int) | B(float);
+let b = <t1>A(1);
+let c = <t1>A(3);
+---
+let m = Lib.<t1>A(2);
+-->
+1: PASS
+
+=== * Cross-module with same-name export
+--- Lib.re
+type a = | <c1>A(int) | B(float);
+let a = <t1>A(1);
+let c = <t1>A(3);
+---
+let m = Lib.<t1>A(2);
+-->
+1: FAIL
+not found - file:///path/to/Test.re 12 (0, 12)
+
+
 === Kitchen sink
 --- Lib.re
 type <c1>record = {
@@ -59,4 +91,3 @@ not found - file:///path/to/Other.re 29 (0, 29)
 
 4: FAIL
 not found - file:///path/to/Test.re 106 (4, 8)
-

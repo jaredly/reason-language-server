@@ -4,7 +4,7 @@ Files.mkdirp(tmp);
 let getPackage = (localModules) => {
   {
     State.basePath: tmp,
-    localModules: [],
+    localModules,
     dependencyModules: [],
     pathsForModule: State.makePathsForModule(localModules, []),
     buildSystem: BuildSystem.Bsb("3.2.0"),
@@ -183,6 +183,7 @@ let process = (lines, getResult) => {
         "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
         ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result))
       } else {
+        print_endline("-----[ " ++ name ++ " ]-----");
         /* print_endline("Running " ++ name); */
         /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
         let newResult = getResult(files, mainFile);

@@ -28,6 +28,7 @@ open PrepareUtils;
 module T = {
 
 type typeExtra =
+| Constructors(list((int, Location.loc(string), Types.constructor_declaration)))
 | Attributes(list((int, Location.loc(string), (Location.t, Types.type_expr))));
 
 type item = {
@@ -63,6 +64,11 @@ let typeExtra = (t) => {
       ld_id.stamp,
       ld_name,
       (ld_type.ctyp_loc, ld_type.ctyp_type),
+    ))))
+    | Ttype_variant(constructors) => Some(Constructors(constructors |> List.map(({cd_id, cd_name, cd_loc, cd_args, cd_res, cd_attributes}) => (
+      cd_id.stamp,
+      cd_name,
+      {Types.cd_id, cd_loc, cd_attributes, cd_args: List.map(t => t.ctyp_type, cd_args), cd_res: cd_res |?>> c => c.ctyp_type}
     ))))
     | _ => None
   }

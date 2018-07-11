@@ -62,6 +62,7 @@ type moduleData = {
   internalReferences: Hashtbl.t(int, list(Location.t)),
   externalReferences: Hashtbl.t(string, list((list(string), Location.t, option(string)))),
   exported: Hashtbl.t(string, int),
+  /* exportedTypes: Hashtbl.t(string, int), */
   mutable exportedSuffixes: list((int, string, string)),
   mutable topLevel: list(item),
   mutable locations: list((Location.t, Types.type_expr, definition)),

@@ -582,13 +582,16 @@ let definitionForPos = (uri, pos, data, state, ~package) =>
 let referencesForPos = (uri, pos, data, state, ~package) => {
   /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
   let%opt stamp = Definition.stampAtPos(pos, data);
+  /* Log.log("Finding reference, got the stamp " ++ string_of_int(stamp)); */
   let externals = {
     let%opt_wrap (exportedName, suffixName) = Definition.isStampExported(stamp, data);
+    /* Log.log("Yes it is exported as " ++ exportedName); */
     let thisModName = FindFiles.getName(uri);
     optMap(((modname, (cmt, src))) => {
       if (modname == thisModName) {
         None
       } else {
+        /* Log.log("Looking at " ++modname); */
         let%opt data = getDefinitionData(Utils.toUri(src), state, ~package);
         let%opt uses = Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName);
         let realUses = Utils.filterMap(((path, loc, suffix)) => {

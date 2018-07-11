@@ -111,10 +111,16 @@ module Get = {
       | AttributeDefn(path, name, _) => Some((path, Some(name)))
       | Path(path) => Some((path, None))
       | _ => None
-      } |?< ((path, suffix)) =>
+      } |?< ((path, suffix)) => {
+
+        /* Log.log("Adding location " ++ Utils.showLocation(loc) ++ " with path " ++ Path.name(path)); */
         switch (stampAtPath(path, Collector.data, suffix)) {
-        | None => ()
+        | None => {
+          /* Log.log("No stamp for location " ++ Utils.showLocation(loc) ++ " " ++ Path.name(path)); */
+          ()
+        }
         | Some(`Global(modname, children, suffix)) =>
+          /* Log.log("Got global " ++ modname ++ " > " ++ String.concat(".", children)); */
           let current = maybeFound(Hashtbl.find(Collector.data.externalReferences), modname) |? [];
           Hashtbl.replace(
             Collector.data.externalReferences,
@@ -122,10 +128,12 @@ module Get = {
             [(children, loc, suffix), ...current]
           )
         | Some(`Local(stamp)) => {
+          /* Log.log("Found stamp " ++ string_of_int(stamp)); */
           let current = maybeFound(Hashtbl.find(Collector.data.internalReferences), stamp) |? [];
           Hashtbl.replace(Collector.data.internalReferences, stamp, [loc, ...current])
         }
         };
+      };
       Collector.data.locations = [(loc, typ, definition), ...Collector.data.locations]
     };
     let addExplanation = (loc, text) => {
@@ -353,7 +361,7 @@ module Get = {
                | _ => ()
                }
            )
-      /* Skip list literals */
+      /* Skip unit and list literals */
       | Texp_construct(
           {txt: Lident("()"), loc: {loc_start: {pos_cnum: cstart}, loc_end: {pos_cnum: cend}}},
           {cstr_name, cstr_loc, cstr_res},
@@ -423,6 +431,8 @@ module Get = {
     let rec stampContents = item => {
       let scope = ((-1, -1), (-1, -1));
       Hashtbl.replace(data.stamps, item.stamp, (item.name, item.loc, item.kind, item.docstring, scope));
+      /* Log.log("Stamping " ++ item.name); */
+
       switch (item.kind) {
       | Module(contents) => List.iter(stampContents, contents)
       | Type(typ, extra) =>
@@ -430,8 +440,17 @@ module Get = {
           | Some(Attributes(attributes)) =>
             attributes |> List.iter(((stamp, {Location.loc, txt}, (bodyLoc, body))) => {
               Hashtbl.replace(data.stamps, stamp, (txt, loc, Attribute(body, item.name, typ), None, scope))
-
             })
+          | Some(Constructors(constructors)) => {
+            constructors |> List.iter(((stamp, {Location.loc, txt}, declaration)) => {
+              Hashtbl.replace(data.stamps, stamp, (txt, loc, Constructor(declaration, item.name, typ), None, scope));
+              /* Log.log("<<< Constructor type " ++ item.name); */
+              if (maybeFound(Hashtbl.find(data.exported), item.name) == Some(item.stamp)) {
+                /* Log.log("Exporting constructor " ++ item.name ++ " > " ++ txt); */
+                data.exportedSuffixes = [(stamp, item.name, txt), ...data.exportedSuffixes];
+              };
+            })
+          }
           | None =>
             switch (typ.type_kind) {
               | Types.Type_record(labels, _) => {
@@ -441,8 +460,11 @@ module Get = {
               }
               | Types.Type_variant(constructors) => {
                 constructors |> List.iter(({Types.cd_id: {stamp, name: cname}, cd_loc} as cd) => {
-                  Hashtbl.replace(data.stamps, stamp, (cname, cd_loc, Constructor(cd, item.name, typ), None, scope))
-                })
+                  Hashtbl.replace(data.stamps, stamp, (cname, cd_loc, Constructor(cd, item.name, typ), None, scope));
+                  if (maybeFound(Hashtbl.find(data.exported), item.name) == Some(item.stamp)) {
+                    data.exportedSuffixes = [(stamp, item.name, cname), ...data.exportedSuffixes];
+                  };
+                });
               }
               | _ => ()
             }
@@ -454,7 +476,9 @@ module Get = {
       let (docs, contents) = Docs.forStructure(x => x, items);
       data.topLevel = contents;
       contents |> List.iter(({Docs.T.name, stamp}) => Hashtbl.replace(data.exported, name, stamp));
+      /* Log.log("[[[ structure ]]]"); */
       contents |> List.iter(stampContents);
+      /* Log.log("iterated"); */
       List.iter(IterIter.iter_structure_item, items)
     };
     let iter_part = (part) =>
