@@ -152,6 +152,7 @@ let initStamps = () => {
 };
 
 type file = {
+  uri: string,
   docstring: option(string),
   stamps,
   contents: Module.contents,
@@ -165,15 +166,19 @@ type tip =
 | Module
 | ModuleType;
 
-type path('tip) =
-| Tip(string, 'tip)
-| Nested(string, path('tip));
+type path =
+| Tip(string)
+/* | Tip(string, 'tip) */
+| Nested(string, path);
+
+/* type fullPath('tip) = (path, 'tip) */
 
 type openTracker = {
   path: Path.t,
-  loc: Location.loc(Longident.t),
+  loc: Location.t,
+  ident: Location.loc(Longident.t),
   extent: Location.t,
-  used: Hashtbl.t((string, path(tip)), Location.t),
+  used: Hashtbl.t((path, tip), Location.t),
   mutable useCount: int,
 };
 
@@ -197,7 +202,7 @@ module Loc = {
 /** These are the bits of info that we need to make in-app stuff awesome */
 type extra = {
   internalReferences: Hashtbl.t(int, list(Location.t)),
-  externalReferences: Hashtbl.t(string, list((string, path(tip), Location.t))),
+  externalReferences: Hashtbl.t(string, list((path, tip, Location.t))),
   mutable locations: list((Location.t, Loc.t)),
   opens: Hashtbl.t(Location.t, openTracker),
 };

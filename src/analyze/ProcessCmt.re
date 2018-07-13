@@ -106,7 +106,7 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
 | Implementation(structure) => {
   let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forStructure(~env, structure.str_items);
-  Some({stamps: env.stamps, docstring, contents})
+  Some({uri, stamps: env.stamps, docstring, contents})
 }
 /* | Interface(signature) => Some(forSignature(processDoc, signature.sig_items)) */
 | _ => None
