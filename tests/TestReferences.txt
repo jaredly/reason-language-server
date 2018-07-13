@@ -32,11 +32,8 @@ let c = <t1>A(3);
 let d = <c2>B(1.);
 
 -->
-1: FAIL
-not found - file:///path/to/Test.re 52 (2, 8)
-not found - file:///path/to/Test.re 38 (1, 8)
-
-2: No definition! at 3, 8
+1: PASS
+2: PASS
 
 === Cross-module Constructor
 --- Lib.re
@@ -50,6 +47,8 @@ let m = Lib.<t1>A(2);
 not found - file:///path/to/Test.re 12 (0, 12)
 not found - file:///path/to/Lib.re 52 (2, 8)
 not found - file:///path/to/Lib.re 38 (1, 8)
+extra ref - file:///path/to/Test.re 52 (2, 8)
+extra ref - file:///path/to/Test.re 38 (1, 8)
 extra ref - file:///path/to/Test.re 11 (0, 11)
 
 
@@ -65,6 +64,8 @@ let m = Lib.<t1>A(2);
 not found - file:///path/to/Test.re 12 (0, 12)
 not found - file:///path/to/Lib.re 52 (2, 8)
 not found - file:///path/to/Lib.re 38 (1, 8)
+extra ref - file:///path/to/Test.re 52 (2, 8)
+extra ref - file:///path/to/Test.re 38 (1, 8)
 extra ref - file:///path/to/Test.re 11 (0, 11)
 
 
@@ -116,5 +117,6 @@ extra ref - file:///path/to/Test.re 34 (2, 2)
 4: FAIL
 not found - file:///path/to/Test.re 109 (5, 8)
 not found - file:///path/to/Lib.re 173 (7, 8)
+extra ref - file:///path/to/Test.re 173 (7, 8)
 extra ref - file:///path/to/Test.re 61 (4, 15)
 

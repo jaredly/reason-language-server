@@ -84,6 +84,24 @@ module F = (Collector: {let extra: extra; let file: file}) => {
     }
   };
 
+  let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
+    switch (dig(constructorType).desc) {
+      | Tconstr(path, _args, _memo) => {
+        switch (getTypeAtPath(path)) {
+          | `Local({contents: {kind: Variant(constructos)}}) => {
+            let%opt_consume {stamp} = Belt.List.getBy(constructos, a => a.name.txt == cstr_name);
+            let name = Longident.last(txt);
+            let nameLoc = Utils.endOfLocation(loc, String.length(name));
+            addReference(stamp, nameLoc);
+            addLocation(nameLoc, Loc.Typed(constructorType, LocalReference(stamp, Constructor(name))))
+          }
+          | _ => ()
+        }
+      }
+      | _ => ()
+    }
+  };
+
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
@@ -147,6 +165,9 @@ module F = (Collector: {let extra: extra; let file: file}) => {
       | Texp_record(items, _) => {
         addForRecord(expression.exp_type, items);
       }
+      | Texp_construct(lident, constructor, _args) => {
+        addForConstructor(expression.exp_type, lident, constructor);
+      }
       | _ => ()
     }
   };
@@ -167,7 +188,7 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
     addReference(stamp, d.name.loc);
     switch (d.contents.Type.kind) {
       | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ, typLoc}) => {
-        print_endline("In a record label " ++ string_of_int(stamp) ++ " type stamp " ++ string_of_int(d.stamp));
+        /* print_endline("In a record label " ++ string_of_int(stamp) ++ " type stamp " ++ string_of_int(d.stamp)); */
         addReference(stamp, name.loc);
         addLocation(name.loc, Loc.Typed(typ, Loc.Definition(stamp, Attribute(name.txt))))
       });

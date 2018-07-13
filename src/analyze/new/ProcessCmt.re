@@ -84,7 +84,7 @@ let forItem = (
         res: cd_res |?>> t => t.ctyp_type,
       }))
       | Ttype_record(labels) => Record(labels |> List.map((({ld_id: {stamp: astamp}, ld_name: name, ld_type: {ctyp_type, ctyp_loc}}) => {
-        print_endline("Stamping a record label " ++ string_of_int(stamp) ++ " label stamp " ++ string_of_int(astamp));
+        /* print_endline("Stamping a record label " ++ string_of_int(stamp) ++ " label stamp " ++ string_of_int(astamp)); */
         {
         Type.Attribute.stamp: astamp,
         name,
