@@ -173,7 +173,6 @@ module F = (Collector: {let extra: extra; let file: file}) => {
   };
 };
 
-
 let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Implementation(structure) => {
   let extra = initExtra();
@@ -188,7 +187,6 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
     addReference(stamp, d.name.loc);
     switch (d.contents.Type.kind) {
       | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ, typLoc}) => {
-        /* print_endline("In a record label " ++ string_of_int(stamp) ++ " type stamp " ++ string_of_int(d.stamp)); */
         addReference(stamp, name.loc);
         addLocation(name.loc, Loc.Typed(typ, Loc.Definition(stamp, Attribute(name.txt))))
       });
@@ -203,6 +201,5 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
   List.iter(Iter.iter_structure_item, structure.str_items);
   Some(extra)
 }
-/* | Interface(signature) => Some(forSignature(processDoc, signature.sig_items)) */
 | _ => None
 };

@@ -30,7 +30,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
 
       let (line, char) = cpos;
 
-      string_of_int(i) ++ ": " ++ switch (References.forPos(
+      "  " ++ string_of_int(i) ++ ": " ++ switch (References.forPos(
         ~extra,
         ~getModule=0,
         (line + 1, char))) {
@@ -49,11 +49,11 @@ let output = TestUtils.process(lines, (files, mainFile) => {
           } else {
             "FAIL\n" ++ (
               extra |> List.map(((uri, off, (l, c))) => Printf.sprintf(
-                "not found - %s %d (%d, %d)\n" , uri, off, l, c
+                "    not found - %s %d (%d, %d)\n" , uri, off, l, c
               )) |> String.concat("")
             ) ++ (
               unexpected |> List.map(((uri, off, (l, c))) => Printf.sprintf(
-                "extra ref - %s %d (%d, %d)\n" , uri, off, l, c
+                "    extra ref - %s %d (%d, %d)\n" , uri, off, l, c
               )) |> String.concat("")
             )
           }
