@@ -81,6 +81,7 @@ Exported(ExportedModule("C", NotExportedModule("B", ExportedModule("A", File("ur
 /* TODO maybe track the loc's of these things */
 type visibilityPath =
 | File(string)
+| NotVisible
 | ExportedModule(string, visibilityPath)
 | HiddenModule(string, visibilityPath)
 | Expression(visibilityPath);
@@ -171,7 +172,7 @@ type path =
 /* | Tip(string, 'tip) */
 | Nested(string, path);
 
-/* type fullPath('tip) = (path, 'tip) */
+/* type fullPath = ([`Local(int) | `Global(string, path)], tip); */
 
 type openTracker = {
   path: Path.t,
@@ -184,15 +185,10 @@ type openTracker = {
 
 module Loc = {
   type typed =
-  | Value(Path.t)
-  | Type(Path.t)
-  | Module(Path.t)
-  | Constructor(Path.t, string)
-  | Attribute(Path.t, string)
-  | ConstructorDefinition(int, string)
-  | AttributeDefinition(int, string)
-  | ValueDefinition(int)
-  | TypeDefinition(int);
+  | LocalReference(int, tip)
+  | GlobalReference(string, path, tip)
+  | NotFound
+  | Definition(int, tip);
   type t =
   | Typed(Types.type_expr, typed)
   | Explanation(string)
@@ -212,4 +208,15 @@ let initExtra = () => {
   externalReferences: Hashtbl.create(10),
   locations: [],
   opens: Hashtbl.create(10),
+};
+
+let hashList = h => Hashtbl.fold((a, b, c) => [(a, b), ...c], h, []);
+
+let showExtra = ({internalReferences, locations}) => {
+  let refs = hashList(internalReferences) |> List.map(((stamp, locs)) => {
+    /* let {name} = Hashtbl.find() */
+    "Stamp: " ++ string_of_int(stamp) ++ "\n - "
+    ++ String.concat("\n - ", List.map(Utils.showLocation, locs))
+  }) |> String.concat("\n");
+  "## Extra:\n\n" ++ refs
 };

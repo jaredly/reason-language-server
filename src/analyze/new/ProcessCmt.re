@@ -21,14 +21,14 @@ let getTopDoc = structure => {
   };
 };
 
-let newDeclared = (~contents, ~name, ~stamp, ~env, exported, attributes) => {
+let newDeclared = (~contents, ~name, ~stamp, ~modulePath, ~processDoc, exported, attributes) => {
   {
     name,
     stamp,
     deprecated: PrepareUtils.findDeprecatedAttribute(attributes),
-    exported: !Hashtbl.mem(exported, name.txt),
-    modulePath: env.modulePath,
-    docstring: PrepareUtils.findDocAttribute(attributes) |?>> env.processDoc,
+    exported,
+    modulePath,
+    docstring: PrepareUtils.findDocAttribute(attributes) |?>> processDoc,
     contents,
     /* scopeType: Let, */
     /* scopeStart: env.scopeStart, */
@@ -36,7 +36,10 @@ let newDeclared = (~contents, ~name, ~stamp, ~env, exported, attributes) => {
 };
 
 let addItem = (~name, ~stamp, ~env, ~contents, attributes, exported, stamps) => {
-  let declared = newDeclared(~contents, ~name, ~stamp, ~env, exported, attributes);
+  let declared = newDeclared(~contents, ~name, ~stamp,
+  ~modulePath=env.modulePath,
+  ~processDoc=env.processDoc,
+  !Hashtbl.mem(exported, name.txt), attributes);
   if (!Hashtbl.mem(exported, name.txt)) {
     Hashtbl.add(exported, name.txt, stamp);
   };
@@ -80,12 +83,14 @@ let forItem = (
         args: cd_args |> List.map(t => (t.ctyp_type, t.ctyp_loc)),
         res: cd_res |?>> t => t.ctyp_type,
       }))
-      | Ttype_record(labels) => Record(labels |> List.map((({ld_id: {stamp}, ld_name: name, ld_type: {ctyp_type, ctyp_loc}}) => {
-        Type.Attribute.stamp,
+      | Ttype_record(labels) => Record(labels |> List.map((({ld_id: {stamp: astamp}, ld_name: name, ld_type: {ctyp_type, ctyp_loc}}) => {
+        print_endline("Stamping a record label " ++ string_of_int(stamp) ++ " label stamp " ++ string_of_int(astamp));
+        {
+        Type.Attribute.stamp: astamp,
         name,
         typ: ctyp_type,
         typLoc: ctyp_loc,
-      })))
+      }})))
     }
   }, ~name, ~stamp, ~env, typ_attributes, exported.types, env.stamps.types);
   {...declared, contents: Module.Type(declared.contents)}

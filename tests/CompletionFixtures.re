@@ -3,7 +3,7 @@ open Infix;
 
 let getOutput = (files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
-  let (state, package, moduleData) = TestUtils.setUp(files, text)
+  let (state, package, cmt, moduleData) = TestUtils.setUp(files, text)
   let completions = switch (PartialParser.findCompletable(text, offset)) {
   | Nothing => failwith("Nothing completable found")
   | Labeled(string) => failwith("Can't do labeled completions yet")

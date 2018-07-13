@@ -14,7 +14,7 @@ switch None {
 1: PASS
 2: PASS
 3: PASS
-4: No definition! at 2, 5
+4: PASS
 
 === Mutable
 type r = {
@@ -32,8 +32,11 @@ let c = <t1>A(3);
 let d = <c2>B(1.);
 
 -->
-1: PASS
-2: PASS
+1: FAIL
+not found - file:///path/to/Test.re 52 (2, 8)
+not found - file:///path/to/Test.re 38 (1, 8)
+
+2: No definition! at 3, 8
 
 === Cross-module Constructor
 --- Lib.re
@@ -43,9 +46,14 @@ let c = <t1>A(3);
 ---
 let m = Lib.<t1>A(2);
 -->
-1: PASS
+1: FAIL
+not found - file:///path/to/Test.re 12 (0, 12)
+not found - file:///path/to/Lib.re 52 (2, 8)
+not found - file:///path/to/Lib.re 38 (1, 8)
+extra ref - file:///path/to/Test.re 11 (0, 11)
 
-=== * Cross-module with same-name export
+
+=== Cross-module with same-name export
 --- Lib.re
 type a = | <c1>A(int) | B(float);
 let a = <t1>A(1);
@@ -55,9 +63,15 @@ let m = Lib.<t1>A(2);
 -->
 1: FAIL
 not found - file:///path/to/Test.re 12 (0, 12)
+not found - file:///path/to/Lib.re 52 (2, 8)
+not found - file:///path/to/Lib.re 38 (1, 8)
+extra ref - file:///path/to/Test.re 11 (0, 11)
 
 
 === Kitchen sink
+--- Other.re
+let thing = {Lib.<t2>name: "hi", <t3>age: 2};
+let contain = {Lib.v: B({<t2>name: "inner", <t3>age: 1}), r: {<t2>name: "one", <t3>age: 5}};
 --- Lib.re
 type <c1>record = {
   <c2>name: string,
@@ -67,27 +81,40 @@ type variant = <c4>A(int, float) | B(record);
 type container = {v: variant, r: <t1>record};
 let here = {<t2>name: "fred", <t3>age: 3};
 let a = <t4>A(3, 4.);
---- Other.re
-let thing = {Lib.<t2>name: "hi", <t3>age: 2};
-let contain = {Lib.v: B({<t2>name: "inner", <t3>age: 1}), r: {<t2>name: "one", <t3>age: 5}};
 ---
+/*
 let awesome_awesome = 10;
 let m = awesome_awesome;
 let z = string_of_int(m);
 Other.contain.r.<t3>age;
 let m = <t4>A(2,3);
+*/
 -->
-1: No definition! at 0, 5
+1: FAIL
+not found - file:///path/to/Lib.re 121 (5, 33)
+extra ref - file:///path/to/Test.re 121 (5, 33)
+extra ref - file:///path/to/Test.re 79 (4, 33)
+extra ref - file:///path/to/Test.re 5 (0, 5)
+
 2: FAIL
+not found - file:///path/to/Lib.re 142 (6, 12)
 not found - file:///path/to/Other.re 92 (1, 54)
 not found - file:///path/to/Other.re 63 (1, 25)
 not found - file:///path/to/Other.re 17 (0, 17)
+extra ref - file:///path/to/Test.re 142 (6, 12)
+extra ref - file:///path/to/Test.re 18 (1, 2)
 
 3: FAIL
-not found - file:///path/to/Test.re 93 (3, 16)
+not found - file:///path/to/Test.re 96 (4, 16)
+not found - file:///path/to/Lib.re 156 (6, 26)
 not found - file:///path/to/Other.re 105 (1, 67)
 not found - file:///path/to/Other.re 78 (1, 40)
 not found - file:///path/to/Other.re 29 (0, 29)
+extra ref - file:///path/to/Test.re 156 (6, 26)
+extra ref - file:///path/to/Test.re 34 (2, 2)
 
 4: FAIL
-not found - file:///path/to/Test.re 106 (4, 8)
+not found - file:///path/to/Test.re 109 (5, 8)
+not found - file:///path/to/Lib.re 173 (7, 8)
+extra ref - file:///path/to/Test.re 61 (4, 15)
+

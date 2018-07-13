@@ -138,20 +138,20 @@ let setUp = (files, text) => {
     ""
   );
 
-  let moduleData = switch result {
+  let (cmt, moduleData) = switch result {
     | AsYouType.Success(warnings, cmt, moduleData) => {
       /* print_endline("Good"); */
-      moduleData
+      (cmt, moduleData)
     }
     | TypeError(message, cmt, moduleData) => {
       /* print_endline("Failed " ++ message); */
-      moduleData
+      (cmt, moduleData)
     }
   };
   Hashtbl.replace(state.compiledDocuments, mainUri, result);
   Hashtbl.replace(state.lastDefinitions, mainUri, moduleData);
 
-  (state, package, moduleData)
+  (state, package, cmt, moduleData)
 };
 
 let iterTests = (lines, iter) => {
