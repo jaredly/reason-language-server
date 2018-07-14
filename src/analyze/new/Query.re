@@ -7,6 +7,8 @@ type queryEnv = {
   exported: Module.exported,
 };
 
+let fileEnv = file => {file, exported: file.contents.exported};
+
 let hashFind = (tbl, key) => switch (Hashtbl.find(tbl, key)) {
   | exception Not_found => None
   | result => Some(result)
@@ -100,12 +102,21 @@ let resolveFromCompilerPath = (~env, ~getModule, path) => {
   }
 };
 
+let declaredForTip = (~env, stamp, tip) => switch tip {
+  | Value => hashFind(env.file.stamps.values, stamp) |?>> x => {...x, contents: ()}
+  | Attribute(_) | Constructor(_)
+  | Type => hashFind(env.file.stamps.types, stamp) |?>> x => {...x, contents: ()}
+  | Module => hashFind(env.file.stamps.modules, stamp) |?>> x => {...x, contents: ()}
+  | ModuleType => hashFind(env.file.stamps.moduleTypes, stamp) |?>> x => {...x, contents: ()}
+};
+
 let exportedForTip = (~env, name, tip) => switch tip {
   | Value => hashFind(env.exported.values, name)
+  | Attribute(_) | Constructor(_)
   | Type => hashFind(env.exported.types, name)
   | Module => hashFind(env.exported.modules, name)
   | ModuleType => hashFind(env.exported.moduleTypes, name)
-  | Attribute(aname) => {
+  /* | Attribute(aname) => {
     let%opt stamp = hashFind(env.exported.types, name);
     let%opt {contents: {kind}} = hashFind(env.file.stamps.types, stamp);
     switch (kind) {
@@ -126,5 +137,5 @@ let exportedForTip = (~env, name, tip) => switch tip {
       }
       | _ => None
     }
-  }
+  } */
 };

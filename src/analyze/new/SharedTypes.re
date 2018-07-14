@@ -99,6 +99,18 @@ type declared('t) = {
   /* scopeStart: (int, int), */
 };
 
+let isVisible = declared =>
+  declared.exported && {
+    let rec loop = v => switch v {
+      | File(_) => true
+      | NotVisible => false
+      | ExportedModule(_, inner) => loop(inner)
+      | HiddenModule(_, _) => false
+      | Expression(_) => false
+    };
+    loop(declared.modulePath)
+  };
+
 type namedMap('t) = Hashtbl.t(string, 't);
 type namedStampMap = namedMap(int);
 
@@ -156,6 +168,7 @@ type file = {
   uri: string,
   docstring: option(string),
   stamps,
+  moduleName: string,
   contents: Module.contents,
 };
 
@@ -171,6 +184,16 @@ type path =
 | Tip(string)
 /* | Tip(string, 'tip) */
 | Nested(string, path);
+
+let rec pathFromVisibility = (visibilityPath, current) => switch visibilityPath {
+  | File(_) => Some(current)
+  | ExportedModule(name, inner) => pathFromVisibility(inner, Nested(name, current))
+  | NotVisible
+  | HiddenModule(_, _)
+  | Expression(_) => None
+};
+
+let pathFromVisibility = (visibilityPath, tipName) => pathFromVisibility(visibilityPath, Tip(tipName));
 
 /* type fullPath = ([`Local(int) | `Global(string, path)], tip); */
 
