@@ -29,6 +29,7 @@ type package = {
 };
 
 type settings = {
+  formatWidth: option(int),
   perValueCodelens: bool,
   opensCodelens: bool,
   dependenciesCodelens: bool,

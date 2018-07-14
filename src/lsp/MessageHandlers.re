@@ -263,7 +263,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       |?>> endPos => {
         let substring = String.sub(text, startPos, endPos - startPos);
         open InfixResult;
-        AsYouType.format(substring, package.refmtPath) |?>> text => {
+        AsYouType.format(~formatWidth=state.settings.formatWidth, substring, package.refmtPath) |?>> text => {
           open Rpc.J;
           (state, l([o([
             ("range", Infix.(|!)(Json.get("range", params), "what")),
@@ -317,7 +317,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     |?> uri => State.getPackage(uri, state)
     |?> package => {
       let text = State.getContents(uri, state);
-      AsYouType.format(text, package.refmtPath) |?>> newText => {
+      AsYouType.format(~formatWidth=state.settings.formatWidth, text, package.refmtPath) |?>> newText => {
         open Rpc.J;
         (state, text == newText ? Json.Null : l([o([
           ("range", Protocol.rangeOfInts(

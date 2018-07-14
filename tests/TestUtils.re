@@ -84,6 +84,7 @@ let getState = () => {
     compiledDocuments: Hashtbl.create(10),
     lastDefinitions: Hashtbl.create(10),
     settings: {
+      formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,
       dependenciesCodelens: true,

@@ -102,6 +102,7 @@ let getInitialState = (params) => {
     compiledDocuments: Hashtbl.create(10),
     lastDefinitions: Hashtbl.create(10),
     settings: {
+      formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,
       dependenciesCodelens: true,
@@ -221,7 +222,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
-    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, dependenciesCodelens}})
+    let formatWidth = (settings |?> Json.get("format_width") |?> Json.number) |?>> int_of_float;
+    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, formatWidth, dependenciesCodelens}})
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;
