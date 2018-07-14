@@ -68,17 +68,24 @@ module F = (Collector: {let extra: extra; let file: file}) => {
   let addForRecord = (recordType, items) => {
     switch (dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
-        switch (getTypeAtPath(path)) {
-          | `Local({contents: {kind: Record(attributes)}}) => {
-            items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
-              let name = Longident.last(txt);
-              let%opt_consume {stamp} = Belt.List.getBy(attributes, a => a.name.txt == name);
-              addReference(stamp, loc);
-              addLocation(loc, Loc.Typed(lbl_res, LocalReference(stamp, Attribute(name))))
-            })
-          }
-          | _ => ()
-        }
+        let t = getTypeAtPath(path);
+        items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
+          let name = Longident.last(txt);
+          let locType = switch (t) {
+            | `Local({contents: {kind: Record(attributes)}}) => {
+              {
+                let%opt_wrap {stamp} = Belt.List.getBy(attributes, a => a.name.txt == name);
+                addReference(stamp, loc);
+                Loc.LocalReference(stamp, Attribute(name));
+              } |? Loc.NotFound
+            }
+            | `Global(moduleName, path) =>
+              addExternalReference(moduleName, path, Attribute(name), loc);
+              Loc.GlobalReference(moduleName, path, Attribute(name))
+            | _ => Loc.NotFound
+          };
+          addLocation(loc, Loc.Typed(lbl_res, locType))
+        })
       }
       | _ => ()
     }
@@ -87,16 +94,21 @@ module F = (Collector: {let extra: extra; let file: file}) => {
   let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
     switch (dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
-        switch (getTypeAtPath(path)) {
+        let name = Longident.last(txt);
+        let nameLoc = Utils.endOfLocation(loc, String.length(name));
+        let locType = switch (getTypeAtPath(path)) {
           | `Local({contents: {kind: Variant(constructos)}}) => {
-            let%opt_consume {stamp} = Belt.List.getBy(constructos, a => a.name.txt == cstr_name);
-            let name = Longident.last(txt);
-            let nameLoc = Utils.endOfLocation(loc, String.length(name));
+            {let%opt_wrap {stamp} = Belt.List.getBy(constructos, a => a.name.txt == cstr_name);
             addReference(stamp, nameLoc);
-            addLocation(nameLoc, Loc.Typed(constructorType, LocalReference(stamp, Constructor(name))))
+            Loc.LocalReference(stamp, Constructor(name))
+            } |? Loc.NotFound
           }
-          | _ => ()
-        }
+          | `Global(moduleName, path) =>
+            addExternalReference(moduleName, path, Constructor(name), loc);
+            Loc.GlobalReference(moduleName, path, Constructor(name))
+          | _ => Loc.NotFound
+        };
+        addLocation(nameLoc, Loc.Typed(constructorType, locType));
       }
       | _ => ()
     }
