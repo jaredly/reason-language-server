@@ -21,12 +21,12 @@ let getPackage = (localModules) => {
 let offsetToPos = (text, offset) => {
   let pre = String.sub(text, 0, offset);
   if (pre == "") {
-    (0, 0)
+    (1, 0)
   } else {
 
     let lines = Str.split(Str.regexp_string("\n"), pre);
     let last = List.hd(List.rev(lines));
-    (List.length(lines) - 1, String.length(last))
+    (List.length(lines), String.length(last))
   }
 };
 

@@ -11,7 +11,29 @@ let testFile = "./tests/TestReferences.txt";
 let lines = Files.readFileExn(testFile) |> Utils.splitLines;
 let output = TestUtils.process(lines, (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
-  let (state, _package, cmt, _) = TestUtils.setUp(files, text);
+  let (state, package, cmt, _) = TestUtils.setUp(files, text);
+
+  let fileNames = files |. Belt.List.map(fst);
+  let fileNames = ["Test.re", ...fileNames];
+  let fileData = fileNames |. Belt.List.map((name) => {
+    let moduleName = Filename.chop_extension(name) |. String.capitalize;
+    let uri = TestUtils.uriForName(name);
+    open Infix;
+    let%opt_force (cmt, _) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+    let%opt_force file = ProcessCmt.forCmt(uri, x => x, cmt);
+    let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
+    (moduleName, (uri, cmt, file, extra))
+  });
+
+  let allModules = fileData |. Belt.List.map(((name, _)) => name);
+  let getModule = moduleName => {
+    let%opt (_, _, file, _) = Belt.List.getAssoc(fileData, moduleName, (==));
+    Some(file)
+  };
+  let getExtra = moduleName => {
+    let%opt (_, _, _, extra) = Belt.List.getAssoc(fileData, moduleName, (==));
+    Some(extra)
+  };
 
   let%opt_force file = ProcessCmt.forCmt("file://hello.re", x => x, cmt);
   let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
@@ -23,41 +45,52 @@ let output = TestUtils.process(lines, (files, mainFile) => {
       /* let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints); */
       let targets = List.filter(((name, contents)) => name == "t" ++ string_of_int(i), waypoints);
       /* let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
-      let%opt_force (cmt, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
 
-      let%opt_force file = ProcessCmt.forCmt("file://hello.re", x => x, cmt);
+      let%opt_force (cmt, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
+      let%opt_force file = ProcessCmt.forCmt(curi, x => x, cmt);
       let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
 
-      let (line, char) = cpos;
+      /* let (line, char) = cpos; */
 
-      "  " ++ string_of_int(i) ++ ": " ++ switch (References.forPos(
-        ~extra,
-        ~getModule=0,
-        (line + 1, char))) {
-        | None => "No definition! at " ++ showPos(cpos)
-        | Some(allReferences) =>
-          let targetValues = targets |> List.map(((a, b)) => b);
-          let found = allReferences |> List.map(((uri, refs)) => {
-            refs |> List.map((({Location.loc_start: {pos_cnum, pos_lnum, pos_bol}})) => (
-              uri, pos_cnum, (pos_lnum - 1, pos_cnum - pos_bol)
-            ))
-          }) |> List.concat;
-          let extra = targetValues |> List.filter(t => !List.mem(t, found));
-          let unexpected = found |> List.filter(((uri, off, _) as t) => !List.mem(t, targetValues) && (uri != curi || off != cursor));
-          if (extra == [] && unexpected == []) {
-            "PASS"
-          } else {
-            "FAIL\n" ++ (
-              extra |> List.map(((uri, off, (l, c))) => Printf.sprintf(
-                "    not found - %s %d (%d, %d)\n" , uri, off, l, c
-              )) |> String.concat("")
-            ) ++ (
-              unexpected |> List.map(((uri, off, (l, c))) => Printf.sprintf(
-                "    extra ref - %s %d (%d, %d)\n" , uri, off, l, c
-              )) |> String.concat("")
-            )
+      switch (References.locForPos(~extra, cpos)) {
+        | None => "  " ++ string_of_int(i) ++ " - no location at pos " ++ showPos(cpos)
+        | Some(loc) => {
+          "  " ++ string_of_int(i) ++ ": " ++ switch (References.forLoc(
+            ~file,
+            ~extra,
+            ~allModules,
+            ~getModule,
+            ~getExtra,
+            loc
+          )) {
+            | None => "No definition! at " ++ showPos(cpos)
+            | Some(allReferences) =>
+            print_endline("Rfs " ++ string_of_int(List.length(allReferences)));
+              let targetValues = targets |> List.map(((a, b)) => b);
+              let found = allReferences |> List.map(((uri, refs)) => {
+                refs |> List.map((({Location.loc_start: {pos_cnum, pos_lnum, pos_bol}})) => (
+                  uri, pos_cnum, (pos_lnum, pos_cnum - pos_bol)
+                ))
+              }) |> List.concat;
+              let extra = targetValues |> List.filter(t => !List.mem(t, found));
+              let unexpected = found |> List.filter(((uri, off, _) as t) => !List.mem(t, targetValues) && (uri != curi || off != cursor));
+              if (extra == [] && unexpected == []) {
+                "PASS"
+              } else {
+                "FAIL\n" ++ (
+                  extra |> List.map(((uri, off, (l, c))) => Printf.sprintf(
+                    "    missing reference - %s %d (%d, %d)\n" , uri, off, l, c
+                  )) |> String.concat("")
+                ) ++ (
+                  unexpected |> List.map(((uri, off, (l, c))) => Printf.sprintf(
+                    "    extra ref - %s %d (%d, %d)\n" , uri, off, l, c
+                  )) |> String.concat("")
+                )
+              }
           }
+
         }
+      }
   };
   let rec loop = i => {
     switch (List.assoc("c" ++ string_of_int(i), waypoints)) {

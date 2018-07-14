@@ -235,11 +235,15 @@ let initExtra = () => {
 
 let hashList = h => Hashtbl.fold((a, b, c) => [(a, b), ...c], h, []);
 
-let showExtra = ({internalReferences, locations}) => {
+let showExtra = ({internalReferences, locations, externalReferences}) => {
   let refs = hashList(internalReferences) |> List.map(((stamp, locs)) => {
     /* let {name} = Hashtbl.find() */
     "Stamp: " ++ string_of_int(stamp) ++ "\n - "
     ++ String.concat("\n - ", List.map(Utils.showLocation, locs))
   }) |> String.concat("\n");
-  "## Extra:\n\n" ++ refs
+  let erefs = hashList(externalReferences) |> List.map(((moduleName, refs)) => {
+    "External " ++ moduleName ++ ":\n - "
+    ++ String.concat("\n - ", List.map(((path, tip, loc)) => Utils.showLocation(loc), refs))
+  }) |> String.concat("\n");
+  "## Extra:\n\n" ++ refs ++ "\n" ++ erefs
 };
