@@ -22,6 +22,11 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     let%opt_force (cmt, _) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
     let%opt_force file = ProcessCmt.forCmt(uri, x => x, cmt);
     let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
+
+    print_newline();
+    Log.log(uri);
+    Log.log(SharedTypes.showExtra(extra));
+
     (moduleName, (uri, cmt, file, extra))
   });
 
@@ -35,10 +40,8 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     Some(extra)
   };
 
-  let%opt_force file = ProcessCmt.forCmt("file://hello.re", x => x, cmt);
-  let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
-
-  Log.log(SharedTypes.showExtra(extra));
+  /* let%opt_force file = ProcessCmt.forCmt("file://hello.re", x => x, cmt);
+  let%opt_force extra = ProcessExtra.forCmt(~file, cmt); */
 
   let num = List.length(waypoints) / 2;
   let process = (i, curi, cursor, cpos) => {
@@ -65,7 +68,6 @@ let output = TestUtils.process(lines, (files, mainFile) => {
           )) {
             | None => "No definition! at " ++ showPos(cpos)
             | Some(allReferences) =>
-            print_endline("Rfs " ++ string_of_int(List.length(allReferences)));
               let targetValues = targets |> List.map(((a, b)) => b);
               let found = allReferences |> List.map(((uri, refs)) => {
                 refs |> List.map((({Location.loc_start: {pos_cnum, pos_lnum, pos_bol}})) => (

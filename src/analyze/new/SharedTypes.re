@@ -20,6 +20,27 @@ and kind =
   | Constructor(Types.constructor_declaration, string, Types.type_declaration)
   | Attribute(Types.type_expr, string, Types.type_declaration); */
 
+/* TODO maybe track the loc's of these things */
+type visibilityPath =
+| File(string)
+| NotVisible
+| ExportedModule(string, visibilityPath)
+| HiddenModule(string, visibilityPath)
+| Expression(visibilityPath);
+
+/* TODO maybe keep track of the "current module path" */
+type declared('t) = {
+  name: Location.loc(string),
+  stamp: int,
+  deprecated: option(string),
+  modulePath: visibilityPath,
+  exported: bool,
+  docstring: option(string),
+  contents: 't,
+  /* scopeType: scope, */
+  /* scopeStart: (int, int), */
+};
+
 module Type = {
   module Attribute = {
     type t = {
@@ -58,12 +79,12 @@ module Value = {
   };
 };
 
-type scope =
+/* type scope =
 | File
 | Switch
 | Module
 | Let
-| LetRec;
+| LetRec; */
 
 /**
 
@@ -77,27 +98,6 @@ Exported(ExportedModule("C", NotExportedModule("B", ExportedModule("A", File("ur
  */
 
 
-
-/* TODO maybe track the loc's of these things */
-type visibilityPath =
-| File(string)
-| NotVisible
-| ExportedModule(string, visibilityPath)
-| HiddenModule(string, visibilityPath)
-| Expression(visibilityPath);
-
-/* TODO maybe keep track of the "current module path" */
-type declared('t) = {
-  name: Location.loc(string),
-  stamp: int,
-  deprecated: option(string),
-  modulePath: visibilityPath,
-  exported: bool,
-  docstring: option(string),
-  contents: 't,
-  /* scopeType: scope, */
-  /* scopeStart: (int, int), */
-};
 
 let isVisible = declared =>
   declared.exported && {
@@ -180,10 +180,24 @@ type tip =
 | Module
 | ModuleType;
 
+let tipToString = tip => switch tip {
+| Value => "Value"
+| Type => "Type"
+| Attribute(a) => "Attribute(" ++ a ++ ")"
+| Constructor(a) => "Constructor(" ++ a ++ ")"
+| Module => "Module"
+| ModuleType => "ModuleType"
+};
+
 type path =
 | Tip(string)
 /* | Tip(string, 'tip) */
 | Nested(string, path);
+
+let rec pathToString = path => switch path {
+  | Tip(name) => name
+  | Nested(name, inner) => name ++ " > " ++ pathToString(inner)
+};
 
 let rec pathFromVisibility = (visibilityPath, current) => switch visibilityPath {
   | File(_) => Some(current)
@@ -220,6 +234,7 @@ module Loc = {
 
 /** These are the bits of info that we need to make in-app stuff awesome */
 type extra = {
+  /* todo maybe I want a stampToDeclared map or something */
   internalReferences: Hashtbl.t(int, list(Location.t)),
   externalReferences: Hashtbl.t(string, list((path, tip, Location.t))),
   mutable locations: list((Location.t, Loc.t)),
@@ -243,7 +258,12 @@ let showExtra = ({internalReferences, locations, externalReferences}) => {
   }) |> String.concat("\n");
   let erefs = hashList(externalReferences) |> List.map(((moduleName, refs)) => {
     "External " ++ moduleName ++ ":\n - "
-    ++ String.concat("\n - ", List.map(((path, tip, loc)) => Utils.showLocation(loc), refs))
+    ++ String.concat("\n - ",
+    List.map(((path, tip, loc)) => 
+      Utils.showLocation(loc)
+      ++ " : " ++ pathToString(path) ++ " : " ++ tipToString(tip)
+    , refs)
+    )
   }) |> String.concat("\n");
   "## Extra:\n\n" ++ refs ++ "\n" ++ erefs
 };

@@ -43,14 +43,21 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
     | Typed(_, LocalReference(stamp, tip))
     | Typed(_, Definition(stamp, tip)) => {
       let env = {Query.file, exported: file.contents.exported};
-      let%opt local = extra.internalReferences |. Query.hashFind(stamp);
+      open Infix;
+      let%opt localStamp = switch tip {
+        | Constructor(name) => Query.getConstructor(file, stamp, name) |?>> x => x.stamp
+        | Attribute(name) => Query.getAttribute(file, stamp, name) |?>> x => x.stamp
+        | _ => Some(stamp)
+      };
+      let%opt local = extra.internalReferences |. Query.hashFind(localStamp);
       open Infix;
       let externals = {
+        print_endline("Checking externals: " ++ string_of_int(stamp));
         let%opt declared = Query.declaredForTip(~env, stamp, tip);
         if (isVisible(declared)) {
           /* print_endline("Visible! from " ++ file.moduleName); */
           let%opt path = pathFromVisibility(declared.modulePath, declared.name.txt);
-          /* print_endline("Now path allz " ++ string_of_int(List.length(allModules))); */
+          print_endline("Now checking path " ++ pathToString(path));
           let thisModuleName = file.moduleName;
           allModules |. Belt.List.keep(name => name != file.moduleName) |. Belt.List.keepMap(name => {
             /* print_endline("Looking at module " ++ name); */
@@ -66,7 +73,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
             Some((file.uri, refs))
           }) |. Some
         } else {
-          /* print_endline("Not visible"); */
+          print_endline("Not visible");
           Some([])
         }
       } |? [];

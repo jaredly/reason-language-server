@@ -200,11 +200,11 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
     switch (d.contents.Type.kind) {
       | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ, typLoc}) => {
         addReference(stamp, name.loc);
-        addLocation(name.loc, Loc.Typed(typ, Loc.Definition(stamp, Attribute(name.txt))))
+        addLocation(name.loc, Loc.Typed(typ, Loc.Definition(d.stamp, Attribute(name.txt))))
       });
       | Variant(constructos) => constructos |> List.iter(({Type.Constructor.stamp, name}) => {
         addReference(stamp, name.loc);
-        addLocation(name.loc, Loc.Typed({Types.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))}, Loc.Definition(stamp, Constructor(name.txt))))
+        addLocation(name.loc, Loc.Typed({Types.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))}, Loc.Definition(d.stamp, Constructor(name.txt))))
       });
       | _ => ()
     };

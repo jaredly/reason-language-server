@@ -44,17 +44,15 @@ let y = <t1>Lib.x;
 -->
   1: PASS
 
-=== Cross-module Constructor
+=== * Cross-module Constructor
 --- Lib.re
 type a = | <c1>A(int) | B(float);
 let b = <t1>A(1);
 let c = <t1>A(3);
 ---
-let m = Lib.<t1>A(2);
+let m = <t1>Lib.A(2);
 -->
-  1: FAIL
-    missing reference - file:///path/to/Test.re 12 (1, 12)
-
+  1: PASS
 
 === Cross-module with same-name export
 --- Lib.re
@@ -106,4 +104,3 @@ let m = <t4>A(2,3);
 
   4: FAIL
     missing reference - file:///path/to/Test.re 109 (6, 8)
-
