@@ -24,7 +24,7 @@ let locForPos = (~extra, pos) => {
   });
 };
 
-let local = (~file, ~extra, loc) =>
+let local = (~extra, loc) =>
   switch (loc) {
   | Loc.Explanation(_)
   | Typed(_, NotFound)
@@ -57,4 +57,10 @@ let forLoc = (~file, ~extra, ~getModule, ~getExtra, loc) => {
       None
     }
   }
+};
+
+let forPos = (~extra, ~getModule, pos) => {
+  let%opt loc = locForPos(~extra, pos);
+  let%opt refs = local(~extra, loc);
+  Some([("file:///path/to/Test.re", refs)])
 };

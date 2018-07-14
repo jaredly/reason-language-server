@@ -44,12 +44,12 @@ let c = <t1>A(3);
 let m = Lib.<t1>A(2);
 -->
   1: FAIL
-   not found - file:///path/to/Test.re 12 (0, 12)
-   not found - file:///path/to/Lib.re 52 (2, 8)
-   not found - file:///path/to/Lib.re 38 (1, 8)
-   extra ref - file:///path/to/Test.re 52 (2, 8)
-   extra ref - file:///path/to/Test.re 38 (1, 8)
-   extra ref - file:///path/to/Test.re 11 (0, 11)
+    not found - file:///path/to/Test.re 12 (0, 12)
+    not found - file:///path/to/Lib.re 52 (2, 8)
+    not found - file:///path/to/Lib.re 38 (1, 8)
+    extra ref - file:///path/to/Test.re 52 (2, 8)
+    extra ref - file:///path/to/Test.re 38 (1, 8)
+    extra ref - file:///path/to/Test.re 11 (0, 11)
 
 
 === Cross-module with same-name export
@@ -61,12 +61,12 @@ let c = <t1>A(3);
 let m = Lib.<t1>A(2);
 -->
   1: FAIL
-   not found - file:///path/to/Test.re 12 (0, 12)
-   not found - file:///path/to/Lib.re 52 (2, 8)
-   not found - file:///path/to/Lib.re 38 (1, 8)
-   extra ref - file:///path/to/Test.re 52 (2, 8)
-   extra ref - file:///path/to/Test.re 38 (1, 8)
-   extra ref - file:///path/to/Test.re 11 (0, 11)
+    not found - file:///path/to/Test.re 12 (0, 12)
+    not found - file:///path/to/Lib.re 52 (2, 8)
+    not found - file:///path/to/Lib.re 38 (1, 8)
+    extra ref - file:///path/to/Test.re 52 (2, 8)
+    extra ref - file:///path/to/Test.re 38 (1, 8)
+    extra ref - file:///path/to/Test.re 11 (0, 11)
 
 
 === Kitchen sink
@@ -92,31 +92,31 @@ let m = <t4>A(2,3);
 */
 -->
   1: FAIL
-   not found - file:///path/to/Lib.re 121 (5, 33)
-   extra ref - file:///path/to/Test.re 121 (5, 33)
-   extra ref - file:///path/to/Test.re 79 (4, 33)
-   extra ref - file:///path/to/Test.re 5 (0, 5)
+    not found - file:///path/to/Lib.re 121 (5, 33)
+    extra ref - file:///path/to/Test.re 121 (5, 33)
+    extra ref - file:///path/to/Test.re 79 (4, 33)
+    extra ref - file:///path/to/Test.re 5 (0, 5)
 
   2: FAIL
-   not found - file:///path/to/Lib.re 142 (6, 12)
-   not found - file:///path/to/Other.re 92 (1, 54)
-   not found - file:///path/to/Other.re 63 (1, 25)
-   not found - file:///path/to/Other.re 17 (0, 17)
-   extra ref - file:///path/to/Test.re 142 (6, 12)
-   extra ref - file:///path/to/Test.re 18 (1, 2)
+    not found - file:///path/to/Lib.re 142 (6, 12)
+    not found - file:///path/to/Other.re 92 (1, 54)
+    not found - file:///path/to/Other.re 63 (1, 25)
+    not found - file:///path/to/Other.re 17 (0, 17)
+    extra ref - file:///path/to/Test.re 142 (6, 12)
+    extra ref - file:///path/to/Test.re 18 (1, 2)
 
   3: FAIL
-   not found - file:///path/to/Test.re 96 (4, 16)
-   not found - file:///path/to/Lib.re 156 (6, 26)
-   not found - file:///path/to/Other.re 105 (1, 67)
-   not found - file:///path/to/Other.re 78 (1, 40)
-   not found - file:///path/to/Other.re 29 (0, 29)
-   extra ref - file:///path/to/Test.re 156 (6, 26)
-   extra ref - file:///path/to/Test.re 34 (2, 2)
+    not found - file:///path/to/Test.re 96 (4, 16)
+    not found - file:///path/to/Lib.re 156 (6, 26)
+    not found - file:///path/to/Other.re 105 (1, 67)
+    not found - file:///path/to/Other.re 78 (1, 40)
+    not found - file:///path/to/Other.re 29 (0, 29)
+    extra ref - file:///path/to/Test.re 156 (6, 26)
+    extra ref - file:///path/to/Test.re 34 (2, 2)
 
   4: FAIL
-   not found - file:///path/to/Test.re 109 (5, 8)
-   not found - file:///path/to/Lib.re 173 (7, 8)
-   extra ref - file:///path/to/Test.re 173 (7, 8)
-   extra ref - file:///path/to/Test.re 61 (4, 15)
+    not found - file:///path/to/Test.re 109 (5, 8)
+    not found - file:///path/to/Lib.re 173 (7, 8)
+    extra ref - file:///path/to/Test.re 173 (7, 8)
+    extra ref - file:///path/to/Test.re 61 (4, 15)
 
