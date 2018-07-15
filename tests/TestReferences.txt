@@ -64,6 +64,20 @@ let m = Lib.<t1>A(2);
 -->
   1: PASS
 
+=== Nested modules
+--- Lib.re
+module M = {
+  type t = | <c1>A(int) | B;
+};
+---
+open Lib.M;
+let r = <t1>A(3);
+
+-->
+  1: FAIL
+    missing reference - file:///path/to/Test.re 20 (2, 8)
+
+
 === Kitchen sink
 --- Other.re
 let thing = {Lib.<t2>name: "hi", <t3>age: 2};

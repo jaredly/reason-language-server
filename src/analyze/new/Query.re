@@ -36,19 +36,19 @@ let rec resolvePathInner = (~env, ~path) => {
     | Tip(name) => Some(`Local(env, name))
     | Nested(subName, subPath) => {
       let%opt stamp = hashFind(env.exported.modules, subName);
-      let%opt {contents: {kind}} = hashFind(env.file.stamps.modules, stamp);
+      let%opt {contents: kind} = hashFind(env.file.stamps.modules, stamp);
       findInModule(~env, kind, subPath)
     }
   }
 } and findInModule = (~env, kind, path) => {
   switch kind {
   | Module.Structure({exported}) => resolvePathInner(~env={...env, exported}, ~path)
-  | Ident(modulePath, _ident) =>
+  | Ident(modulePath) =>
     let (stamp, moduleName, fullPath) = joinPaths(modulePath, path);
     if (stamp == 0) {
       Some(`Global(moduleName, fullPath))
     } else {
-      let%opt {contents: {kind}} = hashFind(env.file.stamps.modules, stamp);
+      let%opt {contents: kind} = hashFind(env.file.stamps.modules, stamp);
       findInModule(~env, kind, fullPath);
     }
   }
@@ -73,7 +73,7 @@ let fromCompilerPath = (~env, path) => {
     | `Path((0, moduleName, path)) => `Global(moduleName, path)
     | `Path((stamp, moduleName, path)) => {
       let res = {
-        let%opt {contents: {Module.kind}} = hashFind(env.file.stamps.modules, stamp);
+        let%opt {contents: kind} = hashFind(env.file.stamps.modules, stamp);
         let%opt_wrap res = findInModule(~env, kind, path);
         switch res {
           | `Local(env, name) => `Exported(env, name)

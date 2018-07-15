@@ -187,17 +187,23 @@ module F = (Collector: {let extra: extra; let file: file}) => {
   };
 };
 
+let noType = {Types.id: 0, level: 0, desc: Tnil};
+
 let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Implementation(structure) => {
   let extra = initExtra();
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
+  file.stamps.modules |> Hashtbl.iter((stamp, d) => {
+    addLocation(d.name.loc, Loc.Typed(noType, Loc.Definition(stamp, Module)));
+    addReference(stamp, d.name.loc);
+  });
   file.stamps.values |> Hashtbl.iter((stamp, d) => {
     addLocation(d.name.loc, Loc.Typed(d.contents.Value.typ, Loc.Definition(stamp, Value)));
     addReference(stamp, d.name.loc);
   });
   file.stamps.types |> Hashtbl.iter((stamp, d) => {
-    addLocation(d.name.loc, Loc.Typed({Types.id: 0, level: 0, desc: Tnil}, Loc.Definition(stamp, Type)));
+    addLocation(d.name.loc, Loc.Typed(noType, Loc.Definition(stamp, Type)));
     addReference(stamp, d.name.loc);
     switch (d.contents.Type.kind) {
       | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ, typLoc}) => {

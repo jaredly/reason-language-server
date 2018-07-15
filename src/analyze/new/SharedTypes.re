@@ -132,20 +132,21 @@ module Module = {
   type item =
   | Value(Value.t)
   | Type(Type.t)
-  | Module(t)
-  | ModuleType(t)
+  | Module(kind)
+  | ModuleType(kind)
   and contents = {
     exported,
     mutable topLevel: list(declared(item)),
   }
   and kind =
-  | Ident(Path.t, Location.loc(Longident.t))
-  | Structure(contents)
+  | Ident(Path.t)
+  /* , Location.loc(Longident.t)) */
+  | Structure(contents);
   /* | JustType */
-  and t = {
+  /* and t = {
     typ: Types.module_type,
     kind,
-  };
+  }; */
 };
 
 type stampMap('t) = Hashtbl.t(int, 't);
@@ -153,8 +154,8 @@ type stampMap('t) = Hashtbl.t(int, 't);
 type stamps = {
   types: stampMap(declared(Type.t)),
   values: stampMap(declared(Value.t)),
-  modules: stampMap(declared(Module.t)),
-  moduleTypes: stampMap(declared(Module.t)),
+  modules: stampMap(declared(Module.kind)),
+  moduleTypes: stampMap(declared(Module.kind)),
 };
 
 let initStamps = () => {

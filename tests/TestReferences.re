@@ -23,9 +23,9 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     let%opt_force file = ProcessCmt.forCmt(uri, x => x, cmt);
     let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
 
-    /* print_newline();
+    print_newline();
     Log.log(uri);
-    Log.log(SharedTypes.showExtra(extra)); */
+    Log.log(SharedTypes.showExtra(extra));
 
     (moduleName, (uri, cmt, file, extra))
   });
