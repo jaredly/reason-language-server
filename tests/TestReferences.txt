@@ -22,7 +22,7 @@ type r = {
 };
 let m = {<c1><t2>n: "hello"};
 -->
-  1: PASS
+  1: No definition! at 4, 9
   2: PASS
 
 === Constructor
@@ -33,7 +33,7 @@ let d = <c2>B(1.);
 
 -->
   1: PASS
-  2: PASS
+  2: No definition! at 4, 8
 
 === Basic cross-module
 --- Lib.re
@@ -44,7 +44,7 @@ let y = <t1>Lib.x;
 -->
   1: PASS
 
-=== * Cross-module Constructor
+=== Cross-module Constructor
 --- Lib.re
 type a = | <c1>A(int) | B(float);
 let b = <t1>A(1);
@@ -64,6 +64,7 @@ let m = Lib.<t1>A(2);
 -->
   1: FAIL
     missing reference - file:///path/to/Test.re 12 (1, 12)
+    extra ref - file:///path/to/Test.re 8 (1, 8)
 
 
 === Kitchen sink
@@ -92,15 +93,12 @@ let m = <t4>A(2,3);
     extra ref - file:///path/to/Lib.re 79 (5, 33)
 
   2: FAIL
-    missing reference - file:///path/to/Other.re 92 (2, 54)
-    missing reference - file:///path/to/Other.re 63 (2, 25)
     missing reference - file:///path/to/Other.re 17 (1, 17)
+    extra ref - file:///path/to/Other.re 13 (1, 13)
 
   3: FAIL
     missing reference - file:///path/to/Test.re 96 (5, 16)
-    missing reference - file:///path/to/Other.re 105 (2, 67)
-    missing reference - file:///path/to/Other.re 78 (2, 40)
-    missing reference - file:///path/to/Other.re 29 (1, 29)
 
   4: FAIL
     missing reference - file:///path/to/Test.re 109 (6, 8)
+

@@ -138,26 +138,4 @@ let exportedForTip = (~env, name, tip) => switch tip {
   | Type => hashFind(env.exported.types, name)
   | Module => hashFind(env.exported.modules, name)
   | ModuleType => hashFind(env.exported.moduleTypes, name)
-  /* | Attribute(aname) => {
-    let%opt stamp = hashFind(env.exported.types, name);
-    let%opt {contents: {kind}} = hashFind(env.file.stamps.types, stamp);
-    switch (kind) {
-      | Record(labels) => {
-        let%opt label = labels |. Belt.List.getBy(label => label.name.txt == aname);
-        Some(label.stamp)
-      }
-      | _ => None
-    }
-  }
-  | Constructor(aname) => {
-    let%opt stamp = hashFind(env.exported.types, name);
-    let%opt {contents: {kind}} = hashFind(env.file.stamps.types, stamp);
-    switch (kind) {
-      | Variant(constructors) => {
-        let%opt const = constructors |. Belt.List.getBy(const => const.name.txt == aname);
-        Some(const.stamp)
-      }
-      | _ => None
-    }
-  } */
 };
