@@ -33,7 +33,7 @@ let d = <c2>B(1.);
 
 -->
   1: PASS
-  2: No definition! at 4, 8
+  2: PASS
 
 === Basic cross-module
 --- Lib.re

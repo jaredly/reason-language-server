@@ -97,10 +97,11 @@ module F = (Collector: {let extra: extra; let file: file}) => {
         let name = Longident.last(txt);
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
         let locType = switch (getTypeAtPath(path)) {
-          | `Local({contents: {kind: Variant(constructos)}}) => {
-            {let%opt_wrap {stamp} = Belt.List.getBy(constructos, a => a.name.txt == cstr_name);
-            addReference(stamp, nameLoc);
-            Loc.LocalReference(stamp, Constructor(name))
+          | `Local({stamp, contents: {kind: Variant(constructos)}}) => {
+            {
+              let%opt_wrap {stamp: cstamp} = Belt.List.getBy(constructos, a => a.name.txt == cstr_name);
+              addReference(cstamp, nameLoc);
+              Loc.LocalReference(stamp, Constructor(name))
             } |? Loc.NotFound
           }
           | `Global(moduleName, path) =>
