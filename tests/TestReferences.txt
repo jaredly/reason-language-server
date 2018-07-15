@@ -60,12 +60,9 @@ type a = | <c1>A(int) | B(float);
 let a = <t1>A(1);
 let c = <t1>A(3);
 ---
-let m = Lib.<t1>A(2);
+let m = <t1>Lib.A(2);
 -->
-  1: FAIL
-    missing reference - file:///path/to/Test.re 12 (1, 12)
-    extra ref - file:///path/to/Test.re 8 (1, 8)
-
+  1: PASS
 
 === Kitchen sink
 --- Other.re
