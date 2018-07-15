@@ -39,7 +39,7 @@ let d = <c2>B(1.);
 --- Lib.re
 let <c1>x = 10;
 ---
-let y = <t1>Lib.x;
+let y = Lib.<t1>x;
 
 -->
   1: PASS
@@ -83,7 +83,7 @@ module C = {
   let x = 10;
 };
 module Z = M(C);
-let r = <c1>Z.v;
+let r = Z.<c1>v;
 -->
   1: PASS
 
@@ -94,11 +94,11 @@ module M = (N: {let x: int}) => {
 };
 ---
 module Z = Lib.M({let x = 10});
-let r = <t1>Z.v;
+let r = Z.<t1>v;
 -->
   1: PASS
 
-=== * Functor arg
+=== Functor arg
 module M = (N: {let <c1>x: int}) => {
   let v = 20 + N.<t1>x;
 };
@@ -119,13 +119,11 @@ type container = {v: variant, r: <t1>record};
 let here = {<t2>name: "fred", <t3>age: 3};
 let a = <t4>A(3, 4.);
 ---
-/*
 let awesome_awesome = 10;
 let m = awesome_awesome;
 let z = string_of_int(m);
-Other.contain.r.age;
-let m = A(2,3);
-*/
+let m = Lib.<t4>A(2,3.);
+Other.contain.r.<t3>age;
 -->
   1: PASS
   2: PASS

@@ -65,6 +65,32 @@ module F = (Collector: {let extra: extra; let file: file}) => {
     addLocation(loc, Loc.Typed(typ, locType));
   };
 
+  let addForField = (recordType, item, {Asttypes.txt, loc}) => {
+    switch (dig(recordType).desc) {
+      | Tconstr(path, _args, _memo) => {
+        let t = getTypeAtPath(path);
+        let {Types.lbl_loc, lbl_res} = item;
+        let name = Longident.last(txt);
+        let nameLoc = Utils.endOfLocation(loc, String.length(name));
+        let locType = switch (t) {
+          | `Local({stamp, contents: {kind: Record(attributes)}}) => {
+            {
+              let%opt_wrap {stamp: astamp} = Belt.List.getBy(attributes, a => a.name.txt == name);
+              addReference(astamp, nameLoc);
+              Loc.LocalReference(stamp, Attribute(name));
+            } |? Loc.NotFound
+          }
+          | `Global(moduleName, path) =>
+            addExternalReference(moduleName, path, Attribute(name), nameLoc);
+            Loc.GlobalReference(moduleName, path, Attribute(name))
+          | _ => Loc.NotFound
+        };
+        addLocation(nameLoc, Loc.Typed(lbl_res, locType))
+      }
+      | _ => ()
+    }
+  };
+
   let addForRecord = (recordType, items) => {
     switch (dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
@@ -201,6 +227,9 @@ module F = (Collector: {let extra: extra; let file: file}) => {
       }
       | Texp_construct(lident, constructor, _args) => {
         addForConstructor(expression.exp_type, lident, constructor);
+      }
+      | Texp_field(inner, lident, label_description) => {
+        addForField(inner.exp_type, label_description, lident)
       }
       | _ => ()
     }
