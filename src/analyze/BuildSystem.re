@@ -41,8 +41,6 @@ let bsbExecutable = Filename.dirname(bsPlatformDir) /+ ".bin" /+ "bsb";
 
 let closestNodeModulesDir = Filename.dirname(bsPlatformDir);
 
-Log.log("Starting Lang Server. " ++ closestNodeModulesDir);
-
 let detect = (rootPath, bsconfig) => {
   let%try_wrap bsbVersion = {
     let (output, success) = Commands.execSync(bsbExecutable ++ " -version");
