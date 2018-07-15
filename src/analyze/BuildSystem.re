@@ -1,4 +1,3 @@
-
 type target =
   | Js
   | Bytecode
@@ -10,25 +9,50 @@ type t =
   /* The bool is "Is Bytecode" */
   | BsbNative(string, target);
 
-let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
+let isNative = config =>
+  Json.get("entries", config) != None
+  || Json.get("allowed-build-kinds", config) != None;
 
-let getLine = (cmd, ~pwd) => {
+let getLine = (cmd, ~pwd) =>
   switch (Commands.execFull(~pwd, cmd)) {
-    | ([line], _, true) => Result.Ok(line)
-    | (out, err, _) => Error("Invalid response for " ++ cmd ++ "\n\n" ++ String.concat("\n", out @ err))
-  }
-};
-
-open Infix;
-let detect = (rootPath, bsconfig) => {
-  let%try_wrap bsbVersion = {
-    let (output, success) = Commands.execSync(rootPath /+ "node_modules/.bin/bsb -version");
-    success ? switch output {
-    | [line] => Ok(String.trim(line))
-    | _ => Error("Unable to determine bsb version")
-    } : Error("Could not run bsb");
+  | ([line], _, true) => Result.Ok(line)
+  | (out, err, _) =>
+    Error(
+      "Invalid response for "
+      ++ cmd
+      ++ "\n\n"
+      ++ String.concat("\n", out @ err),
+    )
   };
 
+open Infix;
+
+/* Not sure if raising an exception is the best option... */
+let bsPlatformDir =
+  switch (ModuleResolution.resolveNodeModulePath("bs-platform")) {
+  | Result.Ok(path) => path
+  | Result.Error(message) => failwith(message)
+  };
+
+/* One dir up, then into .bin.
+    Is .bin always in the modules directory?
+   */
+let bsbExecutable = Filename.dirname(bsPlatformDir) /+ ".bin" /+ "bsb";
+
+let closestNodeModulesDir = Filename.dirname(bsPlatformDir);
+
+Log.log("Starting Lang Server. " ++ closestNodeModulesDir);
+
+let detect = (rootPath, bsconfig) => {
+  let%try_wrap bsbVersion = {
+    let (output, success) = Commands.execSync(bsbExecutable ++ " -version");
+    success ?
+      switch (output) {
+      | [line] => Ok(String.trim(line))
+      | _ => Error("Unable to determine bsb version")
+      } :
+      Error("Could not run bsb");
+  };
   /* TODO add a config option to specify native vs bytecode vs js backend */
   isNative(bsconfig) ? BsbNative(bsbVersion, Native) : Bsb(bsbVersion);
 };
@@ -49,53 +73,49 @@ let getCompiledBase = (root, buildSystem) =>
 let getStdlib = (base, buildSystem) =>
   switch (buildSystem) {
   | BsbNative(_, Js)
-  | Bsb(_) => [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml"]
-  | BsbNative("3.2.0", Native) =>
-    [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native",
-    base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
-  | BsbNative("3.2.0", Bytecode) =>
-    [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "bytecode",
-    base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
-  | BsbNative(_, Bytecode | Native) =>
-    [base
-    /+ "node_modules"
-    /+ "bs-platform"
-    /+ "vendor"
-    /+ "ocaml"
-    /+ "lib"
-    /+ "ocaml"]
+  | Bsb(_) => [bsPlatformDir /+ "lib" /+ "ocaml"]
+  | BsbNative("3.2.0", Native) => [
+      bsPlatformDir /+ "lib" /+ "ocaml" /+ "native",
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml",
+    ]
+  | BsbNative("3.2.0", Bytecode) => [
+      bsPlatformDir /+ "lib" /+ "ocaml" /+ "bytecode",
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml",
+    ]
+  | BsbNative(_, Bytecode | Native) => [
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml",
+    ]
   | Dune => failwith("Don't know how to find the dune stdlib")
   };
 
-let getCompiler = (rootPath, buildSystem) => {
+let getCompiler = (rootPath, buildSystem) =>
   switch (buildSystem) {
-    | BsbNative(_, Js)
-    | Bsb(_) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe"
-    | BsbNative(_, Native) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
-    | BsbNative(_, Bytecode) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
-    | Dune => {
-      let%try_force ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
-      ocamlopt ++ " -c"
-    }
+  | BsbNative(_, Js)
+  | Bsb(_) => bsPlatformDir /+ "lib" /+ "bsc.exe"
+  | BsbNative(_, Native) =>
+    bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+  | BsbNative(_, Bytecode) =>
+    bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
+  | Dune =>
+    let%try_force ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
+    ocamlopt ++ " -c";
   };
-};
 
-let getRefmt = (rootPath, buildSystem) => {
+let getRefmt = (rootPath, buildSystem) =>
   switch (buildSystem) {
-    | BsbNative("3.2.0", _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
-    | Bsb(version) when version > "2.2.0" => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
-    | Bsb(_) | BsbNative(_, _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe"
-    | Dune => {
-      let%try_force refmt = getLine("esy which refmt", ~pwd=rootPath);
-      refmt
-    }
+  | BsbNative("3.2.0", _) => bsPlatformDir /+ "lib" /+ "refmt.exe"
+  | Bsb(version) when version > "2.2.0" =>
+    bsPlatformDir /+ "lib" /+ "refmt.exe"
+  | Bsb(_)
+  | BsbNative(_, _) => bsPlatformDir /+ "lib" /+ "refmt3.exe"
+  | Dune =>
+    let%try_force refmt = getLine("esy which refmt", ~pwd=rootPath);
+    refmt;
   };
-};
 
-let hiddenLocation = (rootPath, buildSystem) => {
+let hiddenLocation = (rootPath, buildSystem) =>
   switch (buildSystem) {
-    | Bsb(_)
-    | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
-    | Dune => rootPath /+ "_build" /+ ".lsp"
+  | Bsb(_)
+  | BsbNative(_, _) => closestNodeModulesDir /+ ".lsp"
+  | Dune => rootPath /+ "_build" /+ ".lsp"
   };
-};
