@@ -81,6 +81,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
     | Open => None
     | Typed(_, LocalReference(stamp, tip))
     | Typed(_, Definition(stamp, tip)) => {
+      /* print_endline("Local stamp " ++ string_of_int(stamp) ++ " " ++ tipToString(tip)); */
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip)
     }
     | Typed(_, GlobalReference(moduleName, path, tip)) => {

@@ -22,7 +22,7 @@ type r = {
 };
 let m = {<c1><t2>n: "hello"};
 -->
-  1: No definition! at 4, 9
+  1: PASS
   2: PASS
 
 === Constructor

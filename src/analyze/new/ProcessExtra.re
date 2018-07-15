@@ -72,10 +72,10 @@ module F = (Collector: {let extra: extra; let file: file}) => {
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
           let name = Longident.last(txt);
           let locType = switch (t) {
-            | `Local({contents: {kind: Record(attributes)}}) => {
+            | `Local({stamp, contents: {kind: Record(attributes)}}) => {
               {
-                let%opt_wrap {stamp} = Belt.List.getBy(attributes, a => a.name.txt == name);
-                addReference(stamp, loc);
+                let%opt_wrap {stamp: astamp} = Belt.List.getBy(attributes, a => a.name.txt == name);
+                addReference(astamp, loc);
                 Loc.LocalReference(stamp, Attribute(name));
               } |? Loc.NotFound
             }
