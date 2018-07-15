@@ -120,7 +120,7 @@ let rec forItem = (
     },
   bindings)
 | Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: name, mb_expr: {mod_desc}}) => {
-  let contents = forModule(env, mod_desc);
+  let contents = forModule(env, mod_desc, name.txt);
   let declared = addItem(~contents, ~name, ~stamp, ~env, mb_attributes, exported.modules, env.stamps.modules);
   [{...declared, contents: Module.Module(declared.contents)}]
 }
@@ -153,14 +153,15 @@ let rec forItem = (
   | _ => []
 }
 
-and forModule = (env, mod_desc) => switch mod_desc {
+and forModule = (env, mod_desc, moduleName) => switch mod_desc {
   | Tmod_ident(path, lident) => Module.Ident(path)
   | Tmod_structure(structure) => {
+    let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
     let (doc, contents) = forStructure(~env, structure.str_items);
     Module.Structure(contents)
   }
-  | Tmod_functor(argIdent, argName, maybeType, resultExpr) => forModule(env, resultExpr.mod_desc)
-  | Tmod_apply(functor_, arg, coersion) => forModule(env, functor_.mod_desc)
+  | Tmod_functor(argIdent, argName, maybeType, resultExpr) => forModule(env, resultExpr.mod_desc, moduleName)
+  | Tmod_apply(functor_, arg, coersion) => forModule(env, functor_.mod_desc, moduleName)
   | Tmod_unpack(expr, moduleType) => forModuleType(env, moduleType)
   | Tmod_constraint(expr, typ, constraint_, coersion) => {
     /* TODO do this better I think */

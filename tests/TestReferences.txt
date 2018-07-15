@@ -72,11 +72,31 @@ module M = {
 ---
 open Lib.M;
 let r = <t1>A(3);
-
 -->
-  1: FAIL
-    missing reference - file:///path/to/Test.re 20 (2, 8)
+  1: PASS
 
+=== Functor
+module M = (N: {let x: int}) => {
+  let <t1>v = 20 + N.x;
+};
+module C = {
+  let x = 10;
+};
+module Z = M(C);
+let r = <c1>Z.v;
+-->
+  1: PASS
+
+=== Cross-file Functor
+--- Lib.re
+module M = (N: {let x: int}) => {
+  let <c1>v = 20 + N.x;
+};
+---
+module Z = Lib.M({let x = 10});
+let r = <t1>Z.v;
+-->
+  1: PASS
 
 === Kitchen sink
 --- Other.re
