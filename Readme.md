@@ -11,12 +11,14 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 
 ## Contributing
 
-- open this project in vscode
-- install dependencies and build the example project `cd example-project && npm i && npm run build && cd ..`
+- clone
+- cd to the cloned dir
+- run `npm install` from the main project dir
+- run the following command to install dependenceis for example projects `for dir in ./examples/*; do (cd "$dir" && npm install); done`
 - install the client's dependencies `cd client && npm i && cd ..`
-- install the server's dependencies & start it running `npm i && npm start`
+- start it up `npm start`
+- open this project in vscode
 - select "Debug > Start Without Debugging" from the vscode menu
 - it should start up a window titled `[Extension development host]`
-- you then need to open the 'example-project' in that development window, and clicking "open folder" doesn't seem to do it -- I've had to drag the folder from finder on to the window, and then it will work.
 
 You can then develop on the language server! When you change something, the server will automatically reload.
