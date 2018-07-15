@@ -21,6 +21,13 @@ let getTopDoc = structure => {
   };
 };
 
+let getTopSigDoc = structure => {
+  switch structure {
+  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+  | _ => (None, structure)
+  };
+};
+
 let newDeclared = (~contents, ~name, ~stamp, ~modulePath, ~processDoc, exported, attributes) => {
   {
     name,
@@ -36,10 +43,15 @@ let newDeclared = (~contents, ~name, ~stamp, ~modulePath, ~processDoc, exported,
 };
 
 let addItem = (~name, ~stamp, ~env, ~contents, attributes, exported, stamps) => {
-  let declared = newDeclared(~contents, ~name, ~stamp,
-  ~modulePath=env.modulePath,
-  ~processDoc=env.processDoc,
-  !Hashtbl.mem(exported, name.txt), attributes);
+  let declared = newDeclared(
+    ~contents,
+    ~name,
+    ~stamp,
+    ~modulePath=env.modulePath,
+    ~processDoc=env.processDoc,
+    ! Hashtbl.mem(exported, name.txt),
+    attributes,
+  );
   if (!Hashtbl.mem(exported, name.txt)) {
     Hashtbl.add(exported, name.txt, stamp);
   };
@@ -98,6 +110,40 @@ let rec forSignatureType = (env, signature) => {
     Module.Structure(forSignatureType(env, signature))
   }
   | Mty_functor(argIdent, argType, resultType) => forModuleType(env, resultType)
+};
+
+let forSignatureItem = (~env, ~exported: Module.exported, item) => {
+  switch (item.sig_desc) {
+  | Tsig_value({val_id: {stamp}, val_name: name, val_desc, val_attributes}) => {
+    let declared = addItem(
+      ~name,
+      ~stamp,
+      ~contents={Value.typ: val_desc.ctyp_type, recursive: false},
+      ~env,
+      val_attributes,
+      exported.values,
+      env.stamps.values
+    );
+    Some({...declared, contents: Module.Value(declared.contents)})
+  }
+  | _ => None
+  }
+};
+
+let rec forSignature = (~env, items) => {
+  let (doc, items) = getTopSigDoc(items);
+  let exported = Module.initExported();
+  let topLevel = Belt.List.keepMap(items, forSignatureItem(~env, ~exported));
+  (doc, {Module.exported, topLevel})
+};
+
+let rec forTreeModuleType = (~env, {mty_desc, mty_loc, mty_attributes}) => switch mty_desc {
+  | Tmty_ident(_) => None
+  | Tmty_signature({sig_items}) => {
+    let (doc, contents) = forSignature(~env, sig_items);
+    Some(Module.Structure(contents))
+  }
+  | _ => None
 };
 
 let rec forItem = (
@@ -160,7 +206,21 @@ and forModule = (env, mod_desc, moduleName) => switch mod_desc {
     let (doc, contents) = forStructure(~env, structure.str_items);
     Module.Structure(contents)
   }
-  | Tmod_functor(argIdent, argName, maybeType, resultExpr) => forModule(env, resultExpr.mod_desc, moduleName)
+  | Tmod_functor({stamp}, argName, maybeType, resultExpr) => {
+    maybeType |?> forTreeModuleType(~env) |?< kind => {
+      let declared = newDeclared(
+        ~contents=kind,
+        ~name=argName,
+        ~stamp,
+        ~modulePath=NotVisible,
+        ~processDoc=env.processDoc,
+        false,
+        [],
+      );
+      Hashtbl.add(env.stamps.modules, stamp, declared);
+    };
+    forModule(env, resultExpr.mod_desc, moduleName)
+  }
   | Tmod_apply(functor_, arg, coersion) => forModule(env, functor_.mod_desc, moduleName)
   | Tmod_unpack(expr, moduleType) => forModuleType(env, moduleType)
   | Tmod_constraint(expr, typ, constraint_, coersion) => {

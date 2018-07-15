@@ -45,18 +45,18 @@ module F = (Collector: {let extra: extra; let file: file}) => {
     let identLoc = Utils.endOfLocation(loc, String.length(identName));
     let locType = switch (Query.fromCompilerPath(~env, path)) {
       | `Stamp(stamp) => {
-        addReference(stamp, loc);
+        addReference(stamp, identLoc);
         Loc.LocalReference(stamp, tip);
       }
       | `Not_found => Loc.NotFound
       | `Global(moduleName, path) => {
-        addExternalReference(moduleName, path, tip, loc);
+        addExternalReference(moduleName, path, tip, identLoc);
         Loc.GlobalReference(moduleName, path, tip)
       }
       | `Exported(env, name) => {
         let res = {
           let%opt_wrap stamp = Query.hashFind(env.exported.values, name);
-          addReference(stamp, loc);
+          addReference(stamp, identLoc);
           Loc.LocalReference(stamp, tip)
         };
         res |? Loc.NotFound
@@ -123,6 +123,26 @@ module F = (Collector: {let extra: extra; let file: file}) => {
     addLocation(loc, Loc.Explanation(doc))
   }
   /* | Tstr_type(decls)  */
+  | _ => ()
+  };
+
+  let enter_signature_item = item => switch (item.sig_desc) {
+  | Tsig_value({val_id: {stamp}, val_name: name, val_desc, val_attributes}) => {
+    if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
+      let declared = ProcessCmt.newDeclared(
+        ~name,
+        ~stamp,
+        ~modulePath=NotVisible,
+        ~processDoc=x => x,
+        ~contents={Value.typ: val_desc.ctyp_type, recursive: false},
+        false,
+        val_attributes
+      );
+      Hashtbl.add(Collector.file.stamps.values, stamp, declared);
+      addReference(stamp, name.loc);
+      addLocation(name.loc, Loc.Typed(val_desc.ctyp_type, Loc.Definition(stamp, Value)));
+    }
+  }
   | _ => ()
   };
 

@@ -98,6 +98,13 @@ let r = <t1>Z.v;
 -->
   1: PASS
 
+=== * Functor arg
+module M = (N: {let <c1>x: int}) => {
+  let v = 20 + N.<t1>x;
+};
+-->
+  1: PASS
+
 === Kitchen sink
 --- Other.re
 let thing = {Lib.<t2>name: "hi", <t3>age: 2};
