@@ -50,7 +50,7 @@ type a = | <c1>A(int) | B(float);
 let b = <t1>A(1);
 let c = <t1>A(3);
 ---
-let m = <t1>Lib.A(2);
+let m = Lib.<t1>A(2);
 -->
   1: PASS
 
@@ -60,7 +60,7 @@ type a = | <c1>A(int) | B(float);
 let a = <t1>A(1);
 let c = <t1>A(3);
 ---
-let m = <t1>Lib.A(2);
+let m = Lib.<t1>A(2);
 -->
   1: PASS
 
@@ -73,7 +73,7 @@ type <c1>record = {
   <c2>name: string,
   <c3>age: int
 };
-type variant = <c4>A(int, float) | B(record);
+type variant = <c4>A(int, float) | B(<t1>record);
 type container = {v: variant, r: <t1>record};
 let here = {<t2>name: "fred", <t3>age: 3};
 let a = <t4>A(3, 4.);
@@ -82,20 +82,11 @@ let a = <t4>A(3, 4.);
 let awesome_awesome = 10;
 let m = awesome_awesome;
 let z = string_of_int(m);
-Other.contain.r.<t3>age;
-let m = <t4>A(2,3);
+Other.contain.r.age;
+let m = A(2,3);
 */
 -->
-  1: FAIL
-    extra ref - file:///path/to/Lib.re 79 (5, 33)
-
-  2: FAIL
-    missing reference - file:///path/to/Other.re 17 (1, 17)
-    extra ref - file:///path/to/Other.re 13 (1, 13)
-
-  3: FAIL
-    missing reference - file:///path/to/Test.re 96 (5, 16)
-
-  4: FAIL
-    missing reference - file:///path/to/Test.re 109 (6, 8)
-
+  1: PASS
+  2: PASS
+  3: PASS
+  4: PASS

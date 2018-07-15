@@ -71,20 +71,21 @@ module F = (Collector: {let extra: extra; let file: file}) => {
         let t = getTypeAtPath(path);
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
           let name = Longident.last(txt);
+          let nameLoc = Utils.endOfLocation(loc, String.length(name));
           let locType = switch (t) {
             | `Local({stamp, contents: {kind: Record(attributes)}}) => {
               {
                 let%opt_wrap {stamp: astamp} = Belt.List.getBy(attributes, a => a.name.txt == name);
-                addReference(astamp, loc);
+                addReference(astamp, nameLoc);
                 Loc.LocalReference(stamp, Attribute(name));
               } |? Loc.NotFound
             }
             | `Global(moduleName, path) =>
-              addExternalReference(moduleName, path, Attribute(name), loc);
+              addExternalReference(moduleName, path, Attribute(name), nameLoc);
               Loc.GlobalReference(moduleName, path, Attribute(name))
             | _ => Loc.NotFound
           };
-          addLocation(loc, Loc.Typed(lbl_res, locType))
+          addLocation(nameLoc, Loc.Typed(lbl_res, locType))
         })
       }
       | _ => ()
@@ -105,7 +106,7 @@ module F = (Collector: {let extra: extra; let file: file}) => {
             } |? Loc.NotFound
           }
           | `Global(moduleName, path) =>
-            addExternalReference(moduleName, path, Constructor(name), loc);
+            addExternalReference(moduleName, path, Constructor(name), nameLoc);
             Loc.GlobalReference(moduleName, path, Constructor(name))
           | _ => Loc.NotFound
         };
