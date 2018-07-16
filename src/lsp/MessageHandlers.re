@@ -1,802 +1,227 @@
-open Result;
-
-open State;
-
 open Infix;
 
-let extend = (obj, items) =>
-  Json.obj(obj) |?>> (current => Json.Object(current @ items));
-
-let log = Log.log;
-
-let maybeHash = (h, k) =>
-  if (Hashtbl.mem(h, k)) {
-    Some(Hashtbl.find(h, k));
-  } else {
-    None;
+let shouldExist = (message, v) => Files.exists(v) ? v : failwith(message ++ ": " ++ v);
+let oneShouldExist = (message, items) => {
+  let rec loop = left => switch left {
+  | [] => failwith(message ++ " Looked at " ++ String.concat(", ", items))
+  | [one, ...more] => Files.exists(one) ? one : loop(more)
   };
+  loop(items)
+};
 
-type handler =
-  | Handler(
-             string,
-             Json.t => result('a, string),
-             (state, 'a) => result((state, Json.t), string),
-           ): handler;
+let ifOneExists = (items) => {
+  let rec loop = left => switch left {
+  | [] => None
+  | [one, ...more] => Files.exists(one) ? Some(one) : loop(more)
+  };
+  loop(items)
+};
 
-let handlers:
-  list((string, (state, Json.t) => result((state, Json.t), string))) = [
-  (
-    "textDocument/definition",
-    (state, params) =>
-      InfixResult.(
-        params
-        |> RJson.get("textDocument")
-        |?> RJson.get("uri")
-        |?> RJson.string
-        |?> (
-          uri =>
-            RJson.get("position", params)
-            |?> Protocol.rgetPosition
-            |?> (
-              position =>
-                State.getPackage(uri, state)
-                |?> (
-                  package =>
-                    switch (State.getDefinitionData(uri, state, ~package)) {
-                    | None => Error("Parse error, can't find definition")
-                    | Some(data) =>
-                      Log.log("Ok have definition data for " ++ uri);
-                      switch (
-                        State.definitionForPos(
-                          uri,
-                          position,
-                          data,
-                          state,
-                          ~package,
-                        )
-                      ) {
-                      | Some((_, None, _, _))
-                      | Some((_, _, _, None))
-                      | None => Ok((state, Json.Null))
-                      | Some((_, Some(loc), docs, Some(uri))) =>
-                        Ok((
-                          state,
-                          Json.Object([
-                            ("uri", Json.String(uri)),
-                            ("range", Protocol.rangeOfLoc(loc)),
-                          ]),
-                        ))
-                      };
-                    }
-                )
-            )
-        )
-      ),
-  ),
-  /** TODO implement */
-  ("textDocument/signatureHelp", (state, params) => Ok((state, Json.Null))),
-  (
-    "textDocument/completion",
-    (state, params) =>
-      InfixResult.(
-        Protocol.rPositionParams(params)
-        |?> (
-          ((uri, pos)) =>
-            maybeHash(state.documentText, uri)
-            |> orError("No document text found")
-            |?> (
-              ((text, version, isClean)) =>
-                State.getPackage(uri, state)
-                |?> (
-                  package =>
-                    PartialParser.positionToOffset(text, pos)
-                    |> orError("invalid offset")
-                    |?>> (
-                      offset => {
-                        open Rpc.J;
-                        let completions =
-                          switch (PartialParser.findCompletable(text, offset)) {
-                          | Nothing =>
-                            Log.log("Nothing completable found :/");
-                            [];
-                          | Labeled(string) =>
-                            Log.log(
-                              "don't yet support completion for argument labels, but I hope to soon!",
-                            );
-                            [];
-                          | Lident(string) =>
-                            log("Completing for string " ++ string);
-                            let parts =
-                              Str.split(Str.regexp_string("."), string);
-                            let parts =
-                              string.[String.length(string) - 1] == '.' ?
-                                parts @ [""] : parts;
-                            let currentModuleName =
-                              String.capitalize(
-                                Filename.chop_extension(
-                                  Filename.basename(uri),
-                                ),
-                              );
-                            let opens = PartialParser.findOpens(text, offset);
-                            /* */
-                            let localData =
-                              State.getLastDefinitions(uri, state);
-                            let useMarkdown =
-                              ! state.settings.clientNeedsPlainText;
-                            Completions.get(
-                              currentModuleName,
-                              opens,
-                              parts,
-                              state,
-                              localData,
-                              pos,
-                              ~package,
-                            )
-                            |> List.map(
-                                 (
-                                   {
-                                     Completions.kind,
-                                     uri,
-                                     label,
-                                     detail,
-                                     documentation,
-                                   },
-                                 ) =>
-                                 o([
-                                   ("label", s(label)),
-                                   ("kind", i(Completions.kindToInt(kind))),
-                                   ("detail", Infix.(detail |?>> s |? null)),
-                                   (
-                                     "documentation",
-                                     Infix.(
-                                       documentation
-                                       |?>> (
-                                         d =>
-                                           d
-                                           ++ "\n\n"
-                                           ++ fold(uri, "", uri =>
-                                                (useMarkdown ? "*" : "")
-                                                ++ (
-                                                  Utils.startsWith(
-                                                    uri,
-                                                    state.rootPath ++ "/",
-                                                  ) ?
-                                                    Utils.sliceToEnd(
-                                                      uri,
-                                                      String.length(
-                                                        state.rootPath ++ "/",
-                                                      ),
-                                                    ) :
-                                                    uri
-                                                )
-                                                ++ (useMarkdown ? "*" : "")
-                                              )
-                                       )
-                                       |?>> Protocol.contentKind(useMarkdown)
-                                       |? null
-                                     ),
-                                   ),
-                                   (
-                                     "data",
-                                     switch (kind) {
-                                     | RootModule(cmt, src) =>
-                                       o([
-                                         ("cmt", s(cmt)),
-                                         ("name", s(label)),
-                                         ...fold(src, [], src =>
-                                              [("src", s(src))]
-                                            ),
-                                       ])
-                                     | _ => null
-                                     },
-                                   ),
-                                 ])
-                               );
-                          };
-                        (state, l(completions));
-                      }
-                    )
-                )
-            )
-        )
-      ),
-  ),
-  (
-    "completionItem/resolve",
-    (state, params) =>
-      switch (params |> Json.get("documentation") |?> Json.string) {
-      | Some(_) => Ok((state, params))
-      | None =>
-        let result =
-          params
-          |> Json.get("data")
-          |?> (
-            data =>
-              Json.get("cmt", data)
-              |?> Json.string
-              |?> (
-                cmt =>
-                  Json.get("src", data)
-                  |?> Json.string
-                  |?> (
-                    src =>
-                      Json.get("name", data)
-                      |?> Json.string
-                      |?>> (
-                        name => {
-                          let (detail, docs) =
-                            Completions.getModuleResults(
-                              name,
-                              state,
-                              cmt,
-                              Some(src),
-                            );
-                          Rpc.J.(
-                            extend(
-                              params,
-                              [
-                                ("detail", detail |?>> s |? null),
-                                (
-                                  "documentation",
-                                  docs
-                                  |?>> Protocol.contentKind(
-                                         ! state.settings.clientNeedsPlainText,
-                                       )
-                                  |? null,
-                                ),
-                              ],
-                            )
-                            |? params
-                          );
-                        }
-                      )
-                  )
-              )
-          )
-          |? params;
-        Ok((state, result));
-      },
-  ),
-  (
-    "textDocument/documentHighlight",
-    (state, params) =>
-      InfixResult.(
-        Protocol.rPositionParams(params)
-        |?> (
-          ((uri, pos)) =>
-            State.getPackage(uri, state)
-            |?>> (
-              package => {
-                open Infix;
-                let highlights =
-                  State.getDefinitionData(uri, state, ~package)
-                  |?> (data => Definition.highlights(pos, data))
-                  |? [];
-                Rpc.J.(
-                  state,
-                  l(
-                    highlights
-                    |> List.map(((t, loc)) =>
-                         o([
-                           ("range", Protocol.rangeOfLoc(loc)),
-                           (
-                             "kind",
-                             i(
-                               switch (t) {
-                               | `Read => 2
-                               | `Write => 3
-                               },
-                             ),
-                           ),
-                         ])
-                       ),
-                  ),
-                );
-              }
-            )
-        )
-      ),
-  ),
-  (
-    "textDocument/references",
-    (state, params) =>
-      InfixResult.(
-        Protocol.rPositionParams(params)
-        |?> (
-          ((uri, pos)) =>
-            State.getPackage(uri, state)
-            |?>> (
-              package =>
-                Infix.(
-                  State.getDefinitionData(uri, state, ~package)
-                  |?> (
-                    data =>
-                      switch (Definition.openReferencesAtPos(data, pos)) {
-                      | Some(references) =>
-                        Some((
-                          state,
-                          Json.Array(
-                            references
-                            |> List.map(((_, _, loc)) =>
-                                 Protocol.locationOfLoc(~fname=uri, loc)
-                               ),
-                          ),
-                        ))
-                      | None =>
-                        State.referencesForPos(
-                          uri,
-                          pos,
-                          data,
-                          state,
-                          ~package,
-                        )
-                        |?>> (
-                          allReferences =>
-                            Rpc.J.(
-                              state,
-                              l(
-                                allReferences
-                                |> List.map(((fname, references)) =>
-                                     (
-                                       fname == uri ?
-                                         List.filter(
-                                           ((_, loc)) =>
-                                             !
-                                               Protocol.locationContains(
-                                                 loc,
-                                                 pos,
-                                               ),
-                                           references,
-                                         ) :
-                                         references
-                                     )
-                                     |> List.map(((_, loc)) =>
-                                          Protocol.locationOfLoc(~fname, loc)
-                                        )
-                                   )
-                                |> List.concat,
-                              ),
-                            )
-                        )
-                      }
-                  )
-                  |? (state, Json.Null)
-                )
-            )
-        )
-      ),
-  ),
-  (
-    "textDocument/rename",
-    (state, params) =>
-      InfixResult.(
-        Protocol.rPositionParams(params)
-        |?> (
-          ((uri, pos)) =>
-            State.getPackage(uri, state)
-            |?> (
-              package =>
-                RJson.get("newName", params)
-                |?> RJson.string
-                |?> (
-                  newName =>
-                    Infix.(
-                      State.getDefinitionData(uri, state, ~package)
-                      |?> (
-                        data =>
-                          State.referencesForPos(
-                            uri,
-                            pos,
-                            data,
-                            state,
-                            ~package,
-                          )
-                          |?>> (
-                            allReferences =>
-                              Rpc.J.(
-                                Ok((
-                                  state,
-                                  o([
-                                    (
-                                      "changes",
-                                      o(
-                                        allReferences
-                                        |> List.map(((uri, positions)) =>
-                                             (
-                                               uri,
-                                               l(
-                                                 positions
-                                                 |> List.map(((_, loc)) =>
-                                                      o([
-                                                        (
-                                                          "range",
-                                                          Protocol.rangeOfLoc(
-                                                            loc,
-                                                          ),
-                                                        ),
-                                                        (
-                                                          "newText",
-                                                          s(newName),
-                                                        ),
-                                                      ])
-                                                    ),
-                                               ),
-                                             )
-                                           ),
-                                      ),
-                                    ),
-                                  ]),
-                                ))
-                              )
-                          )
-                      )
-                      |? Ok((state, Json.Null))
-                    )
-                )
-            )
-        )
-      ),
-  ),
-  (
-    "textDocument/codeLens",
-    (state, params) =>
-      InfixResult.(
-        {
-          let%try uri =
-            params
-            |> RJson.get("textDocument")
-            |?> RJson.get("uri")
-            |?> RJson.string;
-          /* let%try package = State.getPackage(uri, state); */
-          switch (State.getPackage(uri, state)) {
-          | Result.Error(message) =>
-            let items = [
-              (
-                "Unable to load compilation data: " ++ message,
-                {
-                  Location.loc_start: {
-                    Lexing.pos_fname: "",
-                    pos_lnum: 1,
-                    pos_bol: 0,
-                    pos_cnum: 0,
-                  },
-                  Location.loc_end: {
-                    Lexing.pos_fname: "",
-                    pos_lnum: 1,
-                    pos_bol: 0,
-                    pos_cnum: 0,
-                  },
-                  loc_ghost: false,
-                },
-              ),
-            ];
-            Rpc.J.(
-              Ok((
-                state,
-                l(
-                  items
-                  |> List.map(((text, loc)) =>
-                       o([
-                         ("range", Protocol.rangeOfLoc(loc)),
-                         (
-                           "command",
-                           o([("title", s(text)), ("command", s(""))]),
-                         ),
-                       ])
-                     ),
-                ),
-              ))
-            );
-          | Ok(package) =>
-            open Infix;
-            let items = {
-              let%opt moduleData =
-                {
-                  let%opt (_, moduleData) =
-                    State.getCompilationResult(uri, state, ~package)
-                    |> AsYouType.getResult;
-                  Some(moduleData);
-                }
-                |?# (lazy (State.getLastDefinitions(uri, state)));
-              let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
-              let lenses =
-                showToplevelTypes ?
-                  Definition.listTopLevel(moduleData)
-                  |> Utils.filterMap(((name, loc, item, docs, scope)) =>
-                       switch (item) {
-                       | Definition.Module(_) => None
-                       | ModuleWithDocs(_) => None
-                       | Type(t) => None
-                       | Constructor(_) => None
-                       | Attribute(_) => None
-                       | Value(t) =>
-                         PrintType.default.expr(PrintType.default, t)
-                         |> PrintType.prettyString
-                         |> (s => Some((s, loc)))
-                       }
-                     ) :
-                  [];
-              let showOpens = state.settings.opensCodelens;
-              let lenses =
-                showOpens ? lenses @ Definition.opens(moduleData) : lenses;
-              let showDependencies = state.settings.dependenciesCodelens;
-              let lenses =
-                showDependencies ?
-                  [
-                    (
-                      "Dependencies: "
-                      ++ String.concat(
-                           ", ",
-                           Definition.dependencyList(moduleData),
-                         ),
-                      {
-                        Location.loc_start: {
-                          Lexing.pos_fname: "",
-                          pos_lnum: 1,
-                          pos_bol: 0,
-                          pos_cnum: 0,
-                        },
-                        Location.loc_end: {
-                          Lexing.pos_fname: "",
-                          pos_lnum: 1,
-                          pos_bol: 0,
-                          pos_cnum: 0,
-                        },
-                        loc_ghost: false,
-                      },
-                    ),
-                    ...lenses,
-                  ] :
-                  lenses;
-              Some(lenses);
-            };
-            switch (items) {
-            | None => Error("Could not get compilation data")
-            | Some(items) =>
-              open Rpc.J;
-              let out =
-                Ok((
-                  state,
-                  l(
-                    items
-                    |> List.map(((text, loc)) =>
-                         o([
-                           ("range", Protocol.rangeOfLoc(loc)),
-                           (
-                             "command",
-                             o([("title", s(text)), ("command", s(""))]),
-                           ),
-                         ])
-                       ),
-                  ),
-                ));
-              out;
-            };
-          };
+let ifDebug = (debug, name, fn, v) => {
+  if (debug) {
+    Log.log(name ++ ": " ++ fn(v))
+  };
+  v
+};
+
+
+/**
+ * Returns a list of paths, relative to the provided `base`
+ *
+ */
+let getSourceDirectories = (~includeDev=false, base, config) => {
+  let rec handleItem = (current, item) => {
+    switch item {
+    | Json.Array(contents) => List.map(handleItem(current), contents) |> List.concat
+    | Json.String(text) => [current /+ text]
+    | Json.Object(_) =>
+      let dir = Json.get("dir", item) |?> Json.string |? "Must specify directory";
+      let typ = includeDev ? "lib" : (item |> Json.get("type") |?> Json.string |? "lib");
+      if (typ == "dev") {
+        []
+      } else {
+        switch (item |> Json.get("subdirs")) {
+        | None => [current /+ dir]
+        | Some(Json.True) => Files.collectDirs(base /+ current /+ dir)
+          /* |> ifDebug(true, "Subdirs", String.concat(" - ")) */
+          |> List.filter(name => name != Filename.current_dir_name)
+          |> List.map(Files.relpath(base))
+        | Some(item) => [current /+ dir, ...handleItem(current /+ dir, item)]
         }
-      ),
-  ),
+      }
+    | _ => failwith("Invalid subdirs entry")
+    };
+  };
+  config |> Json.get("sources") |?>> handleItem("") |? []
+};
+
+
+/**
+ * Use this to get the directories you need to `-I` include to get things to compile.
+ */
+let getDependencyDirs = (base, config, ~buildSystem) => {
+  let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  deps |> List.map(name => {
+    let loc = base /+ "node_modules" /+ name;
+    switch (Files.readFile(loc /+ "bsconfig.json")) {
+    | Some(text) =>
+      let inner = Json.parse(text);
+      /* let allowedKinds = inner |> Json.get("allowed-build-kinds") |?> Json.array |?>> List.map(Json.string |.! "allowed-build-kinds must be strings") |? ["js"]; */
+      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "Cannot find directory for compiled artifacts.";
+      /* if (List.mem("js", allowedKinds)) { */
+        [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
+      /* } else {
+        []
+      } */
+    | None =>
+      Log.log("Skipping nonexistent dependency: " ++ name);
+      []
+    }
+  }) |> List.concat
+};
+
+let isCompiledFile = name =>
+  Filename.check_suffix(name, ".cmt")
+  || Filename.check_suffix(name, ".cmi")
+  || Filename.check_suffix(name, ".cmti");
+
+let isSourceFile = name =>
+  Filename.check_suffix(name, ".re")
+  || Filename.check_suffix(name, ".rei")
+  || Filename.check_suffix(name, ".ml")
+  || Filename.check_suffix(name, ".mli");
+
+let compiledNameSpace = name => Str.split(Str.regexp_string("-"), name) |> List.map(String.capitalize) |> String.concat("");
+
+let compiledBase = (~namespace, name) =>
+  Filename.chop_extension(name)
+  ++ (switch namespace { | None => "" | Some(n) => "-" ++ compiledNameSpace(n) });
+
+let cmtName = (~namespace, name) =>
+  compiledBase(~namespace, name)
+  ++ (name.[String.length(name) - 1] == 'i' ? ".cmti" : ".cmt");
+
+let cmiName = (~namespace, name) =>
+  compiledBase(~namespace, name) ++ ".cmi";
+
+let getName = x => Filename.basename(x) |> Filename.chop_extension;
+
+let filterDuplicates = cmts => {
+  /* Remove .cmt's that have .cmti's */
+  let intfs = Hashtbl.create(100);
+  cmts |> List.iter(path => if (
+    Filename.check_suffix(path, ".rei")
+    || Filename.check_suffix(path, ".mli")
+    || Filename.check_suffix(path, ".cmti")
+    ) {
+    Hashtbl.add(intfs, getName(path), true)
+  });
+  cmts |> List.filter(path => {
+    !((
+      Filename.check_suffix(path, ".re")
+      || Filename.check_suffix(path, ".ml")
+      || Filename.check_suffix(path, ".cmt")
+      || Filename.check_suffix(path, ".cmi")
+    ) && Hashtbl.mem(intfs, getName(path)))
+  });
+};
+
+let getNamespace = config => {
+  let isNamespaced = Json.get("namespace", config) |?> Json.bool |? false;
+  isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
+};
+
+let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) => {
+  let allFiles = Files.readDirectory(directory);
+  let compileds = allFiles
+  |> List.filter(isCompiledFile)
+  |> filterDuplicates;
+  let sources = fold(sourceDirectory, allFiles, Files.readDirectory) |> List.filter(isSourceFile) |> filterDuplicates;
+  let sourceBase = sourceDirectory |? directory;
+  compileds
+  |> List.map(path => {
+    let modName = getName(path);
+    let moduleName = modName |> String.capitalize;
+    let compiled = directory /+ path;
+    let source = Utils.find(name => compiledTransform(getName(name)) == modName ? Some(sourceBase /+ name) : None, sources);
+    (moduleName, (compiled, source))
+  });
+};
+
+/**
+ * returns a list of (absolute path to cmt(i), relative path from base to source file)
+ */
+let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase) => {
+  sourceDirectories
+  |> List.map(Infix.fileConcat(root))
+  |> ifDebug(debug, "Source directories", String.concat(" - "))
+  |> List.map(name => Files.collect(name, isSourceFile))
+  |> List.concat
+  |> ifDebug(debug, "Source files found", String.concat(" : "))
+  |> filterDuplicates
+  |> Utils.filterMap(path => {
+    let rel = Files.relpath(root, path);
+    ifOneExists([
+      compiledBase /+ cmtName(~namespace, rel),
+      compiledBase /+ cmiName(~namespace, rel),
+    ]) |?>> cm => (cm, path)
+  })
+  |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
+  |> List.filter(((full, rel)) => Files.exists(full))
+};
+
+type modpath = Namespaced(string, string) | Plain(string);
+
+let loadStdlib = stdlib => {
+  collectFiles(stdlib)
+  |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
+  |> List.map(((name, s)) => (Plain(name), s))
+};
+
+let needsCompilerLibs = config => {
+  config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> optMap(Json.string) |> List.mem("compiler-libs")
+};
+
+let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
+  let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  Log.log("Deps " ++ String.concat(", ", deps));
+  let depFiles = deps |> List.map(name => {
+    let loc = base /+ "node_modules" /+ name;
+    let innerPath = loc /+ "bsconfig.json";
+    Log.log("Dep loc " ++ innerPath);
+    switch (Files.readFile(innerPath)) {
+    | Some(text) =>
+      let inner = Json.parse(text);
+      let namespace = getNamespace(inner);
+      let directories = getSourceDirectories(~includeDev=false, loc, inner);
+      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "No compiled base found";
+      if (debug) {
+        Log.log("Compiled base: " ++ compiledBase)
+      };
+      let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
+      let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
+      let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
+      let files = switch namespace {
+      | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, Some(rel))), files)
+      | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, Some(rel))))
+      };
+      (compiledDirectories, files)
+    | None =>
+      Log.log("Skipping nonexistent dependency: " ++ name);
+      ([], [])
+    }
+  });
+  let (directories, files) = List.split(depFiles);
+  let files = List.concat(files);
+  let stdlibDirectories = BuildSystem.getStdlib(base, buildSystem);
+  let directories = stdlibDirectories @ List.concat(directories);
+  let results = files @ List.concat(List.map(loadStdlib,stdlibDirectories));
   (
-    "textDocument/hover",
-    (state, params) =>
-      InfixResult.(
-        {
-          let%try (uri, (line, character)) =
-            Protocol.rPositionParams(params);
-          let%try package = State.getPackage(uri, state);
-          Rpc.J.(
-            {
-              let%try result =
-                Hover.getHover(uri, line, character, state, ~package);
-              Ok(
-                switch (result) {
-                | None => (state, Json.Null)
-                | Some((text, loc)) => (
-                    state,
-                    o([
-                      ("range", Protocol.rangeOfLoc(loc)),
-                      (
-                        "contents",
-                        text
-                        |> Protocol.contentKind(
-                             ! state.settings.clientNeedsPlainText,
-                           ),
-                      ),
-                    ]),
-                  )
-                },
-              );
-            }
-          );
-        }
-      ),
-  ),
-  (
-    "textDocument/rangeFormatting",
-    (state, params) =>
-      InfixResult.(
-        params
-        |> RJson.get("textDocument")
-        |?> RJson.get("uri")
-        |?> RJson.string
-        |?> (
-          uri =>
-            State.getPackage(uri, state)
-            |?> (
-              package =>
-                RJson.get("range", params)
-                |?> Protocol.rgetRange
-                |?> (
-                  ((start, end_)) => {
-                    let text = State.getContents(uri, state);
-                    Infix.(
-                      PartialParser.positionToOffset(text, start)
-                      |?> (
-                        startPos =>
-                          PartialParser.positionToOffset(text, end_)
-                          |?>> (
-                            endPos => {
-                              let substring =
-                                String.sub(text, startPos, endPos - startPos);
-                              InfixResult.(
-                                AsYouType.format(substring, package.refmtPath)
-                                |?>> (
-                                  text =>
-                                    Rpc.J.(
-                                      state,
-                                      l([
-                                        o([
-                                          (
-                                            "range",
-                                            Infix.(|!)(
-                                              Json.get("range", params),
-                                              "what",
-                                            ),
-                                          ),
-                                          ("newText", s(text)),
-                                        ]),
-                                      ]),
-                                    )
-                                )
-                              );
-                            }
-                          )
-                      )
-                      |? Error("Invalid position")
-                    );
-                  }
-                )
-            )
-        )
-      ),
-  ),
-  (
-    "textDocument/documentSymbol",
-    (state, params) =>
-      InfixResult.(
-        params
-        |> RJson.get("textDocument")
-        |?> RJson.get("uri")
-        |?> RJson.string
-        |?> (
-          uri =>
-            State.getPackage(uri, state)
-            |?> (
-              package => {
-                open Infix;
-                /* let items = */
-                let items =
-                  State.getCompilationResult(uri, state, ~package)
-                  |> AsYouType.getResult
-                  |?>> snd
-                  |?# (lazy (State.getLastDefinitions(uri, state)))
-                  |?>> (
-                    ({Definition.topLevel, stamps}) => {
-                      let rec getItems = (path, stamp) => {
-                        let (name, loc, item, docs, scopeRange) =
-                          Hashtbl.find(stamps, stamp);
-                        let res =
-                          switch (item) {
-                          | Module(contents) =>
-                            let children =
-                              contents
-                              |> List.map(((_, stamp)) =>
-                                   getItems(path @ [name], stamp)
-                                 )
-                              |> List.concat;
-                            Some((`Module, children));
-                          | ModuleWithDocs(_) => Some((`Module, []))
-                          | Type(t) => Some((Protocol.typeKind(t), []))
-                          | Constructor(_) => None
-                          | Attribute(_) => None
-                          | Value(v) => Some((Protocol.variableKind(v), []))
-                          };
-                        res
-                        |?>> (
-                          ((typ, children)) => [
-                            (name, typ, loc, path),
-                            ...children,
-                          ]
-                        )
-                        |? [];
-                      };
-                      topLevel
-                      |> List.map(((name, stamp)) => getItems([], stamp))
-                      |> List.concat;
-                    }
-                  );
-                items
-                |?>> (
-                  items =>
-                    Rpc.J.(
-                      Ok((
-                        state,
-                        l(
-                          items
-                          |> List.map(((name, typ, loc, path)) =>
-                               o([
-                                 ("name", s(name)),
-                                 ("kind", i(Protocol.symbolKind(typ))),
-                                 ("location", Protocol.locationOfLoc(loc)),
-                                 (
-                                   "containerName",
-                                   s(String.concat(".", path)),
-                                 ),
-                               ])
-                             ),
-                        ),
-                      ))
-                    )
-                )
-                |? Ok((state, Json.Null));
-              }
-            )
-        )
-      ),
-  ),
-  (
-    "textDocument/formatting",
-    (state, params) =>
-      InfixResult.(
-        params
-        |> RJson.get("textDocument")
-        |?> RJson.get("uri")
-        |?> RJson.string
-        |?> (
-          uri =>
-            State.getPackage(uri, state)
-            |?> (
-              package => {
-                let text = State.getContents(uri, state);
-                AsYouType.format(text, package.refmtPath)
-                |?>> (
-                  newText =>
-                    Rpc.J.(
-                      state,
-                      text == newText ?
-                        Json.Null :
-                        l([
-                          o([
-                            (
-                              "range",
-                              Protocol.rangeOfInts(
-                                0,
-                                0,
-                                List.length(
-                                  Str.split(Str.regexp_string("\n"), text),
-                                )
-                                + 1,
-                                0,
-                              ),
-                            ),
-                            ("newText", s(newText)),
-                          ]),
-                        ]),
-                    )
-                );
-              }
-            )
-        )
-      ),
-  ),
-];
+    needsCompilerLibs(config)
+    ? [BuildSystem.bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs", ...directories]
+    : directories,
+    needsCompilerLibs(config)
+    ? loadStdlib(BuildSystem.bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs") @ results
+    : results
+  )
+};
