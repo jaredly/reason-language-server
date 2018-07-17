@@ -66,8 +66,8 @@ let output = TestUtils.process(lines, (files, mainFile) => {
             ~getExtra,
             loc
           )) {
-            | None => "No definition! at " ++ showPos(cpos)
-            | Some(allReferences) =>
+            | Error(e) => "No definition! at " ++ showPos(cpos) ++ " message " ++ e
+            | Ok(allReferences) =>
               let targetValues = targets |> List.map(((a, b)) => b);
               let found = allReferences |> List.map(((uri, refs)) => {
                 refs |> List.map((({Location.loc_start: {pos_cnum, pos_lnum, pos_bol}})) => (
@@ -77,9 +77,9 @@ let output = TestUtils.process(lines, (files, mainFile) => {
               let extra = targetValues |> List.filter(t => !List.mem(t, found));
               let unexpected = found |> List.filter(((uri, off, _) as t) => !List.mem(t, targetValues) && (uri != curi || off != cursor));
               if (extra == [] && unexpected == []) {
-                "PASS"
+                "✅ PASS"
               } else {
-                "FAIL\n" ++ (
+                "🔴 FAIL\n" ++ (
                   extra |> List.map(((uri, off, (l, c))) => Printf.sprintf(
                     "    missing reference - %s %d (%d, %d)\n" , uri, off, l, c
                   )) |> String.concat("")

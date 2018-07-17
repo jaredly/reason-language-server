@@ -2,6 +2,8 @@ let someLongName = 10;
 
 let otherLongName = "string";
 
+let r = Other.something;
+
 string_of_bool;
 
 module Something = {

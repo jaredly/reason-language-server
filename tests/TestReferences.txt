@@ -11,10 +11,10 @@ switch None {
   | _ => ()
 };
 -->
-  1: PASS
-  2: PASS
-  3: PASS
-  4: PASS
+  1: ✅ PASS
+  2: ✅ PASS
+  3: ✅ PASS
+  4: ✅ PASS
 
 === Mutable
 type r = {
@@ -22,8 +22,8 @@ type r = {
 };
 let m = {<c1><t2>n: "hello"};
 -->
-  1: PASS
-  2: PASS
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Constructor
 type a = | <c1>A(int) | <t2>B(float);
@@ -36,8 +36,8 @@ switch d {
 };
 
 -->
-  1: PASS
-  2: PASS
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Basic cross-module
 --- Lib.re
@@ -46,7 +46,7 @@ let <c1>x = 10;
 let y = Lib.<t1>x;
 
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Cross-module Constructor
 --- Lib.re
@@ -56,7 +56,7 @@ let c = <t1>A(3);
 ---
 let m = Lib.<t1>A(2);
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Cross-module with same-name export
 --- Lib.re
@@ -66,7 +66,7 @@ let c = <t1>A(3);
 ---
 let m = Lib.<t1>A(2);
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Nested modules
 --- Lib.re
@@ -77,7 +77,7 @@ module M = {
 open Lib.M;
 let r = <t1>A(3);
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Functor
 module M = (N: {let x: int}) => {
@@ -89,7 +89,7 @@ module C = {
 module Z = M(C);
 let r = Z.<c1>v;
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Cross-file Functor
 --- Lib.re
@@ -100,14 +100,14 @@ module M = (N: {let x: int}) => {
 module Z = Lib.M({let x = 10});
 let r = Z.<t1>v;
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Functor arg
 module M = (N: {let <c1>x: int}) => {
   let v = 20 + N.<t1>x;
 };
 -->
-  1: PASS
+  1: ✅ PASS
 
 === Kitchen sink
 --- Other.re
@@ -129,7 +129,7 @@ let z = string_of_int(m);
 let m = Lib.<t4>A(2,3.);
 Other.contain.r.<t3>age;
 -->
-  1: PASS
-  2: PASS
-  3: PASS
-  4: PASS
+  1: ✅ PASS
+  2: ✅ PASS
+  3: ✅ PASS
+  4: ✅ PASS

@@ -278,7 +278,7 @@ let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
   switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
   | Some((docstring, items)) =>
-    let%opt file = ProcessCmt.forCmi(cmi, converter(src, clientNeedsPlainText), infos);
+    let%opt file = ProcessCmt.forCmi(Utils.toUri(cmi), converter(src, clientNeedsPlainText), infos);
     let docs = Docs.moduleDocs(docstring, items, file);
     Hashtbl.replace(cmiCache, cmi, (changed, infos, docs));
     Some(docs);
@@ -383,7 +383,8 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
-    let%try_force result = AsYouType.process(~uri, ~moduleName="lsp", text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
+    let%try_force result = AsYouType.process(~uri, ~moduleName, text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()

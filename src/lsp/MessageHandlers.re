@@ -20,17 +20,19 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     let position = Utils.cmtLocFromVscode(position);
 
-    let%try (uri, loc) = References.definitionForPos(
-      ~file=data.file,
-      ~extra=data.extra,
-      ~getModule=State.fileForModule(state, ~package),
-      position
-    ) |> Result.orError("No definition found");
-
-    Ok((state, Json.Object([
-      ("uri", Json.String(uri)),
-      ("range", Protocol.rangeOfLoc(loc)),
-    ])))
+    open Infix;
+    {
+      let%opt (uri, loc) = References.definitionForPos(
+        ~file=data.file,
+        ~extra=data.extra,
+        ~getModule=State.fileForModule(state, ~package),
+        position
+      );
+      Some(Ok((state, Json.Object([
+        ("uri", Json.String(uri)),
+        ("range", Protocol.rangeOfLoc(loc)),
+      ]))))
+    } |? Ok((state, Json.Null))
 
     /* switch (State.definitionForPos(uri, position, data, state, ~package)) {
     | Some((_, None, _, _))
@@ -147,7 +149,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Infix;
 
     {
+      Log.log("Find loc");
       let%opt loc = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
+      Log.log("Find refs");
       let allModules = package.localModules |> List.map(fst);
       let%opt allReferences = References.forLoc(
         ~file,
@@ -156,7 +160,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ~getModule=State.fileForModule(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc
-      );
+      ) |> Result.toOptionAndLog;
 
       open Rpc.J;
       Some((

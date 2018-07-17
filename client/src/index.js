@@ -53,7 +53,7 @@ function activate(context) {
                 vscode.workspace.createFileSystemWatcher('**/.merlin')
             ]
         },
-        // revealOutputChannelOn: RevealOutputChannelOn.Never,
+        revealOutputChannelOn: RevealOutputChannelOn.Never,
     };
 
     let client = null
