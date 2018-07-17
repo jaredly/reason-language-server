@@ -47,7 +47,7 @@ let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, t
   open Infix;
   let externals = {
     print_endline("Checking externals: " ++ string_of_int(stamp));
-    let%opt declared = Query.declaredForTip(~env, stamp, tip);
+    let%opt declared = Query.declaredForTip(~stamps=env.file.stamps, stamp, tip);
     if (isVisible(declared)) {
       /* print_endline("Visible! from " ++ file.moduleName); */
       let%opt path = pathFromVisibility(declared.modulePath, declared.name.txt);
@@ -81,7 +81,6 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
     | Open => None
     | Typed(_, LocalReference(stamp, tip))
     | Typed(_, Definition(stamp, tip)) => {
-      /* print_endline("Local stamp " ++ string_of_int(stamp) ++ " " ++ tipToString(tip)); */
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip)
     }
     | Typed(_, GlobalReference(moduleName, path, tip)) => {
@@ -100,4 +99,42 @@ let forPos = (~extra, ~getModule, pos) => {
   let%opt loc = locForPos(~extra, pos);
   let%opt refs = local(~extra, loc);
   Some([("file:///path/to/Test.re", refs)])
+};
+
+let definition = (~file, stamp, tip) => {
+  switch tip {
+    | Constructor(name) =>
+      let%opt constructor = Query.getConstructor(file, stamp, name);
+      Some((file.uri, constructor.name.loc))
+    | Attribute(name) =>
+      let%opt attribute = Query.getAttribute(file, stamp, name);
+      Some((file.uri, attribute.name.loc))
+    | _ =>
+      let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
+      Some((file.uri, declared.name.loc))
+  };
+};
+
+let definitionForLoc = (~file, ~getModule, loc) => {
+  switch (loc) {
+    | Loc.Explanation(_)
+    | Typed(_, NotFound)
+    | Typed(_, Definition(_, _))
+    | Open => None
+    | Typed(_, LocalReference(stamp, tip)) => {
+      definition(~file, stamp, tip)
+    }
+    | Typed(_, GlobalReference(moduleName, path, tip)) => {
+      let%opt file = getModule(moduleName);
+      let env = {Query.file, exported: file.contents.exported};
+      let%opt (env, name) = Query.resolvePath(~env, ~path, ~getModule);
+      let%opt stamp = Query.exportedForTip(~env, name, tip);
+      definition(~file, stamp, tip)
+    }
+  }
+};
+
+let definitionForPos = (~file, ~extra, ~getModule, pos) => {
+  let%opt loc = locForPos(~extra, pos);
+  definitionForLoc(~file, ~getModule, loc)
 };

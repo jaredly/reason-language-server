@@ -264,7 +264,9 @@ let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some((docstring, items)) =>
-    let%opt file = ProcessCmt.forCmt(cmt, converter(src, clientNeedsPlainText), infos);
+    let%opt src = src;
+    let uri = Utils.toUri(src);
+    let%opt file = ProcessCmt.forCmt(uri, converter(Some(src), clientNeedsPlainText), infos);
     let docs = Docs.moduleDocs(docstring, items, file);
     Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
     Some(docs);

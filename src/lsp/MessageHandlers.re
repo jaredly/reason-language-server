@@ -17,16 +17,30 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try position = RJson.get("position", params) |?> Protocol.rgetPosition;
     let%try package = State.getPackage(uri, state);
     let%try data = State.getDefinitionData(uri, state, ~package) |> Result.orError("Parse error, can't find definition");
-    Log.log("Ok have definition data for " ++ uri);
-    switch (State.definitionForPos(uri, position, data, state, ~package)) {
-    | Some((_, None, _, _))
-    | Some((_, _, _, None))
-    | None => Ok((state, Json.Null))
-    | Some((_, Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
+
+    let (line, col) = position;
+    let position = (line + 1, col);
+
+    let%try (uri, loc) = References.definitionForPos(
+      ~file=data.file,
+      ~extra=data.extra,
+      ~getModule=moduleName => {
+        let%opt (docs, _) = State.docsForModule(moduleName, state, ~package);
+        Some(docs.file)
+      },
+      position
+    ) |> Result.orError("No definition found");
+    Ok((state, Json.Object([
       ("uri", Json.String(uri)),
       ("range", Protocol.rangeOfLoc(loc)),
     ])))
-    }
+
+    /* switch (State.definitionForPos(uri, position, data, state, ~package)) {
+    | Some((_, None, _, _))
+    | Some((_, _, _, None))
+    | None => Ok((state, Json.Null))
+    | Some((_, Some(loc), docs, Some(uri))) => 
+    } */
   }),
 
   /** TODO implement */

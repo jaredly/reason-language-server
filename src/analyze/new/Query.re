@@ -102,12 +102,12 @@ let resolveFromCompilerPath = (~env, ~getModule, path) => {
   }
 };
 
-let declaredForTip = (~env, stamp, tip) => switch tip {
-  | Value => hashFind(env.file.stamps.values, stamp) |?>> x => {...x, contents: ()}
+let declaredForTip = (~stamps, stamp, tip) => switch tip {
+  | Value => hashFind(stamps.values, stamp) |?>> x => {...x, contents: ()}
   | Attribute(_) | Constructor(_)
-  | Type => hashFind(env.file.stamps.types, stamp) |?>> x => {...x, contents: ()}
-  | Module => hashFind(env.file.stamps.modules, stamp) |?>> x => {...x, contents: ()}
-  | ModuleType => hashFind(env.file.stamps.moduleTypes, stamp) |?>> x => {...x, contents: ()}
+  | Type => hashFind(stamps.types, stamp) |?>> x => {...x, contents: ()}
+  | Module => hashFind(stamps.modules, stamp) |?>> x => {...x, contents: ()}
+  | ModuleType => hashFind(stamps.moduleTypes, stamp) |?>> x => {...x, contents: ()}
 };
 
 let getAttribute = (file, stamp, name) => {
