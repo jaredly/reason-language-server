@@ -22,14 +22,20 @@ let locForPos = (~extra, pos) => {
   });
 };
 
-let local = (~extra, loc) =>
+let local = (~file, ~extra, loc) =>
   switch (loc) {
   | Loc.Explanation(_)
   | Typed(_, NotFound)
   | Open => None
   | Typed(_, LocalReference(stamp, tip))
   | Typed(_, Definition(stamp, tip)) =>
-    extra.internalReferences |. Query.hashFind(stamp)
+    open Infix;
+    let%opt localStamp = switch tip {
+      | Constructor(name) => Query.getConstructor(file, stamp, name) |?>> x => x.stamp
+      | Attribute(name) => Query.getAttribute(file, stamp, name) |?>> x => x.stamp
+      | _ => Some(stamp)
+    };
+    extra.internalReferences |. Query.hashFind(localStamp)
   | Typed(_, GlobalReference(moduleName, path, tip)) =>
     let%opt_wrap refs = extra.externalReferences |. Query.hashFind(moduleName);
     refs |. Belt.List.keepMap(((p, t, l)) => p == path && t == tip ? Some(l) : None);
@@ -89,9 +95,9 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
   }
 };
 
-let forPos = (~extra, pos) => {
+let forPos = (~file, ~extra, pos) => {
   let%opt loc = locForPos(~extra, pos);
-  let%opt refs = local(~extra, loc);
+  let%opt refs = local(~file, ~extra, loc);
   Some(refs)
 };
 

@@ -243,8 +243,7 @@ module F = (Collector: {let extra: extra; let file: file}) => {
 
 let noType = {Types.id: 0, level: 0, desc: Tnil};
 
-let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
-| Implementation(structure) => {
+let forItems = (~file, items) => {
   let extra = initExtra();
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
@@ -272,8 +271,22 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
     };
   });
   let module Iter = TypedtreeIter.MakeIterator(F({let extra = extra; let file = file;}));
-  List.iter(Iter.iter_structure_item, structure.str_items);
-  Some(extra)
+  List.iter(Iter.iter_structure_item, items);
+  extra
+};
+
+open Result;
+let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
+| Partial_implementation(parts) => {
+  let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
+    | Partial_structure(str) => Some(str.str_items)
+    | Partial_structure_item(str) => Some([str])
+    | _ => None
+  }) |> List.concat;
+  Ok(forItems(~file, items))
 }
-| _ => None
+| Implementation(structure) => {
+  Ok(forItems(~file, structure.str_items))
+}
+| _ => Error("Invalid cmt file")
 };

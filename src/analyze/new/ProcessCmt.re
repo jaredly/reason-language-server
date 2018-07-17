@@ -251,19 +251,42 @@ and forStructure = (~env, items) => {
   (doc, {Module.exported, topLevel})
 };
 
+open Result;
 let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
+| Partial_implementation(parts) => {
+  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
+    | Partial_structure(str) => Some(str.str_items)
+    | Partial_structure_item(str) => Some([str])
+    | _ => None
+  }) |> List.concat;
+  let (docstring, contents) = forStructure(~env, items);
+  Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
+}
+| Partial_interface(parts) => {
+  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
+    | Partial_signature(str) => Some(str.sig_items)
+    | Partial_signature_item(str) => Some([str])
+    | _ => None
+  }) |> List.concat;
+  let (docstring, contents) = forSignature(~env, items);
+  Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
+}
 | Implementation(structure) => {
   let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forStructure(~env, structure.str_items);
-  Some({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
+  Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Interface(signature) => {
   let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forSignature(~env, signature.sig_items);
-  Some({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
+  Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
   /* Some(forSignature(processDoc, signature.sig_items)) */
 }
-| _ => None
+| _ => {
+  Error("Not a valid cmt")
+}
 };
 
 let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {

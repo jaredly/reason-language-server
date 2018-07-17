@@ -10,8 +10,8 @@ module Something = {
   open Other;
 
   let m = {name: "Me", age: 0};
-  let animal = Dogz(10);
-  let other = Dogz(2);
+  let animal = Whats(10);
+  let other = Whats(2);
   let me = Cat("Hie");
   let x = something + 10;
 };
@@ -22,7 +22,7 @@ open Something;
 let y = x + 10;
 
 switch me {
-| Dogz(n) => ()
+| Whats(n) => ()
 | _ => ()
 };
 

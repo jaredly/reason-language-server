@@ -118,7 +118,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let pos = Utils.cmtLocFromVscode(pos);
       let%opt (file, extra) = State.fileForUri(state, ~package, uri);
 
-      let%opt_wrap refs = References.forPos(~extra, pos);
+      let%opt_wrap refs = References.forPos(~file, ~extra, pos);
       open Rpc.J;
       (state, l(refs |> List.map((loc) => o([
         ("range", Protocol.rangeOfLoc(loc)),
@@ -149,9 +149,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Infix;
 
     {
-      Log.log("Find loc");
       let%opt loc = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      Log.log("Find refs");
       let allModules = package.localModules |> List.map(fst);
       let%opt allReferences = References.forLoc(
         ~file,
@@ -200,10 +198,44 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/rename", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?> ((uri, pos)) => State.getPackage(uri, state) |?> package => RJson.get("newName", params) |?> RJson.string
-    |?> newName => {
-      open Infix;
-      (State.getDefinitionData(uri, state, ~package)
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try package = State.getPackage(uri, state);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+    let%try newName = RJson.get("newName", params);
+
+    open Infix;
+    {
+      let%opt loc = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
+      let allModules = package.localModules |> List.map(fst);
+      let%opt allReferences = References.forLoc(
+        ~file,
+        ~extra,
+        ~allModules,
+        ~getModule=State.fileForModule(state, ~package),
+        ~getExtra=State.extraForModule(state, ~package),
+        loc
+      ) |> Result.toOptionAndLog;
+
+      open Rpc.J;
+      Some(Ok((
+        state,
+        o([
+          ("changes", o(
+            allReferences |> List.map(((fname, references)) => 
+
+              (fname,
+                l(references |> List.map(((loc)) => o([
+                  ("range", Protocol.rangeOfLoc(loc)),
+                  ("newText", newName),
+                ])))
+              )
+
+            )
+          ))
+        ])
+      )));
+
+      /* State.getDefinitionData(uri, state, ~package)
       |?> data => State.referencesForPos(uri, pos, data, state, ~package)
       |?>> allReferences => {
         open Rpc.J;
@@ -215,8 +247,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             ]))))
           )))
         ])))
-      }) |? Ok((state, Json.Null))
-    };
+      } */
+
+    } |? Ok((state, Json.Null)) 
   }),
 
   ("textDocument/codeLens", (state, params) => {

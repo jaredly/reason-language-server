@@ -404,8 +404,8 @@ module Get = {
   };
 
   let process = (~uri, cmt) => {
-    let%opt file = ProcessCmt.forCmt(uri, x => x, cmt);
-    let%opt extra = ProcessExtra.forCmt(~file, cmt);
+    let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
+    let%try extra = ProcessExtra.forCmt(~file, cmt);
     let data = {
       toplevelDocs: None,
       stamps: Hashtbl.create(100),
@@ -536,7 +536,7 @@ module Get = {
          Log.log("An Open! " ++ string_of_int(List.length(used)));
        }); */
     data.allOpens = allOpens^;
-    Some(data)
+    Result.Ok(data)
   };
 };
 

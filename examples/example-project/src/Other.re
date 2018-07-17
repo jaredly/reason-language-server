@@ -7,9 +7,12 @@ let something = 10;
 
 type person = {name: string, age: int};
 
-type animals = Dogz(int) | Cat(string) | Mouse;
+type animals = Whats(int) | Cat(string) | Mouse;
 
-let m = Dogz(1);
+let m = Whats(1);
+
+/* working on things. */
+
 
 let z = {name: "hi", age: 20};
 

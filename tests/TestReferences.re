@@ -20,8 +20,8 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     let uri = TestUtils.uriForName(name);
     open Infix;
     let%opt_force (cmt, _) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-    let%opt_force file = ProcessCmt.forCmt(uri, x => x, cmt);
-    let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
+    let%try_force file = ProcessCmt.forCmt(uri, x => x, cmt);
+    let%try_force extra = ProcessExtra.forCmt(~file, cmt);
 
     print_newline();
     Log.log(uri);
@@ -50,8 +50,8 @@ let output = TestUtils.process(lines, (files, mainFile) => {
       /* let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
 
       let%opt_force (cmt, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
-      let%opt_force file = ProcessCmt.forCmt(curi, x => x, cmt);
-      let%opt_force extra = ProcessExtra.forCmt(~file, cmt);
+      let%try_force file = ProcessCmt.forCmt(curi, x => x, cmt);
+      let%try_force extra = ProcessExtra.forCmt(~file, cmt);
 
       /* let (line, char) = cpos; */
 

@@ -90,12 +90,12 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       let message = Infix.(syntaxError |? lines);
-      let%try_wrap moduleData = GetDefinition.process(~uri, cmt) |> Result.orError("Wow");
+      let%try_wrap moduleData = GetDefinition.process(~uri, cmt);
       TypeError(String.concat("\n", message), cmt, moduleData)
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      let%try_wrap moduleData = GetDefinition.process(~uri, cmt) |> Result.orError("Wow");
+      let%try_wrap moduleData = GetDefinition.process(~uri, cmt);
       Success(lines, cmt, moduleData)
     }
   }
