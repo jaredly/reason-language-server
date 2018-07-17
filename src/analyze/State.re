@@ -264,9 +264,9 @@ let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
   | Some((docstring, items)) =>
-    let docs = Docs.moduleDocs(docstring, items);
     let%opt file = ProcessCmt.forCmt(cmt, converter(src, clientNeedsPlainText), infos);
-    Hashtbl.replace(cmtCache, cmt, (changed, infos, docs, file));
+    let docs = Docs.moduleDocs(docstring, items, file);
+    Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
     Some(docs);
   };
 };
@@ -276,9 +276,9 @@ let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
   switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
   | Some((docstring, items)) =>
-    let docs = Docs.moduleDocs(docstring, items);
     let%opt file = ProcessCmt.forCmi(cmi, converter(src, clientNeedsPlainText), infos);
-    Hashtbl.replace(cmiCache, cmi, (changed, infos, docs, file));
+    let docs = Docs.moduleDocs(docstring, items, file);
+    Hashtbl.replace(cmiCache, cmi, (changed, infos, docs));
     Some(docs);
   };
 };
@@ -288,7 +288,7 @@ let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 let docsForCmt = (cmt, src, state) =>
   if (Filename.check_suffix(cmt, ".cmi")) {
     if (Hashtbl.mem(state.cmiCache, cmt)) {
-      let (mtime, infos, docs, file) = Hashtbl.find(state.cmiCache, cmt);
+      let (mtime, infos, docs) = Hashtbl.find(state.cmiCache, cmt);
       /* TODO I should really throttle this mtime checking to like every 50 ms or so */
       switch (Files.getMtime(cmt)) {
       | None =>
@@ -323,7 +323,7 @@ let docsForCmt = (cmt, src, state) =>
       };
     };
   } else if (Hashtbl.mem(state.cmtCache, cmt)) {
-    let (mtime, infos, docs, file) = Hashtbl.find(state.cmtCache, cmt);
+    let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
     /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
     | None =>
@@ -381,7 +381,7 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri";
       Files.readFileExn(path)
     };
-    let%try_force result = AsYouType.process(~moduleName="lsp", text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let%try_force result = AsYouType.process(~uri, ~moduleName="lsp", text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (AsYouType.getResult(result)) {
     | None => ()

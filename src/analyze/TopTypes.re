@@ -46,8 +46,8 @@ type state = {
   packagesByRoot: Hashtbl.t(string, package),
   rootForUri: Hashtbl.t(uri, string),
 
-  cmtCache: Hashtbl.t(filePath, (float, Cmt_format.cmt_infos, Docs.T.moduleDocs, SharedTypes.file)),
-  cmiCache: Hashtbl.t(filePath, (float, Cmi_format.cmi_infos, Docs.T.moduleDocs, SharedTypes.file)),
+  cmtCache: Hashtbl.t(filePath, (float, Cmt_format.cmt_infos, Docs.T.moduleDocs)),
+  cmiCache: Hashtbl.t(filePath, (float, Cmi_format.cmi_infos, Docs.T.moduleDocs)),
   compiledDocuments: Hashtbl.t(uri, AsYouType.result),
   lastDefinitions: Hashtbl.t(uri, Definition.moduleData),
 

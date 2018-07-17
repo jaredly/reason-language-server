@@ -15,7 +15,6 @@ let getPackage = (localModules) => {
     compilerPath: "./node_modules/.bin/bsc",
     refmtPath: "./node_modules/bs-platform/lib/refmt.exe",
   };
-  
 };
 
 let offsetToPos = (text, offset) => {
@@ -105,8 +104,10 @@ let setUp = (files, text) => {
 
   files |> List.iter(((name, contents)) => {
     let moduleName = Filename.chop_extension(name);
+    let uri = uriForName(name);
     /* print_endline("Compiling " ++ moduleName); */
     let%try_force result = AsYouType.process(
+      ~uri,
       ~moduleName,
       contents,
       ~cacheLocation=tmp,
@@ -124,12 +125,12 @@ let setUp = (files, text) => {
         (cmt, moduleData)
       }
     };
-    let uri = uriForName(name);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     Hashtbl.replace(state.lastDefinitions, uri, moduleData)
   });
 
   let%try_force result = AsYouType.process(
+    ~uri=mainUri,
     ~moduleName="Test",
     text,
     ~cacheLocation=tmp,

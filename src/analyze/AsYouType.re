@@ -83,18 +83,20 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
   }
 };
 
-let process = (~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   open InfixResult;
-  let%try_wrap (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+  let%try (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       let message = Infix.(syntaxError |? lines);
-      TypeError(String.concat("\n", message), cmt, GetDefinition.process(cmt.Cmt_format.cmt_annots))
+      let%try_wrap moduleData = GetDefinition.process(~uri, cmt) |> Result.orError("Wow");
+      TypeError(String.concat("\n", message), cmt, moduleData)
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      Success(lines, cmt, GetDefinition.process(cmt.Cmt_format.cmt_annots))
+      let%try_wrap moduleData = GetDefinition.process(~uri, cmt) |> Result.orError("Wow");
+      Success(lines, cmt, moduleData)
     }
   }
 };

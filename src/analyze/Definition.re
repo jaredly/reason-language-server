@@ -66,7 +66,9 @@ type moduleData = {
   mutable topLevel: list(item),
   mutable locations: list((Location.t, Types.type_expr, definition)),
   mutable explanations: list((Location.t, string)),
-  mutable allOpens: list(anOpen)
+  mutable allOpens: list(anOpen),
+  file: SharedTypes.file,
+  extra: SharedTypes.extra,
 };
 
 let maybeFound = (fn, a) =>

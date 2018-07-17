@@ -52,6 +52,7 @@ type moduleDocs = {
   docstring: option(string),
   stamps: Hashtbl.t(int, item),
   mutable topLevel: list(item),
+  file: SharedTypes.file,
 };
 };
 
@@ -74,8 +75,8 @@ let typeExtra = (t) => {
   }
 };
 
-let moduleDocs = (docstring, items) => {
-  {docstring, topLevel: items, stamps: Hashtbl.create(1)}
+let moduleDocs = (docstring, items, file) => {
+  {docstring, topLevel: items, stamps: Hashtbl.create(1), file}
 };
 
 module Definitions = {
@@ -271,6 +272,7 @@ let rec forStructure = (processDoc, structure) => {
 }
 | _ => []
 })
+
 and forModule = (processDoc, {Typedtree.mod_desc, mod_attributes, mod_loc}) => {
   open Typedtree;
   switch mod_desc {
@@ -291,14 +293,13 @@ and forModule = (processDoc, {Typedtree.mod_desc, mod_attributes, mod_loc}) => {
   | Tmod_apply(inner, _, _) => forModule(processDoc, inner) |> mapFst(either(findDocAttribute(mod_attributes) |?>> processDoc))
   | Tmod_unpack(_, typ) => (findDocAttribute(mod_attributes) |?>> processDoc, forModuleType(processDoc, typ))
   }
-}
-;
+};
 
 let forCmt = (processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
   | Implementation(structure) => Some(forStructure(processDoc, structure.str_items))
   | Interface(signature) => Some(forSignature(processDoc, signature.sig_items))
   | _ => None
-  };
+};
 
 let forCmi = (processDoc, {Cmi_format.cmi_name, cmi_sign}) => {
   let items = forSignatureType(processDoc, cmi_sign);

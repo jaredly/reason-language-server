@@ -403,7 +403,9 @@ module Get = {
       };
   };
 
-  let process = (cmt) => {
+  let process = (~uri, cmt) => {
+    let%opt file = ProcessCmt.forCmt(uri, x => x, cmt);
+    let%opt extra = ProcessExtra.forCmt(~file, cmt);
     let data = {
       toplevelDocs: None,
       stamps: Hashtbl.create(100),
@@ -415,6 +417,8 @@ module Get = {
       topLevel: [],
       locations: [],
       explanations: [],
+      file,
+      extra,
     };
     let allOpens = ref([]);
     module IterIter =
@@ -510,7 +514,7 @@ module Get = {
         IterIter.iter_module_type(module_type);
         []
       };
-    switch cmt {
+    switch (cmt.cmt_annots) {
     | Cmt_format.Implementation(str) => structure(str.str_items)
     | Cmt_format.Interface(sign) => IterIter.iter_signature(sign)
     | Cmt_format.Partial_implementation(parts)
@@ -532,7 +536,7 @@ module Get = {
          Log.log("An Open! " ++ string_of_int(List.length(used)));
        }); */
     data.allOpens = allOpens^;
-    data
+    Some(data)
   };
 };
 
