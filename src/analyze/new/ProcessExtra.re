@@ -185,6 +185,9 @@ module F = (Collector: {let extra: extra; let file: file}) => {
       | Tpat_record(items, _) => {
         addForRecord(pat_type, items);
       }
+      | Tpat_construct(lident, constructor, _) => {
+        addForConstructor(pat_type, lident, constructor)
+      }
       | Tpat_var({stamp}, name) => {
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
           let declared = ProcessCmt.newDeclared(

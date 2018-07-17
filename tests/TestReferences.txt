@@ -30,6 +30,10 @@ type a = | <c1>A(int) | <t2>B(float);
 let b = <t1>A(1);
 let c = <t1>A(3);
 let d = <c2>B(1.);
+switch d {
+  | <t1>A(_) => ()
+  | _ => ()
+};
 
 -->
   1: PASS
