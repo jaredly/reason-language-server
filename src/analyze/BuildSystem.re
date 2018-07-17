@@ -28,21 +28,21 @@ let getLine = (cmd, ~pwd) =>
 open Infix;
 
 let getBsPlatformDir = rootPath => {
-    let result =
-      ModuleResolution.resolveNodeModulePath(
-        ~startPath=rootPath,
-        "bs-platform",
-      );
-    switch (result) {
-    | Result.Ok(path) =>
-      Log.log("Found bs-platform at " ++ path);
-      ();
-    | Result.Error(message) =>
-      Log.log(message);
-      ();
-    };
-    result;
+  let result =
+    ModuleResolution.resolveNodeModulePath(
+      ~startPath=rootPath,
+      "bs-platform",
+    );
+  switch (result) {
+  | Result.Ok(path) =>
+    Log.log("Found bs-platform at " ++ path);
+    ();
+  | Result.Error(message) =>
+    Log.log(message);
+    ();
   };
+  result;
+};
 
 /* One dir up, then into .bin.
     Is .bin always in the modules directory?
@@ -65,6 +65,7 @@ let detect = (rootPath, bsconfig) => {
       } :
       Error("Could not run bsb");
   };
+  /* TODO add a config option to specify native vs bytecode vs js backend */
   isNative(bsconfig) ? BsbNative(bsbVersion, Native) : Bsb(bsbVersion);
 };
 
