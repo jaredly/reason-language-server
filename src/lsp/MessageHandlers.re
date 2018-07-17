@@ -109,19 +109,33 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("textDocument/documentHighlight", (state, params) => {
-    open InfixResult;
-    Protocol.rPositionParams(params) |?> ((uri, pos)) => State.getPackage(uri, state) |?>> package => {
-      open Infix;
-      let highlights = (State.getDefinitionData(uri, state, ~package) |?> data => Definition.highlights(pos, data)) |? [];
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try package = State.getPackage(uri, state);
+
+    let res = {
+      let pos = Utils.cmtLocFromVscode(pos);
+      let%opt (file, extra) = State.fileForUri(state, ~package, uri);
+
+      let%opt_wrap refs = References.forPos(~extra, pos);
       open Rpc.J;
-      (state, l(highlights |> List.map(((t, loc)) => o([
+      (state, l(refs |> List.map((loc) => o([
         ("range", Protocol.rangeOfLoc(loc)),
-        ("kind", i(switch t {
-        | `Read => 2
-        | `Write => 3
-        }))
-        ]))))
-    };
+        ("kind", i(2))
+      ]))));
+    } |? (state, Json.Null);
+
+    Ok(res)
+
+    /* open Infix;
+    let highlights = (State.getDefinitionData(uri, state, ~package) |?> data => Definition.highlights(pos, data)) |? [];
+    open Rpc.J;
+    (state, l(highlights |> List.map(((t, loc)) => o([
+      ("range", Protocol.rangeOfLoc(loc)),
+      ("kind", i(switch t {
+      | `Read => 2
+      | `Write => 3
+      }))
+    ])))) */
   }),
 
   ("textDocument/references", (state, params) => {

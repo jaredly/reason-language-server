@@ -420,6 +420,11 @@ let fileForModule = (state,  ~package, modname) => {
   Some(docs.file)
 };
 
+let fileForUri = (state,  ~package, uri) => {
+  let%opt (_cmt, moduleData) = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+  Some((moduleData.file, moduleData.extra))
+};
+
 let maybeFound = Definition.maybeFound;
 
 open Infix;
