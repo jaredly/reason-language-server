@@ -18,18 +18,15 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try package = State.getPackage(uri, state);
     let%try data = State.getDefinitionData(uri, state, ~package) |> Result.orError("Parse error, can't find definition");
 
-    let (line, col) = position;
-    let position = (line + 1, col);
+    let position = Utils.cmtLocFromVscode(position);
 
     let%try (uri, loc) = References.definitionForPos(
       ~file=data.file,
       ~extra=data.extra,
-      ~getModule=moduleName => {
-        let%opt (docs, _) = State.docsForModule(moduleName, state, ~package);
-        Some(docs.file)
-      },
+      ~getModule=State.fileForModule(state, ~package),
       position
     ) |> Result.orError("No definition found");
+
     Ok((state, Json.Object([
       ("uri", Json.String(uri)),
       ("range", Protocol.rangeOfLoc(loc)),

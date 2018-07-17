@@ -415,6 +415,11 @@ let docsForModule = (modname, state, ~package) =>
     }
   );
 
+let fileForModule = (state,  ~package, modname) => {
+  let%opt (docs, _) = docsForModule(modname, state, ~package);
+  Some(docs.file)
+};
+
 let maybeFound = Definition.maybeFound;
 
 open Infix;
