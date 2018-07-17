@@ -140,31 +140,59 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/references", (state, params) => {
     open InfixResult;
-    Protocol.rPositionParams(params) |?> ((uri, pos)) => State.getPackage(uri, state) |?>> package => {
-      open Infix;
-      (State.getDefinitionData(uri, state, ~package)
-      |?> data =>
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try package = State.getPackage(uri, state);
+    let%try_wrap (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+
+    open Infix;
+    let pos = Utils.cmtLocFromVscode(pos);
+
+    {
+      let%opt loc = References.locForPos(~extra, pos);
+      let allModules = package.localModules |> List.map(fst);
+      let%opt allReferences = References.forLoc(
+        ~file,
+        ~extra,
+        ~allModules,
+        ~getModule=State.fileForModule(state, ~package),
+        ~getExtra=State.extraForModule(state, ~package),
+        loc
+      );
+
+      open Rpc.J;
+      Some((
+        state,
+        l(allReferences |> List.map(
+          ((fname, references)) => (
+            fname == uri
+            ? List.filter(((loc)) => !Protocol.locationContains(loc, pos), references)
+            : references
+          ) |> List.map(((loc)) => Protocol.locationOfLoc(~fname, loc))
+        ) |> List.concat)
+      ));
+
+    } |? (state, Json.Null);
+
+    /* {
+      let%opt data = State.getDefinitionData(uri, state, ~package);
+
       switch (Definition.openReferencesAtPos(data, pos)) {
         | Some(references) => Some((state, Json.Array(references |> List.map(((_, _, loc)) => Protocol.locationOfLoc(~fname=uri, loc)))))
         | None =>
-          State.referencesForPos(uri, pos, data, state, ~package)
-          |?>> allReferences => {
-            open Rpc.J;
-            (
-              state,
-              l(
-                allReferences
-                |> List.map(
-                    ((fname, references)) =>
-                      (fname == uri ? List.filter(((_, loc)) => !Protocol.locationContains(loc, pos), references) : references) |>
-                      List.map(((_, loc)) => Protocol.locationOfLoc(~fname, loc))
-                  )
-                |> List.concat
-              )
-            );
-          }
-      }) |? (state, Json.Null)
-    };
+          let%opt_wrap allReferences = State.referencesForPos(uri, pos, data, state, ~package);
+          open Rpc.J;
+          (
+            state,
+            l(allReferences
+              |> List.map(
+                  ((fname, references)) =>
+                    (fname == uri ? List.filter(((_, loc)) => !Protocol.locationContains(loc, pos), references) : references) |>
+                    List.map(((_, loc)) => Protocol.locationOfLoc(~fname, loc))
+                )
+              |> List.concat)
+          );
+      }
+    } |? (state, Json.Null) */
   }),
 
   ("textDocument/rename", (state, params) => {

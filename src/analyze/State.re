@@ -380,7 +380,7 @@ let getCompilationResult = (uri, state, ~package) => {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
       text
     } : {
-      let path = Utils.parseUri(uri) |! "not a uri";
+      let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
     let%try_force result = AsYouType.process(~uri, ~moduleName="lsp", text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
@@ -423,6 +423,17 @@ let fileForModule = (state,  ~package, modname) => {
 let fileForUri = (state,  ~package, uri) => {
   let%opt (_cmt, moduleData) = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
   Some((moduleData.file, moduleData.extra))
+};
+
+let extraForModule = (state, ~package, modname) => {
+  if (Hashtbl.mem(package.pathsForModule, modname)) {
+    let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
+    let%opt src = src;
+    let%opt (file, extra) = fileForUri(state, ~package, Utils.toUri(src));
+    Some(extra)
+  } else {
+    None;
+  }
 };
 
 let maybeFound = Definition.maybeFound;

@@ -46,11 +46,11 @@ let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, t
   let%opt local = extra.internalReferences |. Query.hashFind(localStamp);
   open Infix;
   let externals = {
-    print_endline("Checking externals: " ++ string_of_int(stamp));
+    Log.log("Checking externals: " ++ string_of_int(stamp));
     let%opt declared = Query.declaredForTip(~stamps=env.file.stamps, stamp, tip);
     if (isVisible(declared)) {
       let%opt path = pathFromVisibility(declared.modulePath, declared.name.txt);
-      print_endline("Now checking path " ++ pathToString(path));
+      Log.log("Now checking path " ++ pathToString(path));
       let thisModuleName = file.moduleName;
       allModules |. Belt.List.keep(name => name != file.moduleName) |. Belt.List.keepMap(name => {
         let%opt file = getModule(name);
@@ -60,7 +60,7 @@ let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, t
         Some((file.uri, refs))
       }) |. Some
     } else {
-      print_endline("Not visible");
+      Log.log("Not visible");
       Some([])
     }
   } |? [];
@@ -82,9 +82,10 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
       let%opt (env, name) = Query.resolvePath(~env, ~path, ~getModule);
       let%opt stamp = Query.exportedForTip(~env, name, tip);
       let%opt extra = getExtra(env.file.uri);
-      let local = extra.internalReferences |. Query.hashFind(stamp);
+      forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip)
+      /* let local = extra.internalReferences |. Query.hashFind(stamp); */
       /* TODO TODO */
-      None
+      /* None */
     }
   }
 };
