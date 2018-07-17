@@ -13,25 +13,19 @@ type handler = Handler(string, Json.t => result('a, string), (state, 'a) => resu
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => RJson.get("position", params) |?> Protocol.rgetPosition
-    |?> position => State.getPackage(uri, state) |?> package => {
-      switch (State.getDefinitionData(uri, state, ~package)) {
-      | None => {
-        Error("Parse error, can't find definition")
-      }
-      | Some(data) =>
-        Log.log("Ok have definition data for " ++ uri);
-        switch (State.definitionForPos(uri, position, data, state, ~package)) {
-        | Some((_, None, _, _))
-        | Some((_, _, _, None))
-        | None => Ok((state, Json.Null))
-        | Some((_, Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
-          ("uri", Json.String(uri)),
-          ("range", Protocol.rangeOfLoc(loc)),
-        ])))
-        }
-      }
+    let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
+    let%try position = RJson.get("position", params) |?> Protocol.rgetPosition;
+    let%try package = State.getPackage(uri, state);
+    let%try data = State.getDefinitionData(uri, state, ~package) |> Result.orError("Parse error, can't find definition");
+    Log.log("Ok have definition data for " ++ uri);
+    switch (State.definitionForPos(uri, position, data, state, ~package)) {
+    | Some((_, None, _, _))
+    | Some((_, _, _, None))
+    | None => Ok((state, Json.Null))
+    | Some((_, Some(loc), docs, Some(uri))) => Ok((state, Json.Object([
+      ("uri", Json.String(uri)),
+      ("range", Protocol.rangeOfLoc(loc)),
+    ])))
     }
   }),
 
