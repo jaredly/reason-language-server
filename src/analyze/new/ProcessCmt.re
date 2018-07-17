@@ -28,10 +28,11 @@ let getTopSigDoc = structure => {
   };
 };
 
-let newDeclared = (~contents, ~name, ~stamp, ~modulePath, ~processDoc, exported, attributes) => {
+let newDeclared = (~contents, ~extent, ~name, ~stamp, ~modulePath, ~processDoc, exported, attributes) => {
   {
     name,
     stamp,
+    extentLoc: extent,
     deprecated: PrepareUtils.findDeprecatedAttribute(attributes),
     exported,
     modulePath,
@@ -42,9 +43,10 @@ let newDeclared = (~contents, ~name, ~stamp, ~modulePath, ~processDoc, exported,
   };
 };
 
-let addItem = (~name, ~stamp, ~env, ~contents, attributes, exported, stamps) => {
+let addItem = (~name, ~extent, ~stamp, ~env, ~contents, attributes, exported, stamps) => {
   let declared = newDeclared(
     ~contents,
+    ~extent,
     ~name,
     ~stamp,
     ~modulePath=env.modulePath,
@@ -68,11 +70,20 @@ let rec forSignatureType = (env, signature) => {
       Value.recursive: false,
       typ: val_type,
     };
-    let declared = addItem(~name=Location.mknoloc(name), ~stamp, ~env, ~contents, val_attributes, exported.values, env.stamps.values);
+    let declared = addItem(
+      ~name=Location.mknoloc(name),
+      ~extent=loc,
+      ~stamp,
+      ~env,
+      ~contents,
+      val_attributes,
+      exported.values,
+      env.stamps.values,
+    );
     [{...declared, contents: Module.Value(declared.contents)}, ...items]
   }
-  | Sig_type({stamp, name}, {type_params, type_kind, type_attributes} as decl, _) => {
-    let declared = addItem(~contents={
+  | Sig_type({stamp, name}, {type_params, type_loc, type_kind, type_attributes} as decl, _) => {
+    let declared = addItem(~extent=type_loc, ~contents={
       Type.params: type_params |> List.map(t => (t, Location.none)),
       typ: decl,
       kind: switch type_kind {
@@ -97,7 +108,7 @@ let rec forSignatureType = (env, signature) => {
     let declared = addItem(~contents=Module.Ident(path), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}, ...items] */
   | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) =>
-    let declared = addItem(~contents=forModuleType(env, md_type), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
+    let declared = addItem(~extent=md_loc, ~contents=forModuleType(env, md_type), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}, ...items]
   | _ => items
   }, signature, []) |> List.rev;
@@ -114,10 +125,11 @@ let rec forSignatureType = (env, signature) => {
 
 let forSignatureItem = (~env, ~exported: Module.exported, item) => {
   switch (item.sig_desc) {
-  | Tsig_value({val_id: {stamp}, val_name: name, val_desc, val_attributes}) => {
+  | Tsig_value({val_id: {stamp}, val_loc, val_name: name, val_desc, val_attributes}) => {
     let declared = addItem(
       ~name,
       ~stamp,
+      ~extent=val_loc,
       ~contents={Value.typ: val_desc.ctyp_type, recursive: false},
       ~env,
       val_attributes,
@@ -160,22 +172,22 @@ let rec forItem = (
           Value.recursive: false,
           typ: pat_type,
         };
-        let declared = addItem(~name, ~stamp, ~env, ~contents, vb_attributes, exported.values, env.stamps.values);
+        let declared = addItem(~name, ~stamp, ~env, ~extent=vb_loc, ~contents, vb_attributes, exported.values, env.stamps.values);
         Some({...declared, contents: Module.Value(declared.contents)})
       | _ => None
     },
   bindings)
 | Tstr_module({mb_id: {stamp}, mb_attributes, mb_loc, mb_name: name, mb_expr: {mod_desc}}) => {
   let contents = forModule(env, mod_desc, name.txt);
-  let declared = addItem(~contents, ~name, ~stamp, ~env, mb_attributes, exported.modules, env.stamps.modules);
+  let declared = addItem(~contents, ~name, ~extent=mb_loc, ~stamp, ~env, mb_attributes, exported.modules, env.stamps.modules);
   [{...declared, contents: Module.Module(declared.contents)}]
 }
-| Tstr_primitive({val_id: {stamp}, val_name: name, val_attributes, val_val: {val_type}}) => {
-  let declared = addItem(~contents={Value.recursive: false, typ: val_type}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
+| Tstr_primitive({val_id: {stamp}, val_name: name, val_loc, val_attributes, val_val: {val_type}}) => {
+  let declared = addItem(~extent=val_loc, ~contents={Value.recursive: false, typ: val_type}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
   [{...declared, contents: Module.Value(declared.contents)}]
 }
-| Tstr_type(decls) => decls |> List.map(({typ_id: {stamp}, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind}) => {
-  let declared = addItem(~contents={
+| Tstr_type(decls) => decls |> List.map(({typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind}) => {
+  let declared = addItem(~extent=typ_loc, ~contents={
     Type.params: typ_params |> List.map(((t, _)) => (t.ctyp_type, t.ctyp_loc)),
     typ: typ_type,
     kind: switch typ_kind {
@@ -207,10 +219,11 @@ and forModule = (env, mod_desc, moduleName) => switch mod_desc {
     Module.Structure(contents)
   }
   | Tmod_functor({stamp}, argName, maybeType, resultExpr) => {
-    maybeType |?> forTreeModuleType(~env) |?< kind => {
+    maybeType |?< t => forTreeModuleType(~env, t) |?< kind => {
       let declared = newDeclared(
         ~contents=kind,
         ~name=argName,
+        ~extent=t.Typedtree.mty_loc,
         ~stamp,
         ~modulePath=NotVisible,
         ~processDoc=env.processDoc,

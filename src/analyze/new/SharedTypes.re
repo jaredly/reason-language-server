@@ -31,6 +31,7 @@ type visibilityPath =
 /* TODO maybe keep track of the "current module path" */
 type declared('t) = {
   name: Location.loc(string),
+  extentLoc: Location.t,
   stamp: int,
   deprecated: option(string),
   modulePath: visibilityPath,

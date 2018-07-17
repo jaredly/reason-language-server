@@ -153,11 +153,12 @@ module F = (Collector: {let extra: extra; let file: file}) => {
   };
 
   let enter_signature_item = item => switch (item.sig_desc) {
-  | Tsig_value({val_id: {stamp}, val_name: name, val_desc, val_attributes}) => {
+  | Tsig_value({val_id: {stamp}, val_loc, val_name: name, val_desc, val_attributes}) => {
     if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
       let declared = ProcessCmt.newDeclared(
         ~name,
         ~stamp,
+        ~extent=val_loc,
         ~modulePath=NotVisible,
         ~processDoc=x => x,
         ~contents={Value.typ: val_desc.ctyp_type, recursive: false},
@@ -190,6 +191,7 @@ module F = (Collector: {let extra: extra; let file: file}) => {
             ~name,
             ~stamp,
             ~modulePath=NotVisible,
+            ~extent=pat_loc,
             ~processDoc=x => x,
             ~contents={Value.typ: pat_type, recursive: false},
             false,
