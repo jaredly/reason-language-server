@@ -145,10 +145,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try_wrap (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
 
     open Infix;
-    let pos = Utils.cmtLocFromVscode(pos);
 
     {
-      let%opt loc = References.locForPos(~extra, pos);
+      let%opt loc = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
       let allModules = package.localModules |> List.map(fst);
       let%opt allReferences = References.forLoc(
         ~file,
