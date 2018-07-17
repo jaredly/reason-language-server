@@ -257,8 +257,26 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
   let (docstring, contents) = forStructure(~env, structure.str_items);
   Some({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
-/* | Interface(signature) => Some(forSignature(processDoc, signature.sig_items)) */
+| Interface(signature) => {
+  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let (docstring, contents) = forSignature(~env, signature.sig_items);
+  Some({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
+  /* Some(forSignature(processDoc, signature.sig_items)) */
+}
 | _ => None
+};
+
+let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
+  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let contents = forSignatureType(env, cmi_sign);
+  Some({
+    uri,
+    moduleName: cmi_name,
+    stamps: env.stamps,
+    docstring: Some("No docstring for cmi files"),
+    contents,
+  });
+  /* Some(forSignature(processDoc, signature.sig_items)) */
 };
 
 /* let forCmi = (processDoc, {Cmi_format.cmi_name, cmi_sign}) => {
