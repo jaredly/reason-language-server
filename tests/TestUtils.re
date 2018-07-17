@@ -3,7 +3,7 @@ Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
   {
-    State.basePath: tmp,
+    TopTypes.basePath: tmp,
     localModules,
     dependencyModules: [],
     pathsForModule: State.makePathsForModule(localModules, []),
@@ -72,7 +72,7 @@ let combinedWaypoints = (files, mainFile) => {
 let getState = () => {
   let packagesByRoot = Hashtbl.create(1);
 
-  State.{
+  TopTypes.{
     rootPath: tmp,
     rootUri: "file://" ++ tmp,
     documentText: Hashtbl.create(5),

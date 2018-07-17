@@ -87,19 +87,6 @@ module Value = {
 | Let
 | LetRec; */
 
-/**
-
-I want the top level to be
-
-A (y) > B (n) > C (y) > y/n
-building up, so
-
-Exported(ExportedModule("C", NotExportedModule("B", ExportedModule("A", File("uri")))))
-
- */
-
-
-
 let isVisible = declared =>
   declared.exported && {
     let rec loop = v => switch v {
@@ -193,7 +180,6 @@ let tipToString = tip => switch tip {
 
 type path =
 | Tip(string)
-/* | Tip(string, 'tip) */
 | Nested(string, path);
 
 let rec pathToString = path => switch path {
@@ -210,8 +196,6 @@ let rec pathFromVisibility = (visibilityPath, current) => switch visibilityPath 
 };
 
 let pathFromVisibility = (visibilityPath, tipName) => pathFromVisibility(visibilityPath, Tip(tipName));
-
-/* type fullPath = ([`Local(int) | `Global(string, path)], tip); */
 
 type openTracker = {
   path: Path.t,
@@ -236,7 +220,6 @@ module Loc = {
 
 /** These are the bits of info that we need to make in-app stuff awesome */
 type extra = {
-  /* todo maybe I want a stampToDeclared map or something */
   internalReferences: Hashtbl.t(int, list(Location.t)),
   externalReferences: Hashtbl.t(string, list((path, tip, Location.t))),
   mutable locations: list((Location.t, Loc.t)),
@@ -254,7 +237,6 @@ let hashList = h => Hashtbl.fold((a, b, c) => [(a, b), ...c], h, []);
 
 let showExtra = ({internalReferences, locations, externalReferences}) => {
   let refs = hashList(internalReferences) |> List.map(((stamp, locs)) => {
-    /* let {name} = Hashtbl.find() */
     "Stamp: " ++ string_of_int(stamp) ++ "\n - "
     ++ String.concat("\n - ", List.map(Utils.showLocation, locs))
   }) |> String.concat("\n");

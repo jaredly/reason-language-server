@@ -1,7 +1,6 @@
 
 open Infix;
 open Result;
-
 open Log;
 
 /**
@@ -90,7 +89,7 @@ let getInitialState = (params) => {
       && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
   );
 
-  let state = State.{
+  let state = TopTypes.{
     rootPath: rootPath,
     rootUri: uri,
     documentText: Hashtbl.create(5),
@@ -113,7 +112,7 @@ let getInitialState = (params) => {
   Ok(state)
 };
 
-open State;
+open TopTypes;
 
 let getTextDocument = doc => {
   let%opt uri = Json.get("uri", doc) |?> Json.string;

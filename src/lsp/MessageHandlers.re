@@ -1,6 +1,6 @@
 
 open Result;
-open State;
+open TopTypes;
 open Infix;
 
 let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);

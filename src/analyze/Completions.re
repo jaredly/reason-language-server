@@ -1,4 +1,5 @@
-open State;
+
+open TopTypes;
 
 type kind =
   | Module
@@ -130,7 +131,7 @@ let rec findSubModule = (state, needle, contents, ~package) => switch contents {
   | [] => None
   | [{Docs.T.name, loc, docstring, kind: Docs.T.Module(innerContents)}, ..._] when needle == name => Some((name, loc, docstring, innerContents))
   | [{name, loc, docstring, kind: Docs.T.ModuleAlias(path)}, ..._] when needle == name => {
-    switch (resolveAlias(state, path, [], ~package)) {
+    switch (State.resolveAlias(state, path, [], ~package)) {
       | None => None
       | Some((uri, contents, items)) => {
         let rec loop = (items, contents) => switch items {
@@ -239,7 +240,7 @@ let get = (~currentPath, topModule, opens, parts, state, localData, pos, ~packag
       |?> (
         moduleData =>
           Definition.completionPath(
-            inDocs(~resolveAlias=resolveAlias(~package, state), Some(currentPath)),
+            inDocs(~resolveAlias=State.resolveAlias(~package, state), Some(currentPath)),
             moduleData, first, more, pos,
             ((name, loc, item, docs, _range)) =>
               forItem(
@@ -264,14 +265,14 @@ let get = (~currentPath, topModule, opens, parts, state, localData, pos, ~packag
         )
       ) {
       | Some(((_, _, _, contents), uri)) =>
-        inDocs(~resolveAlias=resolveAlias(~package, state), uri, more, contents)
+        inDocs(~resolveAlias=State.resolveAlias(~package, state), uri, more, contents)
       | None =>
         switch (State.docsForModule(first, state, ~package)) {
         | None =>
           Log.log("No docs found for " ++ first);
           []; /* TODO handle opens */
         | Some(({Docs.T.topLevel}, uri)) =>
-          inDocs(~resolveAlias=resolveAlias(~package, state), uri, more, topLevel)
+          inDocs(~resolveAlias=State.resolveAlias(~package, state), uri, more, topLevel)
         }
       }
     };

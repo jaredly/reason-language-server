@@ -20,3 +20,20 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - you then need to open the 'example-project' in that development window, and clicking "open folder" doesn't seem to do it -- I've had to drag the folder from finder on to the window, and then it will work.
 
 You can then develop on the language server! When you change something, the server will automatically reload.
+
+## Roadmap
+
+- Code completion
+- Open tracking
+- Signature help
+- Rename
+- Codelens
+  - open tracking
+  - toplevel type definitions
+- Hover
+  - type definitions
+- Range formatting (no change)
+- Document Symbol (maybe I want Extent in addition to name loc)
+
+
+
