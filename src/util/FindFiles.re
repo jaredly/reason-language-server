@@ -249,51 +249,65 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
   let depFiles =
     deps
     |> List.map(name => {
-         let loc = base /+ "node_modules" /+ name;
-         let innerPath = loc /+ "bsconfig.json";
-         Log.log("Dep loc " ++ innerPath);
-         switch (Files.readFile(innerPath)) {
-         | Some(text) =>
-           let inner = Json.parse(text);
-           let namespace = getNamespace(inner);
-           let directories =
-             getSourceDirectories(~includeDev=false, loc, inner);
-           let compiledBase =
-             BuildSystem.getCompiledBase(loc, buildSystem)
-             |! "No compiled base found";
-           if (debug) {
-             Log.log("Compiled base: " ++ compiledBase);
-           };
-           let compiledDirectories =
-             directories |> List.map(Infix.fileConcat(compiledBase));
-           let compiledDirectories =
-             namespace == None ?
-               compiledDirectories : [compiledBase, ...compiledDirectories];
-           let files =
-             findProjectFiles(
-               ~debug,
-               namespace,
-               loc,
-               directories,
-               compiledBase,
-             );
-           let files =
-             switch (namespace) {
-             | None =>
-               List.map(
-                 ((full, rel)) => (
-                   Plain(getName(rel) |> String.capitalize),
-                   (full, Some(rel)),
-                 ),
-                 files,
-               )
-             | Some(name) =>
-               files
-               |> List.map(((full, rel)) =>
-                    (Namespaced(name, getName(rel)), (full, Some(rel)))
-                  )
-             };
-           (compiledDirectories, files);
+         let result =
+           ModuleResolution.resolveNodeModulePath(~startPath=base, name)
+           |?> (
+             loc => {
+               let innerPath = loc /+ "bsconfig.json";
+               Log.log("Dep loc " ++ innerPath);
+               switch (Files.readFile(innerPath)) {
+               | Some(text) =>
+                 let inner = Json.parse(text);
+                 let namespace = getNamespace(inner);
+                 let directories =
+                   getSourceDirectories(~includeDev=false, loc, inner);
+                 let compiledBase =
+                   BuildSystem.getCompiledBase(loc, buildSystem)
+                   |! "No compiled base found";
+                 if (debug) {
+                   Log.log("Compiled base: " ++ compiledBase);
+                 };
+                 let compiledDirectories =
+                   directories |> List.map(Infix.fileConcat(compiledBase));
+                 let compiledDirectories =
+                   namespace == None ?
+                     compiledDirectories :
+                     [compiledBase, ...compiledDirectories];
+                 let files =
+                   findProjectFiles(
+                     ~debug,
+                     namespace,
+                     loc,
+                     directories,
+                     compiledBase,
+                   );
+                 let files =
+                   switch (namespace) {
+                   | None =>
+                     List.map(
+                       ((full, rel)) => (
+                         Plain(getName(rel) |> String.capitalize),
+                         (full, Some(rel)),
+                       ),
+                       files,
+                     )
+                   | Some(name) =>
+                     files
+                     |> List.map(((full, rel)) =>
+                          (
+                            Namespaced(name, getName(rel)),
+                            (full, Some(rel)),
+                          )
+                        )
+                   };
+                 Some((compiledDirectories, files));
+               | None => None
+               };
+             }
+           );
+
+         switch (result) {
+         | Some(dependency) => dependency
          | None =>
            Log.log("Skipping nonexistent dependency: " ++ name);
            ([], []);

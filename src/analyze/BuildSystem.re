@@ -34,14 +34,14 @@ let getBsPlatformDir = rootPath => {
       "bs-platform",
     );
   switch (result) {
-  | Result.Ok(path) =>
+  | Some(path) =>
     Log.log("Found bs-platform at " ++ path);
-    ();
-  | Result.Error(message) =>
+    Result.Ok(path);
+  | None =>
+    let message = "bs-platform could not be found";
     Log.log(message);
-    ();
+    Result.Error(message);
   };
-  result;
 };
 
 /* One dir up, then into .bin.
@@ -131,9 +131,11 @@ let getRefmt = (rootPath, buildSystem) => {
   };
 };
 
-let hiddenLocation = (rootPath, buildSystem) =>
+let hiddenLocation = (rootPath, buildSystem) => {
+  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
   | Bsb(_)
-  | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
+  | BsbNative(_, _) => Filename.dirname(bsPlatformDir) /+ ".lsp"
   | Dune => rootPath /+ "_build" /+ ".lsp"
   };
+};

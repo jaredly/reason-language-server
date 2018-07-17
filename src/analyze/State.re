@@ -117,6 +117,7 @@ let newBsPackage = rootPath => {
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
   let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
   let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
+  let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
   let%try (dependencyDirectories, dependencyModules) =
     FindFiles.findDependencyFiles(
       ~debug=true,
@@ -158,7 +159,7 @@ let newBsPackage = rootPath => {
     pathsForModule,
     buildSystem,
     opens: [],
-    tmpPath: BuildSystem.hiddenLocation(rootPath, buildSystem),
+    tmpPath,
     compilationFlags:
       MerlinFile.getFlags(rootPath)
       |> Result.withDefault([""])
@@ -278,7 +279,8 @@ let newJbuilderPackage = rootPath => {
     ocamllib,
     ...source |> List.filter(s => s != "" && s.[0] != '.'),
   ];
-  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  let%try hiddenLocation =
+    BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
   let dependencyModules =
     dependencyDirectories
