@@ -75,6 +75,7 @@ let symbolKind = (kind) =>
   switch kind {
   | `File => 1
   | `Module => 2
+  | `ModuleType => 2
   | `Namespace => 3
   | `Package => 4
   | `Class => 5

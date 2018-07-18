@@ -311,39 +311,68 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/documentSymbol", (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => State.getPackage(uri, state) |?> package => {
-      open Infix;
-      /* let items = */
-      let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
-      |?# lazy(State.getLastDefinitions(uri, state))
-      |?>> ((({Definition.topLevel})) => {
-        let rec getItems = (path, item) => {
-          /* let (name, loc, item, docs, scopeRange) = Hashtbl.find(stamps, stamp); */
-          let res = switch (item.Docs.T.kind) {
-            | Docs.T.Module(contents) => {
-              let children = contents |> List.map(getItems(path @ [item.name])) |> List.concat;
-              Some((`Module, children))
-            }
-            | Type(t, _extra) => Some((Protocol.typeKind(t), []))
-            | Value(v) => Some((Protocol.variableKind(v), []))
-            | _ => None
-          };
-          res |?>> ((((typ, children))) => [(item.name, typ, item.loc, path), ...children]) |? []
-        };
-        topLevel |> List.map(getItems([])) |> List.concat;
-      });
-      (items |?>> items => {
-        open Rpc.J;
-        Ok((state, l(items |> List.map(((name, typ, loc, path)) => o([
-          ("name", s(name)),
-          ("kind", i(Protocol.symbolKind(typ))),
-          ("location", Protocol.locationOfLoc(loc)),
-          ("containerName", s(String.concat(".", path)))
-        ])))))
+    let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
+    let%try package = State.getPackage(uri, state);
 
-      }) |? Ok((state, Json.Null))
-    }
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+
+    open SharedTypes;
+
+    let rec getItems = ({Module.topLevel}) => {
+      let fn = ({name: {txt, loc}, extentLoc, contents}) => {
+        let (item, siblings) = switch contents {
+          | Module.Value(v) => (Protocol.variableKind(v.typ), [])
+          | Type(t) => (Protocol.typeKind(t.typ), [])
+          | Module(Structure(contents)) => (`Module, getItems(contents))
+          | Module(Ident(_)) => (`Module, [])
+          | ModuleType(_) => (`ModuleType, [])
+        };
+        [(txt, extentLoc, item), ...siblings]
+      };
+      let x = topLevel |. Belt.List.map(fn) |. List.concat;
+      x
+    };
+
+    (getItems(file.contents) |> items => {
+      open Rpc.J;
+      Ok((state, l(items |> List.map(((name, loc, typ)) => o([
+        ("name", s(name)),
+        ("kind", i(Protocol.symbolKind(typ))),
+        ("location", Protocol.locationOfLoc(loc)),
+        /* ("containerName", s(String.concat(".", path))) */
+      ])))))
+    })
+
+    /* open Infix;
+    let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
+    |?# lazy(State.getLastDefinitions(uri, state))
+    |?>> ((({Definition.topLevel})) => {
+      let rec getItems = (path, item) => {
+        let res = switch (item.Docs.T.kind) {
+          | Docs.T.Module(contents) => {
+            let children = contents |> List.map(getItems(path @ [item.name])) |> List.concat;
+            Some((`Module, children))
+          }
+          | Type(t, _extra) => Some((Protocol.typeKind(t), []))
+          | Value(v) => Some((Protocol.variableKind(v), []))
+          | _ => None
+        };
+        res |?>> ((((typ, children))) => [(item.name, typ, item.loc, path), ...children]) |? []
+      };
+      topLevel |> List.map(getItems([])) |> List.concat;
+    }); */
+
+    /* (items |?>> items => {
+      open Rpc.J;
+      Ok((state, l(items |> List.map(((name, typ, loc, path)) => o([
+        ("name", s(name)),
+        ("kind", i(Protocol.symbolKind(typ))),
+        ("location", Protocol.locationOfLoc(loc)),
+        ("containerName", s(String.concat(".", path)))
+      ]))))) */
+
+    /* }) |? Ok((state, Json.Null)) */
+
   }),
 
   ("textDocument/formatting", (state, params) => {
