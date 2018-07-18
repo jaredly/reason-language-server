@@ -33,13 +33,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ("range", Protocol.rangeOfLoc(loc)),
       ]))))
     } |? Ok((state, Json.Null))
-
-    /* switch (State.definitionForPos(uri, position, data, state, ~package)) {
-    | Some((_, None, _, _))
-    | Some((_, _, _, None))
-    | None => Ok((state, Json.Null))
-    | Some((_, Some(loc), docs, Some(uri))) => 
-    } */
   }),
 
   /** TODO implement */
@@ -127,17 +120,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     } |? (state, Json.Null);
 
     Ok(res)
-
-    /* open Infix;
-    let highlights = (State.getDefinitionData(uri, state, ~package) |?> data => Definition.highlights(pos, data)) |? [];
-    open Rpc.J;
-    (state, l(highlights |> List.map(((t, loc)) => o([
-      ("range", Protocol.rangeOfLoc(loc)),
-      ("kind", i(switch t {
-      | `Read => 2
-      | `Write => 3
-      }))
-    ])))) */
   }),
 
   ("textDocument/references", (state, params) => {
@@ -173,27 +155,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       ));
 
     } |? (state, Json.Null);
-
-    /* {
-      let%opt data = State.getDefinitionData(uri, state, ~package);
-
-      switch (Definition.openReferencesAtPos(data, pos)) {
-        | Some(references) => Some((state, Json.Array(references |> List.map(((_, _, loc)) => Protocol.locationOfLoc(~fname=uri, loc)))))
-        | None =>
-          let%opt_wrap allReferences = State.referencesForPos(uri, pos, data, state, ~package);
-          open Rpc.J;
-          (
-            state,
-            l(allReferences
-              |> List.map(
-                  ((fname, references)) =>
-                    (fname == uri ? List.filter(((_, loc)) => !Protocol.locationContains(loc, pos), references) : references) |>
-                    List.map(((_, loc)) => Protocol.locationOfLoc(~fname, loc))
-                )
-              |> List.concat)
-          );
-      }
-    } |? (state, Json.Null) */
   }),
 
   ("textDocument/rename", (state, params) => {
@@ -234,21 +195,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           ))
         ])
       )));
-
-      /* State.getDefinitionData(uri, state, ~package)
-      |?> data => State.referencesForPos(uri, pos, data, state, ~package)
-      |?>> allReferences => {
-        open Rpc.J;
-        Ok((state, o([
-          ("changes", o(allReferences |> List.map(((uri, positions)) =>
-            (uri, l(positions |> List.map(((_, loc)) => o([
-              ("range", Protocol.rangeOfLoc(loc)),
-              ("newText", s(newName)),
-            ]))))
-          )))
-        ])))
-      } */
-
     } |? Ok((state, Json.Null)) 
   }),
 
@@ -321,32 +267,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
 
     {
-      /* let%opt (location, loc) = References.locForPos(~extra, pos);
-      let text = switch (loc) {
-        | SharedTypes.Loc.Explanation(text) => text
-        | Typed(t, _) => "types"
-        /* | Typed(_, Definition(_, _)) */
-        | Open => "open"
-      };
-      let text = {
-        let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
-          ~file,
-          ~getModule=State.fileForModule(state, ~package),
-          loc,
-        );
-        let extra = switch (res) {
-          | `Declared => {
-            docstring |? "No docs"
-          }
-          | `Constructor({name: {txt}, args, res}) => {
-            txt ++ "()"
-          }
-          | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
-            "." ++ txt
-          }
-        };
-        Some(text ++ "\n\n" ++ extra)
-      } |? text; */
       let pos = Utils.cmtLocFromVscode(pos);
       let%opt (location, loc) = References.locForPos(~extra, pos);
       let%opt text = Hover.newHover(
@@ -363,22 +283,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ("contents", text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
       ]))))
     } |? Ok((state, Json.Null));
-
-    /* open InfixResult;
-    let%try (uri, (line, character)) = Protocol.rPositionParams(params);
-    let%try package = State.getPackage(uri, state);
-    open Rpc.J;
-    let%try result = Hover.getHover(uri, line, character, state, ~package);
-    Ok({
-      switch result {
-      | None => (state, Json.Null)
-      | Some((text, loc)) =>
-        (state, o([
-          ("range", Protocol.rangeOfLoc(loc)),
-          ("contents",  text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
-        ]))
-      }
-    }) */
   }),
 
   ("textDocument/rangeFormatting", (state, params) => {
