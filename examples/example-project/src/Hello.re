@@ -87,7 +87,7 @@ let z = later;
 
 let m = Other.later;
 
-for (index in 0 to 10) {
+for (_index in 0 to 10) {
   print_endline("hellO");
 };
 

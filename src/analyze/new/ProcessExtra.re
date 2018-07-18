@@ -248,7 +248,7 @@ let forItems = (~file, items) => {
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
   file.stamps.modules |> Hashtbl.iter((stamp, d) => {
-    addLocation(d.name.loc, Loc.Typed(noType, Loc.Definition(stamp, Module)));
+    addLocation(d.name.loc, Loc.Module(Loc.Definition(stamp, Module)));
     addReference(stamp, d.name.loc);
   });
   file.stamps.values |> Hashtbl.iter((stamp, d) => {
@@ -256,7 +256,7 @@ let forItems = (~file, items) => {
     addReference(stamp, d.name.loc);
   });
   file.stamps.types |> Hashtbl.iter((stamp, d) => {
-    addLocation(d.name.loc, Loc.Typed(noType, Loc.Definition(stamp, Type)));
+    addLocation(d.name.loc, Loc.TypeDefinition(d.name.txt, d.contents.Type.typ, stamp));
     addReference(stamp, d.name.loc);
     switch (d.contents.Type.kind) {
       | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ, typLoc}) => {
@@ -265,7 +265,8 @@ let forItems = (~file, items) => {
       });
       | Variant(constructos) => constructos |> List.iter(({Type.Constructor.stamp, name}) => {
         addReference(stamp, name.loc);
-        addLocation(name.loc, Loc.Typed({Types.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))}, Loc.Definition(d.stamp, Constructor(name.txt))))
+        let t = {Types.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))};
+        addLocation(name.loc, Loc.Typed(t, Loc.Definition(d.stamp, Constructor(name.txt))))
       });
       | _ => ()
     };

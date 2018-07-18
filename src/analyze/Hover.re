@@ -44,9 +44,12 @@ let getHover = (uri, line, character, state, ~package) => {
 open Infix;
 let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
   switch (loc) {
-    | SharedTypes.Loc.Explanation(text) => text
+    | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
-    | Open => "open"
+    | Open => Some("an open")
+    | TypeDefinition(name, tdecl, stamp) => None
+    | Module(_) => Some("its a module")
+    | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
     | Typed(t, _) => {
       let typeString = 
         PrintType.default.expr(PrintType.default, t)
@@ -56,7 +59,7 @@ let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
         ? "```\n" ++ typeString ++ "\n```"
         : typeString;
 
-      {
+      Some({
         let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
           ~file,
           ~getModule,
@@ -65,18 +68,18 @@ let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
 
         let parts = switch (res) {
           | `Declared => {
-            [Some(name.txt), Some(typeString), docstring, Some(uri)]
+            [Some(typeString), docstring, Some(uri)]
           }
           | `Constructor({name: {txt}, args, res}) => {
-            [Some(txt ++ "()"), Some(typeString), docstring, Some(uri)]
+            [Some(typeString), docstring, Some(uri)]
           }
           | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
-            [Some("." ++ txt), Some(typeString), docstring, Some(uri)]
+            [Some(typeString), docstring, Some(uri)]
           }
         };
 
         Some(String.concat("\n\n", parts |. Belt_List.keepMap(x => x)))
-      } |? typeString
+      } |? typeString)
 
     }
   };

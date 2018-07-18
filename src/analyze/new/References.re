@@ -26,9 +26,13 @@ let local = (~file, ~extra, loc) =>
   switch (loc) {
   | Loc.Explanation(_)
   | Typed(_, NotFound)
+  | Module(NotFound)
   | Open => None
-  | Typed(_, LocalReference(stamp, tip))
-  | Typed(_, Definition(stamp, tip)) =>
+  | TypeDefinition(_, _, stamp) => {
+    extra.internalReferences |. Query.hashFind(stamp)
+  }
+  | Module(LocalReference(stamp, tip) | Definition(stamp, tip))
+  | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip)) =>
     open Infix;
     let%opt localStamp = switch tip {
       | Constructor(name) => Query.getConstructor(file, stamp, name) |?>> x => x.stamp
@@ -36,6 +40,7 @@ let local = (~file, ~extra, loc) =>
       | _ => Some(stamp)
     };
     extra.internalReferences |. Query.hashFind(localStamp)
+  | Module(GlobalReference(moduleName, path, tip))
   | Typed(_, GlobalReference(moduleName, path, tip)) =>
     let%opt_wrap refs = extra.externalReferences |. Query.hashFind(moduleName);
     refs |. Belt.List.keepMap(((p, t, l)) => p == path && t == tip ? Some(l) : None);
@@ -62,10 +67,13 @@ let definedForLoc = (~file, ~getModule, loc) => {
   switch (loc) {
   | Loc.Explanation(_)
   | Typed(_, NotFound)
+  | Module(NotFound)
   | Open => None
-  | Typed(_, LocalReference(stamp, tip))
-  | Typed(_, Definition(stamp, tip)) =>
+  | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
+  | Module(LocalReference(stamp, tip) | Definition(stamp, tip)) =>
     inner(~file, stamp, tip)
+  | TypeDefinition(_, _, stamp) => inner(~file, stamp, Type)
+  | Module(GlobalReference(moduleName, path, tip))
   | Typed(_, GlobalReference(moduleName, path, tip)) =>
     {
       let%try file = getModule(moduleName) |> Result.orError("Cannot get module " ++ moduleName);
@@ -116,12 +124,18 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
   switch (loc) {
     | Loc.Explanation(_)
     | Typed(_, NotFound)
+    | Module(NotFound)
     | Open => Result.Error("Not a valid loc")
-    | Typed(_, LocalReference(stamp, tip))
-    | Typed(_, Definition(stamp, tip)) => {
+    | TypeDefinition(_, _, stamp) => {
+      forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> Result.orError("Could not get for local stamp")
+    }
+    | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
+    | Module(LocalReference(stamp, tip) | Definition(stamp, tip))
+    => {
       Log.log("Finding references for " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
     }
+    | Module(GlobalReference(moduleName, path, tip))
     | Typed(_, GlobalReference(moduleName, path, tip)) => {
       let%try file = getModule(moduleName) |> Result.orError("Cannot get module " ++ moduleName);
       let env = {Query.file, exported: file.contents.exported};
@@ -157,12 +171,15 @@ let definition = (~file, stamp, tip) => {
 let definitionForLoc = (~file, ~getModule, loc) => {
   switch (loc) {
     | Loc.Explanation(_)
-    | Typed(_, NotFound)
-    | Typed(_, Definition(_, _))
+    | Typed(_, NotFound | Definition(_, _))
+    | Module(NotFound | Definition(_, _))
+    | TypeDefinition(_, _, _)
     | Open => None
+    | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {
       definition(~file, stamp, tip)
     }
+    | Module(GlobalReference(moduleName, path, tip))
     | Typed(_, GlobalReference(moduleName, path, tip)) => {
       let%opt file = getModule(moduleName);
       let env = {Query.file, exported: file.contents.exported};
