@@ -57,7 +57,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
 
       switch (References.locForPos(~extra, cpos)) {
         | None => "  " ++ string_of_int(i) ++ " - no location at pos " ++ showPos(cpos)
-        | Some(loc) => {
+        | Some((_, loc)) => {
           "  " ++ string_of_int(i) ++ ": " ++ switch (References.forLoc(
             ~file,
             ~extra,

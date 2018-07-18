@@ -40,3 +40,45 @@ let getHover = (uri, line, character, state, ~package) => {
     })
   };
 };
+
+open Infix;
+let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
+  switch (loc) {
+    | SharedTypes.Loc.Explanation(text) => text
+    /* TODO store a "defined" for Open (the module) */
+    | Open => "open"
+    | Typed(t, _) => {
+      let typeString = 
+        PrintType.default.expr(PrintType.default, t)
+        |> PrintType.prettyString;
+
+      let typeString = markdown
+        ? "```\n" ++ typeString ++ "\n```"
+        : typeString;
+
+      {
+        let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
+          ~file,
+          ~getModule,
+          loc,
+        );
+
+        let parts = switch (res) {
+          | `Declared => {
+            [Some(name.txt), Some(typeString), docstring, Some(uri)]
+          }
+          | `Constructor({name: {txt}, args, res}) => {
+            [Some(txt ++ "()"), Some(typeString), docstring, Some(uri)]
+          }
+          | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
+            [Some("." ++ txt), Some(typeString), docstring, Some(uri)]
+          }
+        };
+
+        Some(String.concat("\n\n", parts |. Belt_List.keepMap(x => x)))
+      } |? typeString
+
+    }
+  };
+
+};

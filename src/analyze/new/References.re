@@ -18,7 +18,7 @@ let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}
 let locForPos = (~extra, pos) => {
   extra.locations |> Utils.find(((loc, l)) => {
     open Location;
-    checkPos(pos, loc) ? Some(l) : None
+    checkPos(pos, loc) ? Some((loc, l)) : None
   });
 };
 
@@ -40,6 +40,45 @@ let local = (~file, ~extra, loc) =>
     let%opt_wrap refs = extra.externalReferences |. Query.hashFind(moduleName);
     refs |. Belt.List.keepMap(((p, t, l)) => p == path && t == tip ? Some(l) : None);
   };
+
+let definedForLoc = (~file, ~getModule, loc) => {
+  let inner = (~file, stamp, tip) => {
+    open Infix;
+    switch tip {
+      | Constructor(name) => {
+        let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
+        let%opt constructor = Query.getConstructor(file, stamp, name);
+        Some((declared, file, `Constructor(constructor)))
+      }
+      | Attribute(name) => {
+        let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
+        let%opt attribute = Query.getAttribute(file, stamp, name);
+        Some((declared, file, `Attribute(attribute)))
+      }
+      | _ => Query.declaredForTip(~stamps=file.stamps, stamp, tip) |?>> x => (x, file, `Declared)
+    };
+  };
+
+  switch (loc) {
+  | Loc.Explanation(_)
+  | Typed(_, NotFound)
+  | Open => None
+  | Typed(_, LocalReference(stamp, tip))
+  | Typed(_, Definition(stamp, tip)) =>
+    inner(~file, stamp, tip)
+  | Typed(_, GlobalReference(moduleName, path, tip)) =>
+    {
+      let%try file = getModule(moduleName) |> Result.orError("Cannot get module " ++ moduleName);
+      let env = {Query.file, exported: file.contents.exported};
+      let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
+      let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
+      inner(~file, stamp, tip) |> Result.orError("could not get defined")
+    } |> Result.toOptionAndLog
+    /* let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri); */
+    /* Log.log("Finding references for (global) " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip)); */
+    /* forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp") */
+  };
+};
 
 let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) => {
   let env = {Query.file, exported: file.contents.exported};
@@ -96,7 +135,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
 };
 
 let forPos = (~file, ~extra, pos) => {
-  let%opt loc = locForPos(~extra, pos);
+  let%opt (_, loc) = locForPos(~extra, pos);
   let%opt refs = local(~file, ~extra, loc);
   Some(refs)
 };
@@ -135,6 +174,6 @@ let definitionForLoc = (~file, ~getModule, loc) => {
 };
 
 let definitionForPos = (~file, ~extra, ~getModule, pos) => {
-  let%opt loc = locForPos(~extra, pos);
+  let%opt (_, loc) = locForPos(~extra, pos);
   definitionForLoc(~file, ~getModule, loc)
 };

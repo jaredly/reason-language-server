@@ -149,7 +149,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Infix;
 
     {
-      let%opt loc = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
+      let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
       let allModules = package.localModules |> List.map(fst);
       let%opt allReferences = References.forLoc(
         ~file,
@@ -205,7 +205,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     open Infix;
     {
-      let%opt loc = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
+      let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
       let allModules = package.localModules |> List.map(fst);
       let%opt allReferences = References.forLoc(
         ~file,
@@ -316,7 +316,55 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("textDocument/hover", (state, params) => {
-    open InfixResult;
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try package = State.getPackage(uri, state);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+
+    {
+      /* let%opt (location, loc) = References.locForPos(~extra, pos);
+      let text = switch (loc) {
+        | SharedTypes.Loc.Explanation(text) => text
+        | Typed(t, _) => "types"
+        /* | Typed(_, Definition(_, _)) */
+        | Open => "open"
+      };
+      let text = {
+        let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
+          ~file,
+          ~getModule=State.fileForModule(state, ~package),
+          loc,
+        );
+        let extra = switch (res) {
+          | `Declared => {
+            docstring |? "No docs"
+          }
+          | `Constructor({name: {txt}, args, res}) => {
+            txt ++ "()"
+          }
+          | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
+            "." ++ txt
+          }
+        };
+        Some(text ++ "\n\n" ++ extra)
+      } |? text; */
+      let pos = Utils.cmtLocFromVscode(pos);
+      let%opt (location, loc) = References.locForPos(~extra, pos);
+      let text = Hover.newHover(
+        ~file,
+        ~extra,
+        ~getModule=State.fileForModule(state, ~package),
+        ~markdown=!state.settings.clientNeedsPlainText,
+        loc
+      );
+
+      open Rpc.J;
+      Some(Ok((state, o([
+        ("range", Protocol.rangeOfLoc(location)), 
+        ("contents", text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
+      ]))))
+    } |? Ok((state, Json.Null));
+
+    /* open InfixResult;
     let%try (uri, (line, character)) = Protocol.rPositionParams(params);
     let%try package = State.getPackage(uri, state);
     open Rpc.J;
@@ -330,7 +378,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           ("contents",  text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
         ]))
       }
-    })
+    }) */
   }),
 
   ("textDocument/rangeFormatting", (state, params) => {
