@@ -203,11 +203,6 @@ module Loc = {
   | GlobalReference(string, path, tip)
   | NotFound
   | Definition(int, tip);
-  /* type typ =
-  | Expr(Types.type_expr)
-  | TypeDefn(Types.type_declaration)
-  | Module(Types.module_type)
-  ; */
   type t =
   | Typed(Types.type_expr, typed)
   | Module(typed)

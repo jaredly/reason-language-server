@@ -12,10 +12,9 @@ module Something = {
   let m = {name: "Me", age: 0};
   let animal = Whats(10);
   let other = Whats(2);
-  let me = Cat("Hie");
+  let me: animals = Cat("Hie");
   let x = something + 10;
 };
-
 
 open Something;
 

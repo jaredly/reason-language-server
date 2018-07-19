@@ -238,14 +238,23 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         }) : [];
 
         let showOpens = state.settings.opensCodelens;
-        let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
+        /* let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses; */
         let lenses = showOpens ? lenses @ {
           SharedTypes.hashList(extra.opens) |. Belt.List.map(((loc, tracker)) => {
-            let items = tracker.used |. Belt.List.map(((path, tip, loc)) => (path, tip))
-            |> List.sort_uniq(compare)
-            |> List.map(((path, tip)) => SharedTypes.pathToString(path) ++ " " ++ SharedTypes.tipToString(tip))
-            |> String.concat(", ");
-            ("exposing " ++ string_of_int(List.length(tracker.used)) ++ " (" ++ items ++ ")", loc)
+            let items = tracker.used |. Belt.List.map(((path, tip, loc)) => switch path {
+              | Tip(name) => (name, tip)
+              | Nested(name, _) => (name, Module)
+            })
+            |> List.sort_uniq(compare);
+            let values = items |. Belt.List.keep(((p, t)) => t == Value);
+            let modules = items |. Belt.List.keep(((p, t)) => t == Module);
+            let types = items |. Belt.List.keep(((p, t)) => t != Value && t != Module);
+
+            let parts = values == [] ? [] : ["values (" ++ String.concat(", ", List.map(fst, values)) ++ ")"];
+            let parts = modules == [] ? parts : ["modules (" ++ String.concat(", ", List.map(fst, modules)) ++ ")", ...parts];
+            let parts = types == [] ? parts : ["types (" ++ String.concat(", ", List.map(fst, types)) ++ ")", ...parts];
+
+            (parts == [] ? "Unused open" : String.concat(" ", parts), loc)
           });
         } : lenses;
 

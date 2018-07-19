@@ -37,7 +37,7 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
     }
   }, opens, []) |. Belt.List.sort((a, b) => {
     open Location;
-    a.loc.loc_start.pos_cnum - b.loc.loc_start.pos_cnum
+    b.loc.loc_start.pos_cnum - a.loc.loc_start.pos_cnum
   });
 
   switch matching {
