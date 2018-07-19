@@ -219,12 +219,15 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       ])))))
     }
     | Ok(package) =>
+
       open Infix;
       let items = {
         let%opt moduleData = {
           let%opt (_, moduleData) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
           Some(moduleData)
         } |?# lazy(State.getLastDefinitions(uri, state));
+
+        let%opt (file, extra) = State.fileForUri(state, ~package, uri);
 
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? moduleData.Definition.topLevel |> Utils.filterMap(({Docs.T.name, loc, kind, docstring}) => {
@@ -236,6 +239,15 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
         let showOpens = state.settings.opensCodelens;
         let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
+        let lenses = showOpens ? lenses @ {
+          SharedTypes.hashList(extra.opens) |. Belt.List.map(((loc, tracker)) => {
+            let items = tracker.used |. Belt.List.map(((path, tip, loc)) => (path, tip))
+            |> List.sort_uniq(compare)
+            |> List.map(((path, tip)) => SharedTypes.pathToString(path) ++ " " ++ SharedTypes.tipToString(tip))
+            |> String.concat(", ");
+            ("exposing " ++ string_of_int(List.length(tracker.used)) ++ " (" ++ items ++ ")", loc)
+          });
+        } : lenses;
 
         let showDependencies = state.settings.dependenciesCodelens;
         let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {

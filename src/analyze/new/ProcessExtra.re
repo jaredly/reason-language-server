@@ -57,13 +57,7 @@ module F = (Collector: {
     let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
     let%opt_consume relpath = Query.makeRelativePath(tracker.path, path);
 
-    /* switch (Query.makePath(path)) {
-    | `Stamp(name) =>
-      /* This shouldn't happen */
-      ()
-    | `Path((_stamp, _name, ourPath)) => */
-      tracker.used = [(relpath, tip, loc), ...tracker.used];
-    /* } */
+    tracker.used = [(relpath, tip, loc), ...tracker.used];
   };
 
 

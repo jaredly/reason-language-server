@@ -184,7 +184,7 @@ type path =
 
 let rec pathToString = path => switch path {
   | Tip(name) => name
-  | Nested(name, inner) => name ++ " > " ++ pathToString(inner)
+  | Nested(name, inner) => name ++ "." ++ pathToString(inner)
 };
 
 let rec pathFromVisibility = (visibilityPath, current) => switch visibilityPath {
