@@ -112,6 +112,11 @@ let newBsPackage = (rootPath) => {
   let%try buildSystem = BuildSystem.detect(rootPath, config);
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
+  let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
+  let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
+  let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
+  let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
+  let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
   let namespace = FindFiles.getNamespace(config);
@@ -121,7 +126,7 @@ let newBsPackage = (rootPath) => {
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
   let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
+  
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
@@ -132,13 +137,13 @@ let newBsPackage = (rootPath) => {
     pathsForModule,
     buildSystem,
     opens: [],
-    tmpPath: BuildSystem.hiddenLocation(rootPath, buildSystem),
+    tmpPath,
     compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
     includeDirectories: 
-      BuildSystem.getStdlib(rootPath, buildSystem) @ 
+      stdLibDirectories @ 
       dependencyDirectories @ localCompiledDirs,
-    compilerPath: BuildSystem.getCompiler(rootPath, buildSystem),
-    refmtPath: BuildSystem.getRefmt(rootPath, buildSystem),
+    compilerPath,
+    refmtPath,
   };
 };
 
@@ -230,7 +235,7 @@ let newJbuilderPackage = (rootPath) => {
 
   let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "" && s.[0] != '.'))];
 
-  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
   let dependencyModules = dependencyDirectories
@@ -251,6 +256,8 @@ let newJbuilderPackage = (rootPath) => {
 
   libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
+  let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
+  let%try refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem);
   Ok({
     basePath: rootPath,
     localModules,
@@ -262,8 +269,8 @@ let newJbuilderPackage = (rootPath) => {
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
-    compilerPath: BuildSystem.getCompiler(projectRoot, buildSystem),
-    refmtPath: BuildSystem.getRefmt(projectRoot, buildSystem),
+    compilerPath,
+    refmtPath,
   });
 };
 

@@ -1,0 +1,23 @@
+{
+  "name": "shared",
+  "version": "0.1.0",
+  "scripts": {
+    "clean": "bsb -clean-world",
+    "build": "bsb -make-world",
+    "watch": "bsb -make-world -w"
+  },
+  "keywords": [
+    "BuckleScript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "bs-platform": "^4.0.0"
+  },
+  "dependencies": {
+    "@glennsl/bs-json": "^2.0.0",
+    "react": "^16.4.1",
+    "react-dom": "^16.4.1",
+    "reason-react": "^0.4.2"
+  }
+}

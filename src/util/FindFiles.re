@@ -62,20 +62,25 @@ let getSourceDirectories = (~includeDev=false, base, config) => {
 let getDependencyDirs = (base, config, ~buildSystem) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
   deps |> List.map(name => {
-    let loc = base /+ "node_modules" /+ name;
-    switch (Files.readFile(loc /+ "bsconfig.json")) {
-    | Some(text) =>
-      let inner = Json.parse(text);
-      /* let allowedKinds = inner |> Json.get("allowed-build-kinds") |?> Json.array |?>> List.map(Json.string |.! "allowed-build-kinds must be strings") |? ["js"]; */
-      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "Cannot find directory for compiled artifacts.";
-      /* if (List.mem("js", allowedKinds)) { */
-        [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
-      /* } else {
+    let locOpt = ModuleResolution.resolveNodeModulePath(~startPath=base, name);
+    switch(locOpt) {
+      | Some(loc) => switch (Files.readFile(loc /+ "bsconfig.json")) {
+        | Some(text) =>
+            let inner = Json.parse(text);
+            /* let allowedKinds = inner |> Json.get("allowed-build-kinds") |?> Json.array |?>> List.map(Json.string |.! "allowed-build-kinds must be strings") |? ["js"]; */
+            let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "Cannot find directory for compiled artifacts.";
+            /* if (List.mem("js", allowedKinds)) { */
+              [compiledBase, ...(getSourceDirectories(loc, inner) |> List.map(name => compiledBase /+ name))];
+            /* } else {
+              []
+            } */
+        | None =>
+          Log.log("Skipping nonexistent dependency: " ++ name);
+          []
+      }
+    | None => 
+        Log.log("Skipping nonexistent dependency: " ++ name);
         []
-      } */
-    | None =>
-      Log.log("Skipping nonexistent dependency: " ++ name);
-      []
     }
   }) |> List.concat
 };
@@ -183,45 +188,108 @@ let needsCompilerLibs = config => {
 };
 
 let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
-  let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  let deps =
+    config
+    |> Json.get("bs-dependencies")
+    |?> Json.array
+    |? []
+    |> optMap(Json.string);
   Log.log("Deps " ++ String.concat(", ", deps));
-  let depFiles = deps |> List.map(name => {
-    let loc = base /+ "node_modules" /+ name;
-    let innerPath = loc /+ "bsconfig.json";
-    Log.log("Dep loc " ++ innerPath);
-    switch (Files.readFile(innerPath)) {
-    | Some(text) =>
-      let inner = Json.parse(text);
-      let namespace = getNamespace(inner);
-      let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "No compiled base found";
-      if (debug) {
-        Log.log("Compiled base: " ++ compiledBase)
-      };
-      let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
-      let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
-      let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
-      let files = switch namespace {
-      | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, Some(rel))), files)
-      | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, Some(rel))))
-      };
-      (compiledDirectories, files)
-    | None =>
-      Log.log("Skipping nonexistent dependency: " ++ name);
-      ([], [])
-    }
-  });
+  let depFiles =
+    deps
+    |> List.map(name => {
+         let result =
+           ModuleResolution.resolveNodeModulePath(~startPath=base, name)
+           |?> (
+             loc => {
+               let innerPath = loc /+ "bsconfig.json";
+               Log.log("Dep loc " ++ innerPath);
+               switch (Files.readFile(innerPath)) {
+               | Some(text) =>
+                 let inner = Json.parse(text);
+                 let namespace = getNamespace(inner);
+                 let directories =
+                   getSourceDirectories(~includeDev=false, loc, inner);
+                 let compiledBase =
+                   BuildSystem.getCompiledBase(loc, buildSystem)
+                   |! "No compiled base found";
+                 if (debug) {
+                   Log.log("Compiled base: " ++ compiledBase);
+                 };
+                 let compiledDirectories =
+                   directories |> List.map(Infix.fileConcat(compiledBase));
+                 let compiledDirectories =
+                   namespace == None ?
+                     compiledDirectories :
+                     [compiledBase, ...compiledDirectories];
+                 let files =
+                   findProjectFiles(
+                     ~debug,
+                     namespace,
+                     loc,
+                     directories,
+                     compiledBase,
+                   );
+                 let files =
+                   switch (namespace) {
+                   | None =>
+                     List.map(
+                       ((full, rel)) => (
+                         Plain(getName(rel) |> String.capitalize),
+                         (full, Some(rel)),
+                       ),
+                       files,
+                     )
+                   | Some(name) =>
+                     files
+                     |> List.map(((full, rel)) =>
+                          (
+                            Namespaced(name, getName(rel)),
+                            (full, Some(rel)),
+                          )
+                        )
+                   };
+                 Some((compiledDirectories, files));
+               | None => None
+               };
+             }
+           );
+
+         switch (result) {
+         | Some(dependency) => dependency
+         | None =>
+           Log.log("Skipping nonexistent dependency: " ++ name);
+           ([], []);
+         };
+       });
   let (directories, files) = List.split(depFiles);
   let files = List.concat(files);
-  let stdlibDirectories = BuildSystem.getStdlib(base, buildSystem);
+  let%try stdlibDirectories = BuildSystem.getStdlib(base, buildSystem);
   let directories = stdlibDirectories @ List.concat(directories);
-  let results = files @ List.concat(List.map(loadStdlib,stdlibDirectories));
-  (
-    needsCompilerLibs(config)
-    ? [base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs", ...directories]
-    : directories,
-    needsCompilerLibs(config)
-    ? loadStdlib(base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml" /+ "compiler-libs") @ results
-    : results
-  )
+  let results = files @ List.concat(List.map(loadStdlib, stdlibDirectories));
+  let%try bsPlatformDir = BuildSystem.getBsPlatformDir(base);
+  Result.Ok((
+    needsCompilerLibs(config) ?
+      [
+        bsPlatformDir
+        /+ "vendor"
+        /+ "ocaml"
+        /+ "lib"
+        /+ "ocaml"
+        /+ "compiler-libs",
+        ...directories,
+      ] :
+      directories,
+    needsCompilerLibs(config) ?
+      loadStdlib(
+        bsPlatformDir
+        /+ "vendor"
+        /+ "ocaml"
+        /+ "lib"
+        /+ "ocaml"
+        /+ "compiler-libs",
+      )
+      @ results :
+      results,
+  ));
 };
