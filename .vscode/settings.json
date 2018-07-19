@@ -1,4 +1,5 @@
 {
+  "editor.formatOnSave": false,
   "git.ignoreLimitWarning": true,
   "git.enabled": true,
   "editor.codeLens": true,
