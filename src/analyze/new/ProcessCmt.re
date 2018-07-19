@@ -89,12 +89,29 @@ let rec forSignatureType = (env, signature) => {
       kind: switch type_kind {
         | Type_abstract => Abstract
         | Type_open => Open
-        | Type_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp, name}, cd_args, cd_res, cd_attributes}) => {
-          Type.Constructor.stamp,
-          name: Location.mknoloc(name),
-          args: cd_args |> List.map(t => (t, Location.none)),
-          res: cd_res,
-        }))
+        | Type_variant(constructors) => {
+          Variant(constructors |. Belt.List.map(({cd_loc, cd_id: {name, stamp}, cd_args, cd_res, cd_attributes}) => {
+            let contents = {
+              Type.Constructor.stamp,
+              name: Location.mknoloc(name),
+              args: cd_args |> List.map(t => (t, Location.none)),
+              res: cd_res,
+            };
+            let declared = newDeclared(
+              ~contents,
+              ~extent=cd_loc,
+              ~name=Location.mknoloc(name),
+              ~stamp,
+              /* TODO maybe this needs another child */
+              ~modulePath=env.modulePath,
+              ~processDoc=env.processDoc,
+              true,
+              cd_attributes,
+            );
+            Hashtbl.add(env.stamps.constructors, stamp, declared);
+            contents
+          }))
+        }
         | Type_record(labels, _) => Record(labels |> List.map(
           ({ld_id: {stamp: astamp, name}, ld_type}) => {
             {Type.Attribute.stamp: astamp, name: Location.mknoloc(name), typ: ld_type, typLoc: Location.none}

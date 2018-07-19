@@ -144,6 +144,8 @@ type stamps = {
   values: stampMap(declared(Value.t)),
   modules: stampMap(declared(Module.kind)),
   moduleTypes: stampMap(declared(Module.kind)),
+  constructors: stampMap(declared(Type.Constructor.t)),
+  /* moduleTypes: stampMap(declared(Module.kind)), */
 };
 
 let initStamps = () => {
@@ -151,6 +153,7 @@ let initStamps = () => {
   values: Hashtbl.create(10),
   modules: Hashtbl.create(10),
   moduleTypes: Hashtbl.create(10),
+  constructors: Hashtbl.create(10),
 };
 
 type file = {
@@ -229,6 +232,8 @@ type extra = {
   /* OPTIMIZE: using a stack to come up with this would cut the computation time of this considerably. */
   opens: Hashtbl.t(Location.t, openTracker),
 };
+
+type full = {extra, file};
 
 let initExtra = () => {
   internalReferences: Hashtbl.create(10),

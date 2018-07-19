@@ -2,6 +2,7 @@
 open SharedTypes;
 
 /* TODO maybe keep track of the "current module path" */
+/* maybe add a "current module path" for debugging purposes */
 type queryEnv = {
   file,
   exported: Module.exported,
@@ -69,6 +70,8 @@ let rec resolvePathInner = (~env, ~path) => {
     }
   }
 };
+
+/* let rec findSubModule = (~env, ~getModule) */
 
 let rec resolvePath = (~env, ~path, ~getModule) => {
   let%opt result = resolvePathInner(~env, ~path);

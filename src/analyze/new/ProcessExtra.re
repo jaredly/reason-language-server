@@ -200,9 +200,17 @@ module F = (Collector: {
     }
   };
 
-  let currentScopeExtent = () => List.hd(Collector.scopeExtent^);
+  let currentScopeExtent = () => {
+    if (Collector.scopeExtent^ == []) {
+      Location.none
+    } else {
+      List.hd(Collector.scopeExtent^);
+    }
+  };
   let addScopeExtent = loc => Collector.scopeExtent := [loc, ...Collector.scopeExtent^];
-  let popScopeExtent = () => Collector.scopeExtent := List.tl(Collector.scopeExtent^);
+  let popScopeExtent = () => if (List.length(Collector.scopeExtent^) > 1) {
+    Collector.scopeExtent := List.tl(Collector.scopeExtent^);
+  };
 
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
@@ -230,6 +238,8 @@ module F = (Collector: {
   };
 
   let enter_structure = ({str_items}) => {
+    if (str_items != []) {
+
     let first = List.hd(str_items);
     let last = List.nth(str_items, List.length(str_items) - 1);
 
@@ -240,10 +250,13 @@ module F = (Collector: {
     };
 
     addScopeExtent(extent);
+    }
   };
 
   let leave_structure = str => {
-    popScopeExtent();
+    if (str.str_items != []) {
+      popScopeExtent();
+    }
   };
 
   let enter_signature_item = item => switch (item.sig_desc) {
@@ -370,13 +383,15 @@ let forItems = (~file, items) => {
     };
   });
 
-  let first = List.hd(items);
-  let last = List.nth(items, List.length(items) - 1);
+  let extent = items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
 
-  let extent = {
-    Location.loc_ghost: true,
-    loc_start: first.str_loc.loc_start,
-    loc_end: last.str_loc.loc_end,
+    {
+      Location.loc_ghost: true,
+      loc_start: first.str_loc.loc_start,
+      loc_end: last.str_loc.loc_end,
+    };
   };
 
   let module Iter = TypedtreeIter.MakeIterator(F({

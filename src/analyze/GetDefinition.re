@@ -96,6 +96,7 @@ module Get = {
         (
           switch scopes^ {
           | [] => []
+          | [one] => [one]
           | [_, ...rest] => rest
           }
         );
