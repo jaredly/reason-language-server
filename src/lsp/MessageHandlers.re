@@ -46,6 +46,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = State.getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, pos) |> orError("invalid offset");
+    /* TODO get last non-syntax-erroring definitions */
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> orError("No definitions");
     open Rpc.J;
     let completions = switch (PartialParser.findCompletable(text, offset)) {
     | Nothing => {
@@ -62,10 +64,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
       let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
       let opens = PartialParser.findOpens(text, offset);
-      /* */
+
       let localData = State.getLastDefinitions(uri, state);
       let useMarkdown = !state.settings.clientNeedsPlainText;
-      Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
+      let items = Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package);
+
+      items |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
         ("label", s(label)),
         ("kind", i(Completions.kindToInt(kind))),
         ("detail", Infix.(detail |?>> s |? null)),
