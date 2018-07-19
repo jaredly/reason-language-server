@@ -25,6 +25,9 @@ let addOpen = (extra, path, loc, extent, ident) => {
 
 let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
+  /* Log.log("<> Finding an open " ++ Path.name(path));
+  Log.log("Ident " ++ String.concat(".", Longident.flatten(ident)));
+  Log.log("Relative thing " ++ Path.name(openNeedle)); */
 
   let matching = Hashtbl.fold((l, op, res) => {
     if (Utils.locWithinLoc(loc, op.extent) && Path.same(op.path, openNeedle)) {
@@ -52,14 +55,15 @@ module F = (Collector: {
 
   let maybeAddUse = (path, ident, loc, tip) => {
     let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
+    let%opt_consume relpath = Query.makeRelativePath(tracker.path, path);
 
-    switch (Query.makePath(path)) {
+    /* switch (Query.makePath(path)) {
     | `Stamp(name) =>
       /* This shouldn't happen */
       ()
-    | `Path((_stamp, _name, ourPath)) =>
-      tracker.used = [(ourPath, tip, loc), ...tracker.used];
-    }
+    | `Path((_stamp, _name, ourPath)) => */
+      tracker.used = [(relpath, tip, loc), ...tracker.used];
+    /* } */
   };
 
 
@@ -91,6 +95,7 @@ module F = (Collector: {
   };
 
   let addForPath = (path, lident, loc, typ, tip) => {
+    maybeAddUse(path, lident, loc, tip);
     let identName = Longident.last(lident);
     let identLoc = Utils.endOfLocation(loc, String.length(identName));
     let locType = switch (Query.fromCompilerPath(~env, path)) {
@@ -207,7 +212,7 @@ module F = (Collector: {
     addLocation(loc, Loc.Explanation(doc))
   }
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
-    Log.log("Have an open here");
+    /* Log.log("Have an open here"); */
     maybeAddUse(open_path, txt, loc, Module);
     let tracker = {
       path: open_path,
@@ -266,7 +271,6 @@ module F = (Collector: {
   let enter_core_type = ({ctyp_loc, ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
       | Ttyp_constr(path, {txt, loc}, args) => {
-        maybeAddUse(path, txt, loc, Type);
         addForPath(path, txt, loc, ctyp_type, Type)
       }
       | _ => ()

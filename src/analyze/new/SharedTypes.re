@@ -262,10 +262,11 @@ let showExtra = ({internalReferences, locations, externalReferences, opens}) => 
   let opens = hashList(opens);
   Log.log("Opens " ++ string_of_int(List.length(opens)));
   let opens = opens |> List.map(((loc, tracker)) => {
-    "path: " ++ Path.name(tracker.path) ++
-    "\nident: " ++ String.concat(".", Longident.flatten(tracker.ident.txt)) ++
-    "\nused: " ++ String.concat("\n", tracker.used |> List.map(((path, tip, loc)) => {
-      "  " ++ pathToString(path) ++ " > " ++ tipToString(tip)
+    "Open at " ++ Utils.showLocation(loc) ++
+    "\n  path: " ++ Path.name(tracker.path) ++
+    "\n  ident: " ++ String.concat(".", Longident.flatten(tracker.ident.txt)) ++
+    "\n  used:" ++ String.concat("", tracker.used |> List.map(((path, tip, loc)) => {
+      "\n    " ++ pathToString(path) ++ " : " ++ tipToString(tip)
     }))
 
   }) |> String.concat("\n");

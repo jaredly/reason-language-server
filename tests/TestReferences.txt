@@ -68,15 +68,44 @@ let m = Lib.<t1>A(2);
 -->
   1: ✅ PASS
 
-=== * Nested modules
+=== * Opens
+module Lib = {
+  module M = {
+    type t = | <c1>A(int) | B;
+    let l = 20;
+    module E = {
+      let z = 10;
+    }
+  };
+};
+
+open Lib.M;
+let r = <t1>A(l + E.z);
+type m = t;
+open Lib;
+let m = M.l;
+open Lib.M.E;
+let r = z;
+-->
+  1: ✅ PASS
+
+=== Nested modules
 --- Lib.re
 module M = {
   type t = | <c1>A(int) | B;
+  let l = 20;
+  module E = {
+    let z = 10;
+  }
 };
 ---
 open Lib.M;
-let r = <t1>A(3);
+let r = <t1>A(l + E.z);
 type m = t;
+open Lib;
+let m = M.l;
+open Lib.M.E;
+let r = z;
 -->
   1: ✅ PASS
 

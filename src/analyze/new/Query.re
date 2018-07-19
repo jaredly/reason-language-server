@@ -30,6 +30,22 @@ let rec makePath = (modulePath) => {
   }
 };
 
+let rec makeRelativePath = (basePath, otherPath) => {
+  let rec loop = (base, other, tip) => {
+    if (Path.same(base, other)) {
+      Some(tip)
+    } else {
+      switch other {
+        | Pdot(inner, name, _) => loop(basePath, inner, Nested(name, tip))
+        | _ => None
+      }
+    }
+  };
+  switch otherPath {
+    | Path.Pdot(inner, name, _) => loop(basePath, inner, Tip(name))
+    | _ => None
+  }
+};
 
 let rec resolvePathInner = (~env, ~path) => {
   switch path {
