@@ -68,7 +68,7 @@ let m = Lib.<t1>A(2);
 -->
   1: ✅ PASS
 
-=== Nested modules
+=== * Nested modules
 --- Lib.re
 module M = {
   type t = | <c1>A(int) | B;
@@ -76,6 +76,7 @@ module M = {
 ---
 open Lib.M;
 let r = <t1>A(3);
+type m = t;
 -->
   1: ✅ PASS
 

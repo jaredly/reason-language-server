@@ -43,24 +43,25 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
   }
 };
 
-let maybeAddUse = (extra, path, ident, loc, tip) => {
-  let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
-
-  switch (Query.makePath(path)) {
-  | `Stamp(name) =>
-    /* This shouldn't happen */
-    ()
-  | `Path((_stamp, _name, ourPath)) =>
-    tracker.used = [(ourPath, tip, loc), ...tracker.used];
-  }
-};
-
 module F = (Collector: {
   let extra: extra;
   let file: file;
   let scopeExtent: ref(list(Location.t));
 }) => {
   let extra = Collector.extra;
+
+  let maybeAddUse = (path, ident, loc, tip) => {
+    let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
+
+    switch (Query.makePath(path)) {
+    | `Stamp(name) =>
+      /* This shouldn't happen */
+      ()
+    | `Path((_stamp, _name, ourPath)) =>
+      tracker.used = [(ourPath, tip, loc), ...tracker.used];
+    }
+  };
+
 
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
@@ -120,6 +121,10 @@ module F = (Collector: {
         let t = getTypeAtPath(path);
         let {Types.lbl_loc, lbl_res} = item;
         let name = Longident.last(txt);
+
+        let (name, typeLident) = Definition.handleConstructor(path, txt);
+        maybeAddUse(path, typeLident, loc, Constructor(name));
+
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
         let locType = switch (t) {
           | `Local({stamp, contents: {kind: Record(attributes)}}) => {
@@ -202,7 +207,8 @@ module F = (Collector: {
     addLocation(loc, Loc.Explanation(doc))
   }
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
-    maybeAddUse(Collector.extra, open_path, txt, loc, Module);
+    Log.log("Have an open here");
+    maybeAddUse(open_path, txt, loc, Module);
     let tracker = {
       path: open_path,
       loc,
@@ -259,7 +265,10 @@ module F = (Collector: {
 
   let enter_core_type = ({ctyp_loc, ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
-      | Ttyp_constr(path, {txt, loc}, args) => addForPath(path, txt, loc, ctyp_type, Type)
+      | Ttyp_constr(path, {txt, loc}, args) => {
+        maybeAddUse(path, txt, loc, Type);
+        addForPath(path, txt, loc, ctyp_type, Type)
+      }
       | _ => ()
     }
   };

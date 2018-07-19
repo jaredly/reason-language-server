@@ -244,7 +244,7 @@ let initExtra = () => {
 
 let hashList = h => Hashtbl.fold((a, b, c) => [(a, b), ...c], h, []);
 
-let showExtra = ({internalReferences, locations, externalReferences}) => {
+let showExtra = ({internalReferences, locations, externalReferences, opens}) => {
   let refs = hashList(internalReferences) |> List.map(((stamp, locs)) => {
     "Stamp: " ++ string_of_int(stamp) ++ "\n - "
     ++ String.concat("\n - ", List.map(Utils.showLocation, locs))
@@ -258,5 +258,17 @@ let showExtra = ({internalReferences, locations, externalReferences}) => {
     , refs)
     )
   }) |> String.concat("\n");
-  "## Extra:\n\n" ++ refs ++ "\n" ++ erefs
+
+  let opens = hashList(opens);
+  Log.log("Opens " ++ string_of_int(List.length(opens)));
+  let opens = opens |> List.map(((loc, tracker)) => {
+    "path: " ++ Path.name(tracker.path) ++
+    "\nident: " ++ String.concat(".", Longident.flatten(tracker.ident.txt)) ++
+    "\nused: " ++ String.concat("\n", tracker.used |> List.map(((path, tip, loc)) => {
+      "  " ++ pathToString(path) ++ " > " ++ tipToString(tip)
+    }))
+
+  }) |> String.concat("\n");
+
+  "## Extra:\n\n" ++ refs ++ "\n" ++ erefs ++ "\n### Opens\n" ++ opens
 };
