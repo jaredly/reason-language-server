@@ -197,15 +197,6 @@ let rec pathFromVisibility = (visibilityPath, current) => switch visibilityPath 
 
 let pathFromVisibility = (visibilityPath, tipName) => pathFromVisibility(visibilityPath, Tip(tipName));
 
-type openTracker = {
-  path: Path.t,
-  loc: Location.t,
-  ident: Location.loc(Longident.t),
-  extent: Location.t,
-  used: Hashtbl.t((path, tip), Location.t),
-  mutable useCount: int,
-};
-
 module Loc = {
   type typed =
   | LocalReference(int, tip)
@@ -225,11 +216,22 @@ module Loc = {
   | Open;
 };
 
+type openTracker = {
+  path: Path.t,
+  loc: Location.t,
+  ident: Location.loc(Longident.t),
+  extent: Location.t,
+  mutable used: list((path, tip, Location.t)),
+};
+
 /** These are the bits of info that we need to make in-app stuff awesome */
 type extra = {
   internalReferences: Hashtbl.t(int, list(Location.t)),
   externalReferences: Hashtbl.t(string, list((path, tip, Location.t))),
   mutable locations: list((Location.t, Loc.t)),
+  /* This is the "open location", like the location...
+     or maybe the >> location of the open ident maybe */
+  /* OPTIMIZE: using a stack to come up with this would cut the computation time of this considerably. */
   opens: Hashtbl.t(Location.t, openTracker),
 };
 

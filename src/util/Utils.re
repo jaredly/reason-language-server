@@ -18,6 +18,12 @@ let sliceToEnd = (s, start) => {
   start <= l ? String.sub(s, start, l - start) : ""
 };
 
+let locWithinLoc = (inner, outer) => {
+  open Location;
+  inner.loc_start.pos_cnum >= outer.loc_start.pos_cnum
+  && inner.loc_end.pos_cnum <= outer.loc_end.pos_cnum
+};
+
 let toUri = (path) =>
   if (Sys.os_type == "Unix") {
     "file://" ++ path

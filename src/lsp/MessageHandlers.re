@@ -203,52 +203,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     /* let%try package = State.getPackage(uri, state); */
     switch (State.getPackage(uri, state)) {
-      | Result.Error(message) => {
-        let items = [("Unable to load compilation data: " ++ message, {
-          Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
-          Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
-          loc_ghost: false,
-        })];
-        open Rpc.J;
-        Ok((state, l(items |> List.map(((text, loc)) => o([
-          ("range", Protocol.rangeOfLoc(loc)),
-          ("command", o([
-            ("title", s(text)),
-            ("command", s(""))
-          ]))
-        ])))))
-      }
-      | Ok(package) =>
-      open Infix;
-    let items = {
-      let%opt moduleData = {
-        let%opt (_, moduleData) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-        Some(moduleData)
-      } |?# lazy(State.getLastDefinitions(uri, state));
-
-      let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
-      let lenses = showToplevelTypes ? moduleData.Definition.topLevel |> Utils.filterMap(({Docs.T.name, loc, kind, docstring}) => {
-        switch kind {
-        | Docs.T.Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
-        | _ => None
-        }
-      }) : [];
-
-      let showOpens = state.settings.opensCodelens;
-      let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
-
-      let showDependencies = state.settings.dependenciesCodelens;
-      let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
+    | Result.Error(message) => {
+      let items = [("Unable to load compilation data: " ++ message, {
         Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         loc_ghost: false,
-      }), ...lenses] : lenses;
-
-      Some(lenses)
-    };
-    switch items {
-    | None => Error("Could not get compilation data")
-    | Some(items) =>
+      })];
       open Rpc.J;
       Ok((state, l(items |> List.map(((text, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
@@ -258,6 +218,46 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ]))
       ])))))
     }
+    | Ok(package) =>
+      open Infix;
+      let items = {
+        let%opt moduleData = {
+          let%opt (_, moduleData) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+          Some(moduleData)
+        } |?# lazy(State.getLastDefinitions(uri, state));
+
+        let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
+        let lenses = showToplevelTypes ? moduleData.Definition.topLevel |> Utils.filterMap(({Docs.T.name, loc, kind, docstring}) => {
+          switch kind {
+          | Docs.T.Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
+          | _ => None
+          }
+        }) : [];
+
+        let showOpens = state.settings.opensCodelens;
+        let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses;
+
+        let showDependencies = state.settings.dependenciesCodelens;
+        let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
+          Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+          Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+          loc_ghost: false,
+        }), ...lenses] : lenses;
+
+        Some(lenses)
+      };
+      switch items {
+      | None => Error("Could not get compilation data")
+      | Some(items) =>
+        open Rpc.J;
+        Ok((state, l(items |> List.map(((text, loc)) => o([
+          ("range", Protocol.rangeOfLoc(loc)),
+          ("command", o([
+            ("title", s(text)),
+            ("command", s(""))
+          ]))
+        ])))))
+      }
     }
   }),
 
@@ -342,37 +342,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         /* ("containerName", s(String.concat(".", path))) */
       ])))))
     })
-
-    /* open Infix;
-    let items = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult |?>> snd
-    |?# lazy(State.getLastDefinitions(uri, state))
-    |?>> ((({Definition.topLevel})) => {
-      let rec getItems = (path, item) => {
-        let res = switch (item.Docs.T.kind) {
-          | Docs.T.Module(contents) => {
-            let children = contents |> List.map(getItems(path @ [item.name])) |> List.concat;
-            Some((`Module, children))
-          }
-          | Type(t, _extra) => Some((Protocol.typeKind(t), []))
-          | Value(v) => Some((Protocol.variableKind(v), []))
-          | _ => None
-        };
-        res |?>> ((((typ, children))) => [(item.name, typ, item.loc, path), ...children]) |? []
-      };
-      topLevel |> List.map(getItems([])) |> List.concat;
-    }); */
-
-    /* (items |?>> items => {
-      open Rpc.J;
-      Ok((state, l(items |> List.map(((name, typ, loc, path)) => o([
-        ("name", s(name)),
-        ("kind", i(Protocol.symbolKind(typ))),
-        ("location", Protocol.locationOfLoc(loc)),
-        ("containerName", s(String.concat(".", path)))
-      ]))))) */
-
-    /* }) |? Ok((state, Json.Null)) */
-
   }),
 
   ("textDocument/formatting", (state, params) => {

@@ -10,7 +10,56 @@ let rec dig = (typ) =>
   | _ => typ
   };
 
-module F = (Collector: {let extra: extra; let file: file}) => {
+let rec relative = (ident, path) =>
+  switch (ident, path) {
+  | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
+  | (Longident.Ldot(ident, name), Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
+  /* | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => None */
+  | _ => None
+  };
+
+let addOpen = (extra, path, loc, extent, ident) => {
+  let op = {path, loc, used: [], extent, ident};
+  Hashtbl.add(extra.opens, loc, op);
+};
+
+let findClosestMatchingOpen = (opens, path, ident, loc) => {
+  let%opt openNeedle = relative(ident, path);
+
+  let matching = Hashtbl.fold((l, op, res) => {
+    if (Utils.locWithinLoc(loc, op.extent) && Path.same(op.path, openNeedle)) {
+      [op, ...res]
+    } else {
+      res
+    }
+  }, opens, []) |. Belt.List.sort((a, b) => {
+    open Location;
+    a.loc.loc_start.pos_cnum - b.loc.loc_start.pos_cnum
+  });
+
+  switch matching {
+    | [] => None
+    | [first, ..._] => Some(first)
+  }
+};
+
+let maybeAddUse = (extra, path, ident, loc, tip) => {
+  let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
+
+  switch (Query.makePath(path)) {
+  | `Stamp(name) =>
+    /* This shouldn't happen */
+    ()
+  | `Path((_stamp, _name, ourPath)) =>
+    tracker.used = [(ourPath, tip, loc), ...tracker.used];
+  }
+};
+
+module F = (Collector: {
+  let extra: extra;
+  let file: file;
+  let scopeExtent: ref(list(Location.t));
+}) => {
   let extra = Collector.extra;
 
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
@@ -142,14 +191,49 @@ module F = (Collector: {let extra: extra; let file: file}) => {
     }
   };
 
+  let currentScopeExtent = () => List.hd(Collector.scopeExtent^);
+  let addScopeExtent = loc => Collector.scopeExtent := [loc, ...Collector.scopeExtent^];
+  let popScopeExtent = () => Collector.scopeExtent := List.tl(Collector.scopeExtent^);
+
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
   | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
   }
-  /* | Tstr_type(decls)  */
+  | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
+    maybeAddUse(Collector.extra, open_path, txt, loc, Module);
+    let tracker = {
+      path: open_path,
+      loc,
+      ident: l,
+      used: [],
+      extent: {
+        loc_ghost: true,
+        loc_start: loc.loc_end,
+        loc_end: currentScopeExtent().loc_end,
+      }
+    };
+    Hashtbl.replace(Collector.extra.opens, loc, tracker);
+  }
   | _ => ()
+  };
+
+  let enter_structure = ({str_items}) => {
+    let first = List.hd(str_items);
+    let last = List.nth(str_items, List.length(str_items) - 1);
+
+    let extent = {
+      Location.loc_ghost: true,
+      loc_start: first.str_loc.loc_start,
+      loc_end: last.str_loc.loc_end,
+    };
+
+    addScopeExtent(extent);
+  };
+
+  let leave_structure = str => {
+    popScopeExtent();
   };
 
   let enter_signature_item = item => switch (item.sig_desc) {
@@ -217,31 +301,30 @@ module F = (Collector: {let extra: extra; let file: file}) => {
           ident,
           loc: eloc,
           extent: expression.exp_loc,
-          used: Hashtbl.create(5),
-          useCount: 0,
+          used: [],
         })
       }
       | _ => ()
     });
     switch (expression.exp_desc) {
-      | Texp_ident(path, {txt, loc}, {val_type}) => {
-        addForPath(path, txt, loc, val_type, Value);
-      }
-      | Texp_record(items, _) => {
-        addForRecord(expression.exp_type, items);
-      }
-      | Texp_construct(lident, constructor, _args) => {
-        addForConstructor(expression.exp_type, lident, constructor);
-      }
-      | Texp_field(inner, lident, label_description) => {
-        addForField(inner.exp_type, label_description, lident)
-      }
-      | _ => ()
+    | Texp_ident(path, {txt, loc}, {val_type}) => {
+      addForPath(path, txt, loc, val_type, Value);
+    }
+    | Texp_record(items, _) => {
+      addForRecord(expression.exp_type, items);
+    }
+    | Texp_construct(lident, constructor, _args) => {
+      addForConstructor(expression.exp_type, lident, constructor);
+    }
+    | Texp_field(inner, lident, label_description) => {
+      addForField(inner.exp_type, label_description, lident)
+    }
+    | _ => ()
     }
   };
 };
 
-let noType = {Types.id: 0, level: 0, desc: Tnil};
+/* let noType = {Types.id: 0, level: 0, desc: Tnil}; */
 
 let forItems = (~file, items) => {
   let extra = initExtra();
@@ -271,7 +354,23 @@ let forItems = (~file, items) => {
       | _ => ()
     };
   });
-  let module Iter = TypedtreeIter.MakeIterator(F({let extra = extra; let file = file;}));
+
+  let first = List.hd(items);
+  let last = List.nth(items, List.length(items) - 1);
+
+  let extent = {
+    Location.loc_ghost: true,
+    loc_start: first.str_loc.loc_start,
+    loc_end: last.str_loc.loc_end,
+  };
+
+  let module Iter = TypedtreeIter.MakeIterator(F({
+    let scopeExtent = ref([extent]);
+    let extra = extra;
+    let file = file;
+  }));
+
+  /* Iter.iter_structure(items); */
   List.iter(Iter.iter_structure_item, items);
   extra
 };
