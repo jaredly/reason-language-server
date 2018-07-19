@@ -42,44 +42,44 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/completion", (state, params) => {
     open InfixResult;
-    (Protocol.rPositionParams(params) |?> ((uri, pos)) => (maybeHash(state.documentText, uri) |> orError("No document text found"))
-    |?> ((text, version, isClean)) => State.getPackage(uri, state) |?> package => (PartialParser.positionToOffset(text, pos) |> orError("invalid offset")) |?>> offset => {
-        open Rpc.J;
-        let completions = switch (PartialParser.findCompletable(text, offset)) {
-        | Nothing => {
-          Log.log("Nothing completable found :/");
-          []
-        }
-        | Labeled(string) => {
-          Log.log("don't yet support completion for argument labels, but I hope to soon!");
-          []
-        }
-        | Lident(string) => {
-          log("Completing for string " ++ string);
-          let parts = Str.split(Str.regexp_string("."), string);
-          let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
-          let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
-          let opens = PartialParser.findOpens(text, offset);
-          /* */
-          let localData = State.getLastDefinitions(uri, state);
-          let useMarkdown = !state.settings.clientNeedsPlainText;
-          Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
-            ("label", s(label)),
-            ("kind", i(Completions.kindToInt(kind))),
-            ("detail", Infix.(detail |?>> s |? null)),
-            ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(path, "", path => (useMarkdown ? "*" : "") ++ (
-              Utils.startsWith(path, state.rootPath ++ "/") ? Utils.sliceToEnd(path, String.length(state.rootPath ++ "/")) : path
-              ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.contentKind(useMarkdown) |? null)),
-            ("data", switch kind {
-              | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
-              | _ => null
-              })
-          ]))
-        }
-        };
-        (state, l(completions))
-      }
-    );
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
+    let%try package = State.getPackage(uri, state);
+    let%try offset = PartialParser.positionToOffset(text, pos) |> orError("invalid offset");
+    open Rpc.J;
+    let completions = switch (PartialParser.findCompletable(text, offset)) {
+    | Nothing => {
+      Log.log("Nothing completable found :/");
+      []
+    }
+    | Labeled(string) => {
+      Log.log("don't yet support completion for argument labels, but I hope to soon!");
+      []
+    }
+    | Lident(string) => {
+      log("Completing for string " ++ string);
+      let parts = Str.split(Str.regexp_string("."), string);
+      let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
+      let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
+      let opens = PartialParser.findOpens(text, offset);
+      /* */
+      let localData = State.getLastDefinitions(uri, state);
+      let useMarkdown = !state.settings.clientNeedsPlainText;
+      Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package) |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
+        ("label", s(label)),
+        ("kind", i(Completions.kindToInt(kind))),
+        ("detail", Infix.(detail |?>> s |? null)),
+        ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(path, "", path => (useMarkdown ? "*" : "") ++ (
+          Utils.startsWith(path, state.rootPath ++ "/") ? Utils.sliceToEnd(path, String.length(state.rootPath ++ "/")) : path
+          ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.contentKind(useMarkdown) |? null)),
+        ("data", switch kind {
+          | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
+          | _ => null
+          })
+      ]))
+    }
+    };
+    Ok((state, l(completions)))
   }),
 
   ("completionItem/resolve", (state, params) => {
@@ -267,21 +267,24 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
               ? String.concat(", ", items)
               : String.concat(", ", Belt.List.take(items, 3) |? []) ++ " and " ++ string_of_int(List.length(items) - 3) ++ "more";
 
-            let parts = values == [] ? [] : ["values (" ++ String.concat(", ", List.map(fst, values)) ++ ")"];
-            let parts = modules == [] ? parts : ["modules (" ++ String.concat(", ", List.map(fst, modules)) ++ ")", ...parts];
-            let parts = types == [] ? parts : ["types (" ++ String.concat(", ",
+            let parts = [];
+            let parts = types == [] ? parts : ["types: {" ++ String.concat(", ",
             Hashtbl.fold((t, items, res) => [
-              items == [] ? t : t ++ " (" ++ sepList(items) ++ ")",
+              items == [] ? t : t ++ " [" ++ sepList(items) ++ "]",
               ...res,
             ], typeMap, [])
-            ) ++ ")", ...parts];
+            ) ++ "}", ...parts];
+            let parts = modules == [] ? parts : ["modules: {" ++ String.concat(", ", List.map(fst, modules)) ++ "}", ...parts];
+            let parts = values == [] ? parts : ["values: {" ++ String.concat(", ", List.map(fst, values)) ++ "}", ...parts];
 
             (parts == [] ? "Unused open" : string_of_int(List.length(items)) ++ " uses. " ++ String.concat(" ", parts), loc)
           });
         } : lenses;
 
         let showDependencies = state.settings.dependenciesCodelens;
-        let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ", Definition.dependencyList(moduleData)), {
+        let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ",
+          SharedTypes.hashList(extra.externalReferences) |> List.map(fst)
+        ), {
           Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
           Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
           loc_ghost: false,
