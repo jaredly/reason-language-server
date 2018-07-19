@@ -458,7 +458,7 @@ let handleConstructor = (path, txt) => {
     switch txt {
     | Longident.Lident(name) => (name, Lident(typeName))
     | Ldot(left, name) => (name, Ldot(left, typeName))
-    | Lapply(_) => assert false
+    | Lapply(left, _) => assert false
     }
   )
 };

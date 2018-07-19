@@ -250,11 +250,33 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             let modules = items |. Belt.List.keep(((p, t)) => t == Module);
             let types = items |. Belt.List.keep(((p, t)) => t != Value && t != Module);
 
+            let typeMap = Hashtbl.create(10);
+            List.iter(((name, t)) => {
+              let current = Hashtbl.mem(typeMap, name)
+                ? Hashtbl.find(typeMap, name)
+                : [];
+              let current = switch t {
+                | SharedTypes.Constructor(name) => [name, ...current]
+                | Attribute(name) => [name, ...current]
+                | _ => current
+              };
+              Hashtbl.replace(typeMap, name, current);
+            }, types);
+
+            let sepList = items => List.length(items) <= 4
+              ? String.concat(", ", items)
+              : String.concat(", ", Belt.List.take(items, 3) |? []) ++ " and " ++ string_of_int(List.length(items) - 3) ++ "more";
+
             let parts = values == [] ? [] : ["values (" ++ String.concat(", ", List.map(fst, values)) ++ ")"];
             let parts = modules == [] ? parts : ["modules (" ++ String.concat(", ", List.map(fst, modules)) ++ ")", ...parts];
-            let parts = types == [] ? parts : ["types (" ++ String.concat(", ", List.map(fst, types)) ++ ")", ...parts];
+            let parts = types == [] ? parts : ["types (" ++ String.concat(", ",
+            Hashtbl.fold((t, items, res) => [
+              items == [] ? t : t ++ " (" ++ sepList(items) ++ ")",
+              ...res,
+            ], typeMap, [])
+            ) ++ ")", ...parts];
 
-            (parts == [] ? "Unused open" : String.concat(" ", parts), loc)
+            (parts == [] ? "Unused open" : string_of_int(List.length(items)) ++ " uses. " ++ String.concat(" ", parts), loc)
           });
         } : lenses;
 

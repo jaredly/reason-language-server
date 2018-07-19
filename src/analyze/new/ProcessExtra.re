@@ -25,9 +25,6 @@ let addOpen = (extra, path, loc, extent, ident) => {
 
 let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
-  /* Log.log("<> Finding an open " ++ Path.name(path));
-  Log.log("Ident " ++ String.concat(".", Longident.flatten(ident)));
-  Log.log("Relative thing " ++ Path.name(openNeedle)); */
 
   let matching = Hashtbl.fold((l, op, res) => {
     if (Utils.locWithinLoc(loc, op.extent) && Path.same(op.path, openNeedle)) {
@@ -122,7 +119,7 @@ module F = (Collector: {
         let name = Longident.last(txt);
 
         let (name, typeLident) = Definition.handleConstructor(path, txt);
-        maybeAddUse(path, typeLident, loc, Constructor(name));
+        maybeAddUse(path, typeLident, loc, Attribute(name));
 
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
         let locType = switch (t) {
@@ -149,7 +146,11 @@ module F = (Collector: {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
-          let name = Longident.last(txt);
+          /* let name = Longident.last(txt); */
+
+          let (name, typeLident) = Definition.handleConstructor(path, txt);
+          maybeAddUse(path, typeLident, loc, Attribute(name));
+
           let nameLoc = Utils.endOfLocation(loc, String.length(name));
           let locType = switch (t) {
             | `Local({stamp, contents: {kind: Record(attributes)}}) => {
@@ -174,7 +175,11 @@ module F = (Collector: {
   let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
     switch (dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
-        let name = Longident.last(txt);
+        /* let name = Longident.last(txt); */
+
+        let (name, typeLident) = Definition.handleConstructor(path, txt);
+        maybeAddUse(path, typeLident, loc, Constructor(name));
+
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
         let locType = switch (getTypeAtPath(path)) {
           | `Local({stamp, contents: {kind: Variant(constructos)}}) => {
@@ -320,6 +325,9 @@ module F = (Collector: {
     | Texp_record(items, _) => {
       addForRecord(expression.exp_type, items);
     }
+    /* Skip unit and list literals */
+    | Texp_construct({txt: Lident("()" | "::"), loc}, _, args) when loc.loc_end.pos_cnum - loc.loc_start.pos_cnum != 2 =>
+      ()
     | Texp_construct(lident, constructor, _args) => {
       addForConstructor(expression.exp_type, lident, constructor);
     }
