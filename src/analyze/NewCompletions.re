@@ -233,7 +233,7 @@ let attributeCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
 
 /**
 
-TODO filter out things that are defined after
+TODO filter out things that are defined after the current position
 
  */
 

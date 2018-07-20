@@ -78,7 +78,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       );
       Log.log("Got");
 
-      let mi = items |. Belt.List.map(((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
+      items |. Belt.List.map(((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
         ("kind", i(NewCompletions.kindToInt(contents))),
         ("detail", switch contents {
@@ -97,7 +97,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | Constructor(c) => SharedTypes.Type.Constructor.show(c) |> s
         }),
         ("documentation",
-        
+
         s((docstring |? "No docs") ++ "\n\n" ++
         uri ++ ":" ++ string_of_int(pos_lnum))),
         /* docstring |?>> Protocol.contentKind(useMarkdown) |? Json.Null), */
@@ -107,28 +107,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           }) */
       ]));
 
-      /* let items = Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package);
-      let n = items |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
-        ("label", s(label)),
-        ("kind", i(Completions.kindToInt(kind))),
-        ("detail", Infix.(detail |?>> s |? null)),
-        ("documentation", Infix.((documentation |?>> d => d ++ "\n\n" ++ fold(path, "", path => (useMarkdown ? "*" : "") ++ (
-          Utils.startsWith(path, state.rootPath ++ "/") ? Utils.sliceToEnd(path, String.length(state.rootPath ++ "/")) : path
-          ) ++ (useMarkdown ? "*" : ""))) |?>> Protocol.contentKind(useMarkdown) |? null)),
-        ("data", switch kind {
-          | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
-          | _ => null
-          })
-      ])); */
-
-      mi
     }
     };
     Ok((state, l(completions)))
   }),
 
   ("completionItem/resolve", (state, params) => {
-    switch (params |> Json.get("documentation") |?> Json.string) {
+    Ok((state, Json.Null))
+    /* switch (params |> Json.get("documentation") |?> Json.string) {
     | Some(_) => Ok((state, params))
     | None =>
       let result = (params |> Json.get("data")
@@ -145,7 +131,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ]) |? params
       }) |? params;
       Ok((state, result))
-    }
+    } */
   }),
 
   ("textDocument/documentHighlight", (state, params) => {
@@ -275,9 +261,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let%opt (file, extra) = State.fileForUri(state, ~package, uri);
 
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
-        let lenses = showToplevelTypes ? moduleData.Definition.topLevel |> Utils.filterMap(({Docs.T.name, loc, kind, docstring}) => {
-          switch kind {
-          | Docs.T.Value(t) => PrintType.default.expr(PrintType.default, t) |> PrintType.prettyString |> s => Some((s, loc))
+        let lenses = showToplevelTypes ? file.contents.topLevel |. Belt.List.keepMap(({name: {loc}, contents}) => {
+          switch contents {
+          | Value({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s => Some((s, loc))
           | _ => None
           }
         }) : [];

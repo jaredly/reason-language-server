@@ -1,6 +1,6 @@
 open Result;
 
-let getHover = (uri, line, character, state, ~package) => {
+/* let getHover = (uri, line, character, state, ~package) => {
   let result = State.getCompilationResult(uri, state, ~package);
   /* TODO report errors better if we're beyond where the parser error occurred */
   switch result {
@@ -41,6 +41,7 @@ let getHover = (uri, line, character, state, ~package) => {
   };
 };
 
+*/
 open Infix;
 let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
   switch (loc) {
@@ -83,5 +84,4 @@ let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
 
     }
   };
-
-};
+}; 

@@ -1,5 +1,5 @@
 
-let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
+/* let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
 Log.setLocation(logDest);
 
 Log.spamError := true;
@@ -41,4 +41,4 @@ let output = TestUtils.process(lines, (files, mainFile) => {
   };
   num == 0 ? "NOPE" : loop(1) |> String.concat("\n")
 }) |> String.concat("\n");
-Files.writeFileExn(testFile, output);
+Files.writeFileExn(testFile, output); */

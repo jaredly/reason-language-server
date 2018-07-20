@@ -5,7 +5,7 @@ open Infix;
 module Get = {
   /* For a list of structure items, get the names and stamps of definted things in there.
    */
-  let rec stampNames = (items) =>
+  /* let rec stampNames = (items) =>
     Typedtree.(
       items
       |> List.map(
@@ -402,13 +402,13 @@ module Get = {
       | Texp_function(_) => popScope()
       | _ => ()
       };
-  };
+  }; */
 
   let process = (~uri, cmt) => {
     let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
     let%try extra = ProcessExtra.forCmt(~file, cmt);
     let data = {
-      toplevelDocs: None,
+      /* toplevelDocs: None,
       stamps: Hashtbl.create(100),
       internalReferences: Hashtbl.create(100),
       externalReferences: Hashtbl.create(100),
@@ -417,11 +417,11 @@ module Get = {
       allOpens: [],
       topLevel: [],
       locations: [],
-      explanations: [],
+      explanations: [], */
       file,
       extra,
     };
-    let allOpens = ref([]);
+    /* let allOpens = ref([]);
     module IterIter =
       TypedtreeIter.MakeIterator(
         (
@@ -537,6 +537,8 @@ module Get = {
          Log.log("An Open! " ++ string_of_int(List.length(used)));
        }); */
     data.allOpens = allOpens^;
+    Result.Ok(data)
+ */
     Result.Ok(data)
   };
 };

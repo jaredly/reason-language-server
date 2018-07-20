@@ -475,7 +475,7 @@ let topLocation = uri => {
 /**
  * returns `(Docs.item, location, docstring, uri)`
  */
-let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
+/* let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
   switch defn {
   | `Local(_, loc, item, docs, _) => {
     Some((item, Some(loc), docs, Some(uri)))
@@ -522,13 +522,13 @@ let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
         )
       };
     }
-  };
+  }; */
 
-let getResolvedDefinition = (uri, defn, data, state, ~package) => {
+/* let getResolvedDefinition = (uri, defn, data, state, ~package) => {
   Definition.findDefinition(defn, data, resolveDefinition(uri, state, ~package, data))
-};
+}; */
 
-let definitionForPos = (uri, pos, data, state, ~package) =>
+/* let definitionForPos = (uri, pos, data, state, ~package) =>
   Definition.locationAtPos(pos, data)
   |?> (((_, _, defn)) => {
     /* Log.log("Figured out the location"); */
@@ -563,4 +563,4 @@ let referencesForPos = (uri, pos, data, state, ~package) => {
   } |? [];
   let%opt_wrap positions = Definition.highlightsForStamp(stamp, data);
   [(uri, positions), ...externals]
-};
+}; */

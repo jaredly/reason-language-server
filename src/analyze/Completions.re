@@ -1,5 +1,5 @@
 
-open TopTypes;
+/* open TopTypes;
 
 type kind =
   | Module
@@ -277,4 +277,4 @@ let get = (~currentPath, topModule, opens, parts, state, localData, pos, ~packag
       }
     };
   };
-};
+}; */

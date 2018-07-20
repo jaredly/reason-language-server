@@ -57,7 +57,7 @@ type anOpen = {
 };
 
 type moduleData = {
-  mutable toplevelDocs: option(string),
+  /* mutable toplevelDocs: option(string),
   stamps: Hashtbl.t(int, (string, Location.t, kind, option(string), ((int, int), (int, int)))),
   internalReferences: Hashtbl.t(int, list(Location.t)),
   externalReferences: Hashtbl.t(string, list((list(string), Location.t, option(string)))),
@@ -66,7 +66,8 @@ type moduleData = {
   mutable topLevel: list(item),
   mutable locations: list((Location.t, Types.type_expr, definition)),
   mutable explanations: list((Location.t, string)),
-  mutable allOpens: list(anOpen),
+  mutable allOpens: list(anOpen), */
+
   file: SharedTypes.file,
   extra: SharedTypes.extra,
 };
@@ -133,15 +134,47 @@ let getSuffix = (declaration, suffix) =>
   | _ => None
   };
 
-let suffixForStamp = (stamp, suffix, data) => {
+let handleConstructor = (path, txt) => {
+  let typeName =
+    switch path {
+    | Path.Pdot(path, typename, _) => typename
+    | Pident({Ident.name}) => name
+    | _ => assert false
+    };
+  Longident.(
+    switch txt {
+    | Longident.Lident(name) => (name, Lident(typeName))
+    | Ldot(left, name) => (name, Ldot(left, typeName))
+    | Lapply(left, _) => assert false
+    }
+  )
+};
+
+let handleRecord = (path, txt) => {
+  let typeName =
+    switch path {
+    | Path.Pdot(path, typename, _) => typename
+    | Pident({Ident.name}) => name
+    | _ => assert false
+    };
+  Longident.(
+    switch txt {
+    | Lident(name) => Lident(typeName)
+    | Ldot(inner, name) => Ldot(inner, typeName)
+    | Lapply(_) => assert false
+    }
+  )
+};
+
+/* let suffixForStamp = (stamp, suffix, data) => {
   let%opt (name, loc, item, docs, range) = maybeFound(Hashtbl.find(data.stamps), stamp);
   switch item {
     | Type(t, extra) => getSuffix(t, suffix) |?>> ((loc, stamp)) => stamp
     | _ => None
   }
-};
+}; */
 
-let rec stampAtPath = (path, data, suffix) =>
+/* let rec stampAtPath = (path, data, suffix) =>
   switch path {
   | Path.Pident({stamp: 0, name}) => Some(`Global((name, [], suffix)))
   | Path.Pident({stamp, name}) => {
@@ -162,12 +195,12 @@ let rec stampAtPath = (path, data, suffix) =>
     | _ => None
     }
   | _ => None
-  };
+  }; */
 
 /* TODO this is not perfect, because if the user edits and gets outside of the original scope, then
    we no longer give you the completions you need. This is annoying :/
    Not sure how annoying in practice? One hack would be to forgive going a few lines over... */
-let completions = ({stamps}, prefix, pos) => {
+/* let completions = ({stamps}, prefix, pos) => {
   Hashtbl.fold(
     (_, (name, loc, item, docs, range), results) =>
       if (inRange(pos, range)) {
@@ -180,9 +213,9 @@ let completions = ({stamps}, prefix, pos) => {
     stamps,
     []
   )
-};
+}; */
 
-let resolvePath = (path, data, suffix) =>
+/* let resolvePath = (path, data, suffix) =>
   switch (stampAtPath(path, data, suffix)) {
   | None => None
   | Some(`Global(name, children, suffix)) => Some(`Global((name, children, suffix)))
@@ -428,9 +461,9 @@ let opens = ({allOpens}) =>
          } else {
            None
          }
-     );
+     ); */
 
-let dependencyList = ({externalReferences}) =>
+/* let dependencyList = ({externalReferences}) =>
   Hashtbl.fold((k, _, items) => [k, ...items], externalReferences, []);
 
 let listExported = (data) =>
@@ -447,37 +480,6 @@ let listExported = (data) =>
 /* let listTopLevel = (data) =>
   data.topLevel |> List.map(((name, stamp)) => Hashtbl.find(data.stamps, stamp)); */
 
-let handleConstructor = (path, txt) => {
-  let typeName =
-    switch path {
-    | Path.Pdot(path, typename, _) => typename
-    | Pident({Ident.name}) => name
-    | _ => assert false
-    };
-  Longident.(
-    switch txt {
-    | Longident.Lident(name) => (name, Lident(typeName))
-    | Ldot(left, name) => (name, Ldot(left, typeName))
-    | Lapply(left, _) => assert false
-    }
-  )
-};
-
-let handleRecord = (path, txt) => {
-  let typeName =
-    switch path {
-    | Path.Pdot(path, typename, _) => typename
-    | Pident({Ident.name}) => name
-    | _ => assert false
-    };
-  Longident.(
-    switch txt {
-    | Lident(name) => Lident(typeName)
-    | Ldot(inner, name) => Ldot(inner, typeName)
-    | Lapply(_) => assert false
-    }
-  )
-};
 
 let resolveNamedPath = (data, path, suffix) =>
   switch path {
@@ -613,5 +615,5 @@ let stampAtPos = (pos, data) => {
 
 let highlights = (pos, data) => stampAtPos(pos, data) |?> ((x) => highlightsForStamp(x, data));
 
-let locationSize = ({Location.loc_start, loc_end}) => loc_end.Lexing.pos_cnum - loc_start.Lexing.pos_cnum;
+let locationSize = ({Location.loc_start, loc_end}) => loc_end.Lexing.pos_cnum - loc_start.Lexing.pos_cnum; */
 

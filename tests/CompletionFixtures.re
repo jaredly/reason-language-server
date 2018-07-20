@@ -1,7 +1,7 @@
 
 open Infix;
 
-let getOutput = (files, text) => {
+/* let getOutput = (files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
   let (state, package, cmt, moduleData) = TestUtils.setUp(files, text)
   let completions = switch (PartialParser.findCompletable(text, offset)) {
@@ -28,7 +28,7 @@ Log.setLocation(logDest);
 
 let testFile = "./tests/Completion.txt";
 let output = Files.readFileExn(testFile) |> Utils.splitLines |. TestUtils.process(getOutput) |> String.concat("\n");
-Files.writeFileExn(testFile, output);
+Files.writeFileExn(testFile, output); */
 
 /* let cases =  */
 /* cases |> List.iter(test) */
