@@ -14,6 +14,7 @@ module Something = {
   let other = Whats(2);
   let me: animals = Cat("Hie");
   let x = something + 10;
+  let r = m.name;
 };
 
 open Something;
@@ -24,6 +25,7 @@ switch me {
 | Whats(n) => ()
 | _ => ()
 };
+
 
 let z = x * x;
 

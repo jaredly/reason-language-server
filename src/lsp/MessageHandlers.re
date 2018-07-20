@@ -41,7 +41,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("textDocument/completion", (state, params) => {
-    open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = State.getPackage(uri, state);
@@ -67,9 +66,52 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let localData = State.getLastDefinitions(uri, state);
       let useMarkdown = !state.settings.clientNeedsPlainText;
-      let items = Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package);
+      let allModules = package.localModules |> List.map(fst);
+      let items = NewCompletions.get(
+        ~full={file, extra},
+        ~package,
+        ~opens,
+        ~getModule=State.fileForModule(state, ~package),
+        ~allModules,
+        pos,
+        parts,
+        /* ~currentPath=Infix.(Utils.parseUri(uri) |? "current file"),
+        currentModuleName,
+        opens,
+        parts,
+        state,
+        localData,
+        pos,
+        ~package */
+      );
 
-      items |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
+      let mi = items |. Belt.List.map(({name: {txt: name}, deprecated, docstring, contents}) => o([
+        ("label", s(name)),
+        ("kind", i(NewCompletions.kindToInt(contents))),
+        ("detail", switch contents {
+          | NewCompletions.Type({typ}) => 
+              PrintType.default.decl(PrintType.default, name, name, typ)
+              |> PrintType.prettyString
+              |> s
+          | Value({typ}) =>
+              PrintType.default.expr(PrintType.default, typ)
+              |> PrintType.prettyString
+              |> s
+          | Module(m) => s("module")
+          | ModuleType(m) => s("module type")
+          | FileModule(m) => s("file module")
+          | Attribute({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s
+          | Constructor(c) => SharedTypes.Type.Constructor.show(c) |> s
+        }),
+        ("documentation",  docstring |?>> Protocol.contentKind(useMarkdown) |? Json.Null),
+        /* ("data", switch kind {
+          | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
+          | _ => null
+          }) */
+      ]))
+
+      let items = Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package);
+      let n = items |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
         ("label", s(label)),
         ("kind", i(Completions.kindToInt(kind))),
         ("detail", Infix.(detail |?>> s |? null)),
@@ -80,7 +122,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
           | _ => null
           })
-      ]))
+      ]));
+
+      mi @ n
+
     }
     };
     Ok((state, l(completions)))

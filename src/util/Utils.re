@@ -3,8 +3,12 @@
  * true if the string starts with the prefix
  */
 let startsWith = (s, prefix) => {
-  let p = String.length(prefix);
-  p <= String.length(s) && String.sub(s, 0, p) == prefix
+  if (prefix == "") {
+    true
+  } else {
+    let p = String.length(prefix);
+    p <= String.length(s) && String.sub(s, 0, p) == prefix
+  }
 };
 
 let cmtLocFromVscode = ((line, col)) => (line + 1, col);

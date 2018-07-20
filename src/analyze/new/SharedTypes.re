@@ -38,8 +38,20 @@ type declared('t) = {
   exported: bool,
   docstring: option(string),
   contents: 't,
+  /* TODO maybe add a uri? */
   /* scopeType: scope, */
   /* scopeStart: (int, int), */
+};
+
+let emptyDeclared = (name) => {
+  name: Location.mknoloc(name),
+  extentLoc: Location.none,
+  stamp: 0,
+  deprecated: None,
+  modulePath: NotVisible,
+  exported: false,
+  docstring: None,
+  contents: ()
 };
 
 module Type = {
@@ -49,7 +61,7 @@ module Type = {
       name: Location.loc(string),
       typ: Types.type_expr,
       typLoc: Location.t,
-    }
+    };
   };
   module Constructor = {
     type t = {
@@ -57,6 +69,13 @@ module Type = {
       name: Location.loc(string),
       args: list((Types.type_expr, Location.t)),
       res: option(Types.type_expr),
+    };
+    let show = ({name: {txt}, args, res}) => {
+      txt ++ (args == []
+        ? ""
+        : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
+          PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString
+        ))) ++ ")")
     };
   };
 
