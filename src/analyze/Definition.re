@@ -22,33 +22,7 @@
  */
 open Infix;
 
-type definition =
-  | Path(Path.t)
-  | Open(Path.t)
-  /* | Location(Location.t) */
-  | ConstructorDefn(Path.t, string, Location.t)
-  | AttributeDefn(Path.t, string, Location.t)
-  | IsConstant
-  | IsDefinition(int);
-
-type tag =
-  | TagType
-  | TagValue
-  | TagModule
-  | TagConstructor(string)
-  | TagAttribute(string);
-
-type anOpen = {
-  path: Path.t,
-  loc: Location.t,
-  mutable used: list((Longident.t, tag, Location.t)),
-  mutable useCount: int
-};
-
-type moduleData = {
-  file: SharedTypes.file,
-  extra: SharedTypes.extra,
-};
+/* TODO move these to utils */
 
 let maybeFound = (fn, a) =>
   switch (fn(a)) {
@@ -68,31 +42,6 @@ let rec dig = (typ) =>
   | _ => typ
   };
 
-let getSuffix = (declaration, suffix) =>
-  switch declaration.Types.type_kind {
-  | Type_record(attributes, _) =>
-    Utils.find(
-      ({Types.ld_id: {name, stamp}, ld_loc}) =>
-        if (name == suffix) {
-          Some((ld_loc, stamp))
-        } else {
-          None
-        },
-      attributes
-    )
-  | Type_variant(constructors) =>
-    Utils.find(
-      ({Types.cd_id: {name, stamp}, cd_loc}) =>
-        if (name == suffix) {
-          Some((cd_loc, stamp))
-        } else {
-          None
-        },
-      constructors
-    )
-  | _ => None
-  };
-
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
@@ -105,22 +54,6 @@ let handleConstructor = (path, txt) => {
     | Longident.Lident(name) => (name, Lident(typeName))
     | Ldot(left, name) => (name, Ldot(left, typeName))
     | Lapply(left, _) => assert false
-    }
-  )
-};
-
-let handleRecord = (path, txt) => {
-  let typeName =
-    switch path {
-    | Path.Pdot(path, typename, _) => typename
-    | Pident({Ident.name}) => name
-    | _ => assert false
-    };
-  Longident.(
-    switch txt {
-    | Lident(name) => Lident(typeName)
-    | Ldot(inner, name) => Ldot(inner, typeName)
-    | Lapply(_) => assert false
     }
   )
 };

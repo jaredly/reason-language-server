@@ -404,7 +404,6 @@ let getDefinitionData = (uri, state, ~package) => switch (getCompilationResult(u
 };
 
 let docsForModule = (modname, state, ~package) =>
-  Infix.(
     if (Hashtbl.mem(package.pathsForModule, modname)) {
       let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
@@ -413,8 +412,7 @@ let docsForModule = (modname, state, ~package) =>
     } else {
       Log.log("No path for module " ++ modname);
       None;
-    }
-  );
+    };
 
 let fileForModule = (state,  ~package, modname) => {
   let%opt (file, _) = docsForModule(modname, state, ~package);
@@ -438,8 +436,6 @@ let extraForModule = (state, ~package, modname) => {
 };
 
 let maybeFound = Definition.maybeFound;
-
-open Infix;
 
 let topLocation = uri => {
   Location.loc_ghost: false,
