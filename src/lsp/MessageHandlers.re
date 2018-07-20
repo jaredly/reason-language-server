@@ -75,17 +75,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ~allModules,
         pos,
         parts,
-        /* ~currentPath=Infix.(Utils.parseUri(uri) |? "current file"),
-        currentModuleName,
-        opens,
-        parts,
-        state,
-        localData,
-        pos,
-        ~package */
       );
+      Log.log("Got");
 
-      let mi = items |. Belt.List.map(({name: {txt: name}, deprecated, docstring, contents}) => o([
+      let mi = items |. Belt.List.map(((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
         ("kind", i(NewCompletions.kindToInt(contents))),
         ("detail", switch contents {
@@ -94,7 +87,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
               |> PrintType.prettyString
               |> s
           | Value({typ}) =>
-              PrintType.default.expr(PrintType.default, typ)
+              PrintType.default.value(PrintType.default, name, name, typ)
               |> PrintType.prettyString
               |> s
           | Module(m) => s("module")
@@ -103,14 +96,18 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | Attribute({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s
           | Constructor(c) => SharedTypes.Type.Constructor.show(c) |> s
         }),
-        ("documentation",  docstring |?>> Protocol.contentKind(useMarkdown) |? Json.Null),
+        ("documentation",
+        
+        s((docstring |? "No docs") ++ "\n\n" ++
+        uri ++ ":" ++ string_of_int(pos_lnum))),
+        /* docstring |?>> Protocol.contentKind(useMarkdown) |? Json.Null), */
         /* ("data", switch kind {
           | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
           | _ => null
           }) */
-      ]))
+      ]));
 
-      let items = Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package);
+      /* let items = Completions.get(~currentPath=Infix.(Utils.parseUri(uri) |? "current file"), currentModuleName, opens, parts, state, localData, pos, ~package);
       let n = items |> List.map(({Completions.kind, path, label, detail, documentation}) => o([
         ("label", s(label)),
         ("kind", i(Completions.kindToInt(kind))),
@@ -122,10 +119,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
           | _ => null
           })
-      ]));
+      ])); */
 
-      mi @ n
-
+      mi
     }
     };
     Ok((state, l(completions)))
