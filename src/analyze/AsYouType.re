@@ -1,8 +1,8 @@
 
 type result =
   /* | ParseError(string) */
-  | TypeError(string, Cmt_format.cmt_infos, Definition.moduleData)
-  | Success(list(string), Cmt_format.cmt_infos, Definition.moduleData)
+  | TypeError(string, Cmt_format.cmt_infos, SharedTypes.full)
+  | Success(list(string), Cmt_format.cmt_infos, SharedTypes.full)
 ;
 open Infix;
 open Result;
@@ -90,13 +90,16 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       let message = Infix.(syntaxError |? lines);
-      let%try_wrap moduleData = GetDefinition.process(~uri, cmt);
-      TypeError(String.concat("\n", message), cmt, moduleData)
+      let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
+      let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+      TypeError(String.concat("\n", message), cmt, {file, extra})
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      let%try_wrap moduleData = GetDefinition.process(~uri, cmt);
-      Success(lines, cmt, moduleData)
+      /* let%try_wrap moduleData = GetDefinition.process(~uri, cmt); */
+      let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
+      let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+      Success(lines, cmt, {file, extra})
     }
   }
 };

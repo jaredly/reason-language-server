@@ -1,25 +1,4 @@
 
-/* type typeExtra =
-| Constructors(list((int, Location.loc(string), Types.constructor_declaration)))
-| Attributes(list((int, Location.loc(string), (Location.t, Types.type_expr))));
-
-type item = {
-  name: string,
-  kind,
-  stamp: int,
-  loc: Location.t,
-  docstring: option(string),
-}
-
-and kind =
-  | Module(list(item))
-  | ModuleAlias(Path.t)
-  | Function(list(Types.type_expr), Types.type_expr)
-  | Value(Types.type_expr)
-  | Type(Types.type_declaration, option(typeExtra))
-  | Constructor(Types.constructor_declaration, string, Types.type_declaration)
-  | Attribute(Types.type_expr, string, Types.type_declaration); */
-
 /* TODO maybe track the loc's of these things */
 type visibilityPath =
 | File(string)

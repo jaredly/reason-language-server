@@ -261,28 +261,28 @@ let converter = (src, usePlainText) => {
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   let infos = Cmt_format.read_cmt(cmt);
-  switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
+  /* switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
-  | Some((docstring, items)) =>
+  | Some((docstring, items)) => */
     let%opt src = src;
     let uri = Utils.toUri(src);
     let%opt file = ProcessCmt.forCmt(uri, converter(Some(src), clientNeedsPlainText), infos) |> Result.toOptionAndLog;
-    let docs = Docs.moduleDocs(docstring, items, file);
-    Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
-    Some(docs);
-  };
+    /* let docs = Docs.moduleDocs(docstring, items, file); */
+    Hashtbl.replace(cmtCache, cmt, (changed, infos, file));
+    Some(file);
+  /* }; */
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
   let infos = Cmi_format.read_cmi(cmi);
-  switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
+  /* switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
-  | Some((docstring, items)) =>
+  | Some((docstring, items)) => */
     let%opt file = ProcessCmt.forCmi(Utils.toUri(cmi), converter(src, clientNeedsPlainText), infos);
-    let docs = Docs.moduleDocs(docstring, items, file);
-    Hashtbl.replace(cmiCache, cmi, (changed, infos, docs));
-    Some(docs);
-  };
+    /* let docs = Docs.moduleDocs(docstring, items, file); */
+    Hashtbl.replace(cmiCache, cmi, (changed, infos, file));
+    Some(file);
+  /* }; */
 };
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
@@ -417,8 +417,8 @@ let docsForModule = (modname, state, ~package) =>
   );
 
 let fileForModule = (state,  ~package, modname) => {
-  let%opt (docs, _) = docsForModule(modname, state, ~package);
-  Some(docs.file)
+  let%opt (file, _) = docsForModule(modname, state, ~package);
+  Some(file)
 };
 
 let fileForUri = (state,  ~package, uri) => {
@@ -441,20 +441,6 @@ let maybeFound = Definition.maybeFound;
 
 open Infix;
 
-let rec resolveAlias = (state, path, children, ~package) => {
-  let rec loop = (path, items) =>
-    switch (path) {
-    | Path.Pident({stamp: 0, name}) => {
-      let%opt ({Docs.T.topLevel}, uri) = docsForModule(name, state, ~package);
-      Some((uri, topLevel, items))
-    }
-    | Path.Pident(_) => None
-    | Pdot(inner, name, _) => loop(inner, [name, ...items])
-    | Papply(_) => None
-    };
-  loop(path, children);
-};
-
 let topLocation = uri => {
   Location.loc_ghost: false,
   loc_start: {
@@ -470,97 +456,3 @@ let topLocation = uri => {
     pos_bol: 1,
   },
 };
-
-/* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
-/**
- * returns `(Docs.item, location, docstring, uri)`
- */
-/* let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
-  switch defn {
-  | `Local(_, loc, item, docs, _) => {
-    Some((item, Some(loc), docs, Some(uri)))
-  }
-  | `Global(top, children, suffix) =>
-    {
-      /* Log.log("It's global folx: " ++ top); */
-      switch (
-        maybeFound(List.assoc(top), package.localModules)
-        |?> (
-          ((cmt, src)) => {
-            let uri = Utils.toUri(src);
-            maybeFound(Hashtbl.find(state.compiledDocuments), uri)
-            |?> AsYouType.getResult
-            |?>> ((defn) => (defn, uri))
-          }
-        )
-      ) {
-      | Some(((cmtInfos, data), uri)) =>
-        Log.log("Resolving definition, in local modules " ++ uri);
-        if (children == []) {
-          /* TODO fill in */
-          Some((Docs.T.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
-        } else {
-          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, defn, docs)) => Some((defn, Some(loc), docs, Some(uri))))
-        }
-      | None =>
-        /* Log.log("Not in the localModules"); */
-        maybeFound(Hashtbl.find(package.pathsForModule), top)
-        |?> (
-          ((cmt, src)) => {
-            /* Log.log("But in the paths For module: " ++ cmt); */
-            let uri = src |?>> Utils.toUri;
-            if (children == []) {
-              Log.log("No children");
-              Some((Docs.T.Module([]), uri |?>> topLocation, docsForCmt(cmt, src, state) |?> d => d.Docs.T.docstring, uri))
-            } else {
-              let%opt {Docs.T.topLevel: contents} = docsForCmt(cmt, src, state);
-              let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
-              let%opt {name, loc, docstring, kind} = Docs.find(last, contents);
-              Some((kind, Some(loc), docstring, srcPath))
-            }
-          }
-        )
-      };
-    }
-  }; */
-
-/* let getResolvedDefinition = (uri, defn, data, state, ~package) => {
-  Definition.findDefinition(defn, data, resolveDefinition(uri, state, ~package, data))
-}; */
-
-/* let definitionForPos = (uri, pos, data, state, ~package) =>
-  Definition.locationAtPos(pos, data)
-  |?> (((_, _, defn)) => {
-    /* Log.log("Figured out the location"); */
-    getResolvedDefinition(uri, defn, data, state, ~package)
-  });
-
-let referencesForPos = (uri, pos, data, state, ~package) => {
-  /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
-  let%opt stamp = Definition.stampAtPos(pos, data);
-  /* Log.log("Finding reference, got the stamp " ++ string_of_int(stamp)); */
-  let externals = {
-    let%opt_wrap (exportedName, suffixName) = Definition.isStampExported(stamp, data);
-    /* Log.log("Yes it is exported as " ++ exportedName); */
-    let thisModName = FindFiles.getName(uri);
-    optMap(((modname, (cmt, src))) => {
-      if (modname == thisModName) {
-        None
-      } else {
-        /* Log.log("Looking at " ++modname); */
-        let%opt data = getDefinitionData(Utils.toUri(src), state, ~package);
-        let%opt uses = Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName);
-        let realUses = Utils.filterMap(((path, loc, suffix)) => {
-          if (path == [exportedName] && suffix == suffixName) {
-            Some((`Read, Utils.endOfLocation(loc, String.length(suffixName |? exportedName))))
-          } else {
-            None
-          }
-        }, uses);
-        realUses == [] ? None : Some((Utils.toUri(src), realUses))
-      }
-    }, package.localModules)
-  } |? [];
-  let%opt_wrap positions = Definition.highlightsForStamp(stamp, data);
-  [(uri, positions), ...externals]
-}; */
