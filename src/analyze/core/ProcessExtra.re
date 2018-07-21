@@ -352,8 +352,6 @@ module F = (Collector: {
   };
 };
 
-/* let noType = {Types.id: 0, level: 0, desc: Tnil}; */
-
 let forItems = (~file, items) => {
   let extra = initExtra();
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
@@ -400,7 +398,6 @@ let forItems = (~file, items) => {
     let file = file;
   }));
 
-  /* Iter.iter_structure(items); */
   List.iter(Iter.iter_structure_item, items);
   extra
 };

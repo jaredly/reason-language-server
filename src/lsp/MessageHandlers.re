@@ -81,21 +81,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       items |. Belt.List.map(((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
         ("kind", i(NewCompletions.kindToInt(contents))),
-        ("detail", switch contents {
-          | NewCompletions.Type({typ}) => 
-              PrintType.default.decl(PrintType.default, name, name, typ)
-              |> PrintType.prettyString
-              |> s
-          | Value({typ}) =>
-              PrintType.default.value(PrintType.default, name, name, typ)
-              |> PrintType.prettyString
-              |> s
-          | Module(m) => s("module")
-          | ModuleType(m) => s("module type")
-          | FileModule(m) => s("file module")
-          | Attribute({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s
-          | Constructor(c) => SharedTypes.Type.Constructor.show(c) |> s
-        }),
+        ("detail", NewCompletions.detail(name, contents) |> s),
         ("documentation",
 
         s((docstring |? "No docs") ++ "\n\n" ++

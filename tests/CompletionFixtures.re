@@ -1,9 +1,12 @@
 
 open Infix;
+open SharedTypes;
 
-/* let getOutput = (files, text) => {
+Log.spamError := true;
+
+let getOutput = (files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
-  let (state, package, cmt, moduleData) = TestUtils.setUp(files, text)
+  let (state, package, cmt, full) = TestUtils.setUp(files, text)
   let completions = switch (PartialParser.findCompletable(text, offset)) {
   | Nothing => failwith("Nothing completable found")
   | Labeled(string) => failwith("Can't do labeled completions yet")
@@ -13,13 +16,25 @@ open Infix;
     let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
     let opens = PartialParser.findOpens(text, offset);
     let useMarkdown = !state.settings.clientNeedsPlainText;
-    Completions.get(~currentPath="/path/to/Test.re", "Test", [], parts, state, Some(moduleData), pos, ~package);
+    let allModules = package.localModules |> List.map(fst);
+    NewCompletions.get(
+      ~full,
+      ~opens,
+      ~getModule=name => {
+        Log.log("Getting module " ++ name);
+        State.fileForModule(state, ~package, name) |> logIfAbsent("Unable to find module " ++ name);
+      },
+      ~allModules,
+      ~package,
+      pos,
+      parts,
+      );
   };
 
-  completions |> List.map((item: Completions.item) => {
-    item.label
-    ++ fold(item.path, "", path => "\n- path: " ++ path)
-    ++ fold(item.detail, "", detail => "\n> " ++ (Str.split(Str.regexp_string("\n"), detail) |> String.concat("\n> ")))
+  completions |> List.map(((uri, item)) => {
+    item.name.txt
+    ++ "\n- path: " ++ uri
+    ++ "\n> " ++ (Str.split(Str.regexp_string("\n"), NewCompletions.detail(item.name.txt, item.contents)) |> String.concat("\n> "))
   }) |> String.concat("\n");
 };
 
@@ -28,7 +43,7 @@ Log.setLocation(logDest);
 
 let testFile = "./tests/Completion.txt";
 let output = Files.readFileExn(testFile) |> Utils.splitLines |. TestUtils.process(getOutput) |> String.concat("\n");
-Files.writeFileExn(testFile, output); */
+Files.writeFileExn(testFile, output);
 
-/* let cases =  */
-/* cases |> List.iter(test) */
+/* let cases = 
+cases |> List.iter(test) */

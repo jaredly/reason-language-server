@@ -49,12 +49,14 @@ module Type = {
       args: list((Types.type_expr, Location.t)),
       res: option(Types.type_expr),
     };
+    open Infix;
     let show = ({name: {txt}, args, res}) => {
       txt ++ (args == []
         ? ""
         : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
           PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString
         ))) ++ ")")
+      ++ ((res |?>> typ => "\n" ++ PrintType.prettyString(PrintType.default.expr(PrintType.default, typ))) |? "")
     };
   };
 

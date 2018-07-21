@@ -11,7 +11,7 @@ let testFile = "./tests/TestReferences.txt";
 let lines = Files.readFileExn(testFile) |> Utils.splitLines;
 let output = TestUtils.process(lines, (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
-  let (state, package, cmt, _) = TestUtils.setUp(files, text);
+  let (state, package, _, _) = TestUtils.setUp(files, text);
 
   let fileNames = files |. Belt.List.map(fst);
   let fileNames = ["Test.re", ...fileNames];
@@ -19,24 +19,22 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     let moduleName = Filename.chop_extension(name) |. String.capitalize;
     let uri = TestUtils.uriForName(name);
     open Infix;
-    let%opt_force (cmt, _) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-    let%try_force file = ProcessCmt.forCmt(uri, x => x, cmt);
-    let%try_force extra = ProcessExtra.forCmt(~file, cmt);
+    let%opt_force (_, {file, extra}) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
 
     print_newline();
     Log.log(uri);
     Log.log(SharedTypes.showExtra(extra));
 
-    (moduleName, (uri, cmt, file, extra))
+    (moduleName, (uri, file, extra))
   });
 
   let allModules = fileData |. Belt.List.map(((name, _)) => name);
   let getModule = moduleName => {
-    let%opt (_, _, file, _) = Belt.List.getAssoc(fileData, moduleName, (==));
+    let%opt (_, file, _) = Belt.List.getAssoc(fileData, moduleName, (==));
     Some(file)
   };
   let getExtra = moduleName => {
-    let%opt (_, _, _, extra) = Belt.List.getAssoc(fileData, moduleName, (==));
+    let%opt (_, _, extra) = Belt.List.getAssoc(fileData, moduleName, (==));
     Some(extra)
   };
 
@@ -49,9 +47,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
       let targets = List.filter(((name, contents)) => name == "t" ++ string_of_int(i), waypoints);
       /* let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
 
-      let%opt_force (cmt, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
-      let%try_force file = ProcessCmt.forCmt(curi, x => x, cmt);
-      let%try_force extra = ProcessExtra.forCmt(~file, cmt);
+      let%opt_force (_, {file, extra}) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
 
       /* let (line, char) = cpos; */
 

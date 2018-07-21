@@ -28,6 +28,11 @@ let fileConcat = (a, b) => {
   }
 };
 
+let logIfAbsent = (message, x) => switch x {
+  | None => Log.log(message); None
+  | _ => x
+};
+
 let maybeConcat = (a, b) => {
   if (b != "" && b.[0] == '/') {
     b
