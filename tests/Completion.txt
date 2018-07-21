@@ -142,3 +142,10 @@ vinner
 vmiddle
 - path: /path/to/Test.re
 > let vmiddle: int
+
+=== A module
+module Lib = {
+  let a = 10;
+  type x = A(int);
+};
+Li<*>

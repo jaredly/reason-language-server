@@ -43,6 +43,28 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
   }
 };
 
+let getTypeAtPath = (~env, path) => {
+  switch (Query.fromCompilerPath(~env, path)) {
+  | `Global(moduleName, path) => `Global(moduleName, path)
+  | `Not_found => `Not_found
+  | `Exported(env, name) => {
+      let res = {
+        let%opt stamp = Query.hashFind(env.exported.types, name);
+        let%opt_wrap declaredType = Query.hashFind(env.file.stamps.types, stamp);
+        `Local(declaredType)
+      };
+      res |? `Not_found
+  }
+  | `Stamp(stamp) => {
+    let res = {
+      let%opt_wrap declaredType = Query.hashFind(env.file.stamps.types, stamp);
+      `Local(declaredType)
+    };
+    res |? `Not_found
+  }
+  }
+};
+
 module F = (Collector: {
   let extra: extra;
   let file: file;
@@ -63,27 +85,7 @@ module F = (Collector: {
   let addExternalReference = (moduleName, path, tip, loc) => Hashtbl.replace(extra.externalReferences, moduleName, [(path, tip, loc), ...Hashtbl.mem(extra.externalReferences, moduleName) ? Hashtbl.find(extra.externalReferences, moduleName) : []]);
   let env = {Query.file: Collector.file, exported: Collector.file.contents.exported};
 
-  let getTypeAtPath = path => {
-    switch (Query.fromCompilerPath(~env, path)) {
-    | `Global(moduleName, path) => `Global(moduleName, path)
-    | `Not_found => `Not_found
-    | `Exported(env, name) => {
-        let res = {
-          let%opt stamp = Query.hashFind(env.exported.types, name);
-          let%opt_wrap declaredType = Query.hashFind(env.file.stamps.types, stamp);
-          `Local(declaredType)
-        };
-        res |? `Not_found
-    }
-    | `Stamp(stamp) => {
-      let res = {
-        let%opt_wrap declaredType = Query.hashFind(env.file.stamps.types, stamp);
-        `Local(declaredType)
-      };
-      res |? `Not_found
-    }
-    }
-  };
+  let getTypeAtPath = getTypeAtPath(~env);
 
   let addForPath = (path, lident, loc, typ, tip) => {
     maybeAddUse(path, lident, loc, tip);
@@ -266,6 +268,11 @@ module F = (Collector: {
         ~name,
         ~stamp,
         ~extent=val_loc,
+        ~scope={
+          loc_ghost: true,
+          loc_start: val_loc.loc_end,
+          loc_end: currentScopeExtent().loc_end,
+        },
         ~modulePath=NotVisible,
         ~processDoc=x => x,
         ~contents={Value.typ: val_desc.ctyp_type, recursive: false},
@@ -302,6 +309,11 @@ module F = (Collector: {
           let declared = ProcessCmt.newDeclared(
             ~name,
             ~stamp,
+            ~scope={
+              loc_ghost: true,
+              loc_start: pat_loc.loc_end,
+              loc_end: currentScopeExtent().loc_end,
+            },
             ~modulePath=NotVisible,
             ~extent=pat_loc,
             ~processDoc=x => x,
@@ -333,6 +345,7 @@ module F = (Collector: {
     });
     switch (expression.exp_desc) {
     | Texp_ident(path, {txt, loc}, {val_type}) => {
+      Log.log("Exp ident folx " ++ Utils.showLocation(loc));
       addForPath(path, txt, loc, val_type, Value);
     }
     | Texp_record(items, _) => {
@@ -381,16 +394,7 @@ let forItems = (~file, items) => {
     };
   });
 
-  let extent = items == [] ? Location.none : {
-    let first = List.hd(items);
-    let last = List.nth(items, List.length(items) - 1);
-
-    {
-      Location.loc_ghost: true,
-      loc_start: first.str_loc.loc_start,
-      loc_end: last.str_loc.loc_end,
-    };
-  };
+  let extent = Utils.itemsExtent(items);
 
   let module Iter = TypedtreeIter.MakeIterator(F({
     let scopeExtent = ref([extent]);

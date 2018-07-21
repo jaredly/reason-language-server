@@ -12,6 +12,7 @@ type env = {
   stamps,
   processDoc: string => string,
   modulePath: visibilityPath,
+  scope: Location.t,
 };
 
 let getTopDoc = structure => {
@@ -28,11 +29,12 @@ let getTopSigDoc = structure => {
   };
 };
 
-let newDeclared = (~contents, ~extent, ~name, ~stamp, ~modulePath, ~processDoc, exported, attributes) => {
+let newDeclared = (~contents, ~scope, ~extent, ~name, ~stamp, ~modulePath, ~processDoc, exported, attributes) => {
   {
     name,
     stamp,
     extentLoc: extent,
+    scopeLoc: scope,
     deprecated: PrepareUtils.findDeprecatedAttribute(attributes),
     exported,
     modulePath,
@@ -46,6 +48,11 @@ let newDeclared = (~contents, ~extent, ~name, ~stamp, ~modulePath, ~processDoc, 
 let addItem = (~name, ~extent, ~stamp, ~env, ~contents, attributes, exported, stamps) => {
   let declared = newDeclared(
     ~contents,
+    ~scope={
+      Location.loc_start: extent.Location.loc_end,
+      loc_end: env.scope.loc_end,
+      loc_ghost: false,
+    },
     ~extent,
     ~name,
     ~stamp,
@@ -99,6 +106,11 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
             let declared = newDeclared(
               ~contents,
               ~extent=cd_loc,
+              ~scope={
+                Location.loc_start: type_loc.Location.loc_end,
+                loc_end: env.scope.loc_end,
+                loc_ghost: false,
+              },
               ~name=Location.mknoloc(name),
               ~stamp,
               /* TODO maybe this needs another child */
@@ -207,24 +219,11 @@ let rec forItem = (
   [{...declared, contents: Module.Module(declared.contents)}]
 }
 | Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
-  /* forSignatureType
-  /* let (doc, contents) = forStructure(~env, structure.str_items); */
-
-  let topLevel = List.fold_right((item, results) => {
-    forItem(~env, ~exported, item) @ results
-  }, items, []);
-
-  switch incl_mod.mod_desc {
-  | Tmod_ident(path, _) => forSignatureType(processDoc, incl_type)
-  | _ => forSignatureType(processDoc, incl_type)
-  }; */
-
   let topLevel = List.fold_right((item, items) => {
     forSignatureTypeItem(env, exported, item) @ items
   }, incl_type, []) |> List.rev;
 
   topLevel
-  /* Module.Structure(contents) */
 
 | Tstr_primitive({val_id: {stamp}, val_name: name, val_loc, val_attributes, val_val: {val_type}}) => {
   let declared = addItem(~extent=val_loc, ~contents={Value.recursive: false, typ: val_type}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
@@ -267,6 +266,11 @@ and forModule = (env, mod_desc, moduleName) => switch mod_desc {
       let declared = newDeclared(
         ~contents=kind,
         ~name=argName,
+        ~scope={
+          Location.loc_start: t.mty_loc.loc_end,
+          loc_end: env.scope.loc_end,
+          loc_ghost: false,
+        },
         ~extent=t.Typedtree.mty_loc,
         ~stamp,
         ~modulePath=NotVisible,
@@ -298,32 +302,38 @@ and forStructure = (~env, items) => {
 open Result;
 let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Partial_implementation(parts) => {
-  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
     | Partial_structure(str) => Some(str.str_items)
     | Partial_structure_item(str) => Some([str])
     | _ => None
   }) |> List.concat;
+  let env = {
+    scope: Utils.itemsExtent(items),
+    stamps: initStamps(),
+    processDoc,
+    modulePath: File(uri)
+  };
   let (docstring, contents) = forStructure(~env, items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Partial_interface(parts) => {
-  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
     | Partial_signature(str) => Some(str.sig_items)
     | Partial_signature_item(str) => Some([str])
     | _ => None
   }) |> List.concat;
+  let env = {scope: Utils.sigItemsExtent(items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forSignature(~env, items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Implementation(structure) => {
-  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: Utils.itemsExtent(structure.str_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forStructure(~env, structure.str_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Interface(signature) => {
-  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: Utils.sigItemsExtent(signature.sig_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forSignature(~env, signature.sig_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
   /* Some(forSignature(processDoc, signature.sig_items)) */
@@ -334,7 +344,7 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
 };
 
 let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
-  let env = {stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: Location.none, stamps: initStamps(), processDoc, modulePath: File(uri)};
   let contents = forSignatureType(env, cmi_sign);
   Some({
     uri,

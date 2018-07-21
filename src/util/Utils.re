@@ -115,3 +115,31 @@ let showLocation = ({Location.loc_start, loc_end}) =>
       loc_end.pos_cnum - loc_end.pos_bol
     )
   );
+
+let itemsExtent = items => {
+  open Typedtree;
+  items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
+
+    {
+      Location.loc_ghost: true,
+      loc_start: first.str_loc.loc_start,
+      loc_end: last.str_loc.loc_end,
+    };
+  };
+};
+
+let sigItemsExtent = items => {
+  open Typedtree;
+  items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
+
+    {
+      Location.loc_ghost: true,
+      loc_start: first.sig_loc.loc_start,
+      loc_end: last.sig_loc.loc_end,
+    };
+  };
+};

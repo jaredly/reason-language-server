@@ -275,7 +275,6 @@ let get = (
   let opens = Belt.List.map(Belt.List.keepMap(packageOpens, getModule), Query.fileEnv) @ opens;
   Log.log("Opens nows " ++ string_of_int(List.length(opens)) ++ " " ++ String.concat(" ", Belt.List.map(opens, e => e.file.uri)));
 
-
   switch tokenParts {
     | [] => []
     | [""] =>
@@ -287,12 +286,15 @@ let get = (
       let two = List.concat(
           Belt.List.map(opens, env => valueCompletions(~env, ~getModule, ~suffix))
         );
-        let three = Belt.List.keepMap(allModules, name => Utils.startsWith(name, suffix) ? Some(("wait for uri", {...emptyDeclared(name), contents: FileModule(name)})) : None);
+      let three = Belt.List.keepMap(allModules, name => Utils.startsWith(name, suffix) ? Some(("wait for uri", {...emptyDeclared(name), contents: FileModule(name)})) : None);
       one @ two @ three
     | multiple => {
       open Infix;
       let env = Query.fileEnv(full.file);
 
+      /* Log.log(SharedTypes.showExtra(full.extra)); */
+
+      Log.log("multiepl");
       switch (determineCompletion(multiple)) {
       | `Normal(path) => {
           let%opt_wrap (env, suffix) = getEnvWithOpens(~env, ~getModule, ~opens, path);
@@ -303,7 +305,55 @@ let get = (
           [];
         }
       | `Attribute(offset, suffix) => {
-        [("no uri", {...emptyDeclared("Typed attribute completions not supported yet"), contents: FileModule("Just kidding")})]
+        Log.log("ok attribute");
+
+        let (l, c) = pos;
+        let pos = (l - 1, c + offset);
+        {
+
+          Log.log("Ok attribute folz " ++ string_of_int(offset) ++ " suffix " ++ suffix);
+          let%opt (_, loc) = References.locForPos(~extra=full.extra, pos);
+          Log.log("got a loc");
+
+          switch (loc) {
+          | Typed({Types.desc: Tconstr(path, _, _)}, _) =>
+
+            switch (ProcessExtra.getTypeAtPath(~env, path)) {
+              | `Local({stamp, contents: {kind: Record(attributes)}}) => {
+                Log.log("Got the loc at that pos");
+                Some(attributes |. Belt.List.keepMap(a => {
+                  if (Utils.startsWith(a.name.txt, suffix)) {
+                    Some((env.file.uri, {
+                      ...emptyDeclared(a.name.txt),
+                      contents: Attribute(a)
+                    }))
+                  } else {
+                    None
+                  }
+                }))
+              }
+              | `Global(moduleName, path) =>
+                Log.log("its global");
+                None
+              | _ => {
+                Log.log("Wrong kind of loc");
+                None
+              }
+            };
+
+            /* [("no uri", {...emptyDeclared(
+              "Typed attribute completions not supported yet"
+            ), contents: FileModule("Just kidding")})] */
+
+          | _ => {
+            Log.log("welp, loc not typed");
+            None
+          }
+          }
+
+
+        } |? [];
+
       }
       | `AbsAttribute(path) => {
           let%opt_wrap (env, suffix) = getEnvWithOpens(~env, ~getModule, ~opens, path);

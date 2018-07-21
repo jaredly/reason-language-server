@@ -294,7 +294,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             let parts = modules == [] ? parts : ["modules: {" ++ String.concat(", ", List.map(fst, modules)) ++ "}", ...parts];
             let parts = values == [] ? parts : ["values: {" ++ String.concat(", ", List.map(fst, values)) ++ "}", ...parts];
 
-            (parts == [] ? "Unused open" : string_of_int(List.length(items)) ++ " uses. " ++ String.concat(" ", parts), loc)
+            (parts == [] ? "Unused open" : string_of_int(List.length(items)) ++ " uses. " ++ String.concat(" ", parts), tracker.ident.loc)
           });
         } : lenses;
 

@@ -11,6 +11,7 @@ type visibilityPath =
 type declared('t) = {
   name: Location.loc(string),
   extentLoc: Location.t,
+  scopeLoc: Location.t,
   stamp: int,
   deprecated: option(string),
   modulePath: visibilityPath,
@@ -25,6 +26,7 @@ type declared('t) = {
 let emptyDeclared = (name) => {
   name: Location.mknoloc(name),
   extentLoc: Location.none,
+  scopeLoc: Location.none,
   stamp: 0,
   deprecated: None,
   modulePath: NotVisible,
