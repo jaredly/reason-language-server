@@ -108,17 +108,18 @@ type b = { person: A.a, age: float };
 let x = (v: B.b) => {
   v.person.n<*>
 };
+
 -->
 name
-- path: /path/to/Test.re
+- path: file:///path/to/A.re
 > name: string
 > 
-> type name = {name: string, nose: int}
+> type a = {name: string, nose: int}
 nose
-- path: /path/to/Test.re
+- path: file:///path/to/A.re
 > nose: int
 > 
-> type nose = {name: string, nose: int}
+> type a = {name: string, nose: int}
 
 === Includes
 module Outer = {

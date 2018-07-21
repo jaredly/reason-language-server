@@ -182,3 +182,38 @@ let exportedForTip = (~env, name, tip) => switch tip {
   | Module => hashFind(env.exported.modules, name)
   | ModuleType => hashFind(env.exported.moduleTypes, name)
 };
+
+let rec dig = (typ) =>
+  switch typ.Types.desc {
+  | Types.Tlink(inner) => dig(inner)
+  | Types.Tsubst(inner) => dig(inner)
+  | Types.Tpoly(inner, _) => dig(inner)
+  | _ => typ
+  };
+
+let digConstructor = (~env, ~getModule, expr) => {
+  let expr = dig(expr);
+  Log.log("digging");
+  switch (expr.desc) {
+    | Tconstr(path, _args, _memo) => {
+      Log.log("dug");
+      switch (resolveFromCompilerPath(~env, ~getModule, path)) {
+      | `Not_found => None
+      | `Stamp(stamp) =>
+        Log.log("stamp");
+        let%opt t = hashFind(env.file.stamps.types, stamp);
+        Some((env, t))
+      | `Exported(env, name) =>
+        Log.log("exported " ++ name);
+        let%opt stamp = hashFind(env.exported.types, name);
+        let%opt t = hashFind(env.file.stamps.types, stamp);
+        Some((env, t))
+      | _ => None
+      };
+    }
+    | _ => {
+      Log.log("not a constructor: " ++ (PrintType.default.expr(PrintType.default, expr) |> PrintType.prettyString));
+      None
+    }
+  }
+};

@@ -320,24 +320,37 @@ let get = (
         switch (target) {
           | [] => None
           | [first, ...rest] => {
-            Log.log("Looking for " ++ first);
+            Log.log("-------------- Looking for " ++ first);
             let%opt declared = Query.findInScope(pos, first, env.file.stamps.values);
             Log.log("Found it! " ++ declared.name.txt);
-            let expr = ProcessExtra.dig(declared.contents.typ);
+            let%opt (env, typ) = Query.digConstructor(~env, ~getModule, declared.contents.typ);
+            /* let expr = ProcessExtra.dig(declared.contents.typ);
             switch (expr.desc) {
               | Tconstr(path, _args, _memo) => {
                 Log.log("dug");
                 let%opt typ = switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
                 | `Not_found => None
                 | `Stamp(stamp) =>
-                Log.log("stamp");
+                  Log.log("stamp");
                   Query.hashFind(env.file.stamps.types, stamp)
                 | `Exported(env, name) =>
-                Log.log("exported");
+                  Log.log("exported " ++ name);
                   let%opt stamp = Query.hashFind(env.exported.types, name);
                   Query.hashFind(env.file.stamps.types, stamp)
                 | _ => None
-                };
+                }; */
+                let%opt (env, typ) = Belt.List.reduce(rest, Some((env, typ)), (current, name) => {
+                  let%opt (env, typ) = current;
+                  switch (typ.contents.kind) {
+                  | Record(attributes) =>
+                    let%opt attr = attributes |. Belt.List.getBy(a => {
+                      a.name.txt == name
+                    });
+                    Log.log("Found attr");
+                    Query.digConstructor(~env, ~getModule, attr.typ)
+                  | _ => None
+                  }
+                });
                 switch (typ.contents.kind) {
                 | Record(attributes) =>
                   Some(attributes |. Belt.List.keepMap(a => {
@@ -352,14 +365,14 @@ let get = (
                   }))
                 | _ => None
                 }
-              }
+              /* }
               | _ => {
                 Log.log("not a constr tho");
-      Log.log(PrintType.default.expr(PrintType.default, expr)
-      |> PrintType.prettyString);
+                Log.log(PrintType.default.expr(PrintType.default, expr)
+                |> PrintType.prettyString);
                 None
               }
-            };
+            }; */
           }
         };
 
