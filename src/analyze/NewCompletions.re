@@ -86,8 +86,11 @@ let completionForConstructors = (exportedTypes, stamps: Hashtbl.t(int, SharedTyp
 
 let completionForAttributes = (exportedTypes, stamps: Hashtbl.t(int, SharedTypes.declared(SharedTypes.Type.t)), prefix) => {
   Hashtbl.fold((_name, stamp, results) => {
-    switch (Hashtbl.find(stamps, stamp).contents.kind) {
-    | Record(attributes) => Belt.List.keep(attributes, c => Utils.startsWith(c.name.txt, prefix)) @ results
+    let t = Hashtbl.find(stamps, stamp);
+    switch (t.contents.kind) {
+    | Record(attributes) =>
+      (Belt.List.keep(attributes, c => Utils.startsWith(c.name.txt, prefix))
+      |. Belt.List.map(c => (c, t))) @ results
     | _ => results
     }
   }, exportedTypes, [])
@@ -175,7 +178,7 @@ type k =
 | Type(Type.t)
 | ModuleType(Module.kind)
 | Constructor(Type.Constructor.t, declared(Type.t))
-| Attribute(Type.Attribute.t)
+| Attribute(Type.Attribute.t, declared(Type.t))
 | FileModule(string)
 ;
 
@@ -185,7 +188,7 @@ let kindToInt = k =>
   | FileModule(_) => 9
   | ModuleType(_) => 9
   | Constructor(_, _) => 4
-  | Attribute(_) => 5
+  | Attribute(_, _) => 5
   | Type(_) => 22
   | Value(_) => 12
   };
@@ -200,13 +203,16 @@ let detail = (name, contents) => switch contents {
   | Module(m) => "module"
   | ModuleType(m) => "module type"
   | FileModule(m) => "file module"
-  | Attribute({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString
-  | Constructor(c, t) =>
-    SharedTypes.Type.Constructor.show(c)
-    ++ "\n" ++
+  | Attribute({typ}, t) =>
+    name ++ ": " ++ (PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString)
+    ++ "\n\n" ++
     (PrintType.default.decl(PrintType.default, t.name.txt, t.name.txt, t.contents.typ)
     |> PrintType.prettyString)
-
+  | Constructor(c, t) =>
+    SharedTypes.Type.Constructor.show(c)
+    ++ "\n\n" ++
+    (PrintType.default.decl(PrintType.default, t.name.txt, t.name.txt, t.contents.typ)
+    |> PrintType.prettyString)
 };
 
 let valueCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
@@ -248,7 +254,7 @@ let attributeCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
     /* completionForExporteds(env.exported.types, env.file.stamps.types, suffix, t => Type(t)) */
     (
       completionForAttributes(env.exported.types, env.file.stamps.types, suffix)
-      |. Belt.List.map(c => {...emptyDeclared(c.name.txt), contents: Attribute(c)})
+      |. Belt.List.map(((c, t)) => {...emptyDeclared(c.name.txt), contents: Attribute(c, t)})
     )
   } else {
     results
@@ -310,21 +316,24 @@ let get = (
           [];
         }
       | `Attribute(target, suffix) => {
-        /* Log.log("ok attribute"); */
 
         switch (target) {
           | [] => None
           | [first, ...rest] => {
-            /* Log.log("Looking for " ++ first); */
-            let%opt declared = Query.findInScope(pos, env.file.stamps.values);
-            /* Log.log("Found it!"); */
-            switch (ProcessExtra.dig(declared.contents.typ).desc) {
+            Log.log("Looking for " ++ first);
+            let%opt declared = Query.findInScope(pos, first, env.file.stamps.values);
+            Log.log("Found it! " ++ declared.name.txt);
+            let expr = ProcessExtra.dig(declared.contents.typ);
+            switch (expr.desc) {
               | Tconstr(path, _args, _memo) => {
+                Log.log("dug");
                 let%opt typ = switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
                 | `Not_found => None
                 | `Stamp(stamp) =>
+                Log.log("stamp");
                   Query.hashFind(env.file.stamps.types, stamp)
                 | `Exported(env, name) =>
+                Log.log("exported");
                   let%opt stamp = Query.hashFind(env.exported.types, name);
                   Query.hashFind(env.file.stamps.types, stamp)
                 | _ => None
@@ -335,7 +344,7 @@ let get = (
                     if (Utils.startsWith(a.name.txt, suffix)) {
                       Some((env.file.uri, {
                         ...emptyDeclared(a.name.txt),
-                        contents: Attribute(a)
+                        contents: Attribute(a, typ)
                       }))
                     } else {
                       None
@@ -344,7 +353,12 @@ let get = (
                 | _ => None
                 }
               }
-              | _ => None
+              | _ => {
+                Log.log("not a constr tho");
+      Log.log(PrintType.default.expr(PrintType.default, expr)
+      |> PrintType.prettyString);
+                None
+              }
             };
           }
         };

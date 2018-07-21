@@ -305,6 +305,7 @@ module F = (Collector: {
         addForConstructor(pat_type, lident, constructor)
       }
       | Tpat_var({stamp}, name) => {
+        Log.log("Pattern " ++ name.txt);
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
           let declared = ProcessCmt.newDeclared(
             ~name,
@@ -391,8 +392,7 @@ module F = (Collector: {
   };
 };
 
-
-let forItems = (~file, items) => {
+let forFile = (~file) => {
   let extra = initExtra();
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
@@ -421,7 +421,15 @@ let forItems = (~file, items) => {
     };
   });
 
+  extra;
+};
+
+let forItems = (~file, items, parts) => {
+  let extra = forFile(~file);
+
   let extent = Utils.itemsExtent(items);
+
+  /* TODO look through parts and extend the extent */
 
   let module Iter = TypedtreeIter.MakeIterator(F({
     let scopeExtent = ref([extent]);
@@ -430,6 +438,23 @@ let forItems = (~file, items) => {
   }));
 
   List.iter(Iter.iter_structure_item, items);
+
+  parts |. Belt.Array.forEach(part => switch part {
+  | Cmt_format.Partial_signature(str) =>
+    Iter.iter_signature(str);
+  | Partial_signature_item(str) =>
+    Iter.iter_signature_item(str);
+  | Partial_expression(expression) =>
+    Iter.iter_expression(expression);
+  | Partial_pattern(pattern) =>
+    Iter.iter_pattern(pattern);
+  | Partial_class_expr(class_expr) =>
+    Iter.iter_class_expr(class_expr);
+  | Partial_module_type(module_type) =>
+    Iter.iter_module_type(module_type);
+  | _ => ()
+  });
+
   extra
 };
 
@@ -439,12 +464,13 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
     | Partial_structure(str) => Some(str.str_items)
     | Partial_structure_item(str) => Some([str])
+    /* | Partial_expression(exp) => Some([ str]) */
     | _ => None
   }) |> List.concat;
-  Ok(forItems(~file, items))
+  Ok(forItems(~file, items, parts))
 }
 | Implementation(structure) => {
-  Ok(forItems(~file, structure.str_items))
+  Ok(forItems(~file, structure.str_items, [||]))
 }
 | _ => Error("Invalid cmt file")
 };
