@@ -94,17 +94,21 @@ let completionForAttributes = (exportedTypes, stamps: Hashtbl.t(int, SharedTypes
 };
 
 let isCapitalized = name => {
+  if (name == "") {
+    false
+  } else {
   let c = name.[0];
   switch (c) {
     |'A'..'Z' => true
     |_ => false
   };
+  }
 };
 
 /**
 The three possibilities
 
-lower.suffix -> `Attribute(offset, suffix)
+lower.suffix -> `Attribute([lower, lower], suffix)
 
 lower.Upper.suffix -> `AbsAttribute([Upper], suffix)
 
@@ -115,7 +119,7 @@ let determineCompletion = items => {
   let rec loop = (offset, items) => switch items {
   | [] => assert(false)
   | [one] => `Normal(Tip(one))
-  | [one, two] when !isCapitalized(one) => `Attribute(offset, two)
+  | [one, two] when !isCapitalized(one) => `Attribute([one], two)
   | [one, two] => `Normal(Nested(one, Tip(two)))
   | [one, ...rest] => if (isCapitalized(one)) {
     switch (loop(offset + String.length(one) + 1, rest)) {
@@ -125,6 +129,7 @@ let determineCompletion = items => {
   } else {
     switch (loop(offset + String.length(one) + 1, rest)) {
     | `Normal(path) => `AbsAttribute(path)
+    | `Attribute(path, suffix) => `Attribute([one, ...path], suffix)
     | x => x
     }
   }
@@ -304,10 +309,47 @@ let get = (
         } |? {
           [];
         }
-      | `Attribute(offset, suffix) => {
+      | `Attribute(target, suffix) => {
         Log.log("ok attribute");
 
-        let (l, c) = pos;
+        switch (target) {
+          | [] => None
+          | [first, ...rest] => {
+            let%opt declared = Query.findInScope(pos, env.file.stamps.values);
+            switch (ProcessExtra.dig(declared.contents.typ).desc) {
+              | Tconstr(path, _args, _memo) => {
+                let%opt typ = switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
+                | `Not_found => None
+                | `Stamp(stamp) =>
+                  Query.hashFind(env.file.stamps.types, stamp)
+                | `Exported(env, name) =>
+                  let%opt stamp = Query.hashFind(env.exported.types, name);
+                  Query.hashFind(env.file.stamps.types, stamp)
+                | _ => None
+                };
+                switch (typ.contents.kind) {
+                | Record(attributes) =>
+                  Some(attributes |. Belt.List.keepMap(a => {
+                    if (Utils.startsWith(a.name.txt, suffix)) {
+                      Some((env.file.uri, {
+                        ...emptyDeclared(a.name.txt),
+                        contents: Attribute(a)
+                      }))
+                    } else {
+                      None
+                    }
+                  }))
+                | _ => None
+                }
+              }
+              | _ => None
+            };
+          }
+        };
+
+
+
+        /* let (l, c) = pos;
         let pos = (l - 1, c + offset);
         {
 
@@ -352,9 +394,9 @@ let get = (
           }
 
 
-        } |? [];
+        } |? []; */
 
-      }
+      } |? []
       | `AbsAttribute(path) => {
           let%opt_wrap (env, suffix) = getEnvWithOpens(~env, ~getModule, ~opens, path);
 

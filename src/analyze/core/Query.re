@@ -15,6 +15,24 @@ let hashFind = (tbl, key) => switch (Hashtbl.find(tbl, key)) {
   | result => Some(result)
 };
 
+let findInScope = (pos, stamps) => {
+  Hashtbl.fold((_stamp, declared, result) => {
+    if (Protocol.locationContains(declared.scopeLoc, pos)) {
+      switch result {
+        | None => Some(declared)
+        | Some(current) =>
+          if (current.name.loc.loc_start.pos_cnum < declared.name.loc.loc_start.pos_cnum) {
+            Some(declared)
+          } else {
+            result
+          }
+      }
+    } else {
+      result
+    }
+  }, stamps, None)
+};
+
 let rec joinPaths = (modulePath, path) => {
   switch modulePath {
     | Path.Pident({stamp, name}) => (stamp, name, path)

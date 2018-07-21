@@ -360,10 +360,37 @@ module F = (Collector: {
     | Texp_field(inner, lident, label_description) => {
       addForField(inner.exp_type, label_description, lident)
     }
+    | Texp_let(_, _, _) => {
+      addScopeExtent(expression.exp_loc)
+      /* TODO this scope tracking won't work for recursive */
+    }
+    | Texp_function(_label, cases, _partial) => {
+      switch cases {
+        | [{c_rhs}] => addScopeExtent(c_rhs.exp_loc)
+        | _ => ()
+      }
+    }
     | _ => ()
     }
   };
+
+  let leave_expression = expression => {
+    switch (expression.exp_desc) {
+    | Texp_let(_isrec, _bindings, _expr) => {
+      popScopeExtent();
+    }
+    | Texp_function(_label, cases, _partial) => {
+      switch cases {
+        | [{c_rhs}] => popScopeExtent()
+        | _ => ()
+      }
+    }
+    | _ => ()
+    };
+
+  };
 };
+
 
 let forItems = (~file, items) => {
   let extra = initExtra();
