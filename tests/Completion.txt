@@ -5,7 +5,7 @@ let awesome = 10;
 let x = awe<*>
 -->
 awesome
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > let awesome: int
 
 === In Module
@@ -15,7 +15,7 @@ module M = {
 let x = M.awe<*>
 -->
 awesome
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > let awesome: int
 
 ### Constructors
@@ -25,12 +25,12 @@ type t = Awesome | Awkward(int, float);
 A<*>
 -->
 Awesome
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > Awesome
 > 
 > type t = | Awesome | Awkward(int, float)
 Awkward
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > Awkward(int, float)
 > 
 > type t = | Awesome | Awkward(int, float)
@@ -44,10 +44,14 @@ m.n<*>
 -->
 name
 - path: file:///path/to/Test.re
-> int
+> name: int
+> 
+> type t = {name: int, nose: float}
 nose
 - path: file:///path/to/Test.re
-> float
+> nose: float
+> 
+> type t = {name: int, nose: float}
 
 === Just dot
 type t = {name: int, party: float};
@@ -57,15 +61,15 @@ let x = {
 };
 -->
 name
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > name: int
 > 
-> type name = {name: int, party: float}
+> type t = {name: int, party: float}
 party
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > party: float
 > 
-> type party = {name: int, party: float}
+> type t = {name: int, party: float}
 
 ### MultiFile
 
@@ -77,10 +81,10 @@ let awkward = 4.1;
 Lib.<*>
 -->
 awkward
-- path: /path/to/Lib.re
+- path: file:///path/to/Lib.re
 > let awkward: float
 awesome
-- path: /path/to/Lib.re
+- path: file:///path/to/Lib.re
 > let awesome: string
 
 === Mutli-attribute
@@ -94,10 +98,10 @@ let x = (v: B.b) => {
 };
 -->
 person
-- path: /path/to/Test.re
+- path: file:///path/to/B.re
 > person: A.a
 > 
-> type person = {person: A.a, age: float}
+> type b = {person: A.a, age: float}
 
 === Mutli-attribute 2 - wrong URIs
 --- A.re
@@ -133,12 +137,12 @@ module N = {
 };
 N.v<*>
 -->
-vinner
-- path: /path/to/Test.re
-> let vinner: int
 vmiddle
-- path: /path/to/Test.re
+- path: file:///path/to/Test.re
 > let vmiddle: int
+vinner
+- path: file:///path/to/Test.re
+> let vinner: int
 
 === A module
 module Lib = {
@@ -146,3 +150,7 @@ module Lib = {
   type x = A(int);
 };
 Li<*>
+-->
+Lib
+- path: file:///path/to/Test.re
+> module
