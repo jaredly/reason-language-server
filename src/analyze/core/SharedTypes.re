@@ -42,6 +42,7 @@ module Type = {
       typLoc: Location.t,
     };
   };
+
   module Constructor = {
     type t = {
       stamp: int,

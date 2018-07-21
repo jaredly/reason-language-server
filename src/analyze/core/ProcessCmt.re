@@ -61,10 +61,9 @@ let addItem = (~name, ~extent, ~stamp, ~env, ~contents, attributes, exported, st
   declared;
 };
 
-let rec forSignatureType = (env, signature) => {
+let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item) => {
   open Types;
-  let exported = Module.initExported();
-  let topLevel = List.fold_right((item, items) => switch item {
+  switch item {
   | Sig_value({stamp, name}, {val_type, val_kind, val_attributes, val_loc: loc}) => {
     let contents = {
       Value.recursive: false,
@@ -80,7 +79,7 @@ let rec forSignatureType = (env, signature) => {
       exported.values,
       env.stamps.values,
     );
-    [{...declared, contents: Module.Value(declared.contents)}, ...items]
+    [{...declared, contents: Module.Value(declared.contents)}]
   }
   | Sig_type({stamp, name}, {type_params, type_loc, type_kind, type_attributes} as decl, _) => {
     let declared = addItem(~extent=type_loc, ~contents={
@@ -119,15 +118,23 @@ let rec forSignatureType = (env, signature) => {
         ))
       }
     }, ~name=Location.mknoloc(name), ~stamp, ~env, type_attributes, exported.types, env.stamps.types);
-    [{...declared, contents: Module.Type(declared.contents)}, ...items]
+    [{...declared, contents: Module.Type(declared.contents)}]
   }
   /* | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) =>
     let declared = addItem(~contents=Module.Ident(path), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}, ...items] */
   | Sig_module({stamp, name}, {md_type, md_attributes, md_loc}, _) =>
     let declared = addItem(~extent=md_loc, ~contents=forModuleType(env, md_type), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
-    [{...declared, contents: Module.Module(declared.contents)}, ...items]
-  | _ => items
+    [{...declared, contents: Module.Module(declared.contents)}]
+  | _ => []
+  }
+}
+
+and forSignatureType = (env, signature) => {
+  open Types;
+  let exported = Module.initExported();
+  let topLevel = List.fold_right((item, items) => {
+    forSignatureTypeItem(env, exported, item) @ items
   }, signature, []) |> List.rev;
 
   {Module.exported, topLevel}
@@ -199,6 +206,26 @@ let rec forItem = (
   let declared = addItem(~contents, ~name, ~extent=mb_loc, ~stamp, ~env, mb_attributes, exported.modules, env.stamps.modules);
   [{...declared, contents: Module.Module(declared.contents)}]
 }
+| Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
+  /* forSignatureType
+  /* let (doc, contents) = forStructure(~env, structure.str_items); */
+
+  let topLevel = List.fold_right((item, results) => {
+    forItem(~env, ~exported, item) @ results
+  }, items, []);
+
+  switch incl_mod.mod_desc {
+  | Tmod_ident(path, _) => forSignatureType(processDoc, incl_type)
+  | _ => forSignatureType(processDoc, incl_type)
+  }; */
+
+  let topLevel = List.fold_right((item, items) => {
+    forSignatureTypeItem(env, exported, item) @ items
+  }, incl_type, []) |> List.rev;
+
+  topLevel
+  /* Module.Structure(contents) */
+
 | Tstr_primitive({val_id: {stamp}, val_name: name, val_loc, val_attributes, val_val: {val_type}}) => {
   let declared = addItem(~extent=val_loc, ~contents={Value.recursive: false, typ: val_type}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
   [{...declared, contents: Module.Value(declared.contents)}]
