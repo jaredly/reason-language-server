@@ -71,6 +71,9 @@ let rangeOfInts = (l0, c0, l1, c1) =>
 let locationContains = ({Location.loc_start, loc_end}, pos) =>
   tupleOfLexing(loc_start) <= pos && tupleOfLexing(loc_end) >= pos;
 
+let locationIsBefore = ({Location.loc_start}, pos) =>
+  tupleOfLexing(loc_start) <= pos;
+
 let symbolKind = (kind) =>
   switch kind {
   | `File => 1

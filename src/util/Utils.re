@@ -121,6 +121,8 @@ let itemsExtent = items => {
   items == [] ? Location.none : {
     let first = List.hd(items);
     let last = List.nth(items, List.length(items) - 1);
+    let (first, last) = first.str_loc.loc_start.pos_cnum <
+      last.str_loc.loc_start.pos_cnum ? (first, last) : (last, first);
 
     {
       Location.loc_ghost: true,

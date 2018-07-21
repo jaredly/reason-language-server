@@ -43,15 +43,11 @@ let m = {name: 2, nose: 1.4};
 m.n<*>
 -->
 name
-- path: /path/to/Test.re
-> name: int
-> 
-> type name = {name: int, nose: float}
+- path: file:///path/to/Test.re
+> int
 nose
-- path: /path/to/Test.re
-> nose: float
-> 
-> type nose = {name: int, nose: float}
+- path: file:///path/to/Test.re
+> float
 
 === Just dot
 type t = {name: int, party: float};

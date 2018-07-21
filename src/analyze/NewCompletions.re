@@ -310,12 +310,14 @@ let get = (
           [];
         }
       | `Attribute(target, suffix) => {
-        Log.log("ok attribute");
+        /* Log.log("ok attribute"); */
 
         switch (target) {
           | [] => None
           | [first, ...rest] => {
+            /* Log.log("Looking for " ++ first); */
             let%opt declared = Query.findInScope(pos, env.file.stamps.values);
+            /* Log.log("Found it!"); */
             switch (ProcessExtra.dig(declared.contents.typ).desc) {
               | Tconstr(path, _args, _memo) => {
                 let%opt typ = switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {

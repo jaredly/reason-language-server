@@ -76,7 +76,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         pos,
         parts,
       );
-      Log.log("Got");
+      Log.log("Got items: " ++ string_of_int(List.length(items)));
 
       items |. Belt.List.map(((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
