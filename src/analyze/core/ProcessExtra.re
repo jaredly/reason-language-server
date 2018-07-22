@@ -426,6 +426,11 @@ let forItems = (~file, items, parts) => {
   let extra = forFile(~file);
 
   let extent = Utils.itemsExtent(items);
+  let extent = {...extent, loc_end: {
+    ...extent.loc_end,
+    pos_lnum: extent.loc_end.pos_lnum + 1000000,
+    pos_cnum: extent.loc_end.pos_cnum + 100000000,
+  }};
 
   /* TODO look through parts and extend the extent */
 

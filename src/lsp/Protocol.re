@@ -74,6 +74,12 @@ let locationContains = ({Location.loc_start, loc_end}, pos) =>
 let locationIsBefore = ({Location.loc_start}, pos) =>
   tupleOfLexing(loc_start) <= pos;
 
+/** Check if pos is within the location, but be fuzzy about when the location ends.
+If it's within 5 lines, go with it.
+ */
+let locationContainsFuzzy = ({Location.loc_start, loc_end}, (l, c)) =>
+  tupleOfLexing(loc_start) <= (l, c) && tupleOfLexing(loc_end) >= (l - 5, c);
+
 let symbolKind = (kind) =>
   switch kind {
   | `File => 1

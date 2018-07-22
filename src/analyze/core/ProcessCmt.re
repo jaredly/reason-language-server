@@ -258,7 +258,7 @@ let rec forItem = (
 and forModule = (env, mod_desc, moduleName) => switch mod_desc {
   | Tmod_ident(path, lident) => Module.Ident(path)
   | Tmod_structure(structure) => {
-    let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
+    let env = {...env, scope: Utils.itemsExtent(structure.str_items), modulePath: ExportedModule(moduleName, env.modulePath)};
     let (doc, contents) = forStructure(~env, structure.str_items);
     Module.Structure(contents)
   }
@@ -309,8 +309,14 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
     | Partial_structure_item(str) => Some([str])
     | _ => None
   }) |> List.concat;
+  let extent = Utils.itemsExtent(items);
+  let extent = {...extent, loc_end: {
+    ...extent.loc_end,
+    pos_lnum: extent.loc_end.pos_lnum + 1000000,
+    pos_cnum: extent.loc_end.pos_cnum + 100000000,
+  }};
   let env = {
-    scope: Utils.itemsExtent(items),
+    scope: extent,
     stamps: initStamps(),
     processDoc,
     modulePath: File(uri)

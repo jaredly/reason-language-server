@@ -16,11 +16,11 @@ let hashFind = (tbl, key) => switch (Hashtbl.find(tbl, key)) {
 };
 
 let findInScope = (pos, name, stamps) => {
-  /* Log.log("Find " ++ name ++ " with " ++ string_of_int(Hashtbl.length(stamps)) ++ " stamps"); */
+  Log.log("Find " ++ name ++ " with " ++ string_of_int(Hashtbl.length(stamps)) ++ " stamps");
   Hashtbl.fold((_stamp, declared, result) => {
     if (declared.name.txt == name) {
       let (l, c) = pos;
-      /* Log.log("a stamp " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ string_of_int(l) ++ "," ++ string_of_int(c)); */
+      Log.log("a stamp " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ string_of_int(l) ++ "," ++ string_of_int(c));
       if (Protocol.locationIsBefore(declared.scopeLoc, pos)) {
         switch result {
           | None => Some(declared)
@@ -35,7 +35,7 @@ let findInScope = (pos, name, stamps) => {
         result
       }
     } else {
-      /* Log.log("wrong name " ++ declared.name.txt); */
+      Log.log("wrong name " ++ declared.name.txt);
       result
     }
   }, stamps, None)
@@ -114,7 +114,9 @@ let resolveFromStamps = (~env, ~path, ~getModule, ~pos) => {
   switch path {
     | Tip(name) => Some((env, name))
     | Nested(name, inner) =>
+    Log.log("Finding from stamps " ++ name);
       let%opt declared = findInScope(pos, name, env.file.stamps.modules);
+      Log.log("found it");
       let%opt res = findInModule(~env, declared.contents, inner);
       switch res {
         | `Local((env, name)) => Some((env, name))

@@ -49,11 +49,17 @@ let resolveOpens = (~env, opens, ~getModule) => {
   }, [], opens);
 };
 
-let completionForDeclareds = (declareds, prefix, transformContents) => {
+let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
+  Log.log("complete for declares " ++ prefix);
   Hashtbl.fold((_stamp, declared, results) => {
-    if (Utils.startsWith(declared.name.txt, prefix)) {
+    if (
+      Utils.startsWith(declared.name.txt, prefix)
+      && Protocol.locationContainsFuzzy(declared.scopeLoc, pos)) {
       [{...declared, contents: transformContents(declared.contents)}, ...results]
     } else {
+      let (l, c) = pos;
+      let m = Printf.sprintf("%d, %d", l, c);
+      Log.log("Nope doesn't count " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ m);
       results
     }
   }, declareds, [])
@@ -148,7 +154,6 @@ let determineCompletion = items => {
    */
 let getEnvWithOpens = (~pos, ~env: Query.queryEnv, ~getModule, ~opens: list(Query.queryEnv), path) => {
   /* let%opt declared = ; */
-  /* TODO do "resolve from stamps" */
   /* for ppx, I think I'd like a "if this is nonnull, bail w/ it".
      So the opposite of let%opt - let%bail or something */
 /* Query.resolvePath(~env, ~path, ~getModule) */
@@ -222,10 +227,38 @@ let detail = (name, contents) => switch contents {
     |> PrintType.prettyString)
 };
 
-let valueCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
+let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => {
   let results = [];
   let results = if (suffix == "" || isCapitalized(suffix)) {
-    results @ completionForExporteds(env.exported.modules, env.file.stamps.modules, suffix, m => Module(m))
+    results @
+    completionForDeclareds(~pos, env.file.stamps.modules, suffix, m => Module(m))
+    @ (
+      /* TODO declared thingsz */
+      completionForConstructors(env.exported.types, env.file.stamps.types, suffix)
+      |. Belt.List.map(((c, t)) => {...emptyDeclared(c.name.txt), contents: Constructor(c, t)})
+    )
+  } else {
+    results
+  };
+
+  let results = if (suffix == "" || !isCapitalized(suffix)) {
+    results @ completionForDeclareds(~pos, env.file.stamps.values, suffix, v => Value(v)) @
+    completionForDeclareds(~pos, env.file.stamps.types, suffix, t => Type(t))
+  } else {
+    results
+  };
+
+  /* Log.log("Getting value completions " ++ env.file.uri);
+  Log.log(String.concat(", ", results |. Belt.List.map(x => x.name.txt))); */
+
+  results |. Belt.List.map(x => (env.file.uri, x));
+};
+
+let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
+  let results = [];
+  let results = if (suffix == "" || isCapitalized(suffix)) {
+    results @
+    completionForExporteds(env.exported.modules, env.file.stamps.modules, suffix, m => Module(m))
     @ (
       /* TODO declared thingsz */
       completionForConstructors(env.exported.types, env.file.stamps.types, suffix)
@@ -242,8 +275,8 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
     results
   };
 
-  Log.log("Getting value completions " ++ env.file.uri);
-  Log.log(String.concat(", ", results |. Belt.List.map(x => x.name.txt)));
+  /* Log.log("Getting value completions " ++ env.file.uri);
+  Log.log(String.concat(", ", results |. Belt.List.map(x => x.name.txt))); */
 
   results |. Belt.List.map(x => (env.file.uri, x));
 };
@@ -295,14 +328,14 @@ let get = (
 
   switch tokenParts {
     | [] => []
-    | [""] =>
+    /* | [""] =>
         valueCompletions(~env, ~getModule, ~suffix="")
         @ List.concat(Belt.List.map(opens, env => valueCompletions(~env, ~getModule, ~suffix="")))
-        @ Belt.List.map(allModules, name => ("um wait for uri", {...emptyDeclared(name), contents: FileModule(name)}))
+        @ Belt.List.map(allModules, name => ("um wait for uri", {...emptyDeclared(name), contents: FileModule(name)})) */
     | [suffix] =>
-      let one = valueCompletions(~env, ~getModule, ~suffix) ;
+      let one = localValueCompletions(~pos, ~env, ~getModule, suffix);
       let two = List.concat(
-          Belt.List.map(opens, env => valueCompletions(~env, ~getModule, ~suffix))
+          Belt.List.map(opens, env => valueCompletions(~env, ~getModule, suffix))
         );
       let three = Belt.List.keepMap(allModules, name => Utils.startsWith(name, suffix) ? Some(("wait for uri", {...emptyDeclared(name), contents: FileModule(name)})) : None);
       one @ two @ three
@@ -311,7 +344,6 @@ let get = (
       let env = Query.fileEnv(full.file);
 
       /* Log.log(SharedTypes.showExtra(full.extra)); */
-      /* Belt. */
 
       Log.log("multiepl");
       switch (determineCompletion(multiple)) {
@@ -319,7 +351,7 @@ let get = (
           Log.log("normal " ++ pathToString(path));
           let%opt_wrap (env, suffix) = getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
           Log.log("Got the env");
-          valueCompletions(~env, ~getModule, ~suffix)
+          valueCompletions(~env, ~getModule, suffix)
         } |? {
           [];
         }

@@ -8,6 +8,32 @@ awesome
 - path: file:///path/to/Test.re
 > let awesome: int
 
+=== Basic expr
+{
+  let awesome = 10;
+  let x = awe<*>
+  let other = 30;
+}
+-->
+awesome
+- path: file:///path/to/Test.re
+> let awesome: int
+
+=== * Basic expr
+let awesome = 10;
+let c = 3;
+let b = {
+  if (true) {
+    20
+  } else {
+    awe<*>
+  }
+};
+-->
+awesome
+- path: file:///path/to/Test.re
+> let awesome: int
+
 === In Module
 module M = {
   let awesome = 10;
@@ -175,7 +201,12 @@ Lib
 - path: file:///path/to/Test.re
 > module
 
-=== * Functor arg
+=== Functor arg
 module M = (N: {let x: int}) => {
-  let v = 20 + N.<*>
+  let v = 20;
+  N.<*>x;
 };
+-->
+x
+- path: file:///path/to/Test.re
+> let x: int

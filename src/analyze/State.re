@@ -393,7 +393,17 @@ let getCompilationResult = (uri, state, ~package) => {
 
 let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefinitions, uri)) {
 | exception Not_found => None
-| data => Some(data)
+| data => 
+  Some(data)
+};
+
+/* If there's a previous "good" version, use that, otherwise use the current version */
+let getBestDefinitions = (uri, state, ~package) => {
+  if (Hashtbl.mem(state.lastDefinitions, uri)) {
+    Hashtbl.find(state.lastDefinitions, uri)
+  } else {
+    getCompilationResult(uri, state, ~package) |> AsYouType.getResult
+  }
 };
 
 let getDefinitionData = (uri, state, ~package) => AsYouType.getResult(getCompilationResult(uri, state, ~package));
