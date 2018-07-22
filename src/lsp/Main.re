@@ -102,6 +102,7 @@ let getInitialState = (params) => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       formatWidth: None,
+      crossFileAsYouType: true,
       perValueCodelens: false,
       opensCodelens: true,
       dependenciesCodelens: true,
@@ -222,7 +223,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
     let formatWidth = (settings |?> Json.get("format_width") |?> Json.number) |?>> int_of_float;
-    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, formatWidth, dependenciesCodelens}})
+    let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? true;
+    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, formatWidth, dependenciesCodelens, crossFileAsYouType}})
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;

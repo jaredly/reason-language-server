@@ -372,6 +372,9 @@ let getCompilationResult = (uri, state, ~package) => {
       Files.readFileExn(path)
     };
     let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
+    let includes = state.settings.crossFileAsYouType
+    ? [package.tmpPath, ...package.includeDirectories]
+    : package.includeDirectories;
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
@@ -379,7 +382,7 @@ let getCompilationResult = (uri, state, ~package) => {
       ~cacheLocation=package.tmpPath,
       package.compilerPath,
       package.refmtPath,
-      package.includeDirectories,
+      includes,
       package.compilationFlags,
     );
     Hashtbl.replace(state.compiledDocuments, uri, result);
@@ -392,8 +395,26 @@ let getCompilationResult = (uri, state, ~package) => {
       }
     }
     | Success(_, full) => {
-        Log.log("<< Replacing lastDefinitions for " ++ uri);
-      Hashtbl.replace(state.lastDefinitions, uri, full)
+      Log.log("<< Replacing lastDefinitions for " ++ uri);
+
+      Hashtbl.replace(state.lastDefinitions, uri, full);
+
+      if (state.settings.crossFileAsYouType) {
+        /** Check dependencies */
+        package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+          let otherUri = Utils.toUri(src);
+          switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
+            | exception Not_found => ()
+            | TypeError(_, {extra}) | Success(_, {extra}) => {
+              if (Hashtbl.mem(extra.externalReferences, moduleName)) {
+                Hashtbl.remove(state.compiledDocuments, otherUri);
+                Hashtbl.replace(state.documentTimers, otherUri, Unix.gettimeofday() +. 0.01);
+              }
+            }
+            | _ => ()
+          }
+        });
+      }
     }
     };
     result
@@ -428,14 +449,31 @@ let docsForModule = (modname, state, ~package) =>
       None;
     };
 
-let fileForModule = (state,  ~package, modname) => {
-  let%opt (file, _) = docsForModule(modname, state, ~package);
-  Some(file)
-};
-
 let fileForUri = (state,  ~package, uri) => {
   let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
   Some((moduleData.file, moduleData.extra))
+};
+
+let fileForModule = (state,  ~package, modname) => {
+  let file = state.settings.crossFileAsYouType ? {
+    Log.log("✅ Gilr got mofilr " ++ modname);
+    Log.log(package.localModules |> List.map(fst) |> String.concat(" "));
+    let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==));
+    Log.log("Found it " ++ src);
+    let uri = Utils.toUri(src);
+    if (Hashtbl.mem(state.documentText, uri)) {
+      let%opt (file, _) = fileForUri(state, ~package, uri);
+      Some(file)
+    } else {
+      None
+    }
+  } : None;
+  switch file {
+    | Some(f) => file
+    | None =>
+      let%opt (file, _) = docsForModule(modname, state, ~package);
+      Some(file)
+  }
 };
 
 let extraForModule = (state, ~package, modname) => {

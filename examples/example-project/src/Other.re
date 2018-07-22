@@ -7,11 +7,11 @@ let something = 10;
 
 type person = {name: string, age: int};
 
-type animals = Whats(int) | People(string) | Mouse;
+type animals = Things(int) | People(string) | Mouse;
 
-let l = More.m;
+let inner = More.outer;
 
-let m = Whats(1);
+let m = Things(1);
 
 /* working on things. */
 

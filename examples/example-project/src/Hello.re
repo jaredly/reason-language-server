@@ -2,18 +2,24 @@ let someLongName = 10;
 
 let otherLongName = "string";
 
+
 let r = Other.something;
 
-let l = More.m;
+let l = More.outer + More.n + Other.inner;
 
+let n = More.n;
+
+More.party;
 string_of_bool;
+
+let m = {More.a: 2, b: 32.};
 
 module Something = {
   open Other;
 
   let m = {name: "Me", age: 0};
-  let animal = Whats(10);
-  let other = Whats(2);
+  let animal = Things(10);
+  let other = Things(2);
   let me: animals = People("Hie");
   let x = something + 10;
   let r = m.name;
@@ -29,7 +35,7 @@ open Something;
 let y = x + 10;
 
 switch me {
-| Whats(n) => ()
+| Things(n) => ()
 | _ => ()
 };
 

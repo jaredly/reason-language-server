@@ -38,6 +38,11 @@
 					"type": "number",
 					"description": "Format width (default=80)"
 				},
+				"reason_language_server.cross_file_as_you_type": {
+					"type": "boolean",
+					"default": true,
+					"description": "As you edit a file, also recompile dependent files. This removes the need to have bsb always running."
+				},
 				"reason_language_server.per_value_codelens": {
 					"type": "boolean",
 					"default": false,
