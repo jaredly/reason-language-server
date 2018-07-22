@@ -1,3 +1,63 @@
+/*
+  steal from OCaml stdlib
+  https://github.com/ocaml/ocaml/blob/7c9c210884e1b46f21af5bb4dfab995bb3336cf7/stdlib/string.ml#L205-L214 
+*/
+let split_on_char = (sep, s) => {
+  open String;
+  let r = ref([]);
+  let j = ref(length(s));
+  for (i in length(s) - 1 downto 0) {
+    if (unsafe_get(s, i) == sep) {
+      r := [sub(s, i + 1, j^ - i - 1), ...r^];
+      j := i;
+    };
+  };
+  [sub(s, 0, j^), ...r^];
+};
+
+let getFullLineOfPos = (pos, s) => {
+  let left =
+    switch (String.rindex_from(s, pos, '\n') + 1) {
+    | pos => pos
+    | exception Not_found => 0
+    };
+  let right =
+    switch (String.index_from(s, pos, '\n') - 1) {
+    | pos => pos
+    | exception Not_found => String.length(s) - 1
+    };
+  String.sub(s, left, right - left);
+};
+
+let repeat = (length, s) => {
+  let result = ref("");
+  for (i in 1 to length) {
+    result:= result^ ++ s
+  };
+  result^
+};
+
+let countLeading = (value, s) => {
+  let length = String.length(s);
+  let rec loop = (count, i) =>
+    if (i < length && s.[i] == value) {
+      loop(count + 1, i + 1);
+    } else {
+      count;
+    };
+  loop(0, 0);
+};
+
+let countTrailing = (value, s) => {
+  let length = String.length(s);
+  let rec loop = (count, i) =>
+    if (i >= 0 && s.[i] == value) {
+      loop(count + 1, i - 1);
+    } else {
+      count;
+    };
+  loop(0, length - 1);
+};
 /**
  * `startsWith(string, prefix)`
  * true if the string starts with the prefix

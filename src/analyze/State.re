@@ -35,6 +35,11 @@ let newBsPackage = (rootPath) => {
   let%try buildSystem = BuildSystem.detect(rootPath, config);
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
+  let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
+  let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
+  let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
+  let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
+  let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
   let namespace = FindFiles.getNamespace(config);
@@ -44,7 +49,7 @@ let newBsPackage = (rootPath) => {
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
   let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
-  let (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
+  
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
@@ -55,13 +60,13 @@ let newBsPackage = (rootPath) => {
     pathsForModule,
     buildSystem,
     opens: [],
-    tmpPath: BuildSystem.hiddenLocation(rootPath, buildSystem),
+    tmpPath,
     compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
     includeDirectories: 
-      BuildSystem.getStdlib(rootPath, buildSystem) @ 
+      stdLibDirectories @ 
       dependencyDirectories @ localCompiledDirs,
-    compilerPath: BuildSystem.getCompiler(rootPath, buildSystem),
-    refmtPath: BuildSystem.getRefmt(rootPath, buildSystem),
+    compilerPath,
+    refmtPath,
   };
 };
 
@@ -153,7 +158,7 @@ let newJbuilderPackage = (rootPath) => {
 
   let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "" && s.[0] != '.'))];
 
-  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
   let dependencyModules = dependencyDirectories
@@ -174,6 +179,8 @@ let newJbuilderPackage = (rootPath) => {
 
   libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
+  let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
+  let%try refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem);
   Ok({
     basePath: rootPath,
     localModules,
@@ -185,8 +192,8 @@ let newJbuilderPackage = (rootPath) => {
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
-    compilerPath: BuildSystem.getCompiler(projectRoot, buildSystem),
-    refmtPath: BuildSystem.getRefmt(projectRoot, buildSystem),
+    compilerPath,
+    refmtPath,
   });
 };
 
@@ -504,3 +511,93 @@ let topLocation = uri => {
     pos_bol: 1,
   },
 };
+
+/* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc)))
+/**
+ * returns `(Docs.item, location, docstring, uri)`
+ */
+let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
+  switch defn {
+  | `Local(_, loc, item, docs, _) => {
+    Some((item |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri)))
+  }
+  | `Global(top, children, suffix) =>
+    {
+      /* Log.log("It's global folx: " ++ top); */
+      switch (
+        maybeFound(List.assoc(top), package.localModules)
+        |?> (
+          ((cmt, src)) => {
+            let uri = Utils.toUri(src);
+            maybeFound(Hashtbl.find(state.compiledDocuments), uri)
+            |?> AsYouType.getResult
+            |?>> ((defn) => (defn, uri))
+          }
+        )
+      ) {
+      | Some(((cmtInfos, data), uri)) =>
+        Log.log("Resolving definition, in local modules " ++ uri);
+        if (children == []) {
+          Some((Docs.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
+        } else {
+          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, defn, docs)) => Some((defn |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri))))
+        }
+      | None =>
+        /* Log.log("Not in the localModules"); */
+        maybeFound(Hashtbl.find(package.pathsForModule), top)
+        |?> (
+          ((cmt, src)) => {
+            /* Log.log("But in the paths For module: " ++ cmt); */
+            let uri = src |?>> Utils.toUri;
+            if (children == []) {
+              Log.log("No children");
+              Some((Docs.Module([]), uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
+            } else {
+              let%opt (_, contents) = docsForCmt(cmt, src, state);
+              let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
+              let%opt {name, loc, docstring, kind} = Docs.find(last, contents);
+              Some((kind, Some(loc), docstring, srcPath |?>> Utils.toUri))
+            }
+          }
+        )
+      };
+    }
+  };
+
+let getResolvedDefinition = (uri, defn, data, state, ~package) => {
+  Definition.findDefinition(defn, data, resolveDefinition(uri, state, ~package, data))
+};
+
+let definitionForPos = (uri, pos, data, state, ~package) =>
+  Definition.locationAtPos(pos, data)
+  |?> (((_, _, defn)) => {
+    /* Log.log("Figured out the location"); */
+    getResolvedDefinition(uri, defn, data, state, ~package)
+  });
+
+let referencesForPos = (uri, pos, data, state, ~package) => {
+  /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
+  let%opt stamp = Definition.stampAtPos(pos, data);
+  let externals = {
+    let%opt_wrap (exportedName, suffixName) = Definition.isStampExported(stamp, data);
+    let thisModName = FindFiles.getName(uri);
+    optMap(((modname, (cmt, src))) => {
+      if (modname == thisModName) {
+        None
+      } else {
+        let%opt data = getDefinitionData(Utils.toUri(src), state, ~package);
+        let%opt uses = Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName);
+        let realUses = Utils.filterMap(((path, loc, suffix)) => {
+          if (path == [exportedName] && suffix == suffixName) {
+            Some((`Read, Utils.endOfLocation(loc, String.length(suffixName |? exportedName))))
+          } else {
+            None
+          }
+        }, uses);
+        realUses == [] ? None : Some((Utils.toUri(src), realUses))
+      }
+    }, package.localModules)
+  } |? [];
+  let%opt_wrap positions = Definition.highlightsForStamp(stamp, data);
+  [(uri, positions), ...externals]
+}; */

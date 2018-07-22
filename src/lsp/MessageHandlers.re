@@ -22,12 +22,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     open Infix;
     {
-      let%opt (uri, loc) = References.definitionForPos(
-        ~file=data.file,
-        ~extra=data.extra,
-        ~getModule=State.fileForModule(state, ~package),
-        position
-      );
+      let%opt (uri, loc) =
+        References.definitionForPos(
+          ~file=data.file,
+          ~extra=data.extra,
+          ~getModule=State.fileForModule(state, ~package),
+          position,
+        );
       Some(Ok((state, Json.Object([
         ("uri", Json.String(uri)),
         ("range", Protocol.rangeOfLoc(loc)),
@@ -357,29 +358,93 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       ]))))
     } |? Ok((state, Json.Null));
   }),
-
-  ("textDocument/rangeFormatting", (state, params) => {
+  
+  ("textDocument/rangeFormatting", fun (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => State.getPackage(uri, state)
-    |?> package => RJson.get("range", params) |?> Protocol.rgetRange
-    |?> ((start, end_)) => {
-      let text = State.getContents(uri, state);
-      open Infix;
-      (PartialParser.positionToOffset(text, start)
-      |?> startPos => PartialParser.positionToOffset(text, end_)
-      |?>> endPos => {
-        let substring = String.sub(text, startPos, endPos - startPos);
-        open InfixResult;
-        AsYouType.format(~formatWidth=state.settings.formatWidth, substring, package.refmtPath) |?>> text => {
-          open Rpc.J;
-          (state, l([o([
+    let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
+    let%try package = State.getPackage(uri, state);
+    let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
+    
+    let text = State.getContents(uri, state);
+    open Infix;
+    let maybeResult = {
+      let%opt startPos = PartialParser.positionToOffset(text, start);
+      let%opt_wrap endPos = PartialParser.positionToOffset(text, end_);
+
+      let substring = String.sub(text, startPos, endPos - startPos);
+
+      open Utils;
+      let trailingNewlines = substring |> countTrailing('\n');
+      let (leadingNewlines, charsToFirstLines) = {
+        let splitted = substring |> split_on_char('\n');
+        let l = List.length(splitted);
+        let rec loop = (i, leadingLines, skipChars) => {
+          let line = List.nth(splitted, i);
+          switch (line |> String.trim |> String.length) {
+          | 0 => loop(i + 1, leadingLines + 1, skipChars + (line |> String.length))
+          | _ => (leadingLines, skipChars + 1)
+          };
+        };
+        loop(0, 0, 0);
+      };
+
+      /* Strip all leading new lines from substring */
+      let (startPos, substring) =
+        if (leadingNewlines > 0) {
+          (
+            startPos + leadingNewlines,
+            String.sub(
+              substring,
+              charsToFirstLines,
+              String.length(substring) - charsToFirstLines,
+            ),
+          );
+        } else {
+          (startPos, substring);
+        };
+
+      let indent = getFullLineOfPos(startPos, text) |> countLeading(' ');
+      let cursorToFirstLineSpaces = substring |> countLeading(' ');
+
+      let appendIndent = (~firstLineSpaces=?, indent, s) => {
+        let indentString = repeat(indent, " ");
+        if (indent == 0) {
+          s;
+        } else {
+          split_on_char('\n', s)
+          |> List.mapi((index, line) =>
+               switch (index, firstLineSpaces, String.length(line)) {
+               | (_, _, 0) => line
+               | (0, Some(spaces), _) => repeat(spaces, " ") ++ line
+               | _ => indentString ++ line
+               }
+             )
+          |> String.concat("\n");
+        };
+      };
+      let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, substring, package.refmtPath);
+      Rpc.J.(
+        state,
+        l([
+          o([
             ("range", Infix.(|!)(Json.get("range", params), "what")),
-            ("newText", s(text))
-          ])]))
-        }
-      }) |? Error("Invalid position")
-    }
+            (
+              "newText",
+              s(
+                repeat(leadingNewlines, "\n")
+                ++ appendIndent(
+                     ~firstLineSpaces=cursorToFirstLineSpaces,
+                     indent,
+                     text,
+                   )
+                ++ repeat(trailingNewlines, "\n"),
+              ),
+            ),
+          ]),
+        ]),
+      );
+    };
+    maybeResult |? Error("Invalid position");
   }),
 
   ("textDocument/documentSymbol", (state, params) => {
@@ -436,4 +501,3 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
   })
 ];
-

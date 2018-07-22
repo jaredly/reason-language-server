@@ -20,7 +20,36 @@ let getLine = (cmd, ~pwd) => {
 };
 
 open Infix;
+
+let getBsPlatformDir = rootPath => {
+  let result =
+    ModuleResolution.resolveNodeModulePath(
+      ~startPath=rootPath,
+      "bs-platform",
+    );
+  switch (result) {
+  | Some(path) =>
+    Log.log("Found bs-platform at " ++ path);
+    Result.Ok(path);
+  | None =>
+    let message = "bs-platform could not be found";
+    Log.log(message);
+    Result.Error(message);
+  };
+};
+
+/* One dir up, then into .bin.
+    Is .bin always in the modules directory?
+   */
+let getBsbExecutable = rootPath =>
+  Result.InfixResult.(
+    getBsPlatformDir(rootPath)
+    |?>> Filename.dirname
+    |?>> (path => path /+ ".bin" /+ "bsb")
+  );
+
 let detect = (rootPath, bsconfig) => {
+  let%try bsbExecutable = getBsbExecutable(rootPath);
   let%try_wrap bsbVersion = {
     let (output, success) = Commands.execSync(rootPath /+ "node_modules/.bin/bsb -version");
     success ? switch output {
@@ -46,33 +75,34 @@ let getCompiledBase = (root, buildSystem) =>
     },
   );
 
-let getStdlib = (base, buildSystem) =>
+let getStdlib = (base, buildSystem) => {
+  let%try_wrap bsPlatformDir = getBsPlatformDir(base);
   switch (buildSystem) {
   | BsbNative(_, Js)
-  | Bsb(_) => [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml"]
+  | Bsb(_) => [bsPlatformDir /+ "lib" /+ "ocaml"]
   | BsbNative("3.2.0", Native) =>
-    [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "native",
-    base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
+    [bsPlatformDir /+ "lib" /+ "ocaml" /+ "native",
+    bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
   | BsbNative("3.2.0", Bytecode) =>
-    [base /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "ocaml" /+ "bytecode",
-    base /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
+    [bsPlatformDir /+ "lib" /+ "ocaml" /+ "bytecode",
+    bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
   | BsbNative(_, Bytecode | Native) =>
-    [base
-    /+ "node_modules"
-    /+ "bs-platform"
+    [bsPlatformDir
     /+ "vendor"
     /+ "ocaml"
     /+ "lib"
     /+ "ocaml"]
   | Dune => failwith("Don't know how to find the dune stdlib")
   };
+};
 
 let getCompiler = (rootPath, buildSystem) => {
+  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
     | BsbNative(_, Js)
-    | Bsb(_) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "bsc.exe"
-    | BsbNative(_, Native) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
-    | BsbNative(_, Bytecode) => rootPath /+ "node_modules" /+ "bs-platform" /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
+    | Bsb(_) => bsPlatformDir /+ "lib" /+ "bsc.exe"
+    | BsbNative(_, Native) => bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+    | BsbNative(_, Bytecode) => bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
     | Dune => {
       let%try_force ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
       ocamlopt ++ " -c"
@@ -81,10 +111,11 @@ let getCompiler = (rootPath, buildSystem) => {
 };
 
 let getRefmt = (rootPath, buildSystem) => {
+  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
-    | BsbNative("3.2.0", _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
-    | Bsb(version) when version > "2.2.0" => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt.exe"
-    | Bsb(_) | BsbNative(_, _) => rootPath /+ "node_modules" /+ "bs-platform" /+ "lib" /+ "refmt3.exe"
+    | BsbNative("3.2.0", _) => bsPlatformDir /+ "lib" /+ "refmt.exe"
+    | Bsb(version) when version > "2.2.0" => bsPlatformDir /+ "lib" /+ "refmt.exe"
+    | Bsb(_) | BsbNative(_, _) => bsPlatformDir /+ "lib" /+ "refmt3.exe"
     | Dune => {
       let%try_force refmt = getLine("esy which refmt", ~pwd=rootPath);
       refmt
@@ -93,9 +124,10 @@ let getRefmt = (rootPath, buildSystem) => {
 };
 
 let hiddenLocation = (rootPath, buildSystem) => {
+  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
     | Bsb(_)
-    | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
+    | BsbNative(_, _) => Filename.dirname(bsPlatformDir) /+ ".lsp"
     | Dune => rootPath /+ "_build" /+ ".lsp"
   };
 };

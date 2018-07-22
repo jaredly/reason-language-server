@@ -59,7 +59,6 @@ let capabilities =
        * but it seems I need to instantiate the object from javascript
        */
       /* ("executeCommandProvider", o([
-
       ])) */
       /* ("executeCommandOptions", t), */
       ("documentFormattingProvider", t),

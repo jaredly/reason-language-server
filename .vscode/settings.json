@@ -1,6 +1,7 @@
 {
+  "editor.formatOnSave": false,
   "git.ignoreLimitWarning": true,
-  "git.enabled": false,
+  "git.enabled": true,
   "editor.codeLens": true,
   "reason_language_server.location": "./lib/bs/native/bin.native",
   // "reason_language_server.location": "./lib/bs/native/bin.native.exe",
