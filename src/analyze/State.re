@@ -392,8 +392,24 @@ let getCompilationResult = (uri, state, ~package) => {
       }
     }
     | Success(_, full) => {
-        Log.log("<< Replacing lastDefinitions for " ++ uri);
+      Log.log("<< Replacing lastDefinitions for " ++ uri);
+
       Hashtbl.replace(state.lastDefinitions, uri, full)
+
+      /** Check dependencies */
+      package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+        let otherUri = Utils.toUri(src);
+        switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
+          | exception Not_found => ()
+          | TypeError(_, {extra}) | Success(_, {extra}) => {
+            if (Hashtbl.mem(extra.externalReferences, moduleName)) {
+              Hashtbl.remove(state.compiledDocuments, otherUri);
+              Hashtbl.replace(state.documentTimers, otherUri, Unix.gettimeofday() +. 0.01);
+            }
+          }
+          | _ => ()
+        }
+      });
     }
     };
     result

@@ -85,13 +85,12 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 };
 
 let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
-  open InfixResult;
   let%try (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
-  /* let includes = [cacheLocation, ...includes]; */
+  /* Cross-file as you type */
+  let includes = [cacheLocation, ...includes];
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      /* let message = Infix.(syntaxError |? lines); */
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
       switch (syntaxError) {
@@ -101,7 +100,6 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      /* let%try_wrap moduleData = GetDefinition.process(~uri, cmt); */
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
       Success(lines, {file, extra})
