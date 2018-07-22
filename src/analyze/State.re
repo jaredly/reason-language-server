@@ -372,6 +372,9 @@ let getCompilationResult = (uri, state, ~package) => {
       Files.readFileExn(path)
     };
     let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
+    let includes = state.settings.crossFileAsYouType
+    ? [package.tmpPath, ...package.includeDirectories]
+    : package.includeDirectories;
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
@@ -379,7 +382,7 @@ let getCompilationResult = (uri, state, ~package) => {
       ~cacheLocation=package.tmpPath,
       package.compilerPath,
       package.refmtPath,
-      package.includeDirectories,
+      includes,
       package.compilationFlags,
     );
     Hashtbl.replace(state.compiledDocuments, uri, result);
@@ -394,22 +397,24 @@ let getCompilationResult = (uri, state, ~package) => {
     | Success(_, full) => {
       Log.log("<< Replacing lastDefinitions for " ++ uri);
 
-      Hashtbl.replace(state.lastDefinitions, uri, full)
+      Hashtbl.replace(state.lastDefinitions, uri, full);
 
-      /** Check dependencies */
-      package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
-        let otherUri = Utils.toUri(src);
-        switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
-          | exception Not_found => ()
-          | TypeError(_, {extra}) | Success(_, {extra}) => {
-            if (Hashtbl.mem(extra.externalReferences, moduleName)) {
-              Hashtbl.remove(state.compiledDocuments, otherUri);
-              Hashtbl.replace(state.documentTimers, otherUri, Unix.gettimeofday() +. 0.01);
+      if (state.settings.crossFileAsYouType) {
+        /** Check dependencies */
+        package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+          let otherUri = Utils.toUri(src);
+          switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
+            | exception Not_found => ()
+            | TypeError(_, {extra}) | Success(_, {extra}) => {
+              if (Hashtbl.mem(extra.externalReferences, moduleName)) {
+                Hashtbl.remove(state.compiledDocuments, otherUri);
+                Hashtbl.replace(state.documentTimers, otherUri, Unix.gettimeofday() +. 0.01);
+              }
             }
+            | _ => ()
           }
-          | _ => ()
-        }
-      });
+        });
+      }
     }
     };
     result

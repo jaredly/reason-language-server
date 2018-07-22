@@ -177,10 +177,10 @@ type completable = Nothing | Labeled(string) | Lident(string);
 
 let findCompletable = (text, offset) => {
   Log.log("Finding completable");
-  if (hasUnterminatedCommentOrString(text, offset)) {
+  /* if (hasUnterminatedCommentOrString(text, offset)) {
     Log.log("Unterminated comment or string, can't do it. Sorry");
     Nothing
-  } else {
+  } else { */
     /* Log.log("Not unterminated"); */
     /** TODO handle being in the middle of an identifier */
     let rec loop = i => {
@@ -193,7 +193,7 @@ let findCompletable = (text, offset) => {
       }
     };
     loop(offset - 1)
-  }
+  /* } */
 };
 
 
