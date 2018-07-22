@@ -116,15 +116,7 @@ let setUp = (files, text) => {
       [tmp],
       ""
     );
-    let (cmt, moduleData) = switch result {
-      | AsYouType.Success(warnings, cmt, moduleData) => {
-        (cmt, moduleData)
-      }
-      | TypeError(message, cmt, moduleData) => {
-        print_endline("Failed to compile supporting file " ++ name ++ message);
-        (cmt, moduleData)
-      }
-    };
+    let moduleData = AsYouType.getResult(result);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     Hashtbl.replace(state.lastDefinitions, uri, moduleData)
   });
@@ -140,20 +132,11 @@ let setUp = (files, text) => {
     ""
   );
 
-  let (cmt, moduleData) = switch result {
-    | AsYouType.Success(warnings, cmt, moduleData) => {
-      /* print_endline("Good"); */
-      (cmt, moduleData)
-    }
-    | TypeError(message, cmt, moduleData) => {
-      /* print_endline("Failed " ++ message); */
-      (cmt, moduleData)
-    }
-  };
+  let moduleData = AsYouType.getResult(result);
   Hashtbl.replace(state.compiledDocuments, mainUri, result);
   Hashtbl.replace(state.lastDefinitions, mainUri, moduleData);
 
-  (state, package, cmt, moduleData)
+  (state, package, (), moduleData)
 };
 
 let iterTests = (lines, iter) => {

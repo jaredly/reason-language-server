@@ -374,9 +374,18 @@ let getCompilationResult = (uri, state, ~package) => {
     let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
     let%try_force result = AsYouType.process(~uri, ~moduleName, text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
     Hashtbl.replace(state.compiledDocuments, uri, result);
-    switch (AsYouType.getResult(result)) {
-    | None => ()
-    | Some((_, data)) => Hashtbl.replace(state.lastDefinitions, uri, data)
+    switch (result) {
+    | AsYouType.SyntaxError(_) => ()
+    | AsYouType.TypeError(_, _, full) => {
+      if (!Hashtbl.mem(state.lastDefinitions, uri)) {
+        Log.log("<< Making lastDefinitions with type error for " ++ uri);
+        Hashtbl.replace(state.lastDefinitions, uri, full)
+      }
+    }
+    | Success(_, _, full) => {
+        Log.log("<< Replacing lastDefinitions for " ++ uri);
+      Hashtbl.replace(state.lastDefinitions, uri, full)
+    }
     };
     result
   }
@@ -387,9 +396,7 @@ let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefiniti
 | data => Some(data)
 };
 
-let getDefinitionData = (uri, state, ~package) => switch (getCompilationResult(uri, state, ~package)) {
-| Success(_, _, data) | TypeError(_, _, data) => Some(data)
-};
+let getDefinitionData = (uri, state, ~package) => AsYouType.getResult(getCompilationResult(uri, state, ~package));
 
 let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
@@ -408,7 +415,7 @@ let fileForModule = (state,  ~package, modname) => {
 };
 
 let fileForUri = (state,  ~package, uri) => {
-  let%opt (_cmt, moduleData) = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+  let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
   Some((moduleData.file, moduleData.extra))
 };
 

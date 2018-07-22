@@ -1,16 +1,17 @@
 
 type result =
   /* | ParseError(string) */
-  | TypeError(string, Cmt_format.cmt_infos, SharedTypes.full)
-  | Success(list(string), Cmt_format.cmt_infos, SharedTypes.full)
+  | SyntaxError(string, SharedTypes.full)
+  | TypeError(string, unit, SharedTypes.full)
+  | Success(list(string), unit, SharedTypes.full)
 ;
 open Infix;
 open Result;
 
 let getResult = result => switch result {
-/* | ParseError(_) => None */
-| TypeError(_, cmt, data) => Some((cmt, data))
-| Success(_, cmt, data) => Some((cmt, data))
+| SyntaxError(_, data) => data
+| TypeError(_, cmt, data) => data
+| Success(_, cmt, data) => data
 };
 
 let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
@@ -27,7 +28,7 @@ let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
     /* Log.log("The text:"); */
     /* Log.log(text); */
     if (!success) {
-      Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
+      Log.log("<< Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
       Error("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error))
     } else {
       Ok((goodError, target))
@@ -89,17 +90,20 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      let message = Infix.(syntaxError |? lines);
+      /* let message = Infix.(syntaxError |? lines); */
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
-      TypeError(String.concat("\n", message), cmt, {file, extra})
+      switch (syntaxError) {
+        | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
+        | None => TypeError(String.concat("\n", lines), (), {file, extra})
+      }
     }
     | Ok(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       /* let%try_wrap moduleData = GetDefinition.process(~uri, cmt); */
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
-      Success(lines, cmt, {file, extra})
+      Success(lines, (), {file, extra})
     }
   }
 };

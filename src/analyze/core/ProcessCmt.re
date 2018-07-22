@@ -15,6 +15,7 @@ type env = {
   scope: Location.t,
 };
 
+
 let getTopDoc = structure => {
   switch structure {
   | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
@@ -353,13 +354,4 @@ let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
     docstring: Some("No docstring for cmi files"),
     contents,
   });
-  /* Some(forSignature(processDoc, signature.sig_items)) */
 };
-
-/* let forCmi = (processDoc, {Cmi_format.cmi_name, cmi_sign}) => {
-  let items = forSignatureType(processDoc, cmi_sign);
-  /* TODO: want the toplevel docs... */
-  Some((None, items))
-}; */
-
-

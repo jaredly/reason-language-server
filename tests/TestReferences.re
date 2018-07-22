@@ -19,7 +19,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     let moduleName = Filename.chop_extension(name) |. String.capitalize;
     let uri = TestUtils.uriForName(name);
     open Infix;
-    let%opt_force (_, {file, extra}) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+    let {SharedTypes.file, extra} = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
 
     print_newline();
     Log.log(uri);
@@ -47,7 +47,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
       let targets = List.filter(((name, contents)) => name == "t" ++ string_of_int(i), waypoints);
       /* let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
 
-      let%opt_force (_, {file, extra}) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
+      let {SharedTypes.file, extra} = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
 
       /* let (line, char) = cpos; */
 

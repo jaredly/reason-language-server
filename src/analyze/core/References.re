@@ -17,7 +17,6 @@ let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}
 
 let locForPos = (~extra, pos) => {
   extra.locations |> Utils.find(((loc, l)) => {
-    open Location;
     checkPos(pos, loc) ? Some((loc, l)) : None
   });
 };
@@ -63,6 +62,7 @@ let definedForLoc = (~file, ~getModule, loc) => {
       | _ => Query.declaredForTip(~stamps=file.stamps, stamp, tip) |?>> x => (x, file, `Declared)
     };
   };
+
 
   switch (loc) {
   | Loc.Explanation(_)

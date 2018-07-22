@@ -16,7 +16,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try position = RJson.get("position", params) |?> Protocol.rgetPosition;
     let%try package = State.getPackage(uri, state);
-    let%try data = State.getDefinitionData(uri, state, ~package) |> Result.orError("Parse error, can't find definition");
+    let data = State.getDefinitionData(uri, state, ~package);
 
     let position = Utils.cmtLocFromVscode(position);
 
@@ -241,14 +241,20 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
     | Ok(package) =>
 
+      Log.log("<< codleens me please");
       open Infix;
       let items = {
-        let%opt moduleData = {
-          let%opt (_, moduleData) = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-          Some(moduleData)
+        let%opt {file, extra} = {
+          switch (State.getCompilationResult(uri, state, ~package)) {
+            | Success(_, _, full) => {
+              Log.log("Got a successful compilation result for " ++ uri);
+              Some(full)
+            }
+            | _ => None
+          }
         } |?# lazy(State.getLastDefinitions(uri, state));
-
-        let%opt (file, extra) = State.fileForUri(state, ~package, uri);
+        /* let%opt {file, extra} = State.getLastDefinitions(uri, state); */
+        Log.log("<< ok fonna do tis");
 
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? file.contents.topLevel |. Belt.List.keepMap(({name: {loc}, contents}) => {

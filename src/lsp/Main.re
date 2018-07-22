@@ -128,7 +128,7 @@ let runDiagnostics = (uri, state, ~package) => {
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
     ("uri", s(uri)),
     ("diagnostics", switch result {
-    /* | AsYouType.ParseError(text) => {
+    | AsYouType.SyntaxError(text, _) => {
       let pos = AsYouType.parseTypeError(text);
       let (l0, c0, l1, c1, text) = switch pos {
       | None => (0, 0, 0, 0, text)
@@ -139,7 +139,7 @@ let runDiagnostics = (uri, state, ~package) => {
         ("message", s("Parse error:\n" ++ text)),
         ("severity", i(1)),
       ])])
-    } */
+    }
     | AsYouType.Success(lines, _, _) => {
       if (lines == [] || lines == [""]) {
         l([])
