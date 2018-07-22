@@ -146,11 +146,16 @@ let determineCompletion = items => {
    Maybe the way to fix it is to make note of what things in an open override
    locally defined things...
    */
-let getEnvWithOpens = (~env: Query.queryEnv, ~getModule, ~opens: list(Query.queryEnv), path) => {
+let getEnvWithOpens = (~pos, ~env: Query.queryEnv, ~getModule, ~opens: list(Query.queryEnv), path) => {
+  /* let%opt declared = ; */
   /* TODO do "resolve from stamps" */
   /* for ppx, I think I'd like a "if this is nonnull, bail w/ it".
      So the opposite of let%opt - let%bail or something */
-  switch (Query.resolvePath(~env, ~path, ~getModule)) {
+/* Query.resolvePath(~env, ~path, ~getModule) */
+  switch (
+   Query.resolveFromStamps(
+    ~env, ~path, ~getModule, ~pos
+  ) ) {
   | Some(x) =>
     Some(x)
   | None =>
@@ -312,7 +317,7 @@ let get = (
       switch (determineCompletion(multiple)) {
       | `Normal(path) => {
           Log.log("normal " ++ pathToString(path));
-          let%opt_wrap (env, suffix) = getEnvWithOpens(~env, ~getModule, ~opens, path);
+          let%opt_wrap (env, suffix) = getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
           Log.log("Got the env");
           valueCompletions(~env, ~getModule, ~suffix)
         } |? {
@@ -407,7 +412,7 @@ let get = (
 
       } |? []
       | `AbsAttribute(path) => {
-          let%opt_wrap (env, suffix) = getEnvWithOpens(~env, ~getModule, ~opens, path);
+          let%opt_wrap (env, suffix) = getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
 
           attributeCompletions(~env, ~getModule, ~suffix) @ List.concat(
             Belt.List.map(opens, env => attributeCompletions(~env, ~getModule, ~suffix))

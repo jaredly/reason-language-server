@@ -87,20 +87,6 @@ awesome
 - path: file:///path/to/Lib.re
 > let awesome: string
 
-=== * 2
---- Lib.re
-let awesome = "hello";
----
-{
-let a = 2;
-Lib.<*>
-let b = 3;
-}
--->
-awesome
-- path: file:///path/to/Lib.re
-> let awesome: string
-
 === Mutli-attribute
 --- A.re
 type a = { name: string, nose: int };
@@ -117,7 +103,7 @@ person
 > 
 > type b = {person: A.a, age: float}
 
-=== * Multi-open
+=== Multi-open
 --- A.re
 let awesome = 10;
 --- B.re
@@ -188,3 +174,8 @@ Li<*>
 Lib
 - path: file:///path/to/Test.re
 > module
+
+=== * Functor arg
+module M = (N: {let x: int}) => {
+  let v = 20 + N.<*>
+};

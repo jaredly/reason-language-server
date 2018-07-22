@@ -1,5 +1,6 @@
 
-type current = Comment(int) | String | Normal | Char;
+type current = Comment(int) | String | Normal;
+/* | Char; */
 let hasUnterminatedCommentOrString = (text, ln) => {
   let rec loop = (current, i) =>
     i >= ln ?
@@ -10,10 +11,10 @@ let hasUnterminatedCommentOrString = (text, ln) => {
           text.[i] == '"' ?
             loop(Normal, i + 1) :
             loop(String, text.[i] == '\\' ? i + 2 : i + 1)
-        | Char =>
+        /* | Char =>
           text.[i] == '\'' ?
             loop(Normal, i + 1) :
-            loop(Char, text.[i] == '\\' ? i + 2 : i + 1)
+            loop(Char, text.[i] == '\\' ? i + 2 : i + 1) */
         | Comment(level) =>
           i + 1 >= ln ?
             true :
@@ -25,8 +26,8 @@ let hasUnterminatedCommentOrString = (text, ln) => {
         | Normal =>
           text.[i] == '"' ?
             loop(String, i + 1) :
-            text.[i] == '\'' ?
-              loop(Char, i + 1) :
+            /* text.[i] == '\'' ?
+              loop(Char, i + 1) : */
               text.[i] == '/' && i + 1 < ln && text.[i + 1] == '*' ?
                 loop(Comment(0), i + 2) : loop(Normal, i + 1)
         }

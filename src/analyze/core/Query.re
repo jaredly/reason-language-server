@@ -110,6 +110,22 @@ let rec resolvePath = (~env, ~path, ~getModule) => {
   }
 };
 
+let resolveFromStamps = (~env, ~path, ~getModule, ~pos) => {
+  switch path {
+    | Tip(name) => Some((env, name))
+    | Nested(name, inner) =>
+      let%opt declared = findInScope(pos, name, env.file.stamps.modules);
+      let%opt res = findInModule(~env, declared.contents, inner);
+      switch res {
+        | `Local((env, name)) => Some((env, name))
+        | `Global(moduleName, fullPath) => {
+          let%opt file = getModule(moduleName);
+          resolvePath(~env={file, exported: file.contents.exported}, ~path=fullPath, ~getModule)
+        }
+      }
+  }
+};
+
 open Infix;
 
 let fromCompilerPath = (~env, path) => {
