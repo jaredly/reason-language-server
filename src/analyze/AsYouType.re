@@ -87,6 +87,7 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   open InfixResult;
   let%try (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+  /* let includes = [cacheLocation, ...includes]; */
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");

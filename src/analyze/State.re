@@ -257,7 +257,7 @@ let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   /* let%opt src = src; */
   let uri = Utils.toUri(src |? cmt);
   let%opt file = ProcessCmt.forCmt(uri, converter(src, clientNeedsPlainText), infos) |> Result.toOptionAndLog;
-  Hashtbl.replace(cmtCache, cmt, (changed, infos, file));
+  Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
 
@@ -268,7 +268,7 @@ let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
   | Some((docstring, items)) => */
     let%opt file = ProcessCmt.forCmi(Utils.toUri(cmi), converter(src, clientNeedsPlainText), infos);
     /* let docs = Docs.moduleDocs(docstring, items, file); */
-    Hashtbl.replace(cmiCache, cmi, (changed, infos, file));
+    Hashtbl.replace(cmiCache, cmi, (changed, file));
     Some(file);
   /* }; */
 };
@@ -278,7 +278,7 @@ let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 let docsForCmt = (cmt, src, state) =>
   if (Filename.check_suffix(cmt, ".cmi")) {
     if (Hashtbl.mem(state.cmiCache, cmt)) {
-      let (mtime, infos, docs) = Hashtbl.find(state.cmiCache, cmt);
+      let (mtime, docs) = Hashtbl.find(state.cmiCache, cmt);
       /* TODO I should really throttle this mtime checking to like every 50 ms or so */
       switch (Files.getMtime(cmt)) {
       | None =>
@@ -313,7 +313,7 @@ let docsForCmt = (cmt, src, state) =>
       };
     };
   } else if (Hashtbl.mem(state.cmtCache, cmt)) {
-    let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
+    let (mtime, docs) = Hashtbl.find(state.cmtCache, cmt);
     /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
     | None =>
@@ -372,7 +372,16 @@ let getCompilationResult = (uri, state, ~package) => {
       Files.readFileExn(path)
     };
     let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
-    let%try_force result = AsYouType.process(~uri, ~moduleName, text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let%try_force result = AsYouType.process(
+      ~uri,
+      ~moduleName,
+      text,
+      ~cacheLocation=package.tmpPath,
+      package.compilerPath,
+      package.refmtPath,
+      package.includeDirectories,
+      package.compilationFlags,
+    );
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (result) {
     | AsYouType.SyntaxError(_) => ()

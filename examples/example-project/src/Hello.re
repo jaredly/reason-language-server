@@ -4,6 +4,8 @@ let otherLongName = "string";
 
 let r = Other.something;
 
+let l = More.m;
+
 string_of_bool;
 
 module Something = {
@@ -12,9 +14,14 @@ module Something = {
   let m = {name: "Me", age: 0};
   let animal = Whats(10);
   let other = Whats(2);
-  let me: animals = Cat("Hie");
+  let me: animals = People("Hie");
   let x = something + 10;
   let r = m.name;
+
+  let awesome = 20;
+  if (true) {
+    ()
+  }
 };
 
 open Something;
@@ -70,6 +77,8 @@ let m = <div
  let something = animal => switch animal {
    | blank => ()
  };
+
+ something(animal);
 
 let someFunction = (memorableName, {contents}) => {
   let innerMemorable = 20;

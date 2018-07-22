@@ -7,7 +7,9 @@ let something = 10;
 
 type person = {name: string, age: int};
 
-type animals = Whats(int) | Cat(string) | Mouse;
+type animals = Whats(int) | People(string) | Mouse;
+
+let l = More.m;
 
 let m = Whats(1);
 
