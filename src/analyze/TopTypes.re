@@ -32,6 +32,7 @@ type settings = {
   opensCodelens: bool,
   dependenciesCodelens: bool,
   clientNeedsPlainText: bool,
+  crossFileAsYouType: bool,
 };
 
 type state = {

@@ -444,14 +444,31 @@ let docsForModule = (modname, state, ~package) =>
       None;
     };
 
-let fileForModule = (state,  ~package, modname) => {
-  let%opt (file, _) = docsForModule(modname, state, ~package);
-  Some(file)
-};
-
 let fileForUri = (state,  ~package, uri) => {
   let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
   Some((moduleData.file, moduleData.extra))
+};
+
+let fileForModule = (state,  ~package, modname) => {
+  let file = state.settings.crossFileAsYouType ? {
+    Log.log("✅ Gilr got mofilr " ++ modname);
+    Log.log(package.localModules |> List.map(fst) |> String.concat(" "));
+    let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==));
+    Log.log("Found it " ++ src);
+    let uri = Utils.toUri(src);
+    if (Hashtbl.mem(state.documentText, uri)) {
+      let%opt (file, _) = fileForUri(state, ~package, uri);
+      Some(file)
+    } else {
+      None
+    }
+  } : None;
+  switch file {
+    | Some(f) => file
+    | None =>
+      let%opt (file, _) = docsForModule(modname, state, ~package);
+      Some(file)
+  }
 };
 
 let extraForModule = (state, ~package, modname) => {

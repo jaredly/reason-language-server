@@ -9,6 +9,7 @@ let l = More.outer + More.n + Other.inner;
 
 let n = More.n;
 
+More.party;
 string_of_bool;
 
 module Something = {

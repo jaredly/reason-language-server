@@ -83,6 +83,7 @@ let getState = () => {
     compiledDocuments: Hashtbl.create(10),
     lastDefinitions: Hashtbl.create(10),
     settings: {
+      crossFileAsYouType: false,
       formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,
