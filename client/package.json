@@ -62,6 +62,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Monitor the language server binary for updates, and restart it (for development)."
+				},
+				"reason_language_server.show_debug_errors": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show errors in the console"
 				}
 			}
 		},

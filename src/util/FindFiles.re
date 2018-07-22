@@ -233,9 +233,9 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
                  let namespace = getNamespace(inner);
                  let directories =
                    getSourceDirectories(~includeDev=false, loc, inner);
-                 let compiledBase =
-                   BuildSystem.getCompiledBase(loc, buildSystem)
-                   |! "No compiled base found";
+                 let%opt compiledBase =
+                   BuildSystem.getCompiledBase(loc, buildSystem);
+                   /* |! "No compiled base found"; */
                  if (debug) {
                    Log.log("Compiled base: " ++ compiledBase);
                  };
