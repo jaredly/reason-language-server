@@ -2,16 +2,16 @@
 type result =
   /* | ParseError(string) */
   | SyntaxError(string, SharedTypes.full)
-  | TypeError(string, unit, SharedTypes.full)
-  | Success(list(string), unit, SharedTypes.full)
+  | TypeError(string, SharedTypes.full)
+  | Success(list(string), SharedTypes.full)
 ;
 open Infix;
 open Result;
 
 let getResult = result => switch result {
 | SyntaxError(_, data) => data
-| TypeError(_, cmt, data) => data
-| Success(_, cmt, data) => data
+| TypeError(_, data) => data
+| Success(_, data) => data
 };
 
 let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
@@ -95,7 +95,7 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
       switch (syntaxError) {
         | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
-        | None => TypeError(String.concat("\n", lines), (), {file, extra})
+        | None => TypeError(String.concat("\n", lines), {file, extra})
       }
     }
     | Ok(lines) => {
@@ -103,7 +103,7 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       /* let%try_wrap moduleData = GetDefinition.process(~uri, cmt); */
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
-      Success(lines, (), {file, extra})
+      Success(lines, {file, extra})
     }
   }
 };

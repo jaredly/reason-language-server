@@ -140,7 +140,7 @@ let runDiagnostics = (uri, state, ~package) => {
         ("severity", i(1)),
       ])])
     }
-    | AsYouType.Success(lines, _, _) => {
+    | AsYouType.Success(lines, _) => {
       if (lines == [] || lines == [""]) {
         l([])
       } else {
@@ -161,7 +161,7 @@ let runDiagnostics = (uri, state, ~package) => {
         l(warnings)
       }
     }
-    | TypeError(text, _, _) => {
+    | TypeError(text, _) => {
       let plain = Utils.stripAnsii(text);
       let pos = AsYouType.parseTypeError(plain);
       let (l0, c0, l1, c1, plain) = switch pos {

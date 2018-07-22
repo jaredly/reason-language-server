@@ -376,13 +376,13 @@ let getCompilationResult = (uri, state, ~package) => {
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (result) {
     | AsYouType.SyntaxError(_) => ()
-    | AsYouType.TypeError(_, _, full) => {
+    | AsYouType.TypeError(_, full) => {
       if (!Hashtbl.mem(state.lastDefinitions, uri)) {
         Log.log("<< Making lastDefinitions with type error for " ++ uri);
         Hashtbl.replace(state.lastDefinitions, uri, full)
       }
     }
-    | Success(_, _, full) => {
+    | Success(_, full) => {
         Log.log("<< Replacing lastDefinitions for " ++ uri);
       Hashtbl.replace(state.lastDefinitions, uri, full)
     }

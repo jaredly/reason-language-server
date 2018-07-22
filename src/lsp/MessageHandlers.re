@@ -246,7 +246,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let items = {
         let%opt {file, extra} = {
           switch (State.getCompilationResult(uri, state, ~package)) {
-            | Success(_, _, full) => {
+            | Success(_, full) => {
               Log.log("Got a successful compilation result for " ++ uri);
               Some(full)
             }
