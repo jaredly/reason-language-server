@@ -68,7 +68,7 @@ let m = Lib.<t1>A(2);
 -->
   1: ✅ PASS
 
-=== * Opens
+=== Opens
 module Lib = {
   module M = {
     type t = | <c1>A(int) | B;

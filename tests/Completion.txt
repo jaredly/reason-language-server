@@ -19,7 +19,7 @@ awesome
 - path: file:///path/to/Test.re
 > let awesome: int
 
-=== * Basic expr
+=== Basic expr
 let awesome = 10;
 let c = 3;
 let b = {
