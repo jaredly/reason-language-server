@@ -1,5 +1,6 @@
 
 type current = Comment(int) | String | Normal;
+/* NOTE disabled because I couldn't distinguish between char and 'a type variable */
 /* | Char; */
 let hasUnterminatedCommentOrString = (text, ln) => {
   let rec loop = (current, i) =>
