@@ -7,9 +7,14 @@ let something = 10;
 
 type person = {name: string, age: int};
 
-type animals = Dogz(int) | Cat(string) | Mouse;
+type animals = Things(int) | People(string) | Mouse;
 
-let m = Dogz(1);
+let inner = More.outer;
+
+let m = Things(1);
+
+/* working on things. */
+
 
 let z = {name: "hi", age: 20};
 

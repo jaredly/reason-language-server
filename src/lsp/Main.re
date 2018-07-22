@@ -1,7 +1,6 @@
 
 open Infix;
 open Result;
-
 open Log;
 
 /**
@@ -89,7 +88,7 @@ let getInitialState = (params) => {
       && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
   );
 
-  let state = State.{
+  let state = TopTypes.{
     rootPath: rootPath,
     rootUri: uri,
     documentText: Hashtbl.create(5),
@@ -101,6 +100,8 @@ let getInitialState = (params) => {
     compiledDocuments: Hashtbl.create(10),
     lastDefinitions: Hashtbl.create(10),
     settings: {
+      formatWidth: None,
+      crossFileAsYouType: true,
       perValueCodelens: false,
       opensCodelens: true,
       dependenciesCodelens: true,
@@ -111,7 +112,7 @@ let getInitialState = (params) => {
   Ok(state)
 };
 
-open State;
+open TopTypes;
 
 let getTextDocument = doc => {
   let%opt uri = Json.get("uri", doc) |?> Json.string;
@@ -127,7 +128,7 @@ let runDiagnostics = (uri, state, ~package) => {
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
     ("uri", s(uri)),
     ("diagnostics", switch result {
-    /* | AsYouType.ParseError(text) => {
+    | AsYouType.SyntaxError(text, _) => {
       let pos = AsYouType.parseTypeError(text);
       let (l0, c0, l1, c1, text) = switch pos {
       | None => (0, 0, 0, 0, text)
@@ -138,8 +139,8 @@ let runDiagnostics = (uri, state, ~package) => {
         ("message", s("Parse error:\n" ++ text)),
         ("severity", i(1)),
       ])])
-    } */
-    | AsYouType.Success(lines, _, _) => {
+    }
+    | AsYouType.Success(lines, _) => {
       if (lines == [] || lines == [""]) {
         l([])
       } else {
@@ -160,7 +161,7 @@ let runDiagnostics = (uri, state, ~package) => {
         l(warnings)
       }
     }
-    | TypeError(text, _, _) => {
+    | TypeError(text, _) => {
       let plain = Utils.stripAnsii(text);
       let pos = AsYouType.parseTypeError(plain);
       let (l0, c0, l1, c1, plain) = switch pos {
@@ -220,7 +221,9 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
-    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, dependenciesCodelens}})
+    let formatWidth = (settings |?> Json.get("format_width") |?> Json.number) |?>> int_of_float;
+    let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? true;
+    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, formatWidth, dependenciesCodelens, crossFileAsYouType}})
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;

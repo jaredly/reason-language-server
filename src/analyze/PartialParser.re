@@ -1,5 +1,7 @@
 
-type current = Comment(int) | String | Normal | Char;
+type current = Comment(int) | String | Normal;
+/* NOTE disabled because I couldn't distinguish between char and 'a type variable */
+/* | Char; */
 let hasUnterminatedCommentOrString = (text, ln) => {
   let rec loop = (current, i) =>
     i >= ln ?
@@ -10,10 +12,10 @@ let hasUnterminatedCommentOrString = (text, ln) => {
           text.[i] == '"' ?
             loop(Normal, i + 1) :
             loop(String, text.[i] == '\\' ? i + 2 : i + 1)
-        | Char =>
+        /* | Char =>
           text.[i] == '\'' ?
             loop(Normal, i + 1) :
-            loop(Char, text.[i] == '\\' ? i + 2 : i + 1)
+            loop(Char, text.[i] == '\\' ? i + 2 : i + 1) */
         | Comment(level) =>
           i + 1 >= ln ?
             true :
@@ -25,8 +27,8 @@ let hasUnterminatedCommentOrString = (text, ln) => {
         | Normal =>
           text.[i] == '"' ?
             loop(String, i + 1) :
-            text.[i] == '\'' ?
-              loop(Char, i + 1) :
+            /* text.[i] == '\'' ?
+              loop(Char, i + 1) : */
               text.[i] == '/' && i + 1 < ln && text.[i + 1] == '*' ?
                 loop(Comment(0), i + 2) : loop(Normal, i + 1)
         }
@@ -175,14 +177,14 @@ type completable = Nothing | Labeled(string) | Lident(string);
 
 let findCompletable = (text, offset) => {
   Log.log("Finding completable");
-  if (hasUnterminatedCommentOrString(text, offset)) {
+  /* if (hasUnterminatedCommentOrString(text, offset)) {
     Log.log("Unterminated comment or string, can't do it. Sorry");
     Nothing
-  } else {
-    Log.log("Not unterminated");
+  } else { */
+    /* Log.log("Not unterminated"); */
     /** TODO handle being in the middle of an identifier */
     let rec loop = i => {
-      i < 0 ? Nothing : switch (text.[i]) {
+      i < 0 ? Lident(String.sub(text, i + 1, offset - (i + 1))) : switch (text.[i]) {
       | '~' => Labeled(String.sub(text, i + 1, offset - (i + 1)))
       | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' => loop(i - 1)
       | _ => {
@@ -191,7 +193,7 @@ let findCompletable = (text, offset) => {
       }
     };
     loop(offset - 1)
-  }
+  /* } */
 };
 
 

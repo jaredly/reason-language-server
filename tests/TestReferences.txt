@@ -1,0 +1,146 @@
+=== Basic
+let <c1>x = 10;
+let y = <t1>x + <t1>x;
+type <c4>record = {
+  <c2>name: string,
+};
+type m = <t4>record;
+let me = {<t2>name: "Hi"};
+switch None {
+  | Some({<t2><t3>name}) => print_endline(<c3>name)
+  | _ => ()
+};
+-->
+  1: ✅ PASS
+  2: ✅ PASS
+  3: ✅ PASS
+  4: ✅ PASS
+
+=== Mutable
+type r = {
+  mutable <t1><c2>n: string,
+};
+let m = {<c1><t2>n: "hello"};
+-->
+  1: ✅ PASS
+  2: ✅ PASS
+
+=== Constructor
+type a = | <c1>A(int) | <t2>B(float);
+let b = <t1>A(1);
+let c = <t1>A(3);
+let d = <c2>B(1.);
+switch d {
+  | <t1>A(_) => ()
+  | _ => ()
+};
+
+-->
+  1: ✅ PASS
+  2: ✅ PASS
+
+=== Basic cross-module
+--- Lib.re
+let <c1>x = 10;
+---
+let y = Lib.<t1>x;
+
+-->
+  1: ✅ PASS
+
+=== Cross-module Constructor
+--- Lib.re
+type a = | <c1>A(int) | B(float);
+let b = <t1>A(1);
+let c = <t1>A(3);
+---
+let m = Lib.<t1>A(2);
+-->
+  1: ✅ PASS
+
+=== Cross-module with same-name export
+--- Lib.re
+type a = | <c1>A(int) | B(float);
+let a = <t1>A(1);
+let c = <t1>A(3);
+---
+let m = Lib.<t1>A(2);
+-->
+  1: ✅ PASS
+
+=== Opens
+module Lib = {
+  module M = {
+    type t = | <c1>A(int) | B;
+    let l = 20;
+    module E = {
+      let <c2>z = 10;
+    }
+  };
+};
+
+open Lib.M;
+let r = <t1>A(l + E.<t2>z);
+type m = t;
+open Lib;
+let m = M.l;
+open Lib.M.E;
+let r = <t2>z;
+-->
+  1: ✅ PASS
+  2: ✅ PASS
+
+=== Functor
+module M = (N: {let x: int}) => {
+  let <t1>v = 20 + N.x;
+};
+module C = {
+  let x = 10;
+};
+module Z = M(C);
+let r = Z.<c1>v;
+-->
+  1: ✅ PASS
+
+=== Cross-file Functor
+--- Lib.re
+module M = (N: {let x: int}) => {
+  let <c1>v = 20 + N.x;
+};
+---
+module Z = Lib.M({let x = 10});
+let r = Z.<t1>v;
+-->
+  1: ✅ PASS
+
+=== Functor arg
+module M = (N: {let <c1>x: int}) => {
+  let v = 20 + N.<t1>x;
+};
+-->
+  1: ✅ PASS
+
+=== Kitchen sink
+--- Other.re
+let thing = {Lib.<t2>name: "hi", <t3>age: 2};
+let contain = {Lib.v: B({<t2>name: "inner", <t3>age: 1}), r: {<t2>name: "one", <t3>age: 5}};
+--- Lib.re
+type <c1>record = {
+  <c2>name: string,
+  <c3>age: int
+};
+type variant = <c4>A(int, float) | B(<t1>record);
+type container = {v: variant, r: <t1>record};
+let here = {<t2>name: "fred", <t3>age: 3};
+let a = <t4>A(3, 4.);
+---
+let awesome_awesome = 10;
+let m = awesome_awesome;
+let z = string_of_int(m);
+let m = Lib.<t4>A(2,3.);
+Other.contain.r.<t3>age;
+-->
+  1: ✅ PASS
+  2: ✅ PASS
+  3: ✅ PASS
+  4: ✅ PASS

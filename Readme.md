@@ -22,3 +22,20 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - it should start up a window titled `[Extension development host]`
 
 You can then develop on the language server! When you change something, the server will automatically reload.
+
+## Roadmap
+
+- Code completion
+- Open tracking
+- Signature help
+- Rename
+- Codelens
+  - open tracking
+  - toplevel type definitions
+- Hover
+  - type definitions
+- Range formatting (no change)
+- Document Symbol (maybe I want Extent in addition to name loc)
+
+
+

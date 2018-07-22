@@ -2,27 +2,43 @@ let someLongName = 10;
 
 let otherLongName = "string";
 
+
+let r = Other.something;
+
+let l = More.outer + More.n + Other.inner;
+
+let n = More.n;
+
+More.party;
 string_of_bool;
+
+let m = {More.a: 2, b: 32.};
 
 module Something = {
   open Other;
 
   let m = {name: "Me", age: 0};
-  let animal = Dogz(10);
-  let other = Dogz(2);
-  let me = Cat("Hie");
+  let animal = Things(10);
+  let other = Things(2);
+  let me: animals = People("Hie");
   let x = something + 10;
-};
+  let r = m.name;
 
+  let awesome = 20;
+  if (true) {
+    ()
+  }
+};
 
 open Something;
 
 let y = x + 10;
 
 switch me {
-| Dogz(n) => ()
+| Things(n) => ()
 | _ => ()
 };
+
 
 let z = x * x;
 
@@ -68,6 +84,8 @@ let m = <div
    | blank => ()
  };
 
+ something(animal);
+
 let someFunction = (memorableName, {contents}) => {
   let innerMemorable = 20;
   memorableName + innerMemorable;
@@ -85,7 +103,7 @@ let z = later;
 
 let m = Other.later;
 
-for (index in 0 to 10) {
+for (_index in 0 to 10) {
   print_endline("hellO");
 };
 

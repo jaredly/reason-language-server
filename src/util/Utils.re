@@ -63,15 +63,29 @@ let countTrailing = (value, s) => {
  * true if the string starts with the prefix
  */
 let startsWith = (s, prefix) => {
-  let p = String.length(prefix);
-  p <= String.length(s) && String.sub(s, 0, p) == prefix
+  if (prefix == "") {
+    true
+  } else {
+    let p = String.length(prefix);
+    p <= String.length(s) && String.sub(s, 0, p) == prefix
+  }
 };
+
+let cmtLocFromVscode = ((line, col)) => (line + 1, col);
+
+let splitLines = text => Str.split(Str.regexp_string("\n"), text);
 
 let stripAnsii = text => Str.global_replace(Str.regexp("\027\\[[0-9;]+m"), "", text);
 
 let sliceToEnd = (s, start) => {
   let l = String.length(s);
-  start <= l ? String.sub(s, start, l - start) : s
+  start <= l ? String.sub(s, start, l - start) : ""
+};
+
+let locWithinLoc = (inner, outer) => {
+  open Location;
+  inner.loc_start.pos_cnum >= outer.loc_start.pos_cnum
+  && inner.loc_end.pos_cnum <= outer.loc_end.pos_cnum
 };
 
 let toUri = (path) =>
@@ -161,3 +175,33 @@ let showLocation = ({Location.loc_start, loc_end}) =>
       loc_end.pos_cnum - loc_end.pos_bol
     )
   );
+
+let itemsExtent = items => {
+  open Typedtree;
+  items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
+    let (first, last) = first.str_loc.loc_start.pos_cnum <
+      last.str_loc.loc_start.pos_cnum ? (first, last) : (last, first);
+
+    {
+      Location.loc_ghost: true,
+      loc_start: first.str_loc.loc_start,
+      loc_end: last.str_loc.loc_end,
+    };
+  };
+};
+
+let sigItemsExtent = items => {
+  open Typedtree;
+  items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
+
+    {
+      Location.loc_ghost: true,
+      loc_start: first.sig_loc.loc_start,
+      loc_end: last.sig_loc.loc_end,
+    };
+  };
+};

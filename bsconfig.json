@@ -28,6 +28,15 @@
   }, {
     "backend": "native",
     "main-module": "Tester"
+  }, {
+    "backend": "native",
+    "main-module": "CompletionFixtures"
+  }, {
+    "backend": "native",
+    "main-module": "TestDefinition"
+  }, {
+    "backend": "native",
+    "main-module": "TestReferences"
   }],
   "refmt": 3
 }

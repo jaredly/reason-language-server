@@ -1,89 +1,15 @@
 open Infix;
 
-/* Aliases to make the intents clearer */
-type uri = string;
-type filePath = string;
-type moduleName = string;
-
-/* Here are the things that will be different between jbuilder things */
-type package = {
-  basePath: filePath,
-
-  /* Might change based on bsconfig.json / .merlin */
-  includeDirectories: list(filePath),
-  compilationFlags: string,
-
-  /* Depend on bsb having already run */
-  localModules: list((moduleName, (filePath, filePath))),
-  /* localCompiledMap: list((string, string)), */
-  dependencyModules: list((FindFiles.modpath, (string, option(string)))),
-  pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
-
-  opens: list(string),
-
-  tmpPath: string,
-
-  buildSystem: BuildSystem.t,
-  compilerPath: filePath,
-  refmtPath: filePath,
-};
-
-type settings = {
-  perValueCodelens: bool,
-  opensCodelens: bool,
-  dependenciesCodelens: bool,
-  clientNeedsPlainText: bool,
-};
-
-type state = {
-  rootPath: filePath,
-  rootUri: uri,
-  settings,
-
-  documentText: Hashtbl.t(uri, (string, int, bool)),
-  documentTimers: Hashtbl.t(uri, float),
-
-  /* package, */
-  packagesByRoot: Hashtbl.t(string, package),
-  rootForUri: Hashtbl.t(uri, string),
-
-  /* localCompiledBase: string, */
-  cmtCache:
-    Hashtbl.t(
-      filePath,
-      (
-        float, /* modified time */
-        Cmt_format.cmt_infos,
-        (option(string), list(Docs.item))
-      )
-    ),
-  cmiCache:
-    Hashtbl.t(
-      filePath,
-      (
-        float, /* modified time */
-        Cmi_format.cmi_infos,
-        (option(string), list(Docs.item))
-      )
-    ),
-  compiledDocuments: Hashtbl.t(uri, AsYouType.result),
-  lastDefinitions: Hashtbl.t(uri, Definition.moduleData),
-
-  /* workspace folders... */
-};
+open TopTypes;
 
 module Show = {
-  let _modPath = mp => switch mp {
-    | FindFiles.Plain(s) => s
-    | FindFiles.Namespaced(ns, name) => ns ++ "." ++ name
-  };
   let state = ({rootPath}, {localModules, compilerPath, dependencyModules}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, ((name, (cmt, src))) => Printf.sprintf("%s (%s : %s)", name, cmt, src)) |> String.concat("\n"))
     ++
     "\nDeps\n" ++ 
-    (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", _modPath(modpath), cmt, src |? "")) |> String.concat("\n"))
+    (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", modpath, cmt, src |? "")) |> String.concat("\n"))
   };
 };
 
@@ -91,14 +17,11 @@ let makePathsForModule = (localModules, dependencyModules) => {
   let pathsForModule = Hashtbl.create(30);
   dependencyModules |> List.iter(((modName, (cmt, source))) => {
     Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-    switch (modName) {
-    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
-    | _ => ()
-    }
+    Hashtbl.replace(pathsForModule, modName, (cmt, source))
   });
 
   localModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("> Local " ++ cmt ++ " - " ++ source);
+    Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
     Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
   });
   pathsForModule
@@ -222,7 +145,7 @@ let newJbuilderPackage = (rootPath) => {
         } else {
           libraryName ++ "__" ++ modName
         }
-      }, ~sourceDirectory=otherPath, compiledBase) |> List.map(((name, p)) => (FindFiles.Plain(name), p))));
+      }, ~sourceDirectory=otherPath, compiledBase)));
     };
     switch res {
       | Error(message) => {
@@ -245,7 +168,7 @@ let newJbuilderPackage = (rootPath) => {
     |> List.filter(FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (FindFiles.Plain(Filename.chop_extension(name) |> String.capitalize), (compiled, Some(path /+ name)));
+      (Filename.chop_extension(name) |> String.capitalize, (compiled, Some(path /+ name)));
     })
   })
   |> List.concat;
@@ -337,23 +260,24 @@ let converter = (src, usePlainText) => {
 };
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
-    let infos = Cmt_format.read_cmt(cmt);
-    switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
-    | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
-    | Some(docs) =>
-      Hashtbl.replace(cmtCache, cmt, (changed, infos, docs));
-      Some(docs);
-    };
+  let infos = Cmt_format.read_cmt(cmt);
+  /* let%opt src = src; */
+  let uri = Utils.toUri(src |? cmt);
+  let%opt file = ProcessCmt.forCmt(uri, converter(src, clientNeedsPlainText), infos) |> Result.toOptionAndLog;
+  Hashtbl.replace(cmtCache, cmt, (changed, file));
+  Some(file);
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
-    let infos = Cmi_format.read_cmi(cmi);
-    switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
-    | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
-    | Some(docs) =>
-      Hashtbl.replace(cmiCache, cmi, (changed, infos, docs));
-      Some(docs);
-    };
+  let infos = Cmi_format.read_cmi(cmi);
+  /* switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
+  | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
+  | Some((docstring, items)) => */
+    let%opt file = ProcessCmt.forCmi(Utils.toUri(cmi), converter(src, clientNeedsPlainText), infos);
+    /* let docs = Docs.moduleDocs(docstring, items, file); */
+    Hashtbl.replace(cmiCache, cmi, (changed, file));
+    Some(file);
+  /* }; */
 };
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
@@ -361,11 +285,11 @@ let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 let docsForCmt = (cmt, src, state) =>
   if (Filename.check_suffix(cmt, ".cmi")) {
     if (Hashtbl.mem(state.cmiCache, cmt)) {
-      let (mtime, infos, docs) = Hashtbl.find(state.cmiCache, cmt);
+      let (mtime, docs) = Hashtbl.find(state.cmiCache, cmt);
       /* TODO I should really throttle this mtime checking to like every 50 ms or so */
       switch (Files.getMtime(cmt)) {
       | None =>
-        Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+        Log.log("⚠️ cannot get docs for nonexistant cmi " ++ cmt);
         None;
       | Some(changed) =>
         if (changed > mtime) {
@@ -383,7 +307,7 @@ let docsForCmt = (cmt, src, state) =>
     } else {
       switch (Files.getMtime(cmt)) {
       | None =>
-        Log.log("⚠️ cannot get docs for nonexistant cmt " ++ cmt);
+        Log.log("⚠️ cannot get docs for nonexistant cmi " ++ cmt);
         None;
       | Some(changed) =>
         newDocsForCmi(
@@ -396,7 +320,7 @@ let docsForCmt = (cmt, src, state) =>
       };
     };
   } else if (Hashtbl.mem(state.cmtCache, cmt)) {
-    let (mtime, infos, docs) = Hashtbl.find(state.cmtCache, cmt);
+    let (mtime, docs) = Hashtbl.find(state.cmtCache, cmt);
     /* TODO I should really throttle this mtime checking to like every 50 ms or so */
     switch (Files.getMtime(cmt)) {
     | None =>
@@ -451,14 +375,54 @@ let getCompilationResult = (uri, state, ~package) => {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
       text
     } : {
-      let path = Utils.parseUri(uri) |! "not a uri";
+      let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
-    let%try_force result = AsYouType.process(text, ~cacheLocation=package.tmpPath, package.compilerPath, package.refmtPath, package.includeDirectories, package.compilationFlags);
+    let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
+    let includes = state.settings.crossFileAsYouType
+    ? [package.tmpPath, ...package.includeDirectories]
+    : package.includeDirectories;
+    let%try_force result = AsYouType.process(
+      ~uri,
+      ~moduleName,
+      text,
+      ~cacheLocation=package.tmpPath,
+      package.compilerPath,
+      package.refmtPath,
+      includes,
+      package.compilationFlags,
+    );
     Hashtbl.replace(state.compiledDocuments, uri, result);
-    switch (AsYouType.getResult(result)) {
-    | None => ()
-    | Some((_, data)) => Hashtbl.replace(state.lastDefinitions, uri, data)
+    switch (result) {
+    | AsYouType.SyntaxError(_) => ()
+    | AsYouType.TypeError(_, full) => {
+      if (!Hashtbl.mem(state.lastDefinitions, uri)) {
+        Log.log("<< Making lastDefinitions with type error for " ++ uri);
+        Hashtbl.replace(state.lastDefinitions, uri, full)
+      }
+    }
+    | Success(_, full) => {
+      Log.log("<< Replacing lastDefinitions for " ++ uri);
+
+      Hashtbl.replace(state.lastDefinitions, uri, full);
+
+      if (state.settings.crossFileAsYouType) {
+        /** Check dependencies */
+        package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+          let otherUri = Utils.toUri(src);
+          switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
+            | exception Not_found => ()
+            | TypeError(_, {extra}) | Success(_, {extra}) => {
+              if (Hashtbl.mem(extra.externalReferences, moduleName)) {
+                Hashtbl.remove(state.compiledDocuments, otherUri);
+                Hashtbl.replace(state.documentTimers, otherUri, Unix.gettimeofday() +. 0.01);
+              }
+            }
+            | _ => ()
+          }
+        });
+      }
+    }
     };
     result
   }
@@ -466,15 +430,22 @@ let getCompilationResult = (uri, state, ~package) => {
 
 let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefinitions, uri)) {
 | exception Not_found => None
-| data => Some(data)
+| data => 
+  Some(data)
 };
 
-let getDefinitionData = (uri, state, ~package) => switch (getCompilationResult(uri, state, ~package)) {
-| Success(_, _, data) | TypeError(_, _, data) => Some(data)
+/* If there's a previous "good" version, use that, otherwise use the current version */
+let getBestDefinitions = (uri, state, ~package) => {
+  if (Hashtbl.mem(state.lastDefinitions, uri)) {
+    Hashtbl.find(state.lastDefinitions, uri)
+  } else {
+    getCompilationResult(uri, state, ~package) |> AsYouType.getResult
+  }
 };
+
+let getDefinitionData = (uri, state, ~package) => AsYouType.getResult(getCompilationResult(uri, state, ~package));
 
 let docsForModule = (modname, state, ~package) =>
-  Infix.(
     if (Hashtbl.mem(package.pathsForModule, modname)) {
       let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
@@ -483,26 +454,47 @@ let docsForModule = (modname, state, ~package) =>
     } else {
       Log.log("No path for module " ++ modname);
       None;
+    };
+
+let fileForUri = (state,  ~package, uri) => {
+  let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+  Some((moduleData.file, moduleData.extra))
+};
+
+let fileForModule = (state,  ~package, modname) => {
+  let file = state.settings.crossFileAsYouType ? {
+    /* Log.log("✅ Gilr got mofilr " ++ modname); */
+    Log.log(package.localModules |> List.map(fst) |> String.concat(" "));
+    let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==));
+    /* Log.log("Found it " ++ src); */
+    let uri = Utils.toUri(src);
+    if (Hashtbl.mem(state.documentText, uri)) {
+      let%opt (file, _) = fileForUri(state, ~package, uri);
+      Some(file)
+    } else {
+      None
     }
-  );
+  } : None;
+  switch file {
+    | Some(f) => file
+    | None =>
+      let%opt (file, _) = docsForModule(modname, state, ~package);
+      Some(file)
+  }
+};
+
+let extraForModule = (state, ~package, modname) => {
+  if (Hashtbl.mem(package.pathsForModule, modname)) {
+    let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
+    let%opt src = src;
+    let%opt (file, extra) = fileForUri(state, ~package, Utils.toUri(src));
+    Some(extra)
+  } else {
+    None;
+  }
+};
 
 let maybeFound = Definition.maybeFound;
-
-open Infix;
-
-let rec resolveAlias = (state, path, children, ~package) => {
-  let rec loop = (path, items) =>
-    switch (path) {
-    | Path.Pident({stamp: 0, name}) => {
-      let%opt ((_docs, contents), uri) = docsForModule(name, state, ~package);
-      Some((uri, contents, items))
-    }
-    | Path.Pident(_) => None
-    | Pdot(inner, name, _) => loop(inner, [name, ...items])
-    | Papply(_) => None
-    };
-  loop(path, children);
-};
 
 let topLocation = uri => {
   Location.loc_ghost: false,
@@ -518,94 +510,4 @@ let topLocation = uri => {
     pos_cnum: 1,
     pos_bol: 1,
   },
-};
-
-/* TODO instead of (option, option, option), it should be (option(docs), option((uri, loc))) */
-/**
- * returns `(Docs.item, location, docstring, uri)`
- */
-let resolveDefinition = (uri, state, ~package, moduleData, defn) =>
-  switch defn {
-  | `Local(_, loc, item, docs, _) => {
-    Some((item |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri)))
-  }
-  | `Global(top, children, suffix) =>
-    {
-      /* Log.log("It's global folx: " ++ top); */
-      switch (
-        maybeFound(List.assoc(top), package.localModules)
-        |?> (
-          ((cmt, src)) => {
-            let uri = Utils.toUri(src);
-            maybeFound(Hashtbl.find(state.compiledDocuments), uri)
-            |?> AsYouType.getResult
-            |?>> ((defn) => (defn, uri))
-          }
-        )
-      ) {
-      | Some(((cmtInfos, data), uri)) =>
-        Log.log("Resolving definition, in local modules " ++ uri);
-        if (children == []) {
-          Some((Docs.Module([]), Some(topLocation(uri)), data.toplevelDocs, Some(uri)))
-        } else {
-          Definition.resolveNamedPath(data, children, suffix) |?> (((_, loc, defn, docs)) => Some((defn |> Definition.docsItem(_, moduleData), Some(loc), docs, Some(uri))))
-        }
-      | None =>
-        /* Log.log("Not in the localModules"); */
-        maybeFound(Hashtbl.find(package.pathsForModule), top)
-        |?> (
-          ((cmt, src)) => {
-            /* Log.log("But in the paths For module: " ++ cmt); */
-            let uri = src |?>> Utils.toUri;
-            if (children == []) {
-              Log.log("No children");
-              Some((Docs.Module([]), uri |?>> topLocation, docsForCmt(cmt, src, state) |?> fst, uri))
-            } else {
-              let%opt (_, contents) = docsForCmt(cmt, src, state);
-              let%opt (srcPath, contents, last) = Docs.resolveDocsPath(~resolveAlias=resolveAlias(state, ~package), uri, children, contents);
-              let%opt {name, loc, docstring, kind} = Docs.find(last, contents);
-              Some((kind, Some(loc), docstring, srcPath |?>> Utils.toUri))
-            }
-          }
-        )
-      };
-    }
-  };
-
-let getResolvedDefinition = (uri, defn, data, state, ~package) => {
-  Definition.findDefinition(defn, data, resolveDefinition(uri, state, ~package, data))
-};
-
-let definitionForPos = (uri, pos, data, state, ~package) =>
-  Definition.locationAtPos(pos, data)
-  |?> (((_, _, defn)) => {
-    /* Log.log("Figured out the location"); */
-    getResolvedDefinition(uri, defn, data, state, ~package)
-  });
-
-let referencesForPos = (uri, pos, data, state, ~package) => {
-  /* TODO handle cross-file stamps, e.g. the location isn't a stamp */
-  let%opt stamp = Definition.stampAtPos(pos, data);
-  let externals = {
-    let%opt_wrap (exportedName, suffixName) = Definition.isStampExported(stamp, data);
-    let thisModName = FindFiles.getName(uri);
-    optMap(((modname, (cmt, src))) => {
-      if (modname == thisModName) {
-        None
-      } else {
-        let%opt data = getDefinitionData(Utils.toUri(src), state, ~package);
-        let%opt uses = Definition.maybeFound(Hashtbl.find(data.Definition.externalReferences), thisModName);
-        let realUses = Utils.filterMap(((path, loc, suffix)) => {
-          if (path == [exportedName] && suffix == suffixName) {
-            Some((`Read, Utils.endOfLocation(loc, String.length(suffixName |? exportedName))))
-          } else {
-            None
-          }
-        }, uses);
-        realUses == [] ? None : Some((Utils.toUri(src), realUses))
-      }
-    }, package.localModules)
-  } |? [];
-  let%opt_wrap positions = Definition.highlightsForStamp(stamp, data);
-  [(uri, positions), ...externals]
 };

@@ -103,7 +103,12 @@ function activate(context) {
                 command: binLocation,
                 args: [],
             },
-            clientOptions
+            {
+                ...clientOptions,
+                revealOutputChannelOn: vscode.workspace.getConfiguration('reason_language_server').get('show_debug_errors')
+                    ? RevealOutputChannelOn.Error
+                    : RevealOutputChannelOn.Never
+            }
         );
         lastStartTime = Date.now()
         context.subscriptions.push(client.start());

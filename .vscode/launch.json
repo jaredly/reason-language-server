@@ -63,6 +63,18 @@
 			"sourceMaps": false,
 		},
 		{
+			"name": "Workspace",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/client",
+				"${workspaceRoot}/examples/example-workspace"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
 			"name": "Monorepo",
 			"type": "extensionHost",
 			"request": "launch",

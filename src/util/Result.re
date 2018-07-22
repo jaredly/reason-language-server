@@ -4,6 +4,11 @@ type result('ok, 'error) = Belt.Result.t('ok, 'error) = Ok('ok) | Error('error);
 let resultOfOption = (err, v) => switch v { | Some(v) => Ok(v) | None => Error(err)};
 let orError = resultOfOption;
 
+let toOptionAndLog = err => switch err {
+  | Error(e) => Log.log(e); None
+  | Ok(v) => Some(v)
+};
+
 module InfixResult = {
   let (|?>) = (a, fn) => switch a { | Ok(a) => fn(a) | Error(e) => Error(e) };
   let (|.>) = (fa, fb, value) => fb(fa(value));

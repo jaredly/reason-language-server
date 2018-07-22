@@ -1,0 +1,212 @@
+### Toplevel Values
+
+=== Basic
+let awesome = 10;
+let x = awe<*>
+-->
+awesome
+- path: file:///path/to/Test.re
+> let awesome: int
+
+=== Basic expr
+{
+  let awesome = 10;
+  let x = awe<*>
+  let other = 30;
+}
+-->
+awesome
+- path: file:///path/to/Test.re
+> let awesome: int
+
+=== Basic expr
+let awesome = 10;
+let c = 3;
+let b = {
+  if (true) {
+    20
+  } else {
+    awe<*>
+  }
+};
+-->
+awesome
+- path: file:///path/to/Test.re
+> let awesome: int
+
+=== In Module
+module M = {
+  let awesome = 10;
+};
+let x = M.awe<*>
+-->
+awesome
+- path: file:///path/to/Test.re
+> let awesome: int
+
+### Constructors
+
+=== Basic
+type t = Awesome | Awkward(int, float);
+A<*>
+-->
+Awesome
+- path: file:///path/to/Test.re
+> Awesome
+> 
+> type t = | Awesome | Awkward(int, float)
+Awkward
+- path: file:///path/to/Test.re
+> Awkward(int, float)
+> 
+> type t = | Awesome | Awkward(int, float)
+
+### Attributes
+
+=== Basic
+type t = {name: int, nose: float};
+let m = {name: 2, nose: 1.4};
+m.n<*>
+-->
+name
+- path: file:///path/to/Test.re
+> name: int
+> 
+> type t = {name: int, nose: float}
+nose
+- path: file:///path/to/Test.re
+> nose: float
+> 
+> type t = {name: int, nose: float}
+
+=== Just dot
+type t = {name: int, party: float};
+let m = {name: 2, party: 1.4};
+let x = {
+  m.<*>
+};
+-->
+name
+- path: file:///path/to/Test.re
+> name: int
+> 
+> type t = {name: int, party: float}
+party
+- path: file:///path/to/Test.re
+> party: float
+> 
+> type t = {name: int, party: float}
+
+### MultiFile
+
+=== 1
+--- Lib.re
+let awesome = "hello";
+let awkward = 4.1;
+---
+Lib.<*>
+-->
+awkward
+- path: file:///path/to/Lib.re
+> let awkward: float
+awesome
+- path: file:///path/to/Lib.re
+> let awesome: string
+
+=== Mutli-attribute
+--- A.re
+type a = { name: string, nose: int };
+--- B.re
+type b = { person: A.a, age: float, };
+---
+let x = (v: B.b) => {
+  v.p<*>
+};
+-->
+person
+- path: file:///path/to/B.re
+> person: A.a
+> 
+> type b = {person: A.a, age: float}
+
+=== Multi-open
+--- A.re
+let awesome = 10;
+--- B.re
+let awkward = 20;
+---
+open A;
+let m = {
+  open B;
+  let r = 3;
+  a<*>
+};
+-->
+awesome
+- path: file:///path/to/A.re
+> let awesome: int
+awkward
+- path: file:///path/to/B.re
+> let awkward: int
+
+=== Mutli-attribute 2 - wrong URIs
+--- A.re
+type a = { name: string, nose: int };
+--- B.re
+type b = { person: A.a, age: float };
+---
+let x = (v: B.b) => {
+  v.person.n<*>
+};
+
+-->
+name
+- path: file:///path/to/A.re
+> name: string
+> 
+> type a = {name: string, nose: int}
+nose
+- path: file:///path/to/A.re
+> nose: int
+> 
+> type a = {name: string, nose: int}
+
+=== Includes
+module Outer = {
+  module M = {
+    let vinner = 10;
+  };
+};
+module N = {
+  include Outer.M;
+  let vmiddle = 20;
+};
+N.v<*>
+-->
+vmiddle
+- path: file:///path/to/Test.re
+> let vmiddle: int
+vinner
+- path: file:///path/to/Test.re
+> let vinner: int
+
+=== A module
+module Lib = {
+  let a = 10;
+  type x = A(int);
+};
+Li<*>
+-->
+Lib
+- path: file:///path/to/Test.re
+> module
+
+=== Functor arg
+module M = (N: {let x: int}) => {
+  let v = 20;
+  N.<*>x;
+};
+-->
+x
+- path: file:///path/to/Test.re
+> let x: int

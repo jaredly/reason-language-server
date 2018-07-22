@@ -1,20 +1,21 @@
 
 type result =
   /* | ParseError(string) */
-  | TypeError(string, Cmt_format.cmt_infos, Definition.moduleData)
-  | Success(list(string), Cmt_format.cmt_infos, Definition.moduleData)
+  | SyntaxError(string, SharedTypes.full)
+  | TypeError(string, SharedTypes.full)
+  | Success(list(string), SharedTypes.full)
 ;
 open Infix;
 open Result;
 
 let getResult = result => switch result {
-/* | ParseError(_) => None */
-| TypeError(_, cmt, data) => Some((cmt, data))
-| Success(_, cmt, data) => Some((cmt, data))
+| SyntaxError(_, data) => data
+| TypeError(_, data) => data
+| Success(_, data) => data
 };
 
-let runRefmt = (~cacheLocation, text, refmt) => {
-  let target = cacheLocation /+ "lsp.ast";
+let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
+  let target = cacheLocation /+ moduleName ++ ".ast";
   let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
@@ -27,16 +28,16 @@ let runRefmt = (~cacheLocation, text, refmt) => {
     /* Log.log("The text:"); */
     /* Log.log(text); */
     if (!success) {
-      Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
-      Error("Unable to run refmt")
+      Log.log("<< Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
+      Error("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error))
     } else {
       Ok((goodError, target))
     }
   }
 };
 
-let format = (text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --parse re", Commands.shellEscape(refmt)));
+let format = (~formatWidth, text, refmt) => {
+  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse re", Commands.shellEscape(refmt), formatWidth |? 80));
   if (success) {
     Ok(String.concat("\n", out))
   } else {
@@ -57,6 +58,22 @@ let parseTypeError = text => {
   } else {
     Log.log("Cannot parse type error: " ++ text);
     None
+  }
+};
+
+let parseDependencyError = text => {
+  let rx = Str.regexp({|Error: The files \(.+\)\.cmi
+       and \(.+\)\.cmi
+       make inconsistent assumptions over interface \([A-Za-z_-]+\)|});
+  
+  switch (Str.search_forward(rx, text, 0)) {
+  | exception Not_found => None
+  | x =>
+    let dep = Str.matched_group(1, text) |> String.capitalize;
+    let base = Str.matched_group(2, text);
+    let baseName = Str.matched_group(3, text);
+    let final = Str.match_end();
+    Some(Filename.dirname(dep))
   }
 };
 
@@ -83,18 +100,30 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
   }
 };
 
-let process = (text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
-  open InfixResult;
-  let%try_wrap (syntaxError, astFile) = runRefmt(~cacheLocation, text, refmtPath);
+let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+  let%try (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
-      let message = Infix.(syntaxError |? lines);
-      TypeError(String.concat("\n", message), cmt, Definition.process(cmt.Cmt_format.cmt_annots))
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
+      let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
+      let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+      switch (syntaxError) {
+        | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
+        | None => {
+          let text = String.concat("\n", lines);
+          let text = switch (parseDependencyError(text)) {
+            | Some(name) => text ++ "\n\nThis is likely due to an error in module " ++ name
+            | None => text
+          };
+          TypeError(text, {file, extra})
+        }
+      }
     }
     | Ok(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ "lsp.cmt");
-      Success(lines, cmt, Definition.process(cmt.Cmt_format.cmt_annots))
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
+      let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
+      let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+      Success(lines, {file, extra})
     }
   }
 };
