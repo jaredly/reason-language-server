@@ -3,17 +3,13 @@ open Infix;
 open TopTypes;
 
 module Show = {
-  let _modPath = mp => switch mp {
-    | FindFiles.Plain(s) => s
-    | FindFiles.Namespaced(ns, name) => ns ++ "." ++ name
-  };
   let state = ({rootPath}, {localModules, compilerPath, dependencyModules}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, ((name, (cmt, src))) => Printf.sprintf("%s (%s : %s)", name, cmt, src)) |> String.concat("\n"))
     ++
     "\nDeps\n" ++ 
-    (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", _modPath(modpath), cmt, src |? "")) |> String.concat("\n"))
+    (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", modpath, cmt, src |? "")) |> String.concat("\n"))
   };
 };
 
@@ -21,10 +17,7 @@ let makePathsForModule = (localModules, dependencyModules) => {
   let pathsForModule = Hashtbl.create(30);
   dependencyModules |> List.iter(((modName, (cmt, source))) => {
     Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-    switch (modName) {
-    | FindFiles.Plain(name) => Hashtbl.replace(pathsForModule, name, (cmt, source))
-    | _ => ()
-    }
+    Hashtbl.replace(pathsForModule, modName, (cmt, source))
   });
 
   localModules |> List.iter(((modName, (cmt, source))) => {
@@ -147,7 +140,7 @@ let newJbuilderPackage = (rootPath) => {
         } else {
           libraryName ++ "__" ++ modName
         }
-      }, ~sourceDirectory=otherPath, compiledBase) |> List.map(((name, p)) => (FindFiles.Plain(name), p))));
+      }, ~sourceDirectory=otherPath, compiledBase)));
     };
     switch res {
       | Error(message) => {
@@ -170,7 +163,7 @@ let newJbuilderPackage = (rootPath) => {
     |> List.filter(FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (FindFiles.Plain(Filename.chop_extension(name) |> String.capitalize), (compiled, Some(path /+ name)));
+      (Filename.chop_extension(name) |> String.capitalize, (compiled, Some(path /+ name)));
     })
   })
   |> List.concat;
@@ -261,16 +254,11 @@ let converter = (src, usePlainText) => {
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   let infos = Cmt_format.read_cmt(cmt);
-  /* switch (Docs.forCmt(converter(src, clientNeedsPlainText), infos)) {
-  | None => {Log.log("Docs.forCmt gave me nothing " ++ cmt);None}
-  | Some((docstring, items)) => */
-    let%opt src = src;
-    let uri = Utils.toUri(src);
-    let%opt file = ProcessCmt.forCmt(uri, converter(Some(src), clientNeedsPlainText), infos) |> Result.toOptionAndLog;
-    /* let docs = Docs.moduleDocs(docstring, items, file); */
-    Hashtbl.replace(cmtCache, cmt, (changed, infos, file));
-    Some(file);
-  /* }; */
+  /* let%opt src = src; */
+  let uri = Utils.toUri(src |? cmt);
+  let%opt file = ProcessCmt.forCmt(uri, converter(src, clientNeedsPlainText), infos) |> Result.toOptionAndLog;
+  Hashtbl.replace(cmtCache, cmt, (changed, infos, file));
+  Some(file);
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {

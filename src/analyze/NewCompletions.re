@@ -158,7 +158,9 @@ let getEnvWithOpens = (~env: Query.queryEnv, ~getModule, ~opens: list(Query.quer
       | [] => switch path {
         | Tip(_) => None
         | Nested(top, path) => {
+          Log.log("Getting module " ++ top);
           let%opt file = getModule(top);
+          Log.log("got it");
           let env = Query.fileEnv(file);
           Query.resolvePath(~env, ~getModule, ~path) |> Infix.logIfAbsent("Unable to resolve the path")
         }
@@ -304,19 +306,20 @@ let get = (
       let env = Query.fileEnv(full.file);
 
       /* Log.log(SharedTypes.showExtra(full.extra)); */
+      /* Belt. */
 
       Log.log("multiepl");
       switch (determineCompletion(multiple)) {
       | `Normal(path) => {
+          Log.log("normal " ++ pathToString(path));
           let%opt_wrap (env, suffix) = getEnvWithOpens(~env, ~getModule, ~opens, path);
-          valueCompletions(~env, ~getModule, ~suffix) @ List.concat(
-            Belt.List.map(opens, env => valueCompletions(~env, ~getModule, ~suffix))
-          )
+          Log.log("Got the env");
+          valueCompletions(~env, ~getModule, ~suffix)
         } |? {
           [];
         }
       | `Attribute(target, suffix) => {
-
+        Log.log("suffix :" ++ suffix);
         switch (target) {
           | [] => None
           | [first, ...rest] => {
@@ -324,55 +327,32 @@ let get = (
             let%opt declared = Query.findInScope(pos, first, env.file.stamps.values);
             Log.log("Found it! " ++ declared.name.txt);
             let%opt (env, typ) = Query.digConstructor(~env, ~getModule, declared.contents.typ);
-            /* let expr = ProcessExtra.dig(declared.contents.typ);
-            switch (expr.desc) {
-              | Tconstr(path, _args, _memo) => {
-                Log.log("dug");
-                let%opt typ = switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
-                | `Not_found => None
-                | `Stamp(stamp) =>
-                  Log.log("stamp");
-                  Query.hashFind(env.file.stamps.types, stamp)
-                | `Exported(env, name) =>
-                  Log.log("exported " ++ name);
-                  let%opt stamp = Query.hashFind(env.exported.types, name);
-                  Query.hashFind(env.file.stamps.types, stamp)
-                | _ => None
-                }; */
-                let%opt (env, typ) = Belt.List.reduce(rest, Some((env, typ)), (current, name) => {
-                  let%opt (env, typ) = current;
-                  switch (typ.contents.kind) {
-                  | Record(attributes) =>
-                    let%opt attr = attributes |. Belt.List.getBy(a => {
-                      a.name.txt == name
-                    });
-                    Log.log("Found attr");
-                    Query.digConstructor(~env, ~getModule, attr.typ)
-                  | _ => None
-                  }
+            let%opt (env, typ) = Belt.List.reduce(rest, Some((env, typ)), (current, name) => {
+              let%opt (env, typ) = current;
+              switch (typ.contents.kind) {
+              | Record(attributes) =>
+                let%opt attr = attributes |. Belt.List.getBy(a => {
+                  a.name.txt == name
                 });
-                switch (typ.contents.kind) {
-                | Record(attributes) =>
-                  Some(attributes |. Belt.List.keepMap(a => {
-                    if (Utils.startsWith(a.name.txt, suffix)) {
-                      Some((env.file.uri, {
-                        ...emptyDeclared(a.name.txt),
-                        contents: Attribute(a, typ)
-                      }))
-                    } else {
-                      None
-                    }
-                  }))
-                | _ => None
-                }
-              /* }
-              | _ => {
-                Log.log("not a constr tho");
-                Log.log(PrintType.default.expr(PrintType.default, expr)
-                |> PrintType.prettyString);
-                None
+                Log.log("Found attr " ++ name);
+                Query.digConstructor(~env, ~getModule, attr.typ)
+              | _ => None
               }
-            }; */
+            });
+            switch (typ.contents.kind) {
+            | Record(attributes) =>
+              Some(attributes |. Belt.List.keepMap(a => {
+                if (Utils.startsWith(a.name.txt, suffix)) {
+                  Some((env.file.uri, {
+                    ...emptyDeclared(a.name.txt),
+                    contents: Attribute(a, typ)
+                  }))
+                } else {
+                  None
+                }
+              }))
+            | _ => None
+            }
           }
         };
 

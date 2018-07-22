@@ -17,6 +17,7 @@ let getOutput = (files, text) => {
     let opens = PartialParser.findOpens(text, offset);
     let useMarkdown = !state.settings.clientNeedsPlainText;
     let allModules = package.localModules |> List.map(fst);
+    Log.log(showExtra(full.extra));
     NewCompletions.get(
       ~full,
       ~opens,

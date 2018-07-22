@@ -87,6 +87,20 @@ awesome
 - path: file:///path/to/Lib.re
 > let awesome: string
 
+=== * 2
+--- Lib.re
+let awesome = "hello";
+---
+{
+let a = 2;
+Lib.<*>
+let b = 3;
+}
+-->
+awesome
+- path: file:///path/to/Lib.re
+> let awesome: string
+
 === Mutli-attribute
 --- A.re
 type a = { name: string, nose: int };
@@ -102,6 +116,26 @@ person
 > person: A.a
 > 
 > type b = {person: A.a, age: float}
+
+=== * Multi-open
+--- A.re
+let awesome = 10;
+--- B.re
+let awkward = 20;
+---
+open A;
+let m = {
+  open B;
+  let r = 3;
+  a<*>
+};
+-->
+awesome
+- path: file:///path/to/A.re
+> let awesome: int
+awkward
+- path: file:///path/to/B.re
+> let awkward: int
 
 === Mutli-attribute 2 - wrong URIs
 --- A.re

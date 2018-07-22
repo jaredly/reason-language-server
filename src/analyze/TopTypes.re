@@ -14,7 +14,7 @@ type package = {
 
   /* Depend on bsb having already run */
   localModules: list((moduleName, (filePath, filePath))),
-  dependencyModules: list((FindFiles.modpath, (string, option(string)))),
+  dependencyModules: list((moduleName, (string, option(string)))),
   pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
 
   opens: list(string),

@@ -170,12 +170,9 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   |> List.filter(((full, rel)) => Files.exists(full))
 };
 
-type modpath = Namespaced(string, string) | Plain(string);
-
 let loadStdlib = stdlib => {
   collectFiles(stdlib)
   |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
-  |> List.map(((name, s)) => (Plain(name), s))
 };
 
 let needsCompilerLibs = config => {
@@ -202,8 +199,8 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
       let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
       let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
       let files = switch namespace {
-      | None => List.map(((full, rel)) => (Plain(getName(rel) |> String.capitalize), (full, Some(rel))), files)
-      | Some(name) => files |> List.map(((full, rel)) => (Namespaced(name, getName(rel)), (full, Some(rel))))
+      | None => List.map(((full, rel)) => (getName(rel) |> String.capitalize, (full, Some(rel))), files)
+      | Some(name) => files |> List.map(((full, rel)) => (name ++ "-" ++ getName(rel), (full, Some(rel))))
       };
       (compiledDirectories, files)
     | None =>

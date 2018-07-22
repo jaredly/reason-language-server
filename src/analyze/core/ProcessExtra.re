@@ -239,21 +239,19 @@ module F = (Collector: {
   | _ => ()
   };
 
-  let enter_structure = ({str_items}) => {
+  let enter_structure = ({str_items}) =>
     if (str_items != []) {
+      let first = List.hd(str_items);
+      let last = List.nth(str_items, List.length(str_items) - 1);
 
-    let first = List.hd(str_items);
-    let last = List.nth(str_items, List.length(str_items) - 1);
+      let extent = {
+        Location.loc_ghost: true,
+        loc_start: first.str_loc.loc_start,
+        loc_end: last.str_loc.loc_end,
+      };
 
-    let extent = {
-      Location.loc_ghost: true,
-      loc_start: first.str_loc.loc_start,
-      loc_end: last.str_loc.loc_end,
+      addScopeExtent(extent);
     };
-
-    addScopeExtent(extent);
-    }
-  };
 
   let leave_structure = str => {
     if (str.str_items != []) {
@@ -305,7 +303,7 @@ module F = (Collector: {
         addForConstructor(pat_type, lident, constructor)
       }
       | Tpat_var({stamp}, name) => {
-        Log.log("Pattern " ++ name.txt);
+        /* Log.log("Pattern " ++ name.txt); */
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
           let declared = ProcessCmt.newDeclared(
             ~name,
@@ -346,7 +344,7 @@ module F = (Collector: {
     });
     switch (expression.exp_desc) {
     | Texp_ident(path, {txt, loc}, {val_type}) => {
-      Log.log("Exp ident folx " ++ Utils.showLocation(loc));
+      /* Log.log("Exp ident folx " ++ Utils.showLocation(loc)); */
       addForPath(path, txt, loc, val_type, Value);
     }
     | Texp_record(items, _) => {
@@ -438,6 +436,7 @@ let forItems = (~file, items, parts) => {
   }));
 
   List.iter(Iter.iter_structure_item, items);
+  Log.log("Parts " ++ string_of_int(Array.length(parts)));
 
   parts |. Belt.Array.forEach(part => switch part {
   | Cmt_format.Partial_signature(str) =>

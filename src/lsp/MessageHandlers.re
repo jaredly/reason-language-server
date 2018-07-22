@@ -66,7 +66,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let localData = State.getLastDefinitions(uri, state);
       let useMarkdown = !state.settings.clientNeedsPlainText;
-      let allModules = package.localModules |> List.map(fst);
+      let allModules = (
+        package.localModules |> List.map(fst)
+      ) @ (
+        package.dependencyModules |> List.map(fst)
+      );
       let items = NewCompletions.get(
         ~full={file, extra},
         ~package,
