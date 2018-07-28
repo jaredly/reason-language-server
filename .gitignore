@@ -2,7 +2,8 @@
 .merlin
 .bsb.lock
 npm-debug.log
-lib/
+/lib/
+examples/**/lib
 node_modules/
 log_types.txt
 *.install

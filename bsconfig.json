@@ -10,7 +10,7 @@
     {"dir": "ppx", "type": "ppx"},
     {"dir": "src", "subdirs": true},
     {"dir": "bin", "type": "dev"},
-    {"dir": "tests", "type": "dev"},
+    {"dir": "tests", "type": "dev", "subdirs": true},
     "omd",
     "odoc_parser"
   ],
@@ -25,9 +25,6 @@
     "backend": "native",
     "type": "ppx",
     "main-module": "Ppx_Monads"
-  }, {
-    "backend": "native",
-    "main-module": "Tester"
   }, {
     "backend": "native",
     "main-module": "TestCompletions"
