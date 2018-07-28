@@ -30,6 +30,9 @@
     "main-module": "TestCompletions"
   }, {
     "backend": "native",
+    "main-module": "TestCodeLens"
+  }, {
+    "backend": "native",
     "main-module": "TestDefinition"
   }, {
     "backend": "native",
