@@ -51,7 +51,7 @@ let getBsbExecutable = rootPath =>
 let detect = (rootPath, bsconfig) => {
   let%try bsbExecutable = getBsbExecutable(rootPath);
   let%try_wrap bsbVersion = {
-    let (output, success) = Commands.execSync(rootPath /+ "node_modules/.bin/bsb -version");
+    let (output, success) = Commands.execSync(bsbExecutable ++ " -version");
     success ? switch output {
     | [line] => Ok(String.trim(line))
     | _ => Error("Unable to determine bsb version")
