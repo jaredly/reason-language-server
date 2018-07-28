@@ -33,7 +33,7 @@ let rgetRange = (pos) => {
   Ok((start, end_))
 };
 
-let rPositionParams = (params) =>{
+let rPositionParams = (params) => {
   open Result.InfixResult;
   let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
   let%try pos = RJson.get("position", params) |?> rgetPosition;

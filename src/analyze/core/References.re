@@ -154,6 +154,32 @@ let forPos = (~file, ~extra, pos) => {
   Some(refs)
 };
 
+let validateLoc = (loc: Location.t, backup: Location.t) => {
+  if (loc.loc_start.pos_cnum == -1) {
+    if (backup.loc_start.pos_cnum == -1) {
+      {
+        Location.loc_ghost: true,
+        loc_start: {
+          pos_cnum: 0,
+          pos_lnum: 1,
+          pos_bol: 0,
+          pos_fname: ""
+        },
+        loc_end: {
+          pos_cnum: 0,
+          pos_lnum: 1,
+          pos_bol: 0,
+          pos_fname: ""
+        },
+        }
+    } else {
+      backup
+    }
+  } else {
+    loc
+  }
+};
+
 let definition = (~file, stamp, tip) => {
   switch tip {
     | Constructor(name) =>
@@ -164,7 +190,8 @@ let definition = (~file, stamp, tip) => {
       Some((file.uri, attribute.name.loc))
     | _ =>
       let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
-      Some((file.uri, declared.name.loc))
+      let loc = validateLoc(declared.name.loc, declared.extentLoc);
+      Some((file.uri, loc))
   };
 };
 
