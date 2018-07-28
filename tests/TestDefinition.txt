@@ -1,13 +1,11 @@
 === Kitchen sink
 --- Lib.re
-/* c8 should take you to `age`. Cross-file/module stuff is borked */
-type <t5><t7><t8>record = {
+type <t7>record = {
   <t6>name: string,
-  age: int
+  <t8><t5>age: int
 };
-/* likewise, t9 should go to `B` */
-type <t9>variant = <t10>A(int, float) | B(record);
-type <t4>container = {v: variant, r: <c7>record};
+type variant = <t10>A(int, float) | <t9>B(record);
+type container = {v: variant, <t4>r: <c7>record};
 let here = {<c6>name: "fred", age: 3};
 let a = <c10>A(3, 4.);
 --- Other.re

@@ -42,7 +42,7 @@ let getOutput = (files, text) => {
 let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
 Log.setLocation(logDest);
 
-let testFile = "./tests/Completion.txt";
+let testFile = "./tests/TestCompletions.txt";
 let output = Files.readFileExn(testFile) |> Utils.splitLines |. TestUtils.process(getOutput) |> String.concat("\n");
 Files.writeFileExn(testFile, output);
 

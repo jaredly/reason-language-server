@@ -30,7 +30,7 @@
     "main-module": "Tester"
   }, {
     "backend": "native",
-    "main-module": "CompletionFixtures"
+    "main-module": "TestCompletions"
   }, {
     "backend": "native",
     "main-module": "TestDefinition"

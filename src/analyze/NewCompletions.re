@@ -67,6 +67,7 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
 
 let completionForExporteds = (exporteds, stamps: Hashtbl.t(int, SharedTypes.declared('a)), prefix, transformContents) => {
   Hashtbl.fold((name, stamp, results) => {
+    Log.log("checking exported: " ++ name);
     if (Utils.startsWith(name, prefix)) {
       let declared = Hashtbl.find(stamps, stamp);
       [{...declared, contents: transformContents(declared.contents)}, ...results]
@@ -255,10 +256,12 @@ let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => 
 };
 
 let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
+  /* Log.log("value completions " ++ suffix ++ " for env " ++ env.file.uri); */
   let results = [];
   let results = if (suffix == "" || isCapitalized(suffix)) {
-    results @
-    completionForExporteds(env.exported.modules, env.file.stamps.modules, suffix, m => Module(m))
+    /* Log.log("capitalized"); */
+    results
+    @ completionForExporteds(env.exported.modules, env.file.stamps.modules, suffix, m => Module(m))
     @ (
       /* TODO declared thingsz */
       completionForConstructors(env.exported.types, env.file.stamps.types, suffix)
@@ -269,7 +272,9 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
   };
 
   let results = if (suffix == "" || !isCapitalized(suffix)) {
-    results @ completionForExporteds(env.exported.values, env.file.stamps.values, suffix, v => Value(v)) @
+    /* Log.log("not capitalized"); */
+    results @
+    completionForExporteds(env.exported.values, env.file.stamps.values, suffix, v => Value(v)) @
     completionForExporteds(env.exported.types, env.file.stamps.types, suffix, t => Type(t))
   } else {
     results
