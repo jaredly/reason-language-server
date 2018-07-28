@@ -54,19 +54,24 @@ let newBsPackage = (rootPath) => {
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
-  let jsPackageMode = config
-  |> Json.get("package-specs")
-  |?> Json.nth(0)
-  |?> Json.get("module")
-  |?> Json.string
-  |? "commonjs";
-  let flags = jsPackageMode == "es6" ? [
-    "-bs-package-name",
-    config |> Json.get("name") |?> Json.string |? "unnamed",
-    "-bs-package-output",
-    "es6:src",
-    ...flags] : flags;
-  let flags = ["-bs-no-builtin-ppx-ml", ...flags];
+  let flags = switch buildSystem {
+    | Bsb(_) | BsbNative(_, Js) => {
+      let jsPackageMode = config
+      |> Json.get("package-specs")
+      |?> Json.nth(0)
+      |?> Json.get("module")
+      |?> Json.string
+      |? "commonjs";
+      let flags = jsPackageMode == "es6" ? [
+        "-bs-package-name",
+        config |> Json.get("name") |?> Json.string |? "unnamed",
+        "-bs-package-output",
+        "es6:src",
+        ...flags] : flags;
+      ["-bs-no-builtin-ppx-ml", ...flags];
+    }
+    | _ => flags
+  };
 
   {
     basePath: rootPath,
