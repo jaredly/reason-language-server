@@ -66,6 +66,7 @@ let newBsPackage = (rootPath) => {
     "-bs-package-output",
     "es6:src",
     ...flags] : flags;
+  let flags = ["-bs-no-builtin-ppx-ml", ...flags];
 
   {
     basePath: rootPath,
