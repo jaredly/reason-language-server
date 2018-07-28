@@ -83,7 +83,7 @@ let justBscCommand = (compilerPath, sourceFile, includes, flags) => {
     /* {|%s %s -color never -bin-annot %s -impl %s|}, */
     {|%s %s -bin-annot %s -impl %s|},
     compilerPath,
-    includes |> List.map(Printf.sprintf("-I %S")) |> String.concat(" "),
+    includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),
     flags,
     sourceFile
   )

@@ -181,7 +181,10 @@ let rec mkdirp = (dest) =>
   if (! exists(dest)) {
     let parent = Filename.dirname(dest);
     mkdirp(parent);
-    Unix.mkdir(dest, 0o740)
+    Unix.mkdir(dest, 0o740);
+    if (!exists(dest)){
+      failwith("Unable to create " ++ dest);
+    }
   };
 
 let rec copyDeep = (~source, ~dest) => {

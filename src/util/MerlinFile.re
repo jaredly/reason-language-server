@@ -3,7 +3,7 @@ open Infix;
 /** This is a dirty hack to get around the bug in bsb native that doesn't do the proper ppx flags for ppxs */
 let fixPpx = (flg, base) => {
   switch (Str.split(Str.regexp_string(" "), flg)) {
-    | ["-ppx", ppx] when Str.string_match(Str.regexp("[a-zA-Z_]+"), ppx, 0) => {
+    | ["-ppx", ppx] when Str.string_match(Str.regexp("[a-zA-Z_]+"), ppx, 0) && !Str.string_match(Str.regexp("[a-zA-Z_]:"), ppx, 0) => {
       "-ppx " ++ (base /+ "lib" /+ "bs" /+ "native" /+ String.lowercase(ppx) ++ ".native")
     }
     | _ => flg
