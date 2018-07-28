@@ -95,12 +95,23 @@ let toUri = (path) =>
     "file://"
     ++ (
       Str.global_replace(Str.regexp_string("\\"), "/", path)
-      |> Str.substitute_first(Str.regexp("^([A-Z]):"), text => {
+      |> Str.substitute_first(Str.regexp("^\([A-Z]\):"), text => {
         let name = Str.matched_group(1, text);
         "/" ++ String.lowercase(name) ++ "%3A"
       })
     )
   };
+
+let parseWindowsUri = withoutScheme => {
+  withoutScheme
+  |> Str.substitute_first(Str.regexp("^/\([a-z]\)%3A"), text => {
+    let name = Str.matched_group(1, text);
+    String.uppercase(name) ++ ":"
+  })
+  /* OCaml doesn't want to do a find & replace where the replacement is a single backslash. So this works */
+  |> Str.split(Str.regexp_string("/"))
+  |> String.concat({|\|})
+};
 
 let parseUri = (uri) =>
   if (startsWith(uri, "file://")) {
@@ -108,16 +119,7 @@ let parseUri = (uri) =>
     if (Sys.os_type == "Unix") {
       Some(withoutScheme)
     } else {
-      Some(
-        withoutScheme
-        |> Str.substitute_first(Str.regexp("^/([a-z])%3A"), text => {
-          let name = Str.matched_group(1, text);
-          String.uppercase(name) ++ ":"
-        })
-        /* OCaml doesn't want to do a find & replace where the replacement is a single backslash. So this works */
-        |> Str.split(Str.regexp_string("/"))
-        |> String.concat({|\|})
-      )
+      Some(parseWindowsUri(withoutScheme))
     }
   } else {
     None
