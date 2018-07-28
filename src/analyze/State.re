@@ -53,6 +53,20 @@ let newBsPackage = (rootPath) => {
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
+  let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
+  let jsPackageMode = config
+  |> Json.get("package-specs")
+  |?> Json.nth(0)
+  |?> Json.get("module")
+  |?> Json.string
+  |? "commonjs";
+  let flags = jsPackageMode == "es6" ? [
+    "-bs-package-name",
+    config |> Json.get("name") |?> Json.string |? "unnamed",
+    "-bs-package-output",
+    "es6:src",
+    ...flags] : flags;
+
   {
     basePath: rootPath,
     localModules,
@@ -61,7 +75,7 @@ let newBsPackage = (rootPath) => {
     buildSystem,
     opens: [],
     tmpPath,
-    compilationFlags: MerlinFile.getFlags(rootPath) |> Result.withDefault([""]) |> String.concat(" "),
+    compilationFlags: flags |> String.concat(" "),
     includeDirectories: 
       stdLibDirectories @ 
       dependencyDirectories @ localCompiledDirs,
