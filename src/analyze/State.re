@@ -73,6 +73,11 @@ let newBsPackage = (rootPath) => {
     | _ => flags
   };
 
+  let interModuleDependencies = Hashtbl.create(List.length(localModules));
+  /* localModules |. Belt.List.forEach(((name, _)) => {
+    Hashtbl.add(interModuleDependencies, name, Hashtbl.create(10))
+  }); */
+
   {
     basePath: rootPath,
     localModules,
@@ -82,6 +87,7 @@ let newBsPackage = (rootPath) => {
     opens: [],
     tmpPath,
     compilationFlags: flags |> String.concat(" "),
+    interModuleDependencies,
     includeDirectories: 
       stdLibDirectories @ 
       dependencyDirectories @ localCompiledDirs,
@@ -199,11 +205,17 @@ let newJbuilderPackage = (rootPath) => {
 
   libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
+  let interModuleDependencies = Hashtbl.create(List.length(localModules));
+  /* localModules |. Belt.List.forEach(((name, _)) => {
+    Hashtbl.add(interModuleDependencies, name, Hashtbl.create(10))
+  }); */
+
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let%try refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem);
   Ok({
     basePath: rootPath,
     localModules,
+    interModuleDependencies,
     dependencyModules,
     pathsForModule,
     buildSystem,
@@ -425,9 +437,27 @@ let getCompilationResult = (uri, state, ~package) => {
       Log.log("<< Replacing lastDefinitions for " ++ uri);
 
       Hashtbl.replace(state.lastDefinitions, uri, full);
+      Hashtbl.replace(package.interModuleDependencies, moduleName, SharedTypes.hashList(full.extra.externalReferences) |. Belt.List.map(fst));
 
       if (state.settings.crossFileAsYouType) {
         /** Check dependencies */
+        package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+          let otherUri = Utils.toUri(src);
+          if (mname != moduleName
+              && List.mem(
+                   moduleName,
+                   Query.hashFind(package.interModuleDependencies, mname) |? [],
+                 )) {
+            Hashtbl.remove(state.compiledDocuments, otherUri);
+            Hashtbl.replace(
+              state.documentTimers,
+              otherUri,
+              Unix.gettimeofday() +. 0.01,
+            );
+          };
+        });
+
+
         package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
           let otherUri = Utils.toUri(src);
           switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
