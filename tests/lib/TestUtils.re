@@ -8,6 +8,7 @@ let getPackage = (localModules) => {
     dependencyModules: [],
     pathsForModule: State.makePathsForModule(localModules, []),
     buildSystem: BuildSystem.Bsb("3.2.0"),
+    interModuleDependencies: Hashtbl.create(0),
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
