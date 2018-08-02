@@ -30,6 +30,7 @@ type package = {
 type settings = {
   formatWidth: option(int),
   perValueCodelens: bool,
+  refmtLocation: option(string),
   opensCodelens: bool,
   dependenciesCodelens: bool,
   clientNeedsPlainText: bool,

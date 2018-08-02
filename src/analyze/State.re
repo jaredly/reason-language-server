@@ -264,6 +264,7 @@ let getPackage = (uri, state) => {
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
       let%try package = newBsPackage(rootPath);
+      let package = {...package, refmtPath: state.settings.refmtLocation |? package.refmtPath};
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
@@ -401,7 +402,7 @@ let getContents = (uri, state) => {
 open Infix;
 let getCompilationResult = (uri, state, ~package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
-    Hashtbl.find(state.compiledDocuments, uri)
+    Belt.Result.Ok(Hashtbl.find(state.compiledDocuments, uri))
   } else {
     let text = Hashtbl.mem(state.documentText, uri) ? {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
@@ -414,7 +415,7 @@ let getCompilationResult = (uri, state, ~package) => {
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;
-    let%try_force result = AsYouType.process(
+    let%try result = AsYouType.process(
       ~uri,
       ~moduleName,
       text,
@@ -474,7 +475,7 @@ let getCompilationResult = (uri, state, ~package) => {
       }
     }
     };
-    result
+    Ok(result)
   }
 };
 
@@ -484,16 +485,23 @@ let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefiniti
   Some(data)
 };
 
+let tryExtra = p => {
+  let%try p = p;
+  Ok(AsYouType.getResult(p))
+};
+
 /* If there's a previous "good" version, use that, otherwise use the current version */
 let getBestDefinitions = (uri, state, ~package) => {
   if (Hashtbl.mem(state.lastDefinitions, uri)) {
-    Hashtbl.find(state.lastDefinitions, uri)
+    Belt.Result.Ok(Hashtbl.find(state.lastDefinitions, uri))
   } else {
-    getCompilationResult(uri, state, ~package) |> AsYouType.getResult
+    tryExtra(getCompilationResult(uri, state, ~package))
   }
 };
 
-let getDefinitionData = (uri, state, ~package) => AsYouType.getResult(getCompilationResult(uri, state, ~package));
+let getDefinitionData = (uri, state, ~package) => {
+  getCompilationResult(uri, state, ~package) |> tryExtra
+};
 
 let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
@@ -507,8 +515,8 @@ let docsForModule = (modname, state, ~package) =>
     };
 
 let fileForUri = (state,  ~package, uri) => {
-  let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-  Some((moduleData.file, moduleData.extra))
+  let%try moduleData = getCompilationResult(uri, state, ~package) |> tryExtra;
+  Ok((moduleData.file, moduleData.extra))
 };
 
 let fileForModule = (state,  ~package, modname) => {
@@ -519,7 +527,7 @@ let fileForModule = (state,  ~package, modname) => {
     /* Log.log("Found it " ++ src); */
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
-      let%opt (file, _) = fileForUri(state, ~package, uri);
+      let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> Result.toOptionAndLog;
       Some(file)
     } else {
       None
@@ -537,7 +545,7 @@ let extraForModule = (state, ~package, modname) => {
   if (Hashtbl.mem(package.pathsForModule, modname)) {
     let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
     let%opt src = src;
-    let%opt (file, extra) = fileForUri(state, ~package, Utils.toUri(src));
+    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> Result.toOptionAndLog;
     Some(extra)
   } else {
     None;

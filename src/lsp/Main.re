@@ -77,10 +77,11 @@ let getInitialState = (params) => {
 
   let packagesByRoot = Hashtbl.create(1);
 
-  let package = {
+  /* let package = {
     let%try_consume package = State.newBsPackage(rootPath);
+    let package = {...package, refmtPath: state.settings.refmtLocation |? package.refmtPath};
     Hashtbl.replace(packagesByRoot, rootPath, package)
-  };
+  }; */
 
   /* if client needs plain text in any place, we disable markdown everywhere */
   let clientNeedsPlainText = ! Infix.(
@@ -101,6 +102,7 @@ let getInitialState = (params) => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       formatWidth: None,
+      refmtLocation: None,
       crossFileAsYouType: false,
       perValueCodelens: false,
       opensCodelens: true,
@@ -123,7 +125,7 @@ let getTextDocument = doc => {
 
 let runDiagnostics = (uri, state, ~package) => {
   Log.log("Running diagnostics for " ++ uri);
-  let result = State.getCompilationResult(uri, state, ~package);
+  let%try_consume result = State.getCompilationResult(uri, state, ~package);
   open Rpc.J;
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
     ("uri", s(uri)),
@@ -218,12 +220,13 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   }),
   ("workspace/didChangeConfiguration", (state, params) => {
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
+    let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string);
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
     let formatWidth = (settings |?> Json.get("format_width") |?> Json.number) |?>> int_of_float;
     let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? false;
-    Ok({...state, settings: {...state.settings, perValueCodelens, opensCodelens, formatWidth, dependenciesCodelens, crossFileAsYouType}})
+    Ok({...state, settings: {...state.settings, perValueCodelens, refmtLocation, opensCodelens, formatWidth, dependenciesCodelens, crossFileAsYouType}})
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;

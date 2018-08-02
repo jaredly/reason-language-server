@@ -93,6 +93,7 @@ let isCompiledFile = name =>
 let isSourceFile = name =>
   Filename.check_suffix(name, ".re")
   || Filename.check_suffix(name, ".rei")
+  || Filename.check_suffix(name, ".rel")
   || Filename.check_suffix(name, ".ml")
   || Filename.check_suffix(name, ".mli");
 
@@ -124,6 +125,7 @@ let filterDuplicates = cmts => {
   cmts |> List.filter(path => {
     !((
       Filename.check_suffix(path, ".re")
+      || Filename.check_suffix(path, ".rel")
       || Filename.check_suffix(path, ".ml")
       || Filename.check_suffix(path, ".cmt")
       || Filename.check_suffix(path, ".cmi")

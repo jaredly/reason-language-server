@@ -3,7 +3,7 @@
 	"description": "a vscode client for the reason-language-server",
 	"author": "Jared Forsyth",
 	"license": "ISC",
-	"version": "1.0.0-beta.6-1",
+	"version": "1.0.0-beta.6-1-1",
 	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
@@ -16,7 +16,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onLanguage:reason"
+		"onLanguage:reason",
+		"onLanguage:clojure"
 	],
 	"main": "./src/index",
 	"contributes": {
@@ -33,6 +34,10 @@
 				"reason_language_server.location": {
 					"type": "string",
 					"description": "Provide a custom location for the language server binary"
+				},
+				"reason_language_server.refmt": {
+					"type": "string",
+					"description": "Provide a custom location for the refmt binary"
 				},
 				"reason_language_server.format_width": {
 					"type": "number",

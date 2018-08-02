@@ -85,6 +85,7 @@ let getState = () => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       crossFileAsYouType: false,
+      refmtLocation: None,
       formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,
