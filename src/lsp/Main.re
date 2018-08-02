@@ -72,6 +72,7 @@ let getInitialState = (params) => {
 
   Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
   Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
+  Log.log("Hello from " ++ Sys.executable_name);
 
   open InfixResult;
 

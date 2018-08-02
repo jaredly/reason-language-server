@@ -111,6 +111,7 @@ let cmiName = (~namespace, name) =>
   compiledBase(~namespace, name) ++ ".cmi";
 
 let getName = x => Filename.basename(x) |> Filename.chop_extension;
+let namespacedName = (~namespace, x) => getName(x) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
 
 let filterDuplicates = cmts => {
   /* Remove .cmt's that have .cmti's */
@@ -133,9 +134,11 @@ let filterDuplicates = cmts => {
   });
 };
 
+let nameSpaceToName = n => n |> Str.split(Str.regexp_string("-")) |> List.map(String.capitalize) |> String.concat("");
+
 let getNamespace = config => {
   let isNamespaced = Json.get("namespace", config) |?> Json.bool |? false;
-  isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
+  isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> nameSpaceToName |> s => Some(s)) : None;
 };
 
 let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) => {

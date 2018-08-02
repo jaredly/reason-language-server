@@ -24,6 +24,7 @@ let makePathsForModule = (localModules, dependencyModules) => {
     Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
     Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
   });
+
   pathsForModule
 
 };
@@ -48,9 +49,19 @@ let newBsPackage = (rootPath) => {
   let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
-  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.namespacedName(~namespace, rel), (full, rel)));
   
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
+
+  let opens = switch (namespace) {
+    | None => []
+    | Some(namespace) => {
+      let cmt = compiledBase /+ namespace ++ ".cmt";
+      /* Log.log("Namespaced as " ++ namespace ++ " at " ++ cmt); */
+      Hashtbl.add(pathsForModule, namespace, (cmt, None));
+      [FindFiles.nameSpaceToName(namespace)]
+    }
+  };
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
@@ -84,7 +95,7 @@ let newBsPackage = (rootPath) => {
     dependencyModules,
     pathsForModule,
     buildSystem,
-    opens: [],
+    opens,
     tmpPath,
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
