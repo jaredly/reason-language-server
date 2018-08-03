@@ -321,7 +321,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     } |? Ok((state, Json.Null));
   }),
   
-  ("textDocument/rangeFormatting", fun (state, params) => {
+  ("textDocument/rangeFormatting", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = State.getPackage(uri, state);
@@ -333,78 +333,92 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt startPos = PartialParser.positionToOffset(text, start);
       let%opt_wrap endPos = PartialParser.positionToOffset(text, end_);
 
-      let substring = String.sub(text, startPos, endPos - startPos);
+      /* 
+        This is to prevent formatOnPaste 
+        See https://github.com/jaredly/reason-language-server/issues/51 
+        for more information
+      */
+      if (fst(start) == fst(end_) && text.[endPos] == '\n') {
+        Belt.Result.Ok((state, Rpc.J.null));
+      } else {
+        let substring = String.sub(text, startPos, endPos - startPos);
+        open Utils;
+        let trailingNewlines = substring |> countTrailing('\n');
+        let (leadingNewlines, charsToFirstLines) = {
+          let splitted = substring |> split_on_char('\n');
+          let l = List.length(splitted);
+          let rec loop = (i, leadingLines, skipChars) => {
+            let line = List.nth(splitted, i);
+            switch (line |> String.trim |> String.length) {
+            | 0 =>
+              loop(i + 1, leadingLines + 1, skipChars + (line |> String.length))
+            | _ => (leadingLines, skipChars + 1)
+            };
+          };
+          loop(0, 0, 0);
+        };
 
-      open Utils;
-      let trailingNewlines = substring |> countTrailing('\n');
-      let (leadingNewlines, charsToFirstLines) = {
-        let splitted = substring |> split_on_char('\n');
-        let l = List.length(splitted);
-        let rec loop = (i, leadingLines, skipChars) => {
-          let line = List.nth(splitted, i);
-          switch (line |> String.trim |> String.length) {
-          | 0 => loop(i + 1, leadingLines + 1, skipChars + (line |> String.length))
-          | _ => (leadingLines, skipChars + 1)
+        /* Strip all leading new lines from substring */
+        let (startPos, substring) =
+          if (leadingNewlines > 0) {
+            (
+              startPos + leadingNewlines,
+              String.sub(
+                substring,
+                charsToFirstLines,
+                String.length(substring) - charsToFirstLines,
+              ),
+            );
+          } else {
+            (startPos, substring);
+          };
+
+        let indent = getFullLineOfPos(startPos, text) |> countLeading(' ');
+        let cursorToFirstLineSpaces = substring |> countLeading(' ');
+
+        let appendIndent = (~firstLineSpaces=?, indent, s) => {
+          let indentString = repeat(indent, " ");
+          if (indent == 0) {
+            s;
+          } else {
+            split_on_char('\n', s)
+            |> List.mapi((index, line) =>
+                 switch (index, firstLineSpaces, String.length(line)) {
+                 | (_, _, 0) => line
+                 | (0, Some(spaces), _) => repeat(spaces, " ") ++ line
+                 | _ => indentString ++ line
+                 }
+               )
+            |> String.concat("\n");
           };
         };
-        loop(0, 0, 0);
-      };
-
-      /* Strip all leading new lines from substring */
-      let (startPos, substring) =
-        if (leadingNewlines > 0) {
-          (
-            startPos + leadingNewlines,
-            String.sub(
-              substring,
-              charsToFirstLines,
-              String.length(substring) - charsToFirstLines,
-            ),
+        let%try_wrap text =
+          AsYouType.format(
+            ~formatWidth=state.settings.formatWidth,
+            substring,
+            package.refmtPath,
           );
-        } else {
-          (startPos, substring);
-        };
-
-      let indent = getFullLineOfPos(startPos, text) |> countLeading(' ');
-      let cursorToFirstLineSpaces = substring |> countLeading(' ');
-
-      let appendIndent = (~firstLineSpaces=?, indent, s) => {
-        let indentString = repeat(indent, " ");
-        if (indent == 0) {
-          s;
-        } else {
-          split_on_char('\n', s)
-          |> List.mapi((index, line) =>
-               switch (index, firstLineSpaces, String.length(line)) {
-               | (_, _, 0) => line
-               | (0, Some(spaces), _) => repeat(spaces, " ") ++ line
-               | _ => indentString ++ line
-               }
-             )
-          |> String.concat("\n");
-        };
-      };
-      let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, substring, package.refmtPath);
-      Rpc.J.(
-        state,
-        l([
-          o([
-            ("range", Infix.(|!)(Json.get("range", params), "what")),
-            (
-              "newText",
-              s(
-                repeat(leadingNewlines, "\n")
-                ++ appendIndent(
-                     ~firstLineSpaces=cursorToFirstLineSpaces,
-                     indent,
-                     text,
-                   )
-                ++ repeat(trailingNewlines, "\n"),
+        Rpc.J.(
+          state,
+          l([
+            o([
+              ("range", Infix.(|!)(Json.get("range", params), "what")),
+              (
+                "newText",
+                s(
+                  repeat(leadingNewlines, "\n")
+                  ++ appendIndent(
+                       ~firstLineSpaces=cursorToFirstLineSpaces,
+                       indent,
+                       text,
+                     )
+                  ++ repeat(trailingNewlines, "\n"),
+                ),
               ),
-            ),
+            ]),
           ]),
-        ]),
-      );
+        );
+      };
     };
     maybeResult |? Error("Invalid position");
   }),
