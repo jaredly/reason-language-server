@@ -338,7 +338,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         See https://github.com/jaredly/reason-language-server/issues/51 
         for more information
       */
-      if (fst(start) == fst(end_) && text.[endPos] == '\n') {
+      if (fst(start) == fst(end_) && text.[endPos] != '\n') {
         Belt.Result.Ok((state, Rpc.J.null));
       } else {
         let substring = String.sub(text, startPos, endPos - startPos);
