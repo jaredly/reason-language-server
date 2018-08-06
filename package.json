@@ -5,7 +5,7 @@
     "start": "bsb -make-world -backend native -w",
     "build": "bsb -make-world -backend native",
     "clean": "bsb -clean-world",
-    "test": "./lib/bs/native/testcompletions.re; ./lib/bs/native/testdefinition.re; ./lib/bs/native/testreferences.re",
+    "test": "./lib/bs/native/testcompletions.native; ./lib/bs/native/testdefinition.native; ./lib/bs/native/testreferences.native",
     "watch": "bsb -make-world -backend native -w",
     "watch:byte": "bsb -make-world -backend bytecode -w",
     "package": "cp lib/bs/native/bin.native client; cd client; vsce package",

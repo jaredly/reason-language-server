@@ -20,11 +20,11 @@ let m = A(2,3);
 -->
 1: PASS
 2: PASS
-3: PASS
+3: No definition! at 4, 6
 4: PASS
 5: PASS
 6: PASS
 7: PASS
-8: PASS
-9: PASS
+8: No definition! at 2, 67
+9: No definition! at 2, 22
 10: PASS
