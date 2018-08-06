@@ -1,5 +1,6 @@
-
-open Result;
+module R = Result;
+open Belt;
+open R;
 open TopTypes;
 open Infix;
 
@@ -67,11 +68,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let useMarkdown = !state.settings.clientNeedsPlainText;
-      let allModules = (
-        package.localModules |> List.map(fst)
-      ) @ (
-        package.dependencyModules |> List.map(fst)
-      );
+      let allModules = List.map(package.localModules, fst) @ List.map(package.dependencyModules, fst);
       let items = NewCompletions.get(
         ~full={file, extra},
         ~package,
@@ -83,7 +80,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       );
       Log.log("Got items: " ++ string_of_int(List.length(items)));
 
-      items |. Belt.List.map(((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
+      List.map(items, ((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
         ("kind", i(NewCompletions.kindToInt(contents))),
         ("detail", NewCompletions.detail(name, contents) |> s),
@@ -135,7 +132,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let%opt_wrap refs = References.forPos(~file, ~extra, pos);
       open Rpc.J;
-      (state, l(refs |> List.map((loc) => o([
+      (state, l(List.map(refs, (loc) => o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("kind", i(2))
       ]))));
@@ -148,13 +145,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = State.getPackage(uri, state);
-    let%try_wrap (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+    let%try_wrap (file, extra) = State.fileForUri(state, ~package, uri) |> orError("Could not compile " ++ uri);
 
     open Infix;
 
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      let allModules = package.localModules |> List.map(fst);
+      let allModules = List.map(package.localModules, fst);
       let%opt allReferences = References.forLoc(
         ~file,
         ~extra,
@@ -162,18 +159,23 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ~getModule=State.fileForModule(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc
-      ) |> Result.toOptionAndLog;
+      ) |> toOptionAndLog;
 
       open Rpc.J;
       Some((
         state,
-        l(allReferences |> List.map(
-          ((fname, references)) => (
-            fname == uri
-            ? List.filter(((loc)) => !Protocol.locationContains(loc, pos), references)
-            : references
-          ) |> List.map(((loc)) => Protocol.locationOfLoc(~fname, loc))
-        ) |> List.concat)
+        List.map(
+          allReferences,
+          ((fname, references)) => {
+            let locs = fname == uri
+              ? List.keep(references, loc => !Protocol.locationContains(loc, pos))
+              : references;
+            List.map(locs, loc => Protocol.locationOfLoc(~fname, loc))
+          }
+        )
+        |. List.toArray
+        |. List.concatMany
+        |. l
       ));
 
     } |? (state, Json.Null);
@@ -183,13 +185,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = State.getPackage(uri, state);
-    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> orError("Could not compile " ++ uri);
     let%try newName = RJson.get("newName", params);
 
     open Infix;
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      let allModules = package.localModules |> List.map(fst);
+      let allModules = List.map(package.localModules, fst);
       let%opt allReferences = References.forLoc(
         ~file,
         ~extra,
@@ -197,17 +199,17 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ~getModule=State.fileForModule(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc
-      ) |> Result.toOptionAndLog;
+      ) |> toOptionAndLog;
 
       open Rpc.J;
       Some(Ok((
         state,
         o([
           ("changes", o(
-            allReferences |> List.map(((fname, references)) => 
+            List.map(allReferences, ((fname, references)) =>
 
               (fname,
-                l(references |> List.map(((loc)) => o([
+                l(List.map(references, loc => o([
                   ("range", Protocol.rangeOfLoc(loc)),
                   ("newText", newName),
                 ])))
@@ -217,7 +219,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           ))
         ])
       )));
-    } |? Ok((state, Json.Null)) 
+    } |? Ok((state, Json.Null))
   }),
 
   ("textDocument/codeLens", (state, params) => {
@@ -225,14 +227,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     /* let%try package = State.getPackage(uri, state); */
     switch (State.getPackage(uri, state)) {
-    | Result.Error(message) => {
+    | Error(message) => {
       let items = [("Unable to load compilation data: " ++ message, {
         Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         loc_ghost: false,
       })];
       open Rpc.J;
-      Ok((state, l(items |> List.map(((text, loc)) => o([
+      Ok((state, l(List.map(items, ((text, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("command", o([
           ("title", s(text)),
@@ -258,7 +260,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         Log.log("<< ok fonna do tis");
 
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
-        let lenses = showToplevelTypes ? file.contents.topLevel |. Belt.List.keepMap(({name: {loc}, contents}) => {
+        let lenses = showToplevelTypes ? file.contents.topLevel |. List.keepMap(({name: {loc}, contents}) => {
           switch contents {
           | Value({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s => Some((s, loc))
           | _ => None
@@ -273,7 +275,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
         let showDependencies = state.settings.dependenciesCodelens;
         let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ",
-          SharedTypes.hashList(extra.externalReferences) |> List.map(fst)
+          List.map(SharedTypes.hashList(extra.externalReferences), fst)
         ), {
           Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
           Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
@@ -286,7 +288,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       | None => Error("Could not get compilation data")
       | Some(items) =>
         open Rpc.J;
-        Ok((state, l(items |> List.map(((text, loc)) => o([
+        Ok((state, l(List.map(items, ((text, loc)) => o([
           ("range", Protocol.rangeOfLoc(loc)),
           ("command", o([
             ("title", s(text)),
@@ -300,7 +302,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/hover", (state, params) => {
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = State.getPackage(uri, state);
-    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> orError("Could not compile " ++ uri);
 
     {
       let pos = Utils.cmtLocFromVscode(pos);
@@ -315,18 +317,18 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       open Rpc.J;
       Some(Ok((state, o([
-        ("range", Protocol.rangeOfLoc(location)), 
+        ("range", Protocol.rangeOfLoc(location)),
         ("contents", text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
       ]))))
     } |? Ok((state, Json.Null));
   }),
-  
+
   ("textDocument/rangeFormatting", fun (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = State.getPackage(uri, state);
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
-    
+
     let text = State.getContents(uri, state);
     open Infix;
     let maybeResult = {
@@ -341,8 +343,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let splitted = substring |> split_on_char('\n');
         let l = List.length(splitted);
         let rec loop = (i, leadingLines, skipChars) => {
-          let line = List.nth(splitted, i);
-          switch (line |> String.trim |> String.length) {
+          let line = List.getExn(splitted, i);
+          switch (line |. String.trim |. String.length) {
           | 0 => loop(i + 1, leadingLines + 1, skipChars + (line |> String.length))
           | _ => (leadingLines, skipChars + 1)
           };
@@ -374,7 +376,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           s;
         } else {
           split_on_char('\n', s)
-          |> List.mapi((index, line) =>
+          |. List.mapWithIndex((index, line) =>
                switch (index, firstLineSpaces, String.length(line)) {
                | (_, _, 0) => line
                | (0, Some(spaces), _) => repeat(spaces, " ") ++ line
@@ -414,7 +416,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = State.getPackage(uri, state);
 
-    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> Result.orError("Could not compile " ++ uri);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri) |> orError("Could not compile " ++ uri);
 
     open SharedTypes;
 
@@ -429,13 +431,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         };
         [(txt, extentLoc, item), ...siblings]
       };
-      let x = topLevel |. Belt.List.map(fn) |. List.concat;
+      let x = topLevel |. List.map(fn) |. List.toArray |. List.concatMany;
       x
     };
 
     (getItems(file.contents) |> items => {
       open Rpc.J;
-      Ok((state, l(items |> List.map(((name, loc, typ)) => o([
+      Ok((state, l(List.map(items, ((name, loc, typ)) => o([
         ("name", s(name)),
         ("kind", i(Protocol.symbolKind(typ))),
         ("location", Protocol.locationOfLoc(loc)),
