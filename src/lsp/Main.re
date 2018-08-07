@@ -104,6 +104,7 @@ let getInitialState = (params) => {
     settings: {
       formatWidth: None,
       refmtLocation: None,
+      lispRefmtLocation: None,
       crossFileAsYouType: false,
       perValueCodelens: false,
       opensCodelens: true,
@@ -222,12 +223,25 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("workspace/didChangeConfiguration", (state, params) => {
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
     let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string);
+    let lispRefmtLocation = (settings |?> Json.get("lisp_refmt") |?> Json.string);
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
     let formatWidth = (settings |?> Json.get("format_width") |?> Json.number) |?>> int_of_float;
     let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? false;
-    Ok({...state, settings: {...state.settings, perValueCodelens, refmtLocation, opensCodelens, formatWidth, dependenciesCodelens, crossFileAsYouType}})
+    Ok({
+      ...state,
+      settings: {
+        ...state.settings,
+        perValueCodelens,
+        refmtLocation,
+        lispRefmtLocation,
+        opensCodelens,
+        formatWidth,
+        dependenciesCodelens,
+        crossFileAsYouType,
+      },
+    });
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;

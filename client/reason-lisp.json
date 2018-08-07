@@ -1,12 +1,12 @@
 {
 	"information_for_contributors": [
-		"This file has been converted from https://github.com/atom/language-reason_lisp/blob/master/grammars/reason_lisp.cson",
+		"This file has been converted from https://github.com/atom/language-clojure/blob/master/grammars/clojure.cson",
 		"If you want to provide a fix or improvement, please create a pull request against the original repository.",
 		"Once accepted there, we are happy to receive an update request."
 	],
-	"version": "https://github.com/atom/language-reason_lisp/commit/ecc790326bc8e14220e4d2d72a392a30876c3219",
+	"version": "https://github.com/atom/language-clojure/commit/ecc790326bc8e14220e4d2d72a392a30876c3219",
 	"name": "Reason Lisp",
-	"scopeName": "source.reaosn-lisp",
+	"scopeName": "source.reason_lisp",
 	"patterns": [
 		{
 			"include": "#comment"
@@ -59,71 +59,56 @@
 	],
 	"repository": {
 		"comment": {
-      "name": "comment",
-      "patterns": [{"include": "#comment-block"}, {"include": "#comment-line"}]
-    },
-    "comment-line": {
-      "name": "comment.line",
-      "begin": "(?<!\\\\);",
+			"begin": "(?<!\\\\);",
 			"beginCaptures": {
 				"0": {
-					"name": "punctuation.definition.comment.reason_lisp"
+					"name": "punctuation.definition.comment.clojure"
 				}
 			},
 			"end": "$",
-      "patterns": [
-        { "include": "#comment" }
-      ]
-    },
-    "comment-block": {
-      "begin": "\\(\\*",
-      "end": "\\*\\)",
-      "name": "comment.block",
-      "patterns": [
-        { "include": "#comment" }
-      ]
-    },
+			"name": "comment.line.semicolon.clojure"
+		},
 		"constants": {
 			"patterns": [
 				{
 					"match": "(nil)(?=(\\s|\\)|\\]|\\}))",
-					"name": "constant.language.nil.reason_lisp"
+					"name": "constant.language.nil.clojure"
 				},
 				{
 					"match": "(true|false)",
-					"name": "constant.language.boolean.reason_lisp"
+					"name": "constant.language.boolean.clojure"
 				},
 				{
 					"match": "(-?\\d+/\\d+)",
-					"name": "constant.numeric.ratio.reason_lisp"
+					"name": "constant.numeric.ratio.clojure"
 				},
 				{
 					"match": "(-?\\d+[rR][0-9a-zA-Z]+)",
-					"name": "constant.numeric.arbitrary-radix.reason_lisp"
+					"name": "constant.numeric.arbitrary-radix.clojure"
 				},
 				{
 					"match": "(-?0[xX][0-9a-fA-F]+)",
-					"name": "constant.numeric.hexadecimal.reason_lisp"
+					"name": "constant.numeric.hexadecimal.clojure"
 				},
 				{
 					"match": "(-?0\\d+)",
-					"name": "constant.numeric.octal.reason_lisp"
+					"name": "constant.numeric.octal.clojure"
 				},
 				{
 					"match": "(-?\\d+\\.\\d+([eE][+-]?\\d+)?M)",
-					"name": "constant.numeric.bigdecimal.reason_lisp"
+					"name": "constant.numeric.bigdecimal.clojure"
 				},
 				{
 					"match": "(-?\\d+\\.\\d+([eE][+-]?\\d+)?)",
-					"name": "constant.numeric.double.reason_lisp"
+					"name": "constant.numeric.double.clojure"
 				},
 				{
 					"match": "(-?\\d+N)",
-					"name": "constant.numeric.bigint.reason_lisp"
+					"name": "constant.numeric.bigint.clojure"
 				},
 				{
 					"match": "(-?\\d+)",
-					"name": "constant.numeric.long.reason_lisp"
+					"name": "constant.numeric.long.clojure"
 				},
 				{
 					"include": "#keyword"
@@ -132,41 +117,41 @@
 		},
 		"keyword": {
 			"match": "(?<=(\\s|\\(|\\[|\\{)):[a-zA-Z0-9\\#\\.\\-\\_\\:\\+\\=\\>\\<\\/\\!\\?\\*]+(?=(\\s|\\)|\\]|\\}|\\,))",
-			"name": "constant.keyword.reason_lisp"
+			"name": "constant.keyword.clojure"
 		},
 		"keyfn": {
 			"patterns": [
 				{
 					"match": "(?<=(\\s|\\(|\\[|\\{))(if(-[-a-z\\?]*)?|when(-[-a-z]*)?|for(-[-a-z]*)?|cond|do|let(-[-a-z\\?]*)?|binding|loop|recur|fn|throw[a-z\\-]*|try|catch|finally|([a-z]*case))(?=(\\s|\\)|\\]|\\}))",
-					"name": "storage.control.reason_lisp"
+					"name": "storage.control.clojure"
 				},
 				{
 					"match": "(?<=(\\s|\\(|\\[|\\{))(declare-?|(in-)?ns|import|use|require|load|compile|(def[a-z\\-]*))(?=(\\s|\\)|\\]|\\}))",
-					"name": "keyword.control.reason_lisp"
+					"name": "keyword.control.clojure"
 				}
 			]
 		},
 		"dynamic-variables": {
 			"match": "\\*[\\w\\.\\-\\_\\:\\+\\=\\>\\<\\!\\?\\d]+\\*",
-			"name": "meta.symbol.dynamic.reason_lisp"
+			"name": "meta.symbol.dynamic.clojure"
 		},
 		"map": {
 			"begin": "(\\{)",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.section.map.begin.reason_lisp"
+					"name": "punctuation.section.map.begin.clojure"
 				}
 			},
 			"end": "(\\}(?=[\\}\\]\\)\\s]*(?:;|$)))|(\\})",
 			"endCaptures": {
 				"1": {
-					"name": "punctuation.section.map.end.trailing.reason_lisp"
+					"name": "punctuation.section.map.end.trailing.clojure"
 				},
 				"2": {
-					"name": "punctuation.section.map.end.reason_lisp"
+					"name": "punctuation.section.map.end.clojure"
 				}
 			},
-			"name": "meta.map.reason_lisp",
+			"name": "meta.map.clojure",
 			"patterns": [
 				{
 					"include": "$self"
@@ -179,19 +164,19 @@
 					"begin": "(\\^\\{)",
 					"beginCaptures": {
 						"1": {
-							"name": "punctuation.section.metadata.map.begin.reason_lisp"
+							"name": "punctuation.section.metadata.map.begin.clojure"
 						}
 					},
 					"end": "(\\}(?=[\\}\\]\\)\\s]*(?:;|$)))|(\\})",
 					"endCaptures": {
 						"1": {
-							"name": "punctuation.section.metadata.map.end.trailing.reason_lisp"
+							"name": "punctuation.section.metadata.map.end.trailing.clojure"
 						},
 						"2": {
-							"name": "punctuation.section.metadata.map.end.reason_lisp"
+							"name": "punctuation.section.metadata.map.end.clojure"
 						}
 					},
-					"name": "meta.metadata.map.reason_lisp",
+					"name": "meta.metadata.map.clojure",
 					"patterns": [
 						{
 							"include": "$self"
@@ -201,7 +186,7 @@
 				{
 					"begin": "(\\^)",
 					"end": "(\\s)",
-					"name": "meta.metadata.simple.reason_lisp",
+					"name": "meta.metadata.simple.clojure",
 					"patterns": [
 						{
 							"include": "#keyword"
@@ -217,22 +202,22 @@
 			"begin": "(['``]\\()",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.section.expression.begin.reason_lisp"
+					"name": "punctuation.section.expression.begin.clojure"
 				}
 			},
 			"end": "(\\))$|(\\)(?=[\\}\\]\\)\\s]*(?:;|$)))|(\\))",
 			"endCaptures": {
 				"1": {
-					"name": "punctuation.section.expression.end.trailing.reason_lisp"
+					"name": "punctuation.section.expression.end.trailing.clojure"
 				},
 				"2": {
-					"name": "punctuation.section.expression.end.trailing.reason_lisp"
+					"name": "punctuation.section.expression.end.trailing.clojure"
 				},
 				"3": {
-					"name": "punctuation.section.expression.end.reason_lisp"
+					"name": "punctuation.section.expression.end.clojure"
 				}
 			},
-			"name": "meta.quoted-expression.reason_lisp",
+			"name": "meta.quoted-expression.clojure",
 			"patterns": [
 				{
 					"include": "$self"
@@ -243,16 +228,16 @@
 			"begin": "#\"",
 			"beginCaptures": {
 				"0": {
-					"name": "punctuation.definition.regexp.begin.reason_lisp"
+					"name": "punctuation.definition.regexp.begin.clojure"
 				}
 			},
 			"end": "\"",
 			"endCaptures": {
 				"0": {
-					"name": "punctuation.definition.regexp.end.reason_lisp"
+					"name": "punctuation.definition.regexp.end.clojure"
 				}
 			},
-			"name": "string.regexp.reason_lisp",
+			"name": "string.regexp.clojure",
 			"patterns": [
 				{
 					"include": "#regexp_escaped_char"
@@ -261,25 +246,25 @@
 		},
 		"regexp_escaped_char": {
 			"match": "\\\\.",
-			"name": "constant.character.escape.reason_lisp"
+			"name": "constant.character.escape.clojure"
 		},
 		"set": {
 			"begin": "(\\#\\{)",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.section.set.begin.reason_lisp"
+					"name": "punctuation.section.set.begin.clojure"
 				}
 			},
 			"end": "(\\}(?=[\\}\\]\\)\\s]*(?:;|$)))|(\\})",
 			"endCaptures": {
 				"1": {
-					"name": "punctuation.section.set.end.trailing.reason_lisp"
+					"name": "punctuation.section.set.end.trailing.clojure"
 				},
 				"2": {
-					"name": "punctuation.section.set.end.reason_lisp"
+					"name": "punctuation.section.set.end.clojure"
 				}
 			},
-			"name": "meta.set.reason_lisp",
+			"name": "meta.set.clojure",
 			"patterns": [
 				{
 					"include": "$self"
@@ -290,32 +275,32 @@
 			"begin": "(\\()",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.section.expression.begin.reason_lisp"
+					"name": "punctuation.section.expression.begin.clojure"
 				}
 			},
 			"end": "(\\))$|(\\)(?=[\\}\\]\\)\\s]*(?:;|$)))|(\\))",
 			"endCaptures": {
 				"1": {
-					"name": "punctuation.section.expression.end.trailing.reason_lisp"
+					"name": "punctuation.section.expression.end.trailing.clojure"
 				},
 				"2": {
-					"name": "punctuation.section.expression.end.trailing.reason_lisp"
+					"name": "punctuation.section.expression.end.trailing.clojure"
 				},
 				"3": {
-					"name": "punctuation.section.expression.end.reason_lisp"
+					"name": "punctuation.section.expression.end.clojure"
 				}
 			},
-			"name": "meta.expression.reason_lisp",
+			"name": "meta.expression.clojure",
 			"patterns": [
 				{
 					"begin": "(?<=\\()(ns|declare|def[\\w\\d._:+=><!?*-]*|[\\w._:+=><!?*-][\\w\\d._:+=><!?*-]*/def[\\w\\d._:+=><!?*-]*)\\s+",
 					"beginCaptures": {
 						"1": {
-							"name": "keyword.control.reason_lisp"
+							"name": "keyword.control.clojure"
 						}
 					},
 					"end": "(?=\\))",
-					"name": "meta.definition.global.reason_lisp",
+					"name": "meta.definition.global.clojure",
 					"patterns": [
 						{
 							"include": "#metadata"
@@ -325,7 +310,7 @@
 						},
 						{
 							"match": "([a-zA-Z\\.\\-\\_\\+\\=\\>\\<\\!\\?\\*][\\w\\.\\-\\_\\:\\+\\=\\>\\<\\!\\?\\*\\d]*)",
-							"name": "entity.global.reason_lisp"
+							"name": "entity.global.clojure"
 						},
 						{
 							"include": "$self"
@@ -354,7 +339,7 @@
 					"match": "(?<=\\()(.+?)(?=\\s|\\))",
 					"captures": {
 						"1": {
-							"name": "entity.name.function.reason_lisp"
+							"name": "entity.name.function.clojure"
 						}
 					},
 					"patterns": [
@@ -372,30 +357,30 @@
 			"begin": "^(#!)",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.definition.comment.shebang.reason_lisp"
+					"name": "punctuation.definition.comment.shebang.clojure"
 				}
 			},
 			"end": "$",
-			"name": "comment.line.shebang.reason_lisp"
+			"name": "comment.line.shebang.clojure"
 		},
 		"string": {
 			"begin": "(?<!\\\\)(\")",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.definition.string.begin.reason_lisp"
+					"name": "punctuation.definition.string.begin.clojure"
 				}
 			},
 			"end": "(\")",
 			"endCaptures": {
 				"1": {
-					"name": "punctuation.definition.string.end.reason_lisp"
+					"name": "punctuation.definition.string.end.clojure"
 				}
 			},
-			"name": "string.quoted.double.reason_lisp",
+			"name": "string.quoted.double.clojure",
 			"patterns": [
 				{
 					"match": "\\\\.",
-					"name": "constant.character.escape.reason_lisp"
+					"name": "constant.character.escape.clojure"
 				}
 			]
 		},
@@ -405,7 +390,7 @@
 					"match": "([a-zA-Z\\.\\-\\_\\+\\=\\>\\<\\!\\?\\*][\\w\\.\\-\\_\\:\\+\\=\\>\\<\\!\\?\\*\\d]*)/",
 					"captures": {
 						"1": {
-							"name": "meta.symbol.namespace.reason_lisp"
+							"name": "meta.symbol.namespace.clojure"
 						}
 					}
 				}
@@ -415,31 +400,31 @@
 			"patterns": [
 				{
 					"match": "([a-zA-Z\\.\\-\\_\\+\\=\\>\\<\\!\\?\\*][\\w\\.\\-\\_\\:\\+\\=\\>\\<\\!\\?\\*\\d]*)",
-					"name": "meta.symbol.reason_lisp"
+					"name": "meta.symbol.clojure"
 				}
 			]
 		},
 		"var": {
 			"match": "(?<=(\\s|\\(|\\[|\\{)\\#)'[a-zA-Z0-9\\.\\-\\_\\:\\+\\=\\>\\<\\/\\!\\?\\*]+(?=(\\s|\\)|\\]|\\}))",
-			"name": "meta.var.reason_lisp"
+			"name": "meta.var.clojure"
 		},
 		"vector": {
 			"begin": "(\\[)",
 			"beginCaptures": {
 				"1": {
-					"name": "punctuation.section.vector.begin.reason_lisp"
+					"name": "punctuation.section.vector.begin.clojure"
 				}
 			},
 			"end": "(\\](?=[\\}\\]\\)\\s]*(?:;|$)))|(\\])",
 			"endCaptures": {
 				"1": {
-					"name": "punctuation.section.vector.end.trailing.reason_lisp"
+					"name": "punctuation.section.vector.end.trailing.clojure"
 				},
 				"2": {
-					"name": "punctuation.section.vector.end.reason_lisp"
+					"name": "punctuation.section.vector.end.clojure"
 				}
 			},
-			"name": "meta.vector.reason_lisp",
+			"name": "meta.vector.clojure",
 			"patterns": [
 				{
 					"include": "$self"

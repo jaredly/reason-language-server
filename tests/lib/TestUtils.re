@@ -15,6 +15,7 @@ let getPackage = (localModules) => {
     includeDirectories: [],
     compilerPath: "./node_modules/.bin/bsc",
     refmtPath: "./node_modules/bs-platform/lib/refmt.exe",
+    lispRefmtPath: None,
   };
 };
 
@@ -86,6 +87,7 @@ let getState = () => {
     settings: {
       crossFileAsYouType: false,
       refmtLocation: None,
+      lispRefmtLocation: None,
       formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,

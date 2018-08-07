@@ -104,6 +104,8 @@ let newBsPackage = (rootPath) => {
       dependencyDirectories @ localCompiledDirs,
     compilerPath,
     refmtPath,
+    /** TODO detect this from node_modules */
+    lispRefmtPath: None,
   };
 };
 
@@ -237,6 +239,7 @@ let newJbuilderPackage = (rootPath) => {
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
     compilerPath,
     refmtPath,
+    lispRefmtPath: None,
   });
 };
 
@@ -275,7 +278,11 @@ let getPackage = (uri, state) => {
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
       let%try package = newBsPackage(rootPath);
-      let package = {...package, refmtPath: state.settings.refmtLocation |? package.refmtPath};
+      let package = {
+        ...package,
+        refmtPath: state.settings.refmtLocation |? package.refmtPath,
+        lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
+      };
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)

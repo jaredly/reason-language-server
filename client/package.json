@@ -17,7 +17,7 @@
 	],
 	"activationEvents": [
 		"onLanguage:reason",
-		"onLanguage:clojure"
+		"onLanguage:reason_lisp"
 	],
 	"main": "./src/index",
 	"contributes": {
@@ -82,8 +82,8 @@
 				"path": "./reason.json"
 			},
 			{
-				"language": "reason-lisp",
-				"scopeName": "source.reason-lisp",
+				"language": "reason_lisp",
+				"scopeName": "source.reason_lisp",
 				"path": "./reason-lisp.json"
 			}
 		],
@@ -99,7 +99,7 @@
 				],
 				"configuration": "./reason.configuration.json"
 			}, {
-				"id": "reason-lisp",
+				"id": "reason_lisp",
 				"aliases": [
 					"Reason Lisp"
 				],
