@@ -44,7 +44,7 @@ function activate(context) {
     // The server is implemented in reason
 
     let clientOptions = {
-        documentSelector: [{scheme: 'file', language: 'reason'}, {scheme: 'file', language: 'clojure'}],
+        documentSelector: [{scheme: 'file', language: 'reason'}, {scheme: 'file', language: 'reason-lisp'}],
         synchronize: {
             // Synchronize the setting section 'reason_language_server' to the server
             configurationSection: 'reason_language_server',

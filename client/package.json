@@ -80,6 +80,11 @@
 				"language": "reason",
 				"scopeName": "source.reason",
 				"path": "./reason.json"
+			},
+			{
+				"language": "reason-lisp",
+				"scopeName": "source.reason-lisp",
+				"path": "./reason-lisp.json"
 			}
 		],
 		"languages": [
@@ -93,6 +98,16 @@
 					".rei"
 				],
 				"configuration": "./reason.configuration.json"
+			}, {
+				"id": "reason-lisp",
+				"aliases": [
+					"Reason Lisp"
+				],
+				"extensions": [
+					".rel",
+					".reli"
+				],
+				"configuration": "./reason-lisp.configuration.json"
 			}
 		]
 	},
