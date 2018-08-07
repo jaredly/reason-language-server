@@ -117,7 +117,7 @@ let setUp = (files, text) => {
       contents,
       ~cacheLocation=tmp,
       "./node_modules/.bin/bsc",
-      "./node_modules/bs-platform/lib/refmt.exe",
+      Some("./node_modules/bs-platform/lib/refmt.exe"),
       [tmp],
       ""
     );
@@ -132,7 +132,7 @@ let setUp = (files, text) => {
     text,
     ~cacheLocation=tmp,
     "./node_modules/.bin/bsc",
-    "./node_modules/bs-platform/lib/refmt.exe",
+    Some("./node_modules/bs-platform/lib/refmt.exe"),
     [tmp],
     ""
   );

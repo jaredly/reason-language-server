@@ -103,7 +103,14 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 };
 
 let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
-  let%try (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+  let%try (syntaxError, astFile) = switch (refmtPath) {
+    | Some(refmtPath) => runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+    | None => {
+      let astFile = cacheLocation /+ moduleName ++ ".ast";
+      let%try () = Files.writeFileResult(astFile, text);
+      Ok((None, astFile))
+    }
+  };
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
@@ -112,8 +119,7 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       switch (syntaxError) {
         | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
         | None => {
-          let text = String.concat("\n", lines);
-          let text = switch (parseDependencyError(text)) {
+          let text = switch (parseDependencyError(String.concat("\n", lines))) {
             | Some(name) => text ++ "\n\nThis is likely due to an error in module " ++ name
             | None => text
           };

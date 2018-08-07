@@ -433,13 +433,25 @@ let getCompilationResult = (uri, state, ~package) => {
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;
+    let%try refmtPath = {
+      if (Filename.check_suffix(uri, ".ml") || Filename.check_suffix(uri, ".mli")) {
+        Ok(None)
+      } else if (Filename.check_suffix(uri, ".rel") || Filename.check_suffix(uri, ".reli")) {
+        switch (package.lispRefmtPath) {
+          | None => Error("No lispRefmt path found, cannot process .rel or .reli files")
+          | Some(x) => Ok(Some(x))
+        }
+      } else {
+        Ok(Some(package.refmtPath))
+      }
+    };
     let%try result = AsYouType.process(
       ~uri,
       ~moduleName,
       text,
       ~cacheLocation=package.tmpPath,
       package.compilerPath,
-      package.refmtPath,
+      refmtPath,
       includes,
       package.compilationFlags,
     );
