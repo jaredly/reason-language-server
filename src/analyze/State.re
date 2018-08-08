@@ -417,6 +417,21 @@ let getContents = (uri, state) => {
   text
 };
 
+let refmtForUri = (uri, package) =>
+  if (Filename.check_suffix(uri, ".ml")
+      || Filename.check_suffix(uri, ".mli")) {
+    Result.Ok(None);
+  } else if (Filename.check_suffix(uri, ".rel")
+             || Filename.check_suffix(uri, ".reli")) {
+    switch (package.lispRefmtPath) {
+    | None =>
+      Error("No lispRefmt path found, cannot process .rel or .reli files")
+    | Some(x) => Ok(Some(x))
+    };
+  } else {
+    Ok(Some(package.refmtPath));
+  };
+
 open Infix;
 let getCompilationResult = (uri, state, ~package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
@@ -433,18 +448,7 @@ let getCompilationResult = (uri, state, ~package) => {
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;
-    let%try refmtPath = {
-      if (Filename.check_suffix(uri, ".ml") || Filename.check_suffix(uri, ".mli")) {
-        Ok(None)
-      } else if (Filename.check_suffix(uri, ".rel") || Filename.check_suffix(uri, ".reli")) {
-        switch (package.lispRefmtPath) {
-          | None => Error("No lispRefmt path found, cannot process .rel or .reli files")
-          | Some(x) => Ok(Some(x))
-        }
-      } else {
-        Ok(Some(package.refmtPath))
-      }
-    };
+    let%try refmtPath = refmtForUri(uri, package);
     let%try result = AsYouType.process(
       ~uri,
       ~moduleName,

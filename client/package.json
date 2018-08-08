@@ -39,6 +39,10 @@
 					"type": "string",
 					"description": "Provide a custom location for the refmt binary"
 				},
+				"reason_language_server.lispRefmt": {
+					"type": "string",
+					"description": "Provide a location for the reason-lisp lispRefmt binary"
+				},
 				"reason_language_server.format_width": {
 					"type": "number",
 					"description": "Format width (default=80)"

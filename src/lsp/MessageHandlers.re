@@ -325,12 +325,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = State.getPackage(uri, state);
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
+    let%try refmtPath = State.refmtForUri(uri, package);
+    let%try refmtPath = refmtPath |> Result.orError("Cannot refmt ocaml yet");
     
     let text = State.getContents(uri, state);
     open Infix;
     let maybeResult = {
-      let%opt startPos = PartialParser.positionToOffset(text, start);
-      let%opt_wrap endPos = PartialParser.positionToOffset(text, end_);
+      let%try startPos = PartialParser.positionToOffset(text, start) |> orError("Invalid start position");
+      let%try endPos = PartialParser.positionToOffset(text, end_) |> orError("Invalid end position");
 
       let substring = String.sub(text, startPos, endPos - startPos);
 
@@ -383,7 +385,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           |> String.concat("\n");
         };
       };
-      let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, substring, package.refmtPath);
+      let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, substring, refmtPath);
       Rpc.J.(
         state,
         l([
@@ -405,7 +407,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ]),
       );
     };
-    maybeResult |? Error("Invalid position");
+    maybeResult
   }),
 
   ("textDocument/documentSymbol", (state, params) => {
@@ -449,7 +451,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     |?> uri => State.getPackage(uri, state)
     |?> package => {
       let text = State.getContents(uri, state);
-      AsYouType.format(~formatWidth=state.settings.formatWidth, text, package.refmtPath) |?>> newText => {
+      let%try refmtPath = State.refmtForUri(uri, package);
+      let%try refmtPath = refmtPath |> Result.orError("Cannot refmt ocaml yet");
+      AsYouType.format(~formatWidth=state.settings.formatWidth, text, refmtPath) |?>> newText => {
         open Rpc.J;
         (state, text == newText ? Json.Null : l([o([
           ("range", Protocol.rangeOfInts(
