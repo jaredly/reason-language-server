@@ -80,6 +80,7 @@ let definedForLoc = (~file, ~getModule, loc) => {
       let env = {Query.file, exported: file.contents.exported};
       let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
       let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
+      Log.log("Getting for " ++ string_of_int(stamp) ++ " in " ++ name);
       inner(~file, stamp, tip) |> Result.orError("could not get defined")
     } |> Result.toOptionAndLog
     /* let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri); */

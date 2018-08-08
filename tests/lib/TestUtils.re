@@ -15,6 +15,7 @@ let getPackage = (localModules) => {
     includeDirectories: [],
     compilerPath: "./node_modules/.bin/bsc",
     refmtPath: "./node_modules/bs-platform/lib/refmt.exe",
+    lispRefmtPath: None,
   };
 };
 
@@ -85,6 +86,8 @@ let getState = () => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       crossFileAsYouType: false,
+      refmtLocation: None,
+      lispRefmtLocation: None,
       formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,
@@ -114,7 +117,7 @@ let setUp = (files, text) => {
       contents,
       ~cacheLocation=tmp,
       "./node_modules/.bin/bsc",
-      "./node_modules/bs-platform/lib/refmt.exe",
+      Some("./node_modules/bs-platform/lib/refmt.exe"),
       [tmp],
       ""
     );
@@ -129,7 +132,7 @@ let setUp = (files, text) => {
     text,
     ~cacheLocation=tmp,
     "./node_modules/.bin/bsc",
-    "./node_modules/bs-platform/lib/refmt.exe",
+    Some("./node_modules/bs-platform/lib/refmt.exe"),
     [tmp],
     ""
   );

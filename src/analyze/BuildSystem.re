@@ -7,7 +7,6 @@ type target =
 type t =
   | Dune
   | Bsb(string)
-  /* The bool is "Is Bytecode" */
   | BsbNative(string, target);
 
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;

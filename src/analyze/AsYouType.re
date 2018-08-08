@@ -17,8 +17,10 @@ let getResult = result => switch result {
 let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ moduleName ++ ".ast";
   let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
+  /* Log.log("refmt " ++ moduleName ++ " " ++ cmd); */
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
+    /* Log.log("Worked on the first pass"); */
     Ok((None, target))
   } else {
     let goodError = Some(out @ error);
@@ -28,7 +30,7 @@ let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
     /* Log.log("The text:"); */
     /* Log.log(text); */
     if (!success) {
-      Log.log("<< Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
+      /* Log.log("<< Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error)); */
       Error("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error))
     } else {
       Ok((goodError, target))
@@ -101,7 +103,14 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 };
 
 let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
-  let%try (syntaxError, astFile) = runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+  let%try (syntaxError, astFile) = switch (refmtPath) {
+    | Some(refmtPath) => runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+    | None => {
+      let astFile = cacheLocation /+ moduleName ++ ".ast";
+      let%try () = Files.writeFileResult(astFile, text);
+      Ok((None, astFile))
+    }
+  };
   switch (runBsc(compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
@@ -110,8 +119,7 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       switch (syntaxError) {
         | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
         | None => {
-          let text = String.concat("\n", lines);
-          let text = switch (parseDependencyError(text)) {
+          let text = switch (parseDependencyError(String.concat("\n", lines))) {
             | Some(name) => text ++ "\n\nThis is likely due to an error in module " ++ name
             | None => text
           };

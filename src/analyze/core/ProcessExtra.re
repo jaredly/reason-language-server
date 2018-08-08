@@ -294,13 +294,16 @@ module F = (Collector: {
     }
   };
 
-  let enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
+  let rec enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
     switch (pat_desc) {
       | Tpat_record(items, _) => {
         addForRecord(pat_type, items);
       }
       | Tpat_construct(lident, constructor, _) => {
         addForConstructor(pat_type, lident, constructor)
+      }
+      | Tpat_alias(inner, t, _) => {
+        enter_pattern(inner)
       }
       | Tpat_var({stamp}, name) => {
         /* Log.log("Pattern " ++ name.txt); */

@@ -18,7 +18,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
       Log.log("Curi " ++ curi);
       let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints);
       /* let%opt_force (_, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult; */
-      let {SharedTypes.file, extra} = State.getCompilationResult(curi, state, ~package) |> AsYouType.getResult;
+      let%try_force {SharedTypes.file, extra} = State.getCompilationResult(curi, state, ~package) |> State.tryExtra;
       string_of_int(i) ++ ": " ++ switch (
         References.definitionForPos(
           ~file=file,

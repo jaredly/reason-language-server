@@ -262,7 +262,7 @@ let offsetOfLine = (text, line) => {
   | '\n' => lno == line - 1 ? Some(i + 1) : loop(i + 1, lno + 1)
   | _ => loop(i + 1, lno)
   });
-  loop(0, 0)
+  line == 0 ? Some(0) : loop(0, 0)
 };
 
 let positionToOffset = (text, (line, character)) => {

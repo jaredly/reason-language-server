@@ -19,7 +19,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     let moduleName = Filename.chop_extension(name) |. String.capitalize;
     let uri = TestUtils.uriForName(name);
     open Infix;
-    let {SharedTypes.file, extra} = State.getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
+    let%try_force {SharedTypes.file, extra} = State.getCompilationResult(uri, state, ~package) |> State.tryExtra;
 
     print_newline();
     Log.log(uri);

@@ -24,6 +24,7 @@ let makePathsForModule = (localModules, dependencyModules) => {
     Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
     Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
   });
+
   pathsForModule
 
 };
@@ -48,9 +49,19 @@ let newBsPackage = (rootPath) => {
   let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
-  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.namespacedName(~namespace, rel), (full, rel)));
   
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
+
+  let opens = switch (namespace) {
+    | None => []
+    | Some(namespace) => {
+      let cmt = compiledBase /+ namespace ++ ".cmt";
+      /* Log.log("Namespaced as " ++ namespace ++ " at " ++ cmt); */
+      Hashtbl.add(pathsForModule, namespace, (cmt, None));
+      [FindFiles.nameSpaceToName(namespace)]
+    }
+  };
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
@@ -84,7 +95,7 @@ let newBsPackage = (rootPath) => {
     dependencyModules,
     pathsForModule,
     buildSystem,
-    opens: [],
+    opens,
     tmpPath,
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
@@ -93,6 +104,8 @@ let newBsPackage = (rootPath) => {
       dependencyDirectories @ localCompiledDirs,
     compilerPath,
     refmtPath,
+    /** TODO detect this from node_modules */
+    lispRefmtPath: None,
   };
 };
 
@@ -226,6 +239,7 @@ let newJbuilderPackage = (rootPath) => {
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
     compilerPath,
     refmtPath,
+    lispRefmtPath: None,
   });
 };
 
@@ -264,6 +278,11 @@ let getPackage = (uri, state) => {
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
       let%try package = newBsPackage(rootPath);
+      let package = {
+        ...package,
+        refmtPath: state.settings.refmtLocation |? package.refmtPath,
+        lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
+      };
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
@@ -398,10 +417,25 @@ let getContents = (uri, state) => {
   text
 };
 
+let refmtForUri = (uri, package) =>
+  if (Filename.check_suffix(uri, ".ml")
+      || Filename.check_suffix(uri, ".mli")) {
+    Result.Ok(None);
+  } else if (Filename.check_suffix(uri, ".rel")
+             || Filename.check_suffix(uri, ".reli")) {
+    switch (package.lispRefmtPath) {
+    | None =>
+      Error("No lispRefmt path found, cannot process .rel or .reli files")
+    | Some(x) => Ok(Some(x))
+    };
+  } else {
+    Ok(Some(package.refmtPath));
+  };
+
 open Infix;
 let getCompilationResult = (uri, state, ~package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
-    Hashtbl.find(state.compiledDocuments, uri)
+    Belt.Result.Ok(Hashtbl.find(state.compiledDocuments, uri))
   } else {
     let text = Hashtbl.mem(state.documentText, uri) ? {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
@@ -414,13 +448,14 @@ let getCompilationResult = (uri, state, ~package) => {
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;
-    let%try_force result = AsYouType.process(
+    let%try refmtPath = refmtForUri(uri, package);
+    let%try result = AsYouType.process(
       ~uri,
       ~moduleName,
       text,
       ~cacheLocation=package.tmpPath,
       package.compilerPath,
-      package.refmtPath,
+      refmtPath,
       includes,
       package.compilationFlags,
     );
@@ -474,7 +509,7 @@ let getCompilationResult = (uri, state, ~package) => {
       }
     }
     };
-    result
+    Ok(result)
   }
 };
 
@@ -484,16 +519,23 @@ let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefiniti
   Some(data)
 };
 
+let tryExtra = p => {
+  let%try p = p;
+  Ok(AsYouType.getResult(p))
+};
+
 /* If there's a previous "good" version, use that, otherwise use the current version */
 let getBestDefinitions = (uri, state, ~package) => {
   if (Hashtbl.mem(state.lastDefinitions, uri)) {
-    Hashtbl.find(state.lastDefinitions, uri)
+    Belt.Result.Ok(Hashtbl.find(state.lastDefinitions, uri))
   } else {
-    getCompilationResult(uri, state, ~package) |> AsYouType.getResult
+    tryExtra(getCompilationResult(uri, state, ~package))
   }
 };
 
-let getDefinitionData = (uri, state, ~package) => AsYouType.getResult(getCompilationResult(uri, state, ~package));
+let getDefinitionData = (uri, state, ~package) => {
+  getCompilationResult(uri, state, ~package) |> tryExtra
+};
 
 let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
@@ -507,8 +549,8 @@ let docsForModule = (modname, state, ~package) =>
     };
 
 let fileForUri = (state,  ~package, uri) => {
-  let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-  Some((moduleData.file, moduleData.extra))
+  let%try moduleData = getCompilationResult(uri, state, ~package) |> tryExtra;
+  Ok((moduleData.file, moduleData.extra))
 };
 
 let fileForModule = (state,  ~package, modname) => {
@@ -519,7 +561,7 @@ let fileForModule = (state,  ~package, modname) => {
     /* Log.log("Found it " ++ src); */
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
-      let%opt (file, _) = fileForUri(state, ~package, uri);
+      let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> Result.toOptionAndLog;
       Some(file)
     } else {
       None
@@ -537,7 +579,7 @@ let extraForModule = (state, ~package, modname) => {
   if (Hashtbl.mem(package.pathsForModule, modname)) {
     let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
     let%opt src = src;
-    let%opt (file, extra) = fileForUri(state, ~package, Utils.toUri(src));
+    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> Result.toOptionAndLog;
     Some(extra)
   } else {
     None;

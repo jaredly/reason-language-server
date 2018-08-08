@@ -97,6 +97,18 @@
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,
+		},
+		{
+			"name": "Lisp.re",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/client",
+				"${workspaceRoot}/../myntax/example"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
 		}
 	]
 }

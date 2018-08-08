@@ -25,11 +25,15 @@ type package = {
   buildSystem: BuildSystem.t,
   compilerPath: filePath,
   refmtPath: filePath,
+  /** TODO maybe make this general, so that I can support arbitrary syntaxes? */
+  lispRefmtPath: option(filePath),
 };
 
 type settings = {
   formatWidth: option(int),
   perValueCodelens: bool,
+  refmtLocation: option(string),
+  lispRefmtLocation: option(string),
   opensCodelens: bool,
   dependenciesCodelens: bool,
   clientNeedsPlainText: bool,

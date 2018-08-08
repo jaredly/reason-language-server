@@ -118,6 +118,14 @@ let writeFileExn = (path, contents) => {
   }
 };
 
+let writeFileResult = (path, contents) => {
+  if (!writeFile(path, contents)) {
+    Result.Error("Unable to write to file " ++ path)
+  } else {
+    Ok(())
+  }
+};
+
 let copy = (~source, ~dest) =>
   switch (maybeStat(source)) {
   | None => false
