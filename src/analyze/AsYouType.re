@@ -17,20 +17,20 @@ let getResult = result => switch result {
 let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ moduleName ++ ".ast";
   let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
-  Log.log("refmt " ++ moduleName ++ " " ++ cmd);
+  /* Log.log("refmt " ++ moduleName ++ " " ++ cmd); */
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
-    Log.log("Worked on the first pass");
+    /* Log.log("Worked on the first pass"); */
     Ok((None, target))
   } else {
     let goodError = Some(out @ error);
     let cmd = Printf.sprintf("%s --print binary --recoverable --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
     let (out, error, success) = Commands.execFull(~input=text, cmd);
-    Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
+    /* Log.log("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error)); */
     /* Log.log("The text:"); */
     /* Log.log(text); */
     if (!success) {
-      Log.log("<< Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error));
+      /* Log.log("<< Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error)); */
       Error("Failed to refmt " ++ cmd ++ "\n" ++ String.concat("\n > ", out @ error))
     } else {
       Ok((goodError, target))
