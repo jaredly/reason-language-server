@@ -245,19 +245,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       Log.log("<< codleens me please");
       open Infix;
-      let items = {
-        let%opt {file, extra} = {
-          switch (State.getCompilationResult(uri, state, ~package)) {
-            | Ok(Success(_, full)) => {
-              Log.log("Got a successful compilation result for " ++ uri);
-              Some(full)
-            }
-            | _ => None
-          }
-        } |?# lazy(State.getLastDefinitions(uri, state));
-        /* let%opt {file, extra} = State.getLastDefinitions(uri, state); */
-        Log.log("<< ok fonna do tis");
 
+      let topLoc = {
+        Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+        Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+        loc_ghost: false,
+      };
+
+      let getLensItems = ({SharedTypes.file, extra}) => {
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? file.contents.topLevel |. List.keepMap(({name: {loc}, contents}) => {
           switch contents {
@@ -275,26 +270,33 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let showDependencies = state.settings.dependenciesCodelens;
         let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ",
           List.map(SharedTypes.hashList(extra.externalReferences), fst)
-        ), {
-          Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
-          Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
-          loc_ghost: false,
-        }), ...lenses] : lenses;
+        ), topLoc), ...lenses] : lenses;
 
-        Some(lenses)
+        lenses
       };
-      switch items {
-      | None => Error("Could not get compilation data")
-      | Some(items) =>
-        open Rpc.J;
-        Ok((state, l(List.map(items, ((text, loc)) => o([
-          ("range", Protocol.rangeOfLoc(loc)),
-          ("command", o([
-            ("title", s(text)),
-            ("command", s(""))
-          ]))
-        ])))))
-      }
+
+      let items = {
+        let full = switch (State.getCompilationResult(uri, state, ~package)) {
+          | Ok(Success(_, full)) => {
+            Ok(Some(full))
+          }
+          | Ok(_) => Ok(State.getLastDefinitions(uri, state))
+          | Error(m) => Error(m)
+        };
+        switch full {
+          | Error(message) => [(message, topLoc)]
+          | Ok(None) => [("Unable to get compilation data", topLoc)]
+          | Ok(Some(full)) => getLensItems(full)
+        };
+      };
+      open Rpc.J;
+      Ok((state, l(List.map(items, ((text, loc)) => o([
+        ("range", Protocol.rangeOfLoc(loc)),
+        ("command", o([
+          ("title", s(text)),
+          ("command", s(""))
+        ]))
+      ])))))
     }
   }),
 

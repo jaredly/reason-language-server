@@ -12,6 +12,9 @@
 			"include": "#comment"
 		},
 		{
+			"include": "#comment-block"
+		},
+		{
 			"include": "#shebang-comment"
 		},
 		{
@@ -67,6 +70,16 @@
 			},
 			"end": "$",
 			"name": "comment.line.semicolon.clojure"
+		},
+		"comment-block": {
+			"begin": "\\(\\*",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.comment.clojure"
+				}
+			},
+			"end": "\\*\\)",
+			"name": "comment.line.block.clojure"
 		},
 		"constants": {
 			"patterns": [
