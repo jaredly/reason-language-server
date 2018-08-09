@@ -32,9 +32,18 @@ Works for macos, windows, linux.
 }
 ```
 
-### Emacs & Vim
+### Vim
 
-_TODO_ people have gotten it to work with emacs & vim, but I don't know the steps.
+Install [the reason-vim plugin](https://github.com/reasonml-editor/vim-reason-plus), following the readme. The only change is the LSP configuration should be:
+```
+let g:LanguageClient_serverCommands = {
+    \ 'reason': ['/absolute/path/to/reason-language-server.exe']
+    \ }
+```
+
+### Emacs
+
+_TODO_ people have gotten it to work with emacs, but I don't know the steps.
 
 ## What about [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
