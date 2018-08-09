@@ -119,11 +119,12 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       switch (syntaxError) {
         | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
         | None => {
-          let text = switch (parseDependencyError(String.concat("\n", lines))) {
-            | Some(name) => text ++ "\n\nThis is likely due to an error in module " ++ name
-            | None => text
+          let errorText = String.concat("\n", lines);
+          let errorText = switch (parseDependencyError(errorText)) {
+            | Some(name) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
+            | None => errorText
           };
-          TypeError(text, {file, extra})
+          TypeError(errorText, {file, extra})
         }
       }
     }

@@ -111,7 +111,7 @@ let cmiName = (~namespace, name) =>
   compiledBase(~namespace, name) ++ ".cmi";
 
 let getName = x => Filename.basename(x) |> Filename.chop_extension;
-let namespacedName = (~namespace, x) => getName(x) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
+let namespacedName = (~namespace, x) => String.capitalize(getName(x)) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
 
 let filterDuplicates = cmts => {
   /* Remove .cmt's that have .cmti's */
