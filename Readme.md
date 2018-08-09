@@ -4,6 +4,38 @@ This project implements the [Language Server Protocol](https://microsoft.github.
 
 It is written in Reason, and compiled via bsb-native. The goal is for it to work equally well on Windows, MacOS, and Linux.
 
+## Usage
+
+### VSCode
+
+(for now) download the `.vsix` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), and in the vscode extensions panel, open the menu and click "install from .vsix". And that's it!
+Works for macos, windows, linux.
+
+### Sublime Text
+
+1. Install the [sublime reason](https://github.com/reasonml-editor/sublime-reason) plugin for syntax highlighting, etc. (has to be done manually)
+2. Install the [LSP Plugin](https://github.com/tomv564/LSP) via the sublime package manager
+3. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), and unzip it. put the `reason-language-server.exe` file somewhere.
+4. cmd+shift+p and type "Preferences: LSP Settings" to bring up the settings file, and put in:
+```
+{
+  "auto_show_diagnostics_panel": false,
+  "clients": {
+    "reason": {
+      "enabled": true,
+      "command": ["/absolute/path/to/reason-language-server.exe"],
+      "scopes": ["source.reason"],
+      "syntaxes": ["Packages/sublime-reason/Reason.tmLanguage"],
+      "languageId": "reason"
+    }
+  }
+}
+```
+
+### Emacs & Vim
+
+_TODO_ people have gotten it to work with emacs & vim, but I don't know the steps.
+
 ## What about [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
 That project uses [merlin](https://github.com/ocaml/merlin) under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
