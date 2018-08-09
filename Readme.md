@@ -11,6 +11,19 @@ It is written in Reason, and compiled via bsb-native. The goal is for it to work
 (for now) download the `.vsix` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), and in the vscode extensions panel, open the menu and click "install from .vsix". And that's it!
 Works for macos, windows, linux.
 
+### OniVim
+
+Oni has support for reason baked in, and it only needs a little bit of configuration to integrate this langauge server.
+
+1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), and unzip it. put the `reason-language-server.exe` file somewhere.
+2. Open the oni config file (`cmd+,`), and add the following to the `export const configuration = {` block at the end:
+```
+    "language.reason.languageServer.command": "/abs/path/to/your/reason-language-server.exe",
+    "language.reason.languageServer.arguments": [],
+    "language.reason.languageServer.configuration": {},
+```
+And you're done!
+
 ### Sublime Text
 
 1. Install the [sublime reason](https://github.com/reasonml-editor/sublime-reason) plugin for syntax highlighting, etc. (has to be done manually)
