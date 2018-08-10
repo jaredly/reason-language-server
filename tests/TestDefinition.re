@@ -21,6 +21,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
       let%try_force {SharedTypes.file, extra} = State.getCompilationResult(curi, state, ~package) |> State.tryExtra;
       string_of_int(i) ++ ": " ++ switch (
         References.definitionForPos(
+          ~package,
           ~file=file,
           ~extra=extra,
           ~getModule=State.fileForModule(state, ~package),

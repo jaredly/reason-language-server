@@ -86,7 +86,6 @@ let parseDependencyError = text => {
 let justBscCommand = (~interface, compilerPath, sourceFile, includes, flags) => {
   /* TODO make sure that bsc supports -color */
   Printf.sprintf(
-    /* {|%s %s -color never -bin-annot %s -impl %s|}, */
     {|%s %s -bin-annot %s %s %s|},
     compilerPath,
     includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),

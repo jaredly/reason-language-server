@@ -9,13 +9,13 @@ type container = {v: variant, <t4>r: <c7>record};
 let here = {<c6>name: "fred", age: 3};
 let a = <c10>A(3, 4.);
 --- Other.re
-let thing = {Lib.name: "hi", age: 2};
+<t11>let thing = {Lib.name: "hi", age: 2};
 let <t3>contain = {Lib.v: <c9>B({name: "inner", age: 1}), r: {name: "one", <c8>age: 5}};
 ---
 let <t1>awesome_awesome = 10;
 let <t2>m = <c1>awesome_awesome;
 let z = string_of_int(<c2>m);
-Other.<c3>contain.<c4>r.a<c5>ge;
+O<c11>ther.<c3>contain.<c4>r.<c5>age;
 let m = A(2,3);
 -->
 1: PASS
@@ -28,3 +28,4 @@ let m = A(2,3);
 8: No definition! at 2, 67
 9: No definition! at 2, 22
 10: PASS
+11: PASS

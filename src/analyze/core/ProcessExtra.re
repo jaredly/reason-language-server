@@ -45,6 +45,7 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
 
 let getTypeAtPath = (~env, path) => {
   switch (Query.fromCompilerPath(~env, path)) {
+  | `GlobalMod(_) => `Not_found
   | `Global(moduleName, path) => `Global(moduleName, path)
   | `Not_found => `Not_found
   | `Exported(env, name) => {
@@ -109,8 +110,35 @@ module F = (Collector: {
         };
         res |? Loc.NotFound
       }
+      | `GlobalMod(_) => Loc.NotFound
     };
     addLocation(loc, Loc.Typed(typ, locType));
+  };
+
+  let addForPathParent = (path, lident, loc) => {
+    let locType = switch (Query.fromCompilerPath(~env, path)) {
+      | `GlobalMod(name) =>
+        /* TODO track external references to filenames to handle renames well */
+        Loc.TopLevelModule(name)
+      | `Stamp(stamp) => {
+        addReference(stamp, loc);
+        Module(LocalReference(stamp, Module))
+      }
+      | `Not_found => Module(NotFound)
+      | `Global(moduleName, path) => {
+        addExternalReference(moduleName, path, Module, loc);
+        Module(GlobalReference(moduleName, path, Module))
+      }
+      | `Exported(env, name) => {
+        let res = {
+          let%opt_wrap stamp = Query.hashFind(env.exported.modules, name);
+          addReference(stamp, loc);
+          Loc.Module(LocalReference(stamp, Module))
+        };
+        res |? Module(NotFound)
+      }
+    };
+    addLocation(loc, locType);
   };
 
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
@@ -214,6 +242,21 @@ module F = (Collector: {
     Collector.scopeExtent := List.tl(Collector.scopeExtent^);
   };
 
+  let rec addForLongident = (top, path: Path.t, txt: Longident.t, loc) => {
+    let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
+    switch (top) {
+      | Some((t, tip)) => addForPath(path, txt, l, t, tip)
+      | None => addForPathParent(path, txt, l)
+    };
+    switch (path, txt) {
+      | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
+        addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
+      }
+      | (Pident(_), Lident(name)) => ()
+      | _ => ()
+    };
+  };
+
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
@@ -234,6 +277,7 @@ module F = (Collector: {
         loc_end: currentScopeExtent().loc_end,
       }
     };
+    addForLongident(None, open_path, txt, loc);
     Hashtbl.replace(Collector.extra.opens, loc, tracker);
   }
   | _ => ()
@@ -347,8 +391,7 @@ module F = (Collector: {
     });
     switch (expression.exp_desc) {
     | Texp_ident(path, {txt, loc}, {val_type}) => {
-      /* Log.log("Exp ident folx " ++ Utils.showLocation(loc)); */
-      addForPath(path, txt, loc, val_type, Value);
+      addForLongident(Some((val_type, Value)), path, txt, loc);
     }
     | Texp_record(items, _) => {
       addForRecord(expression.exp_type, items);

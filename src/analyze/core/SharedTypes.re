@@ -212,6 +212,7 @@ module Loc = {
   type t =
   | Typed(Types.type_expr, typed)
   | Module(typed)
+  | TopLevelModule(string)
   | TypeDefinition(string, Types.type_declaration, int)
   | Explanation(string)
   | Open;

@@ -51,6 +51,7 @@ let rec joinPaths = (modulePath, path) => {
 
 let rec makePath = (modulePath) => {
   switch modulePath {
+    | Path.Pident({stamp: 0, name}) => `GlobalMod(name)
     | Path.Pident({stamp, name}) => `Stamp(stamp)
     | Path.Papply(fnPath, _argPath) => makePath(fnPath)
     | Path.Pdot(inner, name, _) => `Path(joinPaths(inner, Tip(name)))
@@ -134,6 +135,7 @@ let fromCompilerPath = (~env, path) => {
   switch (makePath(path)) {
     | `Stamp(stamp) => `Stamp(stamp)
     | `Path((0, moduleName, path)) => `Global(moduleName, path)
+    | `GlobalMod(name) => `GlobalMod(name)
     | `Path((stamp, moduleName, path)) => {
       let res = {
         let%opt {contents: kind} = hashFind(env.file.stamps.modules, stamp);
@@ -160,6 +162,7 @@ let resolveFromCompilerPath = (~env, ~getModule, path) => {
       res |? `Not_found
     }
     | `Stamp(stamp) => `Stamp(stamp)
+    | `GlobalMod(_) => `Not_found
     | `Not_found => `Not_found
     | `Exported(env, name) => `Exported(env, name)
   }

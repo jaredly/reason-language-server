@@ -8,6 +8,7 @@ let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
     | Open => Some("an open")
     | TypeDefinition(name, tdecl, stamp) => None
     | Module(_) => Some("its a module")
+    | TopLevelModule(name) => Some("File: " ++ name)
     | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
     | Typed(t, _) => {
       let typeString = 

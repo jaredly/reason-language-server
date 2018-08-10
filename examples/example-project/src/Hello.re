@@ -107,10 +107,19 @@ for (_index in 0 to 10) {
   print_endline("hellO");
 };
 
+module OneOneOneOne  = {
+  module TwoTwoTwoTwo = {
+    let xxxxxxxxxx = 10;
+  };
+};
+let r = OneOneOneOne.TwoTwoTwoTwo.xxxxxxxxxx;
+
 type awesome = {
   one: string,
   two: float,
 };
+
+Other.oo.person.name;
 
 type lots =
 | Parties

@@ -48,6 +48,12 @@ let countLeading = (value, s) => {
   loop(0, 0);
 };
 
+let topLoc = fname => {
+  Location.loc_start: {Lexing.pos_fname: fname, pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+  Location.loc_end: {Lexing.pos_fname: fname, pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
+  loc_ghost: false,
+};
+
 let countTrailing = (value, s) => {
   let length = String.length(s);
   let rec loop = (count, i) =>
@@ -136,10 +142,32 @@ let parseUri = (uri) =>
     None
   };
 
+let locationOffset = (loc, start, length) =>
+  Location.{
+    ...loc,
+    loc_start: {
+      ...loc.loc_start,
+      pos_cnum: loc.loc_start.pos_cnum + start
+    },
+    loc_end: {
+      ...loc.loc_end,
+      pos_cnum: loc.loc_start.pos_cnum + start + length
+    }
+  };
+
 let endOfLocation = (loc, length) =>
   Location.{
     ...loc,
     loc_start: {
+      ...loc.loc_end,
+      pos_cnum: loc.loc_end.pos_cnum - length
+    }
+  };
+
+let chopLocationEnd = (loc, length) =>
+  Location.{
+    ...loc,
+    loc_end: {
       ...loc.loc_end,
       pos_cnum: loc.loc_end.pos_cnum - length
     }

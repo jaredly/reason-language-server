@@ -25,6 +25,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     {
       let%opt (uri, loc) =
         References.definitionForPos(
+          ~package,
           ~file=data.file,
           ~extra=data.extra,
           ~getModule=State.fileForModule(state, ~package),

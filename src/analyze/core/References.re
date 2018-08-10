@@ -26,6 +26,7 @@ let local = (~file, ~extra, loc) =>
   | Loc.Explanation(_)
   | Typed(_, NotFound)
   | Module(NotFound)
+  | TopLevelModule(_)
   | Open => None
   | TypeDefinition(_, _, stamp) => {
     extra.internalReferences |. Query.hashFind(stamp)
@@ -68,6 +69,7 @@ let definedForLoc = (~file, ~getModule, loc) => {
   | Loc.Explanation(_)
   | Typed(_, NotFound)
   | Module(NotFound)
+  | TopLevelModule(_)
   | Open => None
   | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
   | Module(LocalReference(stamp, tip) | Definition(stamp, tip)) =>
@@ -126,6 +128,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
     | Loc.Explanation(_)
     | Typed(_, NotFound)
     | Module(NotFound)
+    | TopLevelModule(_)
     | Open => Result.Error("Not a valid loc")
     | TypeDefinition(_, _, stamp) => {
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> Result.orError("Could not get for local stamp")
@@ -196,13 +199,19 @@ let definition = (~file, stamp, tip) => {
   };
 };
 
-let definitionForLoc = (~file, ~getModule, loc) => {
+let definitionForLoc = (~package, ~file, ~getModule, loc) => {
   switch (loc) {
     | Loc.Explanation(_)
     | Typed(_, NotFound | Definition(_, _))
     | Module(NotFound | Definition(_, _))
     | TypeDefinition(_, _, _)
     | Open => None
+    | TopLevelModule(name) =>
+      switch (Hashtbl.find(package.TopTypes.pathsForModule, name)) {
+        | (_, Some(src)) => Some((Utils.toUri(src), Utils.topLoc(src)))
+        | (_, None) => None
+        | exception Not_found => None
+      }
     | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {
       definition(~file, stamp, tip)
@@ -218,7 +227,7 @@ let definitionForLoc = (~file, ~getModule, loc) => {
   }
 };
 
-let definitionForPos = (~file, ~extra, ~getModule, pos) => {
+let definitionForPos = (~package, ~file, ~extra, ~getModule, pos) => {
   let%opt (_, loc) = locForPos(~extra, pos);
-  definitionForLoc(~file, ~getModule, loc)
+  definitionForLoc(~package, ~file, ~getModule, loc)
 };
