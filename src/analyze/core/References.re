@@ -82,7 +82,7 @@ let definedForLoc = (~file, ~getModule, loc) => {
       let env = {Query.file, exported: file.contents.exported};
       let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
       let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
-      Log.log("Getting for " ++ string_of_int(stamp) ++ " in " ++ name);
+      /* Log.log("Getting for " ++ string_of_int(stamp) ++ " in " ++ name); */
       inner(~file, stamp, tip) |> Result.orError("could not get defined")
     } |> Result.toOptionAndLog
     /* let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri); */
@@ -102,11 +102,11 @@ let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, t
   let%opt local = extra.internalReferences |. Query.hashFind(localStamp);
   open Infix;
   let externals = {
-    Log.log("Checking externals: " ++ string_of_int(stamp));
+    /* Log.log("Checking externals: " ++ string_of_int(stamp)); */
     let%opt declared = Query.declaredForTip(~stamps=env.file.stamps, stamp, tip);
     if (isVisible(declared)) {
       let%opt path = pathFromVisibility(declared.modulePath, declared.name.txt);
-      Log.log("Now checking path " ++ pathToString(path));
+      /* Log.log("Now checking path " ++ pathToString(path)); */
       let thisModuleName = file.moduleName;
       allModules |. Belt.List.keep(name => name != file.moduleName) |. Belt.List.keepMap(name => {
         let%try file = getModule(name) |> Result.orError("Could not get file for module " ++ name);
@@ -116,7 +116,7 @@ let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, t
         Ok((file.uri, refs))
       } |> Result.toOptionAndLog) |. Some
     } else {
-      Log.log("Not visible");
+      /* Log.log("Not visible"); */
       Some([])
     }
   } |? [];
@@ -136,7 +136,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
     | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
     | Module(LocalReference(stamp, tip) | Definition(stamp, tip))
     => {
-      Log.log("Finding references for " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
+      /* Log.log("Finding references for " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip)); */
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
     }
     | Module(GlobalReference(moduleName, path, tip))
@@ -146,7 +146,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
       let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
       let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
       let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri);
-      Log.log("Finding references for (global) " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
+      /* Log.log("Finding references for (global) " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip)); */
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
     }
   }

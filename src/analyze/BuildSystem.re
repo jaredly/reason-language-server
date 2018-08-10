@@ -28,7 +28,6 @@ let getBsPlatformDir = rootPath => {
     );
   switch (result) {
   | Some(path) =>
-    Log.log("Found bs-platform at " ++ path);
     Result.Ok(path);
   | None =>
     let message = "bs-platform could not be found";

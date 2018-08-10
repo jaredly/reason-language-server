@@ -487,7 +487,7 @@ let forItems = (~file, items, parts) => {
   }));
 
   List.iter(Iter.iter_structure_item, items);
-  Log.log("Parts " ++ string_of_int(Array.length(parts)));
+  /* Log.log("Parts " ++ string_of_int(Array.length(parts))); */
 
   parts |. Belt.Array.forEach(part => switch part {
   | Cmt_format.Partial_signature(str) =>

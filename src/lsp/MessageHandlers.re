@@ -50,21 +50,16 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     Printexc.record_backtrace(true);
 
     {
-      Log.log("Hello " ++ string_of_int(offset));
       let%opt (commas, labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
-      Log.log("Found a function call folx " ++ lident);
       let lastPos = i + String.length(lident) - 1;
       let%opt pos = PartialParser.offsetToPosition(text, lastPos);
       let (l, c) = pos;
       let pos = (l + 1, c);
-      Log.log("Pos for " ++ string_of_int(lastPos) ++ " " ++ string_of_int(l) ++ "," ++ string_of_int(c));
       let%opt (_, loc) = References.locForPos(~extra, pos);
-      Log.log("Loc");
       let%opt typ = switch loc {
         | Typed(t, _) => Some(t)
         | _ => None
       };
-      Log.log("its a typ");
       let rec loop = t => switch (t.Types.desc) {
         | Types.Tsubst(t)
         | Tlink(t) => loop(t)
@@ -112,7 +107,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       Ok([])
     }
     | Lident(string) => {
-      log("Completing for string " ++ string);
+      /* Log.log("Completing for string " ++ string); */
       let parts = Str.split(Str.regexp_string("."), string);
       let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
       let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
@@ -130,7 +125,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         pos,
         parts,
       );
-      Log.log("Got items: " ++ string_of_int(List.length(items)));
+      /* Log.log("Got items: " ++ string_of_int(List.length(items))); */
 
       List.map(items, ((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
@@ -295,7 +290,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
     | Ok(package) =>
 
-      Log.log("<< codleens me please");
+      /* Log.log("<< codleens me please"); */
       open Infix;
 
       let topLoc = {
