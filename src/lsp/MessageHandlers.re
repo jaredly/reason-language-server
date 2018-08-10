@@ -40,7 +40,58 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   /** TODO implement */
   ("textDocument/signatureHelp", (state, params) => {
-    Ok((state, Json.Null))
+    let%try (uri, position) = Protocol.rPositionParams(params);
+    let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
+    let%try package = State.getPackage(uri, state);
+    let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
+    let%try {extra} = State.getDefinitionData(uri, state, ~package);
+    let position = Utils.cmtLocFromVscode(position);
+
+    Printexc.record_backtrace(true);
+
+    {
+      Log.log("Hello " ++ string_of_int(offset));
+      let%opt (commas, labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
+      Log.log("Found a function call folx " ++ lident);
+      let lastPos = i + String.length(lident) - 1;
+      let%opt pos = PartialParser.offsetToPosition(text, lastPos);
+      let (l, c) = pos;
+      let pos = (l + 1, c);
+      Log.log("Pos for " ++ string_of_int(lastPos) ++ " " ++ string_of_int(l) ++ "," ++ string_of_int(c));
+      let%opt (_, loc) = References.locForPos(~extra, pos);
+      Log.log("Loc");
+      let%opt typ = switch loc {
+        | Typed(t, _) => Some(t)
+        | _ => None
+      };
+      Log.log("its a typ");
+      let rec loop = t => switch (t.Types.desc) {
+        | Types.Tsubst(t)
+        | Tlink(t) => loop(t)
+        | Tarrow(label, argt, res, _) =>
+          let (args, fin) = loop(res);
+          ([(label, argt), ...args], fin)
+        | _ => ([], t)
+      };
+      let (args, rest) = loop(typ);
+      let%opt args = args == [] ? None : Some(args);
+      open Rpc.J;
+      Some(Ok((state, o([
+        ("activeParameter", i(commas)),
+        ("signatures", l([
+          o([
+            ("label", s(PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString )),
+            ("parameters", l(args |. List.map(((label, argt)) => {
+              o([
+                ("label", s(label)),
+                ("documentation", s(PrintType.default.expr(PrintType.default, argt) |> PrintType.prettyString))
+              ])
+            })))
+          ])
+        ]))
+      ]))))
+
+    } |? Ok((state, Json.Null));
   }),
 
   ("textDocument/completion", (state, params) => {
