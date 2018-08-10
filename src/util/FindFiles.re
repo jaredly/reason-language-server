@@ -110,8 +110,8 @@ let cmtName = (~namespace, name) =>
 let cmiName = (~namespace, name) =>
   compiledBase(~namespace, name) ++ ".cmi";
 
-let getName = x => Filename.basename(x) |> Filename.chop_extension;
-let namespacedName = (~namespace, x) => String.capitalize(getName(x)) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
+let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize;
+let namespacedName = (~namespace, x) => getName(x) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
 
 let filterDuplicates = cmts => {
   /* Remove .cmt's that have .cmti's */
@@ -151,10 +151,9 @@ let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) =>
   compileds
   |> List.map(path => {
     let modName = getName(path);
-    let moduleName = modName |> String.capitalize;
     let compiled = directory /+ path;
     let source = Utils.find(name => compiledTransform(getName(name)) == modName ? Some(sourceBase /+ name) : None, sources);
-    (moduleName, (compiled, source))
+    (modName, (compiled, source))
   });
 };
 
@@ -197,32 +196,6 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
     |? []
     |> optMap(Json.string);
   Log.log("Deps " ++ String.concat(", ", deps));
-  /* let depFiles = deps |> List.map(name => {
-    let loc = base /+ "node_modules" /+ name;
-    let innerPath = loc /+ "bsconfig.json";
-    Log.log("Dep loc " ++ innerPath);
-    switch (Files.readFile(innerPath)) {
-    | Some(text) =>
-      let inner = Json.parse(text);
-      let namespace = getNamespace(inner);
-      let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "No compiled base found";
-      if (debug) {
-        Log.log("Compiled base: " ++ compiledBase)
-      };
-      let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
-      let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
-      let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
-      let files = switch namespace {
-      | None => List.map(((full, rel)) => (getName(rel) |> String.capitalize, (full, Some(rel))), files)
-      | Some(name) => files |> List.map(((full, rel)) => (name ++ "-" ++ getName(rel), (full, Some(rel))))
-      };
-      (compiledDirectories, files)
-    | None =>
-      Log.log("Skipping nonexistent dependency: " ++ name);
-      ([], [])
-    }
-  }); */
   let depFiles =
     deps
     |> List.map(name => {
@@ -263,7 +236,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
                    | None =>
                      List.map(
                        ((full, rel)) => (
-                         getName(rel) |> String.capitalize,
+                         getName(rel),
                          (full, Some(rel)),
                        ),
                        files,

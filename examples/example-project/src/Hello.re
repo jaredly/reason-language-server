@@ -12,7 +12,7 @@ let n = More.n;
 More.party;
 string_of_bool;
 
-let m = {More.a: 2, b: 32.};
+/* let m = {More.a: 2, b: 32.}; */
 
 module Something = {
   open Other;

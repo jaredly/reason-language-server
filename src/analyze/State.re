@@ -147,7 +147,7 @@ let newJbuilderPackage = (rootPath) => {
   };
 
   let localModules = sourceFiles |> List.map(filename => {
-    let name = FindFiles.getName(filename) |> String.capitalize;
+    let name = FindFiles.getName(filename);
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
       | `Library(libraryName) => libraryName ++ "__" ++ name
@@ -491,7 +491,6 @@ let getCompilationResult = (uri, state, ~package) => {
             );
           };
         });
-
 
         package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
           let otherUri = Utils.toUri(src);

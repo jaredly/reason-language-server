@@ -221,9 +221,10 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     }) |> orError("Invalid params")
   }),
   ("workspace/didChangeConfiguration", (state, params) => {
+    let nullIfEmpty = item => item == "" ? None : Some(item);
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
-    let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string);
-    let lispRefmtLocation = (settings |?> Json.get("lispRefmt") |?> Json.string);
+    let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string) |?> nullIfEmpty;
+    let lispRefmtLocation = (settings |?> Json.get("lispRefmt") |?> Json.string |?> nullIfEmpty);
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
@@ -242,6 +243,32 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         crossFileAsYouType,
       },
     });
+  }),
+  ("textDocument/didSave", (state, params) => {
+    open InfixResult;
+    let%try uri = params |> RJson.get("textDocument") |?> doc => RJson.get("uri", doc) |?> RJson.string;
+    let%try package = State.getPackage(uri, state);
+    let moduleName = FindFiles.getName(uri);
+
+    package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+      let otherUri = Utils.toUri(src);
+      open Infix;
+      if (mname != moduleName
+          && List.mem(
+                moduleName,
+                Query.hashFind(package.interModuleDependencies, mname) |? [],
+              )) {
+        Hashtbl.remove(state.compiledDocuments, otherUri);
+        Hashtbl.replace(
+          state.documentTimers,
+          otherUri,
+          Unix.gettimeofday() +. 0.01,
+        );
+      };
+    });
+
+    Ok(state)
+    /* failwith("A") */
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;

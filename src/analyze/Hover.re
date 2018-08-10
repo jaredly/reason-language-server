@@ -1,7 +1,7 @@
 open Result;
 
 open Infix;
-let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
+let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
   switch (loc) {
     | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
@@ -24,6 +24,10 @@ let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
           ~getModule,
           loc,
         );
+
+        let uri = Utils.startsWith(uri, rootUri)
+        ? "<root>" ++ Utils.sliceToEnd(uri, String.length(rootUri))
+        : uri;
 
         let parts = switch (res) {
           | `Declared => {

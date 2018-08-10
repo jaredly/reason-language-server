@@ -309,6 +309,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let pos = Utils.cmtLocFromVscode(pos);
       let%opt (location, loc) = References.locForPos(~extra, pos);
       let%opt text = Hover.newHover(
+        ~rootUri=state.rootUri,
         ~file,
         ~extra,
         ~getModule=State.fileForModule(state, ~package),

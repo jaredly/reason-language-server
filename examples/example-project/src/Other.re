@@ -9,7 +9,9 @@ type person = {name: string, age: int};
 
 type animals = Things(int) | People(string) | Mouse;
 
-let inner = More.outer;
+let inner = 10;
+/* More.outer; */
+
 
 let m = Things(1);
 
