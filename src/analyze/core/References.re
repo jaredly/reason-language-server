@@ -60,7 +60,11 @@ let definedForLoc = (~file, ~getModule, loc) => {
         let%opt attribute = Query.getAttribute(file, stamp, name);
         Some((declared, file, `Attribute(attribute)))
       }
-      | _ => Query.declaredForTip(~stamps=file.stamps, stamp, tip) |?>> x => (x, file, `Declared)
+      | _ => {
+        /* Log.log("Trying for declared " ++ SharedTypes.tipToString(tip) ++ " " ++ string_of_int(stamp) ++ " in file " ++ file.uri); */
+        let%opt x = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
+        Some((x, file, `Declared))
+      }
     };
   };
 
@@ -78,12 +82,15 @@ let definedForLoc = (~file, ~getModule, loc) => {
   | Module(GlobalReference(moduleName, path, tip))
   | Typed(_, GlobalReference(moduleName, path, tip)) =>
     {
+      /* Log.log("Getting global " ++ moduleName); */
       let%try file = getModule(moduleName) |> Result.orError("Cannot get module " ++ moduleName);
       let env = {Query.file, exported: file.contents.exported};
       let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
       let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
       /* Log.log("Getting for " ++ string_of_int(stamp) ++ " in " ++ name); */
-      inner(~file, stamp, tip) |> Result.orError("could not get defined")
+      let%try res = inner(~file=env.file, stamp, tip) |> Result.orError("could not get defined");
+      /* Log.log("Yes!! got it"); */
+      Ok(res)
     } |> Result.toOptionAndLog
     /* let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri); */
     /* Log.log("Finding references for (global) " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip)); */
@@ -154,6 +161,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
 
 let forPos = (~file, ~extra, pos) => {
   let%opt (_, loc) = locForPos(~extra, pos);
+  /* Log.log("Got a loc for pos"); */
   let%opt refs = local(~file, ~extra, loc);
   Some(refs)
 };
@@ -210,7 +218,10 @@ let definitionForLoc = (~package, ~file, ~getModule, loc) => {
       switch (Hashtbl.find(package.TopTypes.pathsForModule, name)) {
         | (_, Some(src)) => Some((Utils.toUri(src), Utils.topLoc(src)))
         | (_, None) => None
-        | exception Not_found => None
+        | exception Not_found => {
+          Log.log("No path for module " ++ name);
+          None
+        }
       }
     | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {
@@ -222,12 +233,13 @@ let definitionForLoc = (~package, ~file, ~getModule, loc) => {
       let env = {Query.file, exported: file.contents.exported};
       let%opt (env, name) = Query.resolvePath(~env, ~path, ~getModule);
       let%opt stamp = Query.exportedForTip(~env, name, tip);
-      definition(~file, stamp, tip)
+      definition(~file=env.file, stamp, tip)
     }
   }
 };
 
 let definitionForPos = (~package, ~file, ~extra, ~getModule, pos) => {
   let%opt (_, loc) = locForPos(~extra, pos);
+  /* Log.log("Got a loc for pos"); */
   definitionForLoc(~package, ~file, ~getModule, loc)
 };
