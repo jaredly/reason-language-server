@@ -14,9 +14,13 @@ let getResult = result => switch result {
 | Success(_, data) => data
 };
 
-let runRefmt = (~moduleName, ~cacheLocation, text, refmt) => {
+let runRefmt = (~interface, ~moduleName, ~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ moduleName ++ ".ast";
-  let cmd = Printf.sprintf("%s --print binary --parse re > %s", Commands.shellEscape(refmt), Commands.shellEscape(target));
+  let cmd = Printf.sprintf("%s --print binary %s--parse re > %s",
+    Commands.shellEscape(refmt),
+    interface ? "-i true " : "",
+    Commands.shellEscape(target)
+  );
   /* Log.log("refmt " ++ moduleName ++ " " ++ cmd); */
   let (out, error, success) = Commands.execFull(~input=text, cmd);
   if (success) {
@@ -79,20 +83,21 @@ let parseDependencyError = text => {
   }
 };
 
-let justBscCommand = (compilerPath, sourceFile, includes, flags) => {
+let justBscCommand = (~interface, compilerPath, sourceFile, includes, flags) => {
   /* TODO make sure that bsc supports -color */
   Printf.sprintf(
     /* {|%s %s -color never -bin-annot %s -impl %s|}, */
-    {|%s %s -bin-annot %s -impl %s|},
+    {|%s %s -bin-annot %s %s %s|},
     compilerPath,
     includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),
     flags,
+    interface ? "-intf" : "-impl",
     sourceFile
   )
 };
 
-let runBsc = (compilerPath, sourceFile, includes, flags) => {
-  let cmd = justBscCommand(compilerPath, sourceFile, includes, flags);
+let runBsc = (~interface, compilerPath, sourceFile, includes, flags) => {
+  let cmd = justBscCommand(~interface, compilerPath, sourceFile, includes, flags);
   Log.log("running bsc " ++ cmd);
   let (out, error, success) = Commands.execFull(cmd);
   if (success) {
@@ -103,15 +108,16 @@ let runBsc = (compilerPath, sourceFile, includes, flags) => {
 };
 
 let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+  let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
-    | Some(refmtPath) => runRefmt(~moduleName, ~cacheLocation, text, refmtPath);
+    | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
       let astFile = cacheLocation /+ moduleName ++ ".ast";
       let%try () = Files.writeFileResult(astFile, text);
       Ok((None, astFile))
     }
   };
-  switch (runBsc(compilerPath, astFile, includes, flags)) {
+  switch (runBsc(~interface, compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);

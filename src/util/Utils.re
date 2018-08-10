@@ -71,6 +71,17 @@ let startsWith = (s, prefix) => {
   }
 };
 
+let endsWith = (s, suffix) => {
+  if (suffix == "") {
+    true
+  } else {
+    let p = String.length(suffix);
+    let l = String.length(s);
+    p <= String.length(s) && String.sub(s, l - p, p) == suffix
+  }
+};
+
+
 let cmtLocFromVscode = ((line, col)) => (line + 1, col);
 
 let splitLines = text => Str.split(Str.regexp_string("\n"), text);
