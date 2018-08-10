@@ -59,3 +59,26 @@ type state = {
 
   /* workspace folders... */
 };
+
+let empty = () => {
+  rootPath: "- uninitialized -",
+  rootUri: "- uninitialized -",
+  documentText: Hashtbl.create(5),
+  documentTimers: Hashtbl.create(10),
+  packagesByRoot: Hashtbl.create(1),
+  rootForUri: Hashtbl.create(30),
+  cmtCache: Hashtbl.create(30),
+  cmiCache: Hashtbl.create(30),
+  compiledDocuments: Hashtbl.create(10),
+  lastDefinitions: Hashtbl.create(10),
+  settings: {
+    formatWidth: None,
+    refmtLocation: None,
+    lispRefmtLocation: None,
+    crossFileAsYouType: false,
+    perValueCodelens: false,
+    opensCodelens: true,
+    dependenciesCodelens: true,
+    clientNeedsPlainText: false,
+  },
+};

@@ -73,6 +73,40 @@ let getInitialState = (params) => {
   Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
   Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
   Log.log("Hello from " ++ Sys.executable_name);
+  Log.log("Previous log location: " ++ Log.initial_dest);
+
+  Rpc.sendNotification(
+    Log.log,
+    stdout,
+    "client/registerCapability",
+    Rpc.J.(
+      o([
+        (
+          "registrations",
+          l([
+            o([
+              ("id", s("watching")),
+              ("method", s("workspace/didChangeWatchedFiles")),
+              (
+                "registerOptions",
+                o([
+                  (
+                    "watchers",
+                    l([
+                      o([
+                        ("globPattern", s("**/bsconfig.json")),
+                        ("globPattern", s("**/.merlin")),
+                      ]),
+                    ]),
+                  ),
+                ]),
+              ),
+            ]),
+          ]),
+        ),
+      ])
+    ),
+  );
 
   open InfixResult;
 
@@ -90,30 +124,13 @@ let getInitialState = (params) => {
       && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
   );
 
-  let state = TopTypes.{
-    rootPath: rootPath,
+  let state = {
+    ...TopTypes.empty(),
+    rootPath,
     rootUri: uri,
-    documentText: Hashtbl.create(5),
-    documentTimers: Hashtbl.create(10),
-    packagesByRoot,
-    rootForUri: Hashtbl.create(30),
-    cmtCache: Hashtbl.create(30),
-    cmiCache: Hashtbl.create(30),
-    compiledDocuments: Hashtbl.create(10),
-    lastDefinitions: Hashtbl.create(10),
-    settings: {
-      formatWidth: None,
-      refmtLocation: None,
-      lispRefmtLocation: None,
-      crossFileAsYouType: false,
-      perValueCodelens: false,
-      opensCodelens: true,
-      dependenciesCodelens: true,
-      clientNeedsPlainText,
-    },
   };
 
-  Ok(state)
+  Ok({...state, settings: {...state.settings, clientNeedsPlainText}})
 };
 
 open TopTypes;
@@ -172,16 +189,12 @@ let runDiagnostics = (uri, state, ~package) => {
       | None => (0, 0, 0, 0, plain)
       | Some((line, c0, c1, plain)) => (line, c0, line, c1, plain)
       };
-      /* This is to catch the recovering parser's stuff */
-      let message = List.length(Str.split(Str.regexp_string("merlin"), plain)) == 2
-      ? "Syntax error"
-      : plain;
       l([o([
         ("range", o([
           ("start", Protocol.pos(~line=l0, ~character=c0)),
           ("end", Protocol.pos(~line=l1, ~character=c1)),
         ])),
-        ("message", s(message)),
+        ("message", s(plain)),
         ("severity", i(1)),
       ])])
     }
@@ -229,7 +242,9 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let opensCodelens = (settings |?> Json.get("opens_codelens") |?> Json.bool) |? true;
     let dependenciesCodelens = (settings |?> Json.get("dependencies_codelens") |?> Json.bool) |? true;
     let formatWidth = (settings |?> Json.get("format_width") |?> Json.number) |?>> int_of_float;
-    let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? false;
+    /* let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? false; */
+    /* Disabling this -- too finnicky :/ */
+    let crossFileAsYouType = false;
     Ok({
       ...state,
       settings: {
@@ -272,17 +287,46 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   }),
   ("textDocument/didChange", (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> doc => RJson.get("uri", doc) |?> RJson.string
-    |?> uri => RJson.get("version", doc) |?> RJson.number
-    |?> version => RJson.get("contentChanges", params) |?> RJson.array
-    |?> changes => List.nth(changes, List.length(changes) - 1) |> RJson.get("text") |?> RJson.string
-    |?>> text => {
-      /* Hmm how do I know if it's modified? */
-      let state = State.updateContents(uri, text, version, state);
-      Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
-      state
-    }
+    let%try doc = params |> RJson.get("textDocument");
+    let%try uri = RJson.get("uri", doc) |?> RJson.string;
+    let%try version = RJson.get("version", doc) |?> RJson.number;
+    let%try changes = RJson.get("contentChanges", params) |?> RJson.array;
+    let%try text = List.nth(changes, List.length(changes) - 1) |> RJson.get("text") |?> RJson.string;
+    /* Hmm how do I know if it's modified? */
+    let state = State.updateContents(uri, text, version, state);
+    Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
+    Ok(state)
   }),
+  ("workspace/didChangeWatchedFiles", (state, params) => {
+    Log.log("Got a watched file change");
+    let%try changes = RJson.get("changes", params);
+    let%try changes = RJson.array(changes);
+    open InfixResult;
+    let shouldReload = Belt.List.some(changes, change => {
+      let%try t = RJson.get("type", change) |?> RJson.number;
+      let%try uri = RJson.get("uri", change) |?> RJson.string;
+      Ok(Utils.endsWith(uri, "bsconfig.json") || Utils.endsWith(uri, ".merlin"))
+    } |? false);
+
+    if (shouldReload) {
+      Log.log("RELOADING ALL STATE");
+      Hashtbl.iter((uri, _) =>
+        Hashtbl.replace(
+          state.documentTimers,
+          uri,
+          Unix.gettimeofday() +. recompileDebounceTime,
+        ), state.documentText
+      );
+      Ok({
+        ...TopTypes.empty(),
+        documentText: state.documentText,
+        documentTimers: state.documentTimers,
+        settings: state.settings,
+      })
+    } else {
+      Ok(state)
+    }
+  })
 ];
 
 let mmm = () => {

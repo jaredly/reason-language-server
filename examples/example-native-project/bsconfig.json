@@ -16,7 +16,7 @@
   "public": ["Main"],
   "entries": [{
     "backend": "native",
-    "main-module": "Mainz"
+    "main-module": "Other"
   }],
   "refmt": 3
 }
