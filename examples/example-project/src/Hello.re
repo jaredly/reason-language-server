@@ -119,7 +119,11 @@ type awesome = {
   two: float,
 };
 
+open OneOneOneOne.TwoTwoTwoTwo;
 
+include OneOneOneOne.TwoTwoTwoTwo;
+
+include More;
 
 Other.oo.person.name;
 

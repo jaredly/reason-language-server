@@ -257,11 +257,23 @@ module F = (Collector: {
     };
   };
 
+  let rec handle_module_expr = expr => switch expr {
+    | Tmod_constraint(expr, _, _, _) => handle_module_expr(expr.mod_desc)
+    | Tmod_ident(path, {txt, loc}) =>
+      Log.log("Include!! " ++ String.concat(".", Longident.flatten(txt)));
+      maybeAddUse(path, txt, loc, Module);
+      addForLongident(None, path, txt, loc);
+    | _ => ()
+  };
+
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
   | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
+  }
+  | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
+    handle_module_expr(expr.mod_desc)
   }
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
     /* Log.log("Have an open here"); */

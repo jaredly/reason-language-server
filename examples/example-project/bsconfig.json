@@ -1,5 +1,6 @@
 {
   "name": "tryit",
   "sources": "src",
+  "namespace": true,
   "refmt": 3
 }
