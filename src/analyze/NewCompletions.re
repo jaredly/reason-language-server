@@ -50,7 +50,7 @@ let resolveOpens = (~env, opens, ~getModule) => {
 };
 
 let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
-  Log.log("complete for declares " ++ prefix);
+  /* Log.log("complete for declares " ++ prefix); */
   Hashtbl.fold((_stamp, declared, results) => {
     if (
       Utils.startsWith(declared.name.txt, prefix)
@@ -59,7 +59,7 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
     } else {
       let (l, c) = pos;
       let m = Printf.sprintf("%d, %d", l, c);
-      Log.log("Nope doesn't count " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ m);
+      /* Log.log("Nope doesn't count " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ m); */
       results
     }
   }, declareds, [])
@@ -67,7 +67,7 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
 
 let completionForExporteds = (exporteds, stamps: Hashtbl.t(int, SharedTypes.declared('a)), prefix, transformContents) => {
   Hashtbl.fold((name, stamp, results) => {
-    Log.log("checking exported: " ++ name);
+    /* Log.log("checking exported: " ++ name); */
     if (Utils.startsWith(name, prefix)) {
       let declared = Hashtbl.find(stamps, stamp);
       [{...declared, contents: transformContents(declared.contents)}, ...results]
