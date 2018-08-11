@@ -29,3 +29,9 @@ let m = A(2,3);
 9: No definition! at 2, 22
 10: PASS
 11: PASS
+
+=== * Single
+let x = (~<t1>a, ~<t2>b: int) => <c1>a + <c2>b
+-->
+1: PASS
+2: PASS

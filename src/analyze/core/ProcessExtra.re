@@ -350,19 +350,9 @@ module F = (Collector: {
     }
   };
 
+
   let rec enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
-    switch (pat_desc) {
-      | Tpat_record(items, _) => {
-        addForRecord(pat_type, items);
-      }
-      | Tpat_construct(lident, constructor, _) => {
-        addForConstructor(pat_type, lident, constructor)
-      }
-      | Tpat_alias(inner, t, _) => {
-        enter_pattern(inner)
-      }
-      | Tpat_var({stamp}, name) => {
-        /* Log.log("Pattern " ++ name.txt); */
+    let addForPattern = (stamp, name) => {
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
           let declared = ProcessCmt.newDeclared(
             ~name,
@@ -383,6 +373,21 @@ module F = (Collector: {
           addReference(stamp, name.loc);
           addLocation(name.loc, Loc.Typed(pat_type, Loc.Definition(stamp, Value)));
         }
+    };
+    /* Log.log("Entering pattern " ++ Utils.showLocation(pat_loc)); */
+    switch (pat_desc) {
+      | Tpat_record(items, _) => {
+        addForRecord(pat_type, items);
+      }
+      | Tpat_construct(lident, constructor, _) => {
+        addForConstructor(pat_type, lident, constructor)
+      }
+      | Tpat_alias(inner, {stamp}, name) => {
+        addForPattern(stamp, name);
+      }
+      | Tpat_var({stamp}, name) => {
+        /* Log.log("Pattern " ++ name.txt); */
+        addForPattern(stamp, name);
       }
       | _ => ()
     }

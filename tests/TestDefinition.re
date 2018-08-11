@@ -13,6 +13,10 @@ let output = TestUtils.process(lines, (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints) / 2;
+  package.localModules |. Belt.List.forEach(((a, (src, ex))) => {
+      let%try_force {SharedTypes.file, extra} = State.getDefinitionData(Utils.toUri(ex), state, ~package);
+      Log.log(SharedTypes.showExtra(extra));
+  });
   let process = i => {
       let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
       Log.log("Curi " ++ curi);
