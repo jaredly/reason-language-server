@@ -15,7 +15,22 @@ let execFull = (~input=?, ~pwd=?, ~env=Unix.environment(), cmd) => {
     | None => env
     | Some(pwd) => Array.map(item => String.length(item) > 4 && String.sub(item, 0, 4) == "PWD=" ? "PWD=" ++ pwd : item, env)
   };
+  let prevCwd = switch pwd {
+    | None => None
+    | Some(pwd) =>
+    let prevCwd = Unix.getcwd();
+    if (prevCwd == pwd) {
+      None
+    } else {
+      Unix.chdir(pwd);
+      Some(prevCwd)
+    }
+  }
   let (cmd_out, cmd_in, cmd_err) = Unix.open_process_full(cmd, env);
+  switch prevCwd {
+    | None => ()
+    | Some(prevCwd) => Unix.chdir(prevCwd)
+  };
 
   switch input {
   | None => ()

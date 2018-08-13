@@ -114,6 +114,7 @@ let setUp = (files, text) => {
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
+      ~basePath=package.basePath,
       contents,
       ~cacheLocation=tmp,
       "./node_modules/.bin/bsc",
@@ -129,6 +130,7 @@ let setUp = (files, text) => {
   let%try_force result = AsYouType.process(
     ~uri=mainUri,
     ~moduleName="Test",
+    ~basePath=package.basePath,
     text,
     ~cacheLocation=tmp,
     "./node_modules/.bin/bsc",

@@ -539,5 +539,10 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
 | Implementation(structure) => {
   Ok(forItems(~file, structure.str_items, [||]))
 }
+| Partial_interface(_)
+| Interface(_) => {
+  /** TODO actually process signature items */
+  Ok(forItems(~file, [], [||]))
+}
 | _ => Error("Invalid cmt file")
 };

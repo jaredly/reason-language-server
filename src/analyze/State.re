@@ -452,6 +452,7 @@ let getCompilationResult = (uri, state, ~package) => {
     let%try result = AsYouType.process(
       ~uri,
       ~moduleName,
+      ~basePath=package.basePath,
       text,
       ~cacheLocation=package.tmpPath,
       package.compilerPath,

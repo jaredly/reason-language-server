@@ -95,10 +95,10 @@ let justBscCommand = (~interface, compilerPath, sourceFile, includes, flags) => 
   )
 };
 
-let runBsc = (~interface, compilerPath, sourceFile, includes, flags) => {
+let runBsc = (~basePath, ~interface, compilerPath, sourceFile, includes, flags) => {
   let cmd = justBscCommand(~interface, compilerPath, sourceFile, includes, flags);
-  Log.log("running bsc " ++ cmd);
-  let (out, error, success) = Commands.execFull(cmd);
+  Log.log("running bsc " ++ cmd ++ " with pwd " ++ basePath);
+  let (out, error, success) = Commands.execFull(~pwd=basePath, cmd);
   if (success) {
     Ok(out @ error)
   } else {
@@ -106,7 +106,7 @@ let runBsc = (~interface, compilerPath, sourceFile, includes, flags) => {
   }
 };
 
-let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
@@ -116,9 +116,9 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       Ok((None, astFile))
     }
   };
-  switch (runBsc(~interface, compilerPath, astFile, includes, flags)) {
+  switch (runBsc(~basePath, ~interface, compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
-      let cmtPath = cacheLocation /+ moduleName ++ ".cmt";
+      let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
@@ -139,7 +139,7 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
       }
     }
     | Ok(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
+      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : ""));
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
       Success(lines, {file, extra})
