@@ -77,7 +77,7 @@ let newBsPackage = (rootPath) => {
         "-bs-package-name",
         config |> Json.get("name") |?> Json.string |? "unnamed",
         "-bs-package-output",
-        "es6:src",
+        "es6:node_modules/.lsp",
         ...flags] : flags;
       ["-bs-no-builtin-ppx-ml", ...flags];
     }
