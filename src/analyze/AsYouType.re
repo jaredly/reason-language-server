@@ -118,18 +118,23 @@ let process = (~uri, ~moduleName, text, ~cacheLocation, compilerPath, refmtPath,
   };
   switch (runBsc(~interface, compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt");
-      let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
-      let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
-      switch (syntaxError) {
-        | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
-        | None => {
-          let errorText = String.concat("\n", lines);
-          let errorText = switch (parseDependencyError(errorText)) {
-            | Some(name) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
-            | None => errorText
-          };
-          TypeError(errorText, {file, extra})
+      let cmtPath = cacheLocation /+ moduleName ++ ".cmt";
+      if (!Files.isFile(cmtPath)) {
+        Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
+      } else {
+        let cmt = Cmt_format.read_cmt(cmtPath);
+        let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
+        let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+        switch (syntaxError) {
+          | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
+          | None => {
+            let errorText = String.concat("\n", lines);
+            let errorText = switch (parseDependencyError(errorText)) {
+              | Some(name) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
+              | None => errorText
+            };
+            TypeError(errorText, {file, extra})
+          }
         }
       }
     }

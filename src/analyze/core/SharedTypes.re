@@ -167,6 +167,14 @@ type file = {
   contents: Module.contents,
 };
 
+let emptyFile = (moduleName, uri) => {
+  uri,
+  docstring: None,
+  stamps: initStamps(),
+  moduleName,
+  contents: {exported: Module.initExported(), topLevel: []}
+};
+
 type tip =
 | Value
 | Type
@@ -245,6 +253,8 @@ let initExtra = () => {
   locations: [],
   opens: Hashtbl.create(10),
 };
+
+let initFull = (moduleName, uri) => {file: emptyFile(moduleName, uri), extra: initExtra()};
 
 let hashList = h => Hashtbl.fold((a, b, c) => [(a, b), ...c], h, []);
 
