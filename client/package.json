@@ -17,6 +17,7 @@
 	],
 	"activationEvents": [
 		"onLanguage:reason",
+		"onLanguage:ocaml",
 		"onLanguage:reason_lisp"
 	],
 	"main": "./src/index",
@@ -76,6 +77,11 @@
 		},
 		"grammars": [
 			{
+				"language": "ocaml",
+				"scopeName": "source.ocaml",
+				"path": "./ocaml.json"
+			},
+			{
 				"language": "reason",
 				"scopeName": "source.reason",
 				"path": "./reason.json"
@@ -97,6 +103,16 @@
 					".rei"
 				],
 				"configuration": "./reason.configuration.json"
+			}, {
+				"id": "ocaml",
+				"aliases": [
+					"OCaml"
+				],
+				"extensions": [
+					".ml",
+					".mli"
+				],
+				"configuration": "./ocaml.configuration.json"
 			}, {
 				"id": "reason_lisp",
 				"aliases": [
