@@ -126,7 +126,7 @@ let newJbuilderPackage = (rootPath) => {
 
   let buildSystem = BuildSystem.Dune;
 
-  let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
+  let%try jbuildRaw = JbuildFile.readFromDir(projectRoot);
   let jbuildConfig = JbuildFile.parse(jbuildRaw);
   let packageName = JbuildFile.findName(jbuildConfig);
 
@@ -169,7 +169,7 @@ let newJbuilderPackage = (rootPath) => {
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
-      let%try jbuildRaw = Files.readFileResult(otherPath /+ "jbuild");
+      let%try jbuildRaw = JbuildFile.readFromDir(otherPath);
       let jbuildConfig = JbuildFile.parse(jbuildRaw);
       let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
         | `Library(name) => Result.Ok(name)
