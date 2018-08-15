@@ -134,9 +134,7 @@ let getRefmt = (rootPath, buildSystem) => {
 let hiddenLocation = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | Bsb(_)
-    | BsbNative(_, _) =>
-      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      Filename.dirname(bsPlatformDir) /+ ".lsp"
-    | Dune => Ok(rootPath /+ "_build" /+ ".lsp")
+    | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
+    | Dune => rootPath /+ "_build" /+ ".lsp"
   };
 };

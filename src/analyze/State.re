@@ -39,7 +39,7 @@ let newBsPackage = (rootPath) => {
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
   let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
   let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
-  let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
+  let tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
   let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
@@ -67,12 +67,15 @@ let newBsPackage = (rootPath) => {
   let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
   let flags = switch buildSystem {
     | Bsb(_) | BsbNative(_, Js) => {
-      let jsPackageMode = config
-      |> Json.get("package-specs")
-      |?> Json.nth(0)
-      |?> Json.get("module")
-      |?> Json.string
-      |? "commonjs";
+      let jsPackageMode = {
+        let specs = config |> Json.get("package-specs");
+        let spec = switch specs {
+          | Some(Json.Array([item, ..._])) => Some(item)
+          | Some(Json.Object(_)) => specs
+          | _ => None
+        };
+        spec |?> Json.get("module") |?> Json.string
+      } |? "commonjs";
       let flags = jsPackageMode == "es6" ? [
         "-bs-package-name",
         config |> Json.get("name") |?> Json.string |? "unnamed",
@@ -203,7 +206,7 @@ let newJbuilderPackage = (rootPath) => {
 
   let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "" && s.[0] != '.'))];
 
-  let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
   let dependencyModules = dependencyDirectories
@@ -284,6 +287,7 @@ let getPackage = (uri, state) => {
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
       let%try package = newBsPackage(rootPath);
+      Files.mkdirp(package.tmpPath);
       let package = {
         ...package,
         refmtPath: state.settings.refmtLocation |?? package.refmtPath,
@@ -294,6 +298,7 @@ let getPackage = (uri, state) => {
       Result.Ok(package)
     | `Jbuilder(path) =>
       let%try package = newJbuilderPackage(path);
+      Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
