@@ -126,7 +126,7 @@ let newJbuilderPackage = (rootPath) => {
 
   let buildSystem = BuildSystem.Dune;
 
-  let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
+  let%try jbuildRaw = JbuildFile.readFromDir(projectRoot);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
     | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
     | x => Ok(x)
@@ -172,8 +172,7 @@ let newJbuilderPackage = (rootPath) => {
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
-      let%try jbuildRaw = Files.readFileResult(otherPath /+ "jbuild");
-      /* let jbuildConfig = JbuildFile.parse(jbuildRaw); */
+      let%try jbuildRaw = JbuildFile.readFromDir(otherPath);
       let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
         | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
         | x => Ok(x)

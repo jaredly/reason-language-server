@@ -1,3 +1,5 @@
+open Infix;
+open Result;
 
 
 let findLibraryName = jbuildConfig => {
@@ -159,4 +161,12 @@ let parse = raw => {
     }
   };
   loop(0)
+};
+
+let readFromDir = (dirPath) => {
+  let jbuildRaw = switch (Files.readFileResult(dirPath /+ "dune")) {
+  | Ok(x) => Ok(x)
+  | Error(_) => Files.readFileResult(dirPath /+ "jbuild")
+  };
+  jbuildRaw
 };

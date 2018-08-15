@@ -109,6 +109,18 @@
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,
-		}
+		},
+		{
+			"name": "Launch Esy Dune Project",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/client",
+				"${workspaceRoot}/examples/example-esy-dune-project"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
 	]
 }
