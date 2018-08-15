@@ -14,7 +14,7 @@ let getPackage = (localModules) => {
     compilationFlags: "",
     includeDirectories: [],
     compilerPath: "./node_modules/.bin/bsc",
-    refmtPath: "./node_modules/bs-platform/lib/refmt.exe",
+    refmtPath: Some("./node_modules/bs-platform/lib/refmt.exe"),
     lispRefmtPath: None,
   };
 };

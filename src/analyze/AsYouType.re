@@ -122,7 +122,10 @@ let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath,
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
-        let cmt = Cmt_format.read_cmt(cmtPath);
+        let%try cmt = switch (Cmt_format.read_cmt(cmtPath)) {
+          | exception _ => Error("Invalid cmt response - probably wrong ocaml version")
+          | x => Ok(x)
+        };
         let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
         let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
         switch (syntaxError) {
@@ -139,7 +142,10 @@ let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath,
       }
     }
     | Ok(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : ""));
+      let%try cmt = switch (Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : ""))) {
+        | exception _ => Error("Invalid cmt response - probably wrong ocaml version")
+        | x => Ok(x)
+      };
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
       Success(lines, {file, extra})
