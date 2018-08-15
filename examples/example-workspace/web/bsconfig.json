@@ -7,12 +7,12 @@
     "dir": "src",
     "subdirs": true
   },
-  "package-specs": [
+  "package-specs": 
     {
       "module": "es6",
       "in-source": true
     }
-  ],
+  ,
   "suffix": ".bs.js",
 
   "bs-dependencies": ["reason-react", "shared"],

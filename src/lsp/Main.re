@@ -161,7 +161,9 @@ let runDiagnostics = (uri, state, ~package) => {
     ("uri", s(uri)),
     ("diagnostics", switch result {
     | AsYouType.SyntaxError(text, otherText, _) => {
-      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text))) @ AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(otherText)));
+      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(otherText)));
+      let errors = errors |. Belt.List.keep(((loc, message)) => message != ["Error: Uninterpreted extension 'merlin.syntax-error'."]);
+      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text))) @ errors;
       l(errors |. Belt.List.map(makeDiagnostic))
     }
     | Success(text, _) => {
@@ -174,7 +176,11 @@ let runDiagnostics = (uri, state, ~package) => {
     }
     | TypeError(text, _) => {
       Log.log("type error here " ++ text);
-      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text)));
+      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text)))
+      |. Belt.List.keep(((loc, message)) => {
+        !Str.string_match(Str.regexp({|.*Missing dependency [a-zA-Z]+ in search path|}), String.concat(" ", message), 0)
+      })
+      ;
       l(errors |. Belt.List.map(makeDiagnostic))
     }
     })
