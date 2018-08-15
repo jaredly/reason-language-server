@@ -145,58 +145,37 @@ let getTextDocument = doc => {
 let runDiagnostics = (uri, state, ~package) => {
   Log.log("Running diagnostics for " ++ uri);
   let%try_consume result = State.getCompilationResult(uri, state, ~package);
+
+  let makeDiagnostic = (((line, c1, c2), message)) => {
+    open Rpc.J;
+          let text = String.concat("\n", message);
+          o([
+            ("range", Protocol.rangeOfInts(line, c1, line, c2)),
+            ("message", s(text)),
+            ("severity", i(Utils.startsWith(text, "Warning") ? 2 : 1))
+          ])
+  };
+
   open Rpc.J;
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
     ("uri", s(uri)),
     ("diagnostics", switch result {
-    | AsYouType.SyntaxError(text, _) => {
-      let pos = AsYouType.parseTypeError(text);
-      let (l0, c0, l1, c1, text) = switch pos {
-      | None => (0, 0, 0, 0, text)
-      | Some((line, c0, c1, text)) => (line, c0, line, c1, text)
-      };
-      l([o([
-        ("range", Protocol.rangeOfInts(l0, c0, l1, c1)),
-        ("message", s("Parse error:\n" ++ text)),
-        ("severity", i(1)),
-      ])])
+    | AsYouType.SyntaxError(text, otherText, _) => {
+      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text))) @ AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(otherText)));
+      l(errors |. Belt.List.map(makeDiagnostic))
     }
-    | AsYouType.Success(lines, _) => {
-      if (lines == [] || lines == [""]) {
+    | Success(text, _) => {
+      if (String.trim(text) == "") {
         l([])
       } else {
-        let rec loop = lines => switch lines {
-        | [loc, warning, ...rest] => switch (AsYouType.parseTypeError(Utils.stripAnsii(loc))) {
-          | None => loop([warning, ...rest])
-          | Some((line, c0, c1, text)) => {
-            [o([
-              ("range", Protocol.rangeOfInts(line, c0, line, c1)),
-              ("message", s(Utils.stripAnsii(warning))),
-              ("severity", i(2)),
-            ]), ...loop(rest)]
-          }
-        }
-        | _ => []
-        };
-        let warnings = loop(lines);
-        l(warnings)
+        let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text)));
+        l(errors |. Belt.List.map(makeDiagnostic))
       }
     }
     | TypeError(text, _) => {
-      let plain = Utils.stripAnsii(text);
-      let pos = AsYouType.parseTypeError(plain);
-      let (l0, c0, l1, c1, plain) = switch pos {
-      | None => (0, 0, 0, 0, plain)
-      | Some((line, c0, c1, plain)) => (line, c0, line, c1, plain)
-      };
-      l([o([
-        ("range", o([
-          ("start", Protocol.pos(~line=l0, ~character=c0)),
-          ("end", Protocol.pos(~line=l1, ~character=c1)),
-        ])),
-        ("message", s(plain)),
-        ("severity", i(1)),
-      ])])
+      Log.log("type error here " ++ text);
+      let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text)));
+      l(errors |. Belt.List.map(makeDiagnostic))
     }
     })
   ]));
