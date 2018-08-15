@@ -47,14 +47,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try {extra} = State.getDefinitionData(uri, state, ~package);
     let position = Utils.cmtLocFromVscode(position);
 
-    Printexc.record_backtrace(true);
-
     {
       let%opt (commas, labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
       let lastPos = i + String.length(lident) - 1;
-      let%opt pos = PartialParser.offsetToPosition(text, lastPos);
-      let (l, c) = pos;
-      let pos = (l + 1, c);
+      let%opt pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode;
       let%opt (_, loc) = References.locForPos(~extra, pos);
       let%opt typ = switch loc {
         | Typed(t, _) => Some(t)

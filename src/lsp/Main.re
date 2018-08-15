@@ -144,16 +144,22 @@ let getTextDocument = doc => {
 
 let runDiagnostics = (uri, state, ~package) => {
   Log.log("Running diagnostics for " ++ uri);
+  let%try_consume (documentText, _verison, _isClean) = MessageHandlers.maybeHash(state.documentText, uri) |> orError("No document text found");
   let%try_consume result = State.getCompilationResult(uri, state, ~package);
 
   let makeDiagnostic = (((line, c1, c2), message)) => {
     open Rpc.J;
-          let text = String.concat("\n", message);
-          o([
-            ("range", Protocol.rangeOfInts(line, c1, line, c2)),
-            ("message", s(text)),
-            ("severity", i(Utils.startsWith(text, "Warning") ? 2 : 1))
-          ])
+    let text = String.concat("\n", message);
+    let (l2, c22) = {
+      let%opt lineOff = PartialParser.offsetOfLine(documentText, line);
+      let off2 = lineOff + c2;
+      PartialParser.offsetToPosition(documentText, off2)
+    } |? (line, c2); 
+    o([
+      ("range", Protocol.rangeOfInts(line, c1, l2, c22)),
+      ("message", s(text)),
+      ("severity", i(Utils.startsWith(text, "Warning") ? 2 : 1)),
+    ]);
   };
 
   open Rpc.J;
