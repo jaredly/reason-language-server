@@ -99,7 +99,7 @@ let rec skipWhite = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
 };
 
 let rec parseIdent = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
-  | 'a'..'z' | 'A'..'Z' | '_' | '-' | '0'..'9' => parseIdent(raw, ln, i + 1)
+  | 'a'..'z' | 'A'..'Z' | '_' | '-' | '.' | '0'..'9' => parseIdent(raw, ln, i + 1)
   | _ => i
 };
 

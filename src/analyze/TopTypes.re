@@ -24,7 +24,7 @@ type package = {
 
   buildSystem: BuildSystem.t,
   compilerPath: filePath,
-  refmtPath: filePath,
+  refmtPath: option(filePath),
   /** TODO maybe make this general, so that I can support arbitrary syntaxes? */
   lispRefmtPath: option(filePath),
 };

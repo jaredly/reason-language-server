@@ -103,7 +103,7 @@ let newBsPackage = (rootPath) => {
       stdLibDirectories @ 
       dependencyDirectories @ localCompiledDirs,
     compilerPath,
-    refmtPath,
+    refmtPath: Some(refmtPath),
     /** TODO detect this from node_modules */
     lispRefmtPath: None,
   };
@@ -127,7 +127,10 @@ let newJbuilderPackage = (rootPath) => {
   let buildSystem = BuildSystem.Dune;
 
   let%try jbuildRaw = JbuildFile.readFromDir(projectRoot);
-  let jbuildConfig = JbuildFile.parse(jbuildRaw);
+  let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
+    | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
+    | x => Ok(x)
+  };
   let packageName = JbuildFile.findName(jbuildConfig);
 
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
@@ -170,7 +173,10 @@ let newJbuilderPackage = (rootPath) => {
     let otherPath = rootPath /+ name;
     let res = {
       let%try jbuildRaw = JbuildFile.readFromDir(otherPath);
-      let jbuildConfig = JbuildFile.parse(jbuildRaw);
+      let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
+        | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
+        | x => Ok(x)
+      };
       let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
         | `Library(name) => Result.Ok(name)
         | _ => Error("Not a library")
@@ -224,7 +230,7 @@ let newJbuilderPackage = (rootPath) => {
   }); */
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
-  let%try refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem);
+  let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> Result.toOptionAndLog;
   Ok({
     basePath: rootPath,
     localModules,
@@ -280,7 +286,7 @@ let getPackage = (uri, state) => {
       let%try package = newBsPackage(rootPath);
       let package = {
         ...package,
-        refmtPath: state.settings.refmtLocation |? package.refmtPath,
+        refmtPath: state.settings.refmtLocation |?? package.refmtPath,
         lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
       };
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
@@ -311,7 +317,14 @@ let converter = (src, usePlainText) => {
 };
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
-  let infos = Cmt_format.read_cmt(cmt);
+  /* let infos = Cmt_format.read_cmt(cmt); */
+  let%opt infos = switch (Cmt_format.read_cmt(cmt)) {
+    | exception _ => {
+      Log.log("Invalid cmt format");
+      None
+    }
+    | x => Some(x)
+  };
   /* let%opt src = src; */
   let uri = Utils.toUri(src |? cmt);
   let%opt file = ProcessCmt.forCmt(uri, converter(src, clientNeedsPlainText), infos) |> Result.toOptionAndLog;
@@ -320,7 +333,13 @@ let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
-  let infos = Cmi_format.read_cmi(cmi);
+  let%opt infos = switch (Cmi_format.read_cmi(cmi)) {
+    | exception _ => {
+      Log.log("Invalid cmi format");
+      None
+    }
+    | x => Some(x)
+  };
   /* switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
   | Some((docstring, items)) => */
@@ -429,7 +448,10 @@ let refmtForUri = (uri, package) =>
     | Some(x) => Ok(Some(x))
     };
   } else {
-    Ok(Some(package.refmtPath));
+    switch (package.refmtPath) {
+      | None => Error("No refmt found for dune project. Cannot process .re file")
+      | Some(x) => Ok(Some(x))
+    }
   };
 
 open Infix;

@@ -1,15 +1,15 @@
 
 type result =
   /* | ParseError(string) */
-  | SyntaxError(string, SharedTypes.full)
+  | SyntaxError(string, string, SharedTypes.full)
   | TypeError(string, SharedTypes.full)
-  | Success(list(string), SharedTypes.full)
+  | Success(string, SharedTypes.full)
 ;
 open Infix;
 open Result;
 
 let getResult = result => switch result {
-| SyntaxError(_, data) => data
+| SyntaxError(_, _, data) => data
 | TypeError(_, data) => data
 | Success(_, data) => data
 };
@@ -67,6 +67,38 @@ let parseTypeError = text => {
   }
 };
 
+let parseLoc = text => {
+  /* let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:"); */
+  let rx = Str.regexp({|File "[^"]*", line \([0-9]+\), characters \([0-9]+\)-\([0-9]+\):|});
+  if (Str.string_match(rx, text, 0)) {
+    let line = Str.matched_group(1, text) |> int_of_string;
+    let c0 = Str.matched_group(2, text) |> int_of_string;
+    let c1 = Str.matched_group(3, text) |> int_of_string;
+    let final = Str.match_end();
+    Some((line - 1, c0, c1))
+  } else {
+    Log.log("Cannot parse type error: " ++ text);
+    None
+  }
+};
+
+let parseErrors = lines => {
+  let rec loop = lines => switch lines {
+    | [] => ([], [])
+    | [line, ...rest] => {
+      let (tail, items) = loop(rest);
+      switch (parseLoc(line)) {
+        | None => ([line, ...tail], items)
+        | Some(loc) => ([], [(loc, tail), ...items])
+      }
+    }
+  };
+  let (tail, errors) = loop(lines);
+  let errors = tail == [] ? errors : [((0, 0, 0), tail), ...errors];
+
+  errors
+};
+
 let parseDependencyError = text => {
   let rx = Str.regexp({|Error: The files \(.+\)\.cmi
        and \(.+\)\.cmi
@@ -122,13 +154,18 @@ let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath,
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
-        let cmt = Cmt_format.read_cmt(cmtPath);
+        let%try cmt = switch (Cmt_format.read_cmt(cmtPath)) {
+          | exception _ => Error("Invalid cmt response - probably wrong ocaml version")
+          | x => Ok(x)
+        };
         let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
         let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+        let errorText = String.concat("\n", lines);
         switch (syntaxError) {
-          | Some(s) => SyntaxError(String.concat("\n", s), {file, extra})
+          | Some(s) =>
+            /** TODO also report the type errors / warnings from the partial result */
+            SyntaxError(String.concat("\n", s), errorText, {file, extra})
           | None => {
-            let errorText = String.concat("\n", lines);
             let errorText = switch (parseDependencyError(errorText)) {
               | Some(name) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
               | None => errorText
@@ -139,10 +176,13 @@ let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath,
       }
     }
     | Ok(lines) => {
-      let cmt = Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : ""));
+      let%try cmt = switch (Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : ""))) {
+        | exception _ => Error("Invalid cmt response - probably wrong ocaml version")
+        | x => Ok(x)
+      };
       let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
       let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
-      Success(lines, {file, extra})
+      Success(String.concat("\n", lines), {file, extra})
     }
   }
 };

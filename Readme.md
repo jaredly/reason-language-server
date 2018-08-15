@@ -68,28 +68,15 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - clone
 - cd to the cloned dir
 - run `npm install` from the main project dir
-- run the following command to install dependenceis for example projects `for dir in ./examples/*; do (cd "$dir" && npm install); done`
 - install the client's dependencies `cd client && npm i && cd ..`
 - start it up `npm start`
 - open this project in vscode
-- select "Debug > Start Without Debugging" from the vscode menu
+
+## To test your changes in one of the example projects
+- open the "Debug" pane in vscode. Select a debug target. Press "Run"
 - it should start up a window titled `[Extension development host]`
+- you'll have to `npm install && npm run build` in that project directory if you haven't already.
+- to reload the server if something goes wrong, `cmd+shift+p "restart reason language server"`
 
 You can then develop on the language server! When you change something, the server will automatically reload.
-
-## Roadmap
-
-- Code completion
-- Open tracking
-- Signature help
-- Rename
-- Codelens
-  - open tracking
-  - toplevel type definitions
-- Hover
-  - type definitions
-- Range formatting (no change)
-- Document Symbol (maybe I want Extent in addition to name loc)
-
-
 
