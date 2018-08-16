@@ -339,9 +339,18 @@ let get = (
     | [] => []
     | [suffix] =>
       let locallyDefinedValues = localValueCompletions(~pos, ~env, ~getModule, suffix);
-      let valuesFromOpens = List.concat(
-          Belt.List.map(opens, env => valueCompletions(~env, ~getModule, suffix))
-        );
+      let alreadyUsedIdentifiers = Hashtbl.create(10);
+      let valuesFromOpens = Belt.List.reduce(opens, [], (results, env) => {
+        let completionsFromThisOpen = valueCompletions(~env, ~getModule, suffix);
+        Belt.List.keep(completionsFromThisOpen, ((name, declared)) => {
+          if (!Hashtbl.mem(alreadyUsedIdentifiers, name)) {
+            Hashtbl.add(alreadyUsedIdentifiers, name, true);
+            true
+          } else {
+            false
+          }
+        }) @ results
+      });
       let localModuleNames = Belt.List.keepMap(allModules, name => {
         Utils.startsWith(name, suffix) ? Some(("wait for uri", {
         ...emptyDeclared(name), contents: FileModule(name)
