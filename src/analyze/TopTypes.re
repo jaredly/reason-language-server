@@ -24,7 +24,7 @@ type package = {
 
   mutable rebuildTimer: float,
   buildSystem: BuildSystem.t,
-  buildCommand: option(string),
+  buildCommand: option((string, string)),
   compilerPath: filePath,
   refmtPath: option(filePath),
   /** TODO maybe make this general, so that I can support arbitrary syntaxes? */

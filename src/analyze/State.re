@@ -29,26 +29,38 @@ let makePathsForModule = (localModules, dependencyModules) => {
 
 };
 
-/** TODO support collecting affected files from jbuilder */
-let rec getAffectedFiles = lines => switch lines {
+let rec getAffectedFiles = (root, lines) => switch lines {
   | [] => []
+  /* | [one, ...rest] when Utils.startsWith(one, "File \"") =>
+    switch (Utils.split_on_char('"', String.trim(one))) {
+      | [_, name, ..._] => [(root /+ name) |> Utils.toUri, ...getAffectedFiles(root, rest)]
+      | _ => {
+        Log.log("Unable to parse file line " ++ one);
+        getAffectedFiles(root, rest)
+      }
+    } */
   | [one, two, ...rest] when Utils.startsWith(one, "  Warning number ") || Utils.startsWith(one, "  We've found a bug ") =>
     switch (Utils.split_on_char(' ', String.trim(two))) {
-      | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(rest)]
-      | _ => getAffectedFiles([two, ...rest])
+      | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(root, rest)]
+      | _ => getAffectedFiles(root, [two, ...rest])
     }
-  | [_, ...rest] => getAffectedFiles(rest)
+  | [one, ...rest] => {
+    print_endline(
+      "Not covered " ++ one
+    );
+    getAffectedFiles(root, rest)
+  }
 };
 
 let runBuildCommand = (state, root, buildCommand) => {
   /** TODO check for a bsb.lock file & bail if it's there */
-  let%opt_consume buildCommand = buildCommand;
-  let (stdout, stderr, success) = Commands.execFull(~pwd=root, buildCommand);
+  let%opt_consume (buildCommand, commandDirectory) = buildCommand;
+  let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
   Log.log(">> Build system: " ++ buildCommand);
   Log.log(Utils.joinLines(stdout));
   Log.log(">> Error");
   Log.log(Utils.joinLines(stderr));
-  let files = getAffectedFiles(stdout);
+  let files = getAffectedFiles(commandDirectory, stdout);
   Log.log("Affected files " ++ String.concat(" ", files));
   files |. Belt.List.forEach(uri => {
     Hashtbl.remove(state.compiledDocuments, uri);
@@ -69,7 +81,7 @@ let newBsPackage = (state, rootPath) => {
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune => assert(false)
   };
-  runBuildCommand(state, rootPath, Some(buildCommand));
+  runBuildCommand(state, rootPath, Some((buildCommand, rootPath)));
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
@@ -135,7 +147,7 @@ let newBsPackage = (state, rootPath) => {
     dependencyModules,
     pathsForModule,
     buildSystem,
-    buildCommand: Some(buildCommand),
+    buildCommand: Some((buildCommand, rootPath)),
     opens,
     tmpPath,
     compilationFlags: flags |> String.concat(" "),
@@ -167,7 +179,7 @@ let newJbuilderPackage = (state, rootPath) => {
 
   let buildSystem = BuildSystem.Dune;
 
-  let%try jbuildRaw = JbuildFile.readFromDir(projectRoot);
+  let%try jbuildRaw = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
     | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
     | x => Ok(x)
@@ -273,7 +285,7 @@ let newJbuilderPackage = (state, rootPath) => {
       | None => Commands.execOption("esy which jbuilder")
       | Some(x) => Some(x)
     };
-    Some("esy " ++ cmd ++ " build @install")
+    Some(("esy " ++ cmd ++ " build @install", projectRoot))
   };
   runBuildCommand(state, rootPath, buildCommand);
 
@@ -315,6 +327,7 @@ let findRoot = (uri, packagesByRoot) => {
       Some(`Bs(path))
       /* jbuilder */
     } else if (Files.exists(path /+ ".merlin")) {
+      Log.log("Found a .merlin at " ++ path);
       Some(`Jbuilder(path))
     } else {
       loop(Filename.dirname(path))
