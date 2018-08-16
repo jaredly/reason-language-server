@@ -63,7 +63,7 @@ let newBsPackage = (state, rootPath) => {
 
   let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
   let%try buildSystem = BuildSystem.detect(rootPath, config);
-  let bsb = bsPlatform /+ "lib" /+ "bsb.exe -no-color";
+  let bsb = bsPlatform /+ "lib" /+ "bsb.exe";
   let buildCommand = switch buildSystem {
     | Bsb(_) => bsb ++ " -make-world"
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
