@@ -77,7 +77,7 @@ let parseLoc = text => {
     let final = Str.match_end();
     Some((line - 1, c0, c1))
   } else {
-    Log.log("Cannot parse type error: " ++ text);
+    /* Log.log("Cannot parse type error: " ++ text); */
     None
   }
 };

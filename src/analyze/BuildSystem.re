@@ -4,6 +4,12 @@ type target =
   | Bytecode
   | Native;
 
+let targetName = t => switch t {
+  | Js => "js"
+  | Bytecode => "bytecode"
+  | Native => "native"
+};
+
 type t =
   | Dune
   | Bsb(string)

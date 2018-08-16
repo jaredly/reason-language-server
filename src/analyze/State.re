@@ -29,11 +29,47 @@ let makePathsForModule = (localModules, dependencyModules) => {
 
 };
 
-let newBsPackage = (rootPath) => {
+/** TODO support collecting affected files from jbuilder */
+let rec getAffectedFiles = lines => switch lines {
+  | [] => []
+  | [one, two, ...rest] when Utils.startsWith(one, "  Warning number ") || Utils.startsWith(one, "  We've found a bug ") =>
+    switch (Utils.split_on_char(' ', String.trim(two))) {
+      | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(rest)]
+      | _ => getAffectedFiles([two, ...rest])
+    }
+  | [_, ...rest] => getAffectedFiles(rest)
+};
+
+let runBuildCommand = (state, root, buildCommand) => {
+  /** TODO check for a bsb.lock file & bail if it's there */
+  let%opt_consume buildCommand = buildCommand;
+  let (stdout, stderr, success) = Commands.execFull(~pwd=root, buildCommand);
+  Log.log(">> Build system: " ++ buildCommand);
+  Log.log(Utils.joinLines(stdout));
+  Log.log(">> Error");
+  Log.log(Utils.joinLines(stderr));
+  let files = getAffectedFiles(stdout);
+  Log.log("Affected files " ++ String.concat(" ", files));
+  files |. Belt.List.forEach(uri => {
+    Hashtbl.remove(state.compiledDocuments, uri);
+    Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() -. 0.01)
+  })
+  /* TODO report notifications here */
+};
+
+let newBsPackage = (state, rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
+  let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
   let%try buildSystem = BuildSystem.detect(rootPath, config);
+  let bsb = bsPlatform /+ "lib" /+ "bsb.exe -no-color";
+  let buildCommand = switch buildSystem {
+    | Bsb(_) => bsb ++ " -make-world"
+    | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
+    | Dune => assert(false)
+  };
+  runBuildCommand(state, rootPath, Some(buildCommand));
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
@@ -94,10 +130,12 @@ let newBsPackage = (rootPath) => {
 
   {
     basePath: rootPath,
+    rebuildTimer: 0.,
     localModules,
     dependencyModules,
     pathsForModule,
     buildSystem,
+    buildCommand: Some(buildCommand),
     opens,
     tmpPath,
     compilationFlags: flags |> String.concat(" "),
@@ -112,7 +150,7 @@ let newBsPackage = (rootPath) => {
   };
 };
 
-let newJbuilderPackage = (rootPath) => {
+let newJbuilderPackage = (state, rootPath) => {
   let rec findJbuilderProjectRoot = path => {
     if (path == "/") {
       Result.Error("Unable to find _build directory")
@@ -228,19 +266,28 @@ let newJbuilderPackage = (rootPath) => {
   libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
-  /* localModules |. Belt.List.forEach(((name, _)) => {
-    Hashtbl.add(interModuleDependencies, name, Hashtbl.create(10))
-  }); */
+
+  /** TODO support non-esy as well */
+  let buildCommand = {
+    let%opt cmd = switch (Commands.execOption("esy which dune")) {
+      | None => Commands.execOption("esy which jbuilder")
+      | Some(x) => Some(x)
+    };
+    Some("esy " ++ cmd ++ " build @install")
+  };
+  runBuildCommand(state, rootPath, buildCommand);
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> Result.toOptionAndLog;
   Ok({
     basePath: rootPath,
     localModules,
+    rebuildTimer: 0.,
     interModuleDependencies,
     dependencyModules,
     pathsForModule,
     buildSystem,
+    buildCommand,
     /* TODO check if there's a module called that */
     opens: fold(libraryName, [], libraryName => [libraryName ++ "__"]),
     tmpPath: hiddenLocation,
@@ -286,7 +333,7 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
-      let%try package = newBsPackage(rootPath);
+      let%try package = newBsPackage(state, rootPath);
       Files.mkdirp(package.tmpPath);
       let package = {
         ...package,
@@ -297,7 +344,7 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
     | `Jbuilder(path) =>
-      let%try package = newJbuilderPackage(path);
+      let%try package = newJbuilderPackage(state, path);
       Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);

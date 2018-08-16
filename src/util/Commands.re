@@ -97,6 +97,24 @@ let execSync = (cmd) => {
   }
 };
 
+let execOption = cmd => {
+  let (lines, success) = execSync(cmd);
+  if (success) {
+    Some(String.concat("\n", lines))
+  } else {
+    None
+  }
+};
+
+let execResult = cmd => {
+  let (lines, success) = execSync(cmd);
+  if (success) {
+    Result.Ok(lines)
+  } else {
+    Result.Error(lines)
+  }
+};
+
 /**
  * Get the output of a command, in lines.
  */

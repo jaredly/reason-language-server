@@ -246,3 +246,5 @@ let sigItemsExtent = items => {
     };
   };
 };
+
+let joinLines = String.concat("\n");
