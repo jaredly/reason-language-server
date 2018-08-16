@@ -31,23 +31,23 @@ let makePathsForModule = (localModules, dependencyModules) => {
 
 let rec getAffectedFiles = (root, lines) => switch lines {
   | [] => []
-  /* | [one, ...rest] when Utils.startsWith(one, "File \"") =>
+  | [one, ...rest] when Utils.startsWith(one, "File \"") =>
     switch (Utils.split_on_char('"', String.trim(one))) {
       | [_, name, ..._] => [(root /+ name) |> Utils.toUri, ...getAffectedFiles(root, rest)]
       | _ => {
         Log.log("Unable to parse file line " ++ one);
         getAffectedFiles(root, rest)
       }
-    } */
+    }
   | [one, two, ...rest] when Utils.startsWith(one, "  Warning number ") || Utils.startsWith(one, "  We've found a bug ") =>
     switch (Utils.split_on_char(' ', String.trim(two))) {
       | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(root, rest)]
       | _ => getAffectedFiles(root, [two, ...rest])
     }
   | [one, ...rest] => {
-    print_endline(
+    /* Log.log(
       "Not covered " ++ one
-    );
+    ); */
     getAffectedFiles(root, rest)
   }
 };
@@ -60,7 +60,7 @@ let runBuildCommand = (state, root, buildCommand) => {
   Log.log(Utils.joinLines(stdout));
   Log.log(">> Error");
   Log.log(Utils.joinLines(stderr));
-  let files = getAffectedFiles(commandDirectory, stdout);
+  let files = getAffectedFiles(commandDirectory, stdout @ stderr);
   Log.log("Affected files " ++ String.concat(" ", files));
   files |. Belt.List.forEach(uri => {
     Hashtbl.remove(state.compiledDocuments, uri);
