@@ -13,4 +13,4 @@ _old
 tmp
 *.vsix
 examples/markdown-reason-react/
-client/*.zip
+editor-extensions/vscode/*.zip

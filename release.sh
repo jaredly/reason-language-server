@@ -5,17 +5,17 @@ rm -rf _zip
 mkdir -p _zip/reason-language-server
 cd _zip
 
-cp ../client/bin.native reason-language-server/reason-language-server.exe
+cp ../editor-extensions/vscode/bin.native reason-language-server/reason-language-server.exe
 chmod +x reason-language-server/reason-language-server.exe
-zip -r ../client/macos.zip reason-language-server
+zip -r ../editor-extensions/vscode/macos.zip reason-language-server
 
-cp ../client/bin.native.linux reason-language-server/reason-language-server.exe
+cp ../editor-extensions/vscode/bin.native.linux reason-language-server/reason-language-server.exe
 chmod +x reason-language-server/reason-language-server.exe
-zip -r ../client/linux.zip reason-language-server
+zip -r ../editor-extensions/vscode/linux.zip reason-language-server
 
-cp ../client/bin.native.exe reason-language-server/reason-language-server.exe
+cp ../editor-extensions/vscode/bin.native.exe reason-language-server/reason-language-server.exe
 chmod +x reason-language-server/reason-language-server.exe
-zip -r ../client/windows.zip reason-language-server
+zip -r ../editor-extensions/vscode/windows.zip reason-language-server
 
 cd ..
 rm -rf _zip
