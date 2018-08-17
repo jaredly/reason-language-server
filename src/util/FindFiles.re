@@ -93,6 +93,7 @@ let isCompiledFile = name =>
 let isSourceFile = name =>
   Filename.check_suffix(name, ".re")
   || Filename.check_suffix(name, ".rei")
+  || Filename.check_suffix(name, ".rel")
   || Filename.check_suffix(name, ".ml")
   || Filename.check_suffix(name, ".mli");
 
@@ -109,7 +110,8 @@ let cmtName = (~namespace, name) =>
 let cmiName = (~namespace, name) =>
   compiledBase(~namespace, name) ++ ".cmi";
 
-let getName = x => Filename.basename(x) |> Filename.chop_extension;
+let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize;
+let namespacedName = (~namespace, x) => getName(x) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
 
 let filterDuplicates = cmts => {
   /* Remove .cmt's that have .cmti's */
@@ -124,6 +126,7 @@ let filterDuplicates = cmts => {
   cmts |> List.filter(path => {
     !((
       Filename.check_suffix(path, ".re")
+      || Filename.check_suffix(path, ".rel")
       || Filename.check_suffix(path, ".ml")
       || Filename.check_suffix(path, ".cmt")
       || Filename.check_suffix(path, ".cmi")
@@ -131,9 +134,11 @@ let filterDuplicates = cmts => {
   });
 };
 
+let nameSpaceToName = n => n |> Str.split(Str.regexp_string("-")) |> List.map(String.capitalize) |> String.concat("");
+
 let getNamespace = config => {
   let isNamespaced = Json.get("namespace", config) |?> Json.bool |? false;
-  isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> String.capitalize |> s => Some(s)) : None;
+  isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> nameSpaceToName |> s => Some(s)) : None;
 };
 
 let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) => {
@@ -146,10 +151,9 @@ let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) =>
   compileds
   |> List.map(path => {
     let modName = getName(path);
-    let moduleName = modName |> String.capitalize;
     let compiled = directory /+ path;
     let source = Utils.find(name => compiledTransform(getName(name)) == modName ? Some(sourceBase /+ name) : None, sources);
-    (moduleName, (compiled, source))
+    (modName, (compiled, source))
   });
 };
 
@@ -192,32 +196,6 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
     |? []
     |> optMap(Json.string);
   Log.log("Deps " ++ String.concat(", ", deps));
-  /* let depFiles = deps |> List.map(name => {
-    let loc = base /+ "node_modules" /+ name;
-    let innerPath = loc /+ "bsconfig.json";
-    Log.log("Dep loc " ++ innerPath);
-    switch (Files.readFile(innerPath)) {
-    | Some(text) =>
-      let inner = Json.parse(text);
-      let namespace = getNamespace(inner);
-      let directories = getSourceDirectories(~includeDev=false, loc, inner);
-      let compiledBase = BuildSystem.getCompiledBase(loc, buildSystem) |! "No compiled base found";
-      if (debug) {
-        Log.log("Compiled base: " ++ compiledBase)
-      };
-      let compiledDirectories = directories |> List.map(Infix.fileConcat(compiledBase));
-      let compiledDirectories = namespace == None ? compiledDirectories : [compiledBase, ...compiledDirectories];
-      let files = findProjectFiles(~debug, namespace, loc, directories, compiledBase);
-      let files = switch namespace {
-      | None => List.map(((full, rel)) => (getName(rel) |> String.capitalize, (full, Some(rel))), files)
-      | Some(name) => files |> List.map(((full, rel)) => (name ++ "-" ++ getName(rel), (full, Some(rel))))
-      };
-      (compiledDirectories, files)
-    | None =>
-      Log.log("Skipping nonexistent dependency: " ++ name);
-      ([], [])
-    }
-  }); */
   let depFiles =
     deps
     |> List.map(name => {
@@ -258,7 +236,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
                    | None =>
                      List.map(
                        ((full, rel)) => (
-                         getName(rel) |> String.capitalize,
+                         getName(rel),
                          (full, Some(rel)),
                        ),
                        files,

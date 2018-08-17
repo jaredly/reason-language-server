@@ -1,13 +1,14 @@
 open Result;
 
 open Infix;
-let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
+let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
   switch (loc) {
     | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
     | Open => Some("an open")
     | TypeDefinition(name, tdecl, stamp) => None
     | Module(_) => Some("its a module")
+    | TopLevelModule(name) => Some("File: " ++ name)
     | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
     | Typed(t, _) => {
       let typeString = 
@@ -24,6 +25,10 @@ let newHover = (~file, ~extra, ~getModule, ~markdown, loc) => {
           ~getModule,
           loc,
         );
+
+        let uri = Utils.startsWith(uri, rootUri)
+        ? "<root>" ++ Utils.sliceToEnd(uri, String.length(rootUri))
+        : uri;
 
         let parts = switch (res) {
           | `Declared => {

@@ -13,14 +13,19 @@ let output = TestUtils.process(lines, (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints) / 2;
+  package.localModules |. Belt.List.forEach(((a, (src, ex))) => {
+      let%try_force {SharedTypes.file, extra} = State.getDefinitionData(Utils.toUri(ex), state, ~package);
+      Log.log(SharedTypes.showExtra(extra));
+  });
   let process = i => {
       let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
       Log.log("Curi " ++ curi);
       let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints);
       /* let%opt_force (_, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult; */
-      let {SharedTypes.file, extra} = State.getCompilationResult(curi, state, ~package) |> AsYouType.getResult;
+      let%try_force {SharedTypes.file, extra} = State.getCompilationResult(curi, state, ~package) |> State.tryExtra;
       string_of_int(i) ++ ": " ++ switch (
         References.definitionForPos(
+          ~package,
           ~file=file,
           ~extra=extra,
           ~getModule=State.fileForModule(state, ~package),

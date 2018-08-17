@@ -12,7 +12,7 @@ let n = More.n;
 More.party;
 string_of_bool;
 
-let m = {More.a: 2, b: 32.};
+/* let m = {More.a: 2, b: 32.}; */
 
 module Something = {
   open Other;
@@ -107,10 +107,25 @@ for (_index in 0 to 10) {
   print_endline("hellO");
 };
 
+module OneOneOneOne  = {
+  module TwoTwoTwoTwo = {
+    let xxxxxxxxxx = 10;
+  };
+};
+let r = OneOneOneOne.TwoTwoTwoTwo.xxxxxxxxxx;
+
 type awesome = {
   one: string,
   two: float,
 };
+
+open OneOneOneOne.TwoTwoTwoTwo;
+
+include OneOneOneOne.TwoTwoTwoTwo;
+
+include More;
+
+Other.oo.person.name;
 
 type lots =
 | Parties

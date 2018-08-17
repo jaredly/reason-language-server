@@ -97,7 +97,7 @@ let rec findArgLabel = (text, i) => if (i < 0) { None } else {
 
 open Infix;
 
-let findFunctionCall = text => {
+let findFunctionCall = (text, offset) => {
   let rec loop = (commas, labels, i) => {
     if (i > 0) {
       switch (text.[i]) {
@@ -114,7 +114,7 @@ let findFunctionCall = text => {
       | '(' => switch (text.[i - 1]) {
         | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' => {
           let i0 = startOfLident(text, i - 2);
-          Some((commas, labels, String.sub(text, i0, i - i0)))
+          Some((commas, labels, String.sub(text, i0, i - i0), i0))
         }
         | _ => loop(commas, labels, i - 1)
       }
@@ -129,7 +129,7 @@ let findFunctionCall = text => {
       None;
     }
   };
-  loop(0, [], String.length(text) - 1) |?>> ((commas, labels, lident)) => (commas, Array.of_list(labels), lident);
+  loop(0, [], offset) |?>> ((commas, labels, lident, i)) => (commas, Array.of_list(labels), lident, i);
 };
 
 
@@ -177,6 +177,7 @@ type completable = Nothing | Labeled(string) | Lident(string);
 
 let findCompletable = (text, offset) => {
   Log.log("Finding completable");
+  /* NOTE disabled the unterminated check... it got in the way too often */
   /* if (hasUnterminatedCommentOrString(text, offset)) {
     Log.log("Unterminated comment or string, can't do it. Sorry");
     Nothing
@@ -262,7 +263,7 @@ let offsetOfLine = (text, line) => {
   | '\n' => lno == line - 1 ? Some(i + 1) : loop(i + 1, lno + 1)
   | _ => loop(i + 1, lno)
   });
-  loop(0, 0)
+  line == 0 ? Some(0) : loop(0, 0)
 };
 
 let positionToOffset = (text, (line, character)) => {

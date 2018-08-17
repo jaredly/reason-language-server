@@ -1,4 +1,5 @@
 {
   "editor.codeLens": true,
-  "reason_language_server.location": "../lib/bs/native/bin.native"
+  "reason_language_server.location": "../../lib/bs/native/bin.native",
+  "reason_language_server.show_debug_errors": true
 }

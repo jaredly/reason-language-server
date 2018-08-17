@@ -4,10 +4,15 @@ type target =
   | Bytecode
   | Native;
 
+let targetName = t => switch t {
+  | Js => "js"
+  | Bytecode => "bytecode"
+  | Native => "native"
+};
+
 type t =
   | Dune
   | Bsb(string)
-  /* The bool is "Is Bytecode" */
   | BsbNative(string, target);
 
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
@@ -29,7 +34,6 @@ let getBsPlatformDir = rootPath => {
     );
   switch (result) {
   | Some(path) =>
-    Log.log("Found bs-platform at " ++ path);
     Result.Ok(path);
   | None =>
     let message = "bs-platform could not be found";
@@ -97,37 +101,46 @@ let getStdlib = (base, buildSystem) => {
 };
 
 let getCompiler = (rootPath, buildSystem) => {
-  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
     | BsbNative(_, Js)
-    | Bsb(_) => bsPlatformDir /+ "lib" /+ "bsc.exe"
-    | BsbNative(_, Native) => bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
-    | BsbNative(_, Bytecode) => bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
+    | Bsb(_) =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "lib" /+ "bsc.exe"
+    | BsbNative(_, Native) =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+    | BsbNative(_, Bytecode) =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
     | Dune => {
-      let%try_force ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
+      let%try_wrap ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
       ocamlopt ++ " -c"
     }
   };
 };
 
 let getRefmt = (rootPath, buildSystem) => {
-  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
-    | BsbNative("3.2.0", _) => bsPlatformDir /+ "lib" /+ "refmt.exe"
-    | Bsb(version) when version > "2.2.0" => bsPlatformDir /+ "lib" /+ "refmt.exe"
-    | Bsb(_) | BsbNative(_, _) => bsPlatformDir /+ "lib" /+ "refmt3.exe"
+    | BsbNative("3.2.0", _) => 
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "lib" /+ "refmt.exe"
+    | Bsb(version) when version > "2.2.0" =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "lib" /+ "refmt.exe"
+    | Bsb(_) | BsbNative(_, _) =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "lib" /+ "refmt3.exe"
     | Dune => {
-      let%try_force refmt = getLine("esy which refmt", ~pwd=rootPath);
+      let%try_wrap refmt = getLine("esy which refmt", ~pwd=rootPath);
       refmt
     }
   };
 };
 
 let hiddenLocation = (rootPath, buildSystem) => {
-  let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
   switch (buildSystem) {
     | Bsb(_)
-    | BsbNative(_, _) => Filename.dirname(bsPlatformDir) /+ ".lsp"
+    | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
     | Dune => rootPath /+ "_build" /+ ".lsp"
   };
 };

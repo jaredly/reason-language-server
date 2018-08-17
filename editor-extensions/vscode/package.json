@@ -1,0 +1,137 @@
+{
+	"name": "reason-vscode",
+	"description": "a vscode client for the reason-language-server",
+	"author": "Jared Forsyth",
+	"license": "ISC",
+	"version": "1.0.0-beta.7-1",
+	"publisher": "jaredly",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jaredly/language-server"
+	},
+	"engines": {
+		"vscode": "^1.22.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:reason",
+		"onLanguage:ocaml",
+		"onLanguage:reason_lisp"
+	],
+	"main": "./src/index",
+	"contributes": {
+		"commands": [
+			{
+				"command": "reason-language-server.restart",
+				"title": "Restart Reason Language Server"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Reason Language Server",
+			"properties": {
+				"reason_language_server.location": {
+					"type": "string",
+					"description": "Provide a custom location for the language server binary"
+				},
+				"reason_language_server.refmt": {
+					"type": "string",
+					"description": "Provide a custom location for the refmt binary"
+				},
+				"reason_language_server.lispRefmt": {
+					"type": "string",
+					"description": "Provide a location for the reason-lisp lispRefmt binary"
+				},
+				"reason_language_server.format_width": {
+					"type": "number",
+					"description": "Format width (default=80)",
+					"default": "80"
+				},
+				"reason_language_server.per_value_codelens": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the type for each top-level value in a codelens"
+				},
+				"reason_language_server.dependencies_codelens": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the dependencies for a file at the top"
+				},
+				"reason_language_server.opens_codelens": {
+					"type": "boolean",
+					"default": true,
+					"description": "Indicate what values have been used from an open"
+				},
+				"reason_language_server.reloadOnChange": {
+					"type": "boolean",
+					"default": false,
+					"description": "Monitor the language server binary for updates, and restart it (for development)."
+				},
+				"reason_language_server.show_debug_errors": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show errors in the console"
+				}
+			}
+		},
+		"grammars": [
+			{
+				"language": "ocaml",
+				"scopeName": "source.ocaml",
+				"path": "./ocaml.json"
+			},
+			{
+				"language": "reason",
+				"scopeName": "source.reason",
+				"path": "./reason.json"
+			},
+			{
+				"language": "reason_lisp",
+				"scopeName": "source.reason_lisp",
+				"path": "./reason-lisp.json"
+			}
+		],
+		"languages": [
+			{
+				"id": "reason",
+				"aliases": [
+					"Reason"
+				],
+				"extensions": [
+					".re",
+					".rei"
+				],
+				"configuration": "./reason.configuration.json"
+			}, {
+				"id": "ocaml",
+				"aliases": [
+					"OCaml"
+				],
+				"extensions": [
+					".ml",
+					".mli"
+				],
+				"configuration": "./ocaml.configuration.json"
+			}, {
+				"id": "reason_lisp",
+				"aliases": [
+					"Reason Lisp"
+				],
+				"extensions": [
+					".rel",
+					".reli"
+				],
+				"configuration": "./reason-lisp.configuration.json"
+			}
+		]
+	},
+	"scripts": {
+		"postinstall": "node ./node_modules/vscode/bin/install"
+	},
+	"dependencies": {
+		"vscode": "^1.1.17",
+		"vscode-languageclient": "^4.1.3"
+	}
+}

@@ -1,0 +1,17 @@
+{
+  "name": "hello",
+  "version": "0.1.0",
+  "esy": {
+    "build": "refmterr dune build -p #{self.name}"
+  },
+  "dependencies": {
+    "@opam/dune": "*",
+    "@esy-ocaml/reason": "*",
+    "refmterr": "*",
+    "ocaml": "~4.6.0"
+  },
+  "devDependencies": {
+    "@esy-ocaml/merlin": "*",
+    "ocaml": "~4.6.0"
+  }
+}

@@ -8,13 +8,16 @@ let getPackage = (localModules) => {
     dependencyModules: [],
     pathsForModule: State.makePathsForModule(localModules, []),
     buildSystem: BuildSystem.Bsb("3.2.0"),
+    buildCommand: None,
     interModuleDependencies: Hashtbl.create(0),
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
+    rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath: "./node_modules/.bin/bsc",
-    refmtPath: "./node_modules/bs-platform/lib/refmt.exe",
+    refmtPath: Some("./node_modules/bs-platform/lib/refmt.exe"),
+    lispRefmtPath: None,
   };
 };
 
@@ -85,6 +88,8 @@ let getState = () => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       crossFileAsYouType: false,
+      refmtLocation: None,
+      lispRefmtLocation: None,
       formatWidth: None,
       perValueCodelens: false,
       opensCodelens: true,
@@ -111,10 +116,11 @@ let setUp = (files, text) => {
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
+      ~basePath=package.basePath,
       contents,
       ~cacheLocation=tmp,
       "./node_modules/.bin/bsc",
-      "./node_modules/bs-platform/lib/refmt.exe",
+      Some("./node_modules/bs-platform/lib/refmt.exe"),
       [tmp],
       ""
     );
@@ -126,10 +132,11 @@ let setUp = (files, text) => {
   let%try_force result = AsYouType.process(
     ~uri=mainUri,
     ~moduleName="Test",
+    ~basePath=package.basePath,
     text,
     ~cacheLocation=tmp,
     "./node_modules/.bin/bsc",
-    "./node_modules/bs-platform/lib/refmt.exe",
+    Some("./node_modules/bs-platform/lib/refmt.exe"),
     [tmp],
     ""
   );

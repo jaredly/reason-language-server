@@ -50,7 +50,7 @@ let resolveOpens = (~env, opens, ~getModule) => {
 };
 
 let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
-  Log.log("complete for declares " ++ prefix);
+  /* Log.log("complete for declares " ++ prefix); */
   Hashtbl.fold((_stamp, declared, results) => {
     if (
       Utils.startsWith(declared.name.txt, prefix)
@@ -59,7 +59,7 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
     } else {
       let (l, c) = pos;
       let m = Printf.sprintf("%d, %d", l, c);
-      Log.log("Nope doesn't count " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ m);
+      /* Log.log("Nope doesn't count " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ m); */
       results
     }
   }, declareds, [])
@@ -67,7 +67,7 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) => {
 
 let completionForExporteds = (exporteds, stamps: Hashtbl.t(int, SharedTypes.declared('a)), prefix, transformContents) => {
   Hashtbl.fold((name, stamp, results) => {
-    Log.log("checking exported: " ++ name);
+    /* Log.log("checking exported: " ++ name); */
     if (Utils.startsWith(name, prefix)) {
       let declared = Hashtbl.find(stamps, stamp);
       [{...declared, contents: transformContents(declared.contents)}, ...results]
@@ -244,19 +244,19 @@ let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => 
 
   let results = if (suffix == "" || !isCapitalized(suffix)) {
     results @ completionForDeclareds(~pos, env.file.stamps.values, suffix, v => Value(v)) @
-    completionForDeclareds(~pos, env.file.stamps.types, suffix, t => Type(t))
+    completionForDeclareds(~pos, env.file.stamps.types, suffix, t => Type(t)) @
+    (
+      completionForAttributes(env.exported.types, env.file.stamps.types, suffix)
+      |. Belt.List.map(((c, t)) => {...emptyDeclared(c.name.txt), contents: Attribute(c, t)})
+    )
   } else {
     results
   };
-
-  /* Log.log("Getting value completions " ++ env.file.uri);
-  Log.log(String.concat(", ", results |. Belt.List.map(x => x.name.txt))); */
 
   results |. Belt.List.map(x => (env.file.uri, x));
 };
 
 let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
-  /* Log.log("value completions " ++ suffix ++ " for env " ++ env.file.uri); */
   let results = [];
   let results = if (suffix == "" || isCapitalized(suffix)) {
     /* Log.log("capitalized"); */
@@ -275,7 +275,11 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
     /* Log.log("not capitalized"); */
     results @
     completionForExporteds(env.exported.values, env.file.stamps.values, suffix, v => Value(v)) @
-    completionForExporteds(env.exported.types, env.file.stamps.types, suffix, t => Type(t))
+    completionForExporteds(env.exported.types, env.file.stamps.types, suffix, t => Type(t)) @
+    (
+      completionForAttributes(env.exported.types, env.file.stamps.types, suffix)
+      |. Belt.List.map(((c, t)) => {...emptyDeclared(c.name.txt), contents: Attribute(c, t)})
+    )
   } else {
     results
   };
@@ -296,7 +300,7 @@ let attributeCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
 
   let results = if (suffix == "" || !isCapitalized(suffix)) {
     results @ completionForExporteds(env.exported.values, env.file.stamps.values, suffix, v => Value(v)) @
-    /* completionForExporteds(env.exported.types, env.file.stamps.types, suffix, t => Type(t)) */
+    /* completionForExporteds(env.exported.types, env.file.stamps.types, suffix, t => Type(t)) @ */
     (
       completionForAttributes(env.exported.types, env.file.stamps.types, suffix)
       |. Belt.List.map(((c, t)) => {...emptyDeclared(c.name.txt), contents: Attribute(c, t)})
@@ -333,17 +337,25 @@ let get = (
 
   switch tokenParts {
     | [] => []
-    /* | [""] =>
-        valueCompletions(~env, ~getModule, ~suffix="")
-        @ List.concat(Belt.List.map(opens, env => valueCompletions(~env, ~getModule, ~suffix="")))
-        @ Belt.List.map(allModules, name => ("um wait for uri", {...emptyDeclared(name), contents: FileModule(name)})) */
     | [suffix] =>
-      let one = localValueCompletions(~pos, ~env, ~getModule, suffix);
-      let two = List.concat(
-          Belt.List.map(opens, env => valueCompletions(~env, ~getModule, suffix))
-        );
-      let three = Belt.List.keepMap(allModules, name => Utils.startsWith(name, suffix) ? Some(("wait for uri", {...emptyDeclared(name), contents: FileModule(name)})) : None);
-      one @ two @ three
+      let locallyDefinedValues = localValueCompletions(~pos, ~env, ~getModule, suffix);
+      let alreadyUsedIdentifiers = Hashtbl.create(10);
+      let valuesFromOpens = Belt.List.reduce(opens, [], (results, env) => {
+        let completionsFromThisOpen = valueCompletions(~env, ~getModule, suffix);
+        Belt.List.keep(completionsFromThisOpen, ((name, declared)) => {
+          if (!Hashtbl.mem(alreadyUsedIdentifiers, name)) {
+            Hashtbl.add(alreadyUsedIdentifiers, name, true);
+            true
+          } else {
+            false
+          }
+        }) @ results
+      });
+      let localModuleNames = Belt.List.keepMap(allModules, name => {
+        Utils.startsWith(name, suffix) ? Some(("wait for uri", {
+        ...emptyDeclared(name), contents: FileModule(name)
+      })) : None});
+      locallyDefinedValues @ valuesFromOpens @ localModuleNames
     | multiple => {
       open Infix;
       let env = Query.fileEnv(full.file);
@@ -397,55 +409,6 @@ let get = (
             }
           }
         };
-
-
-
-        /* let (l, c) = pos;
-        let pos = (l - 1, c + offset);
-        {
-
-          Log.log("Ok attribute folz " ++ string_of_int(offset) ++ " suffix " ++ suffix);
-          let%opt (_, loc) = References.locForPos(~extra=full.extra, pos);
-          Log.log("got a loc");
-
-          switch (loc) {
-          | Typed({Types.desc: Tconstr(path, _, _)}, _) =>
-
-            switch (ProcessExtra.getTypeAtPath(~env, path)) {
-              | `Local({stamp, contents: {kind: Record(attributes)}}) => {
-                Log.log("Got the loc at that pos");
-                Some(attributes |. Belt.List.keepMap(a => {
-                  if (Utils.startsWith(a.name.txt, suffix)) {
-                    Some((env.file.uri, {
-                      ...emptyDeclared(a.name.txt),
-                      contents: Attribute(a)
-                    }))
-                  } else {
-                    None
-                  }
-                }))
-              }
-              | `Global(moduleName, path) =>
-                Log.log("its global");
-                None
-              | _ => {
-                Log.log("Wrong kind of loc");
-                None
-              }
-            };
-
-            /* [("no uri", {...emptyDeclared(
-              "Typed attribute completions not supported yet"
-            ), contents: FileModule("Just kidding")})] */
-
-          | _ => {
-            Log.log("welp, loc not typed");
-            None
-          }
-          }
-
-
-        } |? []; */
 
       } |? []
       | `AbsAttribute(path) => {

@@ -1,3 +1,5 @@
+open Infix;
+open Result;
 
 
 let findLibraryName = jbuildConfig => {
@@ -97,7 +99,7 @@ let rec skipWhite = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
 };
 
 let rec parseIdent = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
-  | 'a'..'z' | 'A'..'Z' | '_' | '-' | '0'..'9' => parseIdent(raw, ln, i + 1)
+  | 'a'..'z' | 'A'..'Z' | '_' | '-' | '.' | '0'..'9' => parseIdent(raw, ln, i + 1)
   | _ => i
 };
 
@@ -159,4 +161,12 @@ let parse = raw => {
     }
   };
   loop(0)
+};
+
+let readFromDir = (dirPath) => {
+  let jbuildRaw = switch (Files.readFileResult(dirPath /+ "dune")) {
+  | Ok(x) => Ok(x)
+  | Error(_) => Files.readFileResult(dirPath /+ "jbuild")
+  };
+  jbuildRaw
 };

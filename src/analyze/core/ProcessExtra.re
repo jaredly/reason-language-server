@@ -45,6 +45,7 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
 
 let getTypeAtPath = (~env, path) => {
   switch (Query.fromCompilerPath(~env, path)) {
+  | `GlobalMod(_) => `Not_found
   | `Global(moduleName, path) => `Global(moduleName, path)
   | `Not_found => `Not_found
   | `Exported(env, name) => {
@@ -109,8 +110,35 @@ module F = (Collector: {
         };
         res |? Loc.NotFound
       }
+      | `GlobalMod(_) => Loc.NotFound
     };
     addLocation(loc, Loc.Typed(typ, locType));
+  };
+
+  let addForPathParent = (path, lident, loc) => {
+    let locType = switch (Query.fromCompilerPath(~env, path)) {
+      | `GlobalMod(name) =>
+        /* TODO track external references to filenames to handle renames well */
+        Loc.TopLevelModule(name)
+      | `Stamp(stamp) => {
+        addReference(stamp, loc);
+        Module(LocalReference(stamp, Module))
+      }
+      | `Not_found => Module(NotFound)
+      | `Global(moduleName, path) => {
+        addExternalReference(moduleName, path, Module, loc);
+        Module(GlobalReference(moduleName, path, Module))
+      }
+      | `Exported(env, name) => {
+        let res = {
+          let%opt_wrap stamp = Query.hashFind(env.exported.modules, name);
+          addReference(stamp, loc);
+          Loc.Module(LocalReference(stamp, Module))
+        };
+        res |? Module(NotFound)
+      }
+    };
+    addLocation(loc, locType);
   };
 
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
@@ -214,11 +242,38 @@ module F = (Collector: {
     Collector.scopeExtent := List.tl(Collector.scopeExtent^);
   };
 
+  let rec addForLongident = (top, path: Path.t, txt: Longident.t, loc) => {
+    let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
+    switch (top) {
+      | Some((t, tip)) => addForPath(path, txt, l, t, tip)
+      | None => addForPathParent(path, txt, l)
+    };
+    switch (path, txt) {
+      | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
+        addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
+      }
+      | (Pident(_), Lident(name)) => ()
+      | _ => ()
+    };
+  };
+
+  let rec handle_module_expr = expr => switch expr {
+    | Tmod_constraint(expr, _, _, _) => handle_module_expr(expr.mod_desc)
+    | Tmod_ident(path, {txt, loc}) =>
+      Log.log("Include!! " ++ String.concat(".", Longident.flatten(txt)));
+      maybeAddUse(path, txt, loc, Module);
+      addForLongident(None, path, txt, loc);
+    | _ => ()
+  };
+
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
   | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
+  }
+  | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
+    handle_module_expr(expr.mod_desc)
   }
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
     /* Log.log("Have an open here"); */
@@ -234,6 +289,7 @@ module F = (Collector: {
         loc_end: currentScopeExtent().loc_end,
       }
     };
+    addForLongident(None, open_path, txt, loc);
     Hashtbl.replace(Collector.extra.opens, loc, tracker);
   }
   | _ => ()
@@ -294,16 +350,9 @@ module F = (Collector: {
     }
   };
 
-  let enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
-    switch (pat_desc) {
-      | Tpat_record(items, _) => {
-        addForRecord(pat_type, items);
-      }
-      | Tpat_construct(lident, constructor, _) => {
-        addForConstructor(pat_type, lident, constructor)
-      }
-      | Tpat_var({stamp}, name) => {
-        /* Log.log("Pattern " ++ name.txt); */
+
+  let rec enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
+    let addForPattern = (stamp, name) => {
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
           let declared = ProcessCmt.newDeclared(
             ~name,
@@ -324,6 +373,21 @@ module F = (Collector: {
           addReference(stamp, name.loc);
           addLocation(name.loc, Loc.Typed(pat_type, Loc.Definition(stamp, Value)));
         }
+    };
+    /* Log.log("Entering pattern " ++ Utils.showLocation(pat_loc)); */
+    switch (pat_desc) {
+      | Tpat_record(items, _) => {
+        addForRecord(pat_type, items);
+      }
+      | Tpat_construct(lident, constructor, _) => {
+        addForConstructor(pat_type, lident, constructor)
+      }
+      | Tpat_alias(inner, {stamp}, name) => {
+        addForPattern(stamp, name);
+      }
+      | Tpat_var({stamp}, name) => {
+        /* Log.log("Pattern " ++ name.txt); */
+        addForPattern(stamp, name);
       }
       | _ => ()
     }
@@ -344,8 +408,7 @@ module F = (Collector: {
     });
     switch (expression.exp_desc) {
     | Texp_ident(path, {txt, loc}, {val_type}) => {
-      /* Log.log("Exp ident folx " ++ Utils.showLocation(loc)); */
-      addForPath(path, txt, loc, val_type, Value);
+      addForLongident(Some((val_type, Value)), path, txt, loc);
     }
     | Texp_record(items, _) => {
       addForRecord(expression.exp_type, items);
@@ -441,7 +504,7 @@ let forItems = (~file, items, parts) => {
   }));
 
   List.iter(Iter.iter_structure_item, items);
-  Log.log("Parts " ++ string_of_int(Array.length(parts)));
+  /* Log.log("Parts " ++ string_of_int(Array.length(parts))); */
 
   parts |. Belt.Array.forEach(part => switch part {
   | Cmt_format.Partial_signature(str) =>
@@ -475,6 +538,11 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
 }
 | Implementation(structure) => {
   Ok(forItems(~file, structure.str_items, [||]))
+}
+| Partial_interface(_)
+| Interface(_) => {
+  /** TODO actually process signature items */
+  Ok(forItems(~file, [], [||]))
 }
 | _ => Error("Invalid cmt file")
 };

@@ -24,21 +24,69 @@ let makePathsForModule = (localModules, dependencyModules) => {
     Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
     Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
   });
-  pathsForModule
 
+  pathsForModule
 };
 
-let newBsPackage = (rootPath) => {
+let rec getAffectedFiles = (root, lines) => switch lines {
+  | [] => []
+  | [one, ...rest] when Utils.startsWith(one, "File \"") =>
+    switch (Utils.split_on_char('"', String.trim(one))) {
+      | [_, name, ..._] => [(root /+ name) |> Utils.toUri, ...getAffectedFiles(root, rest)]
+      | _ => {
+        Log.log("Unable to parse file line " ++ one);
+        getAffectedFiles(root, rest)
+      }
+    }
+  | [one, two, ...rest] when Utils.startsWith(one, "  Warning number ") || Utils.startsWith(one, "  We've found a bug ") =>
+    switch (Utils.split_on_char(' ', String.trim(two))) {
+      | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(root, rest)]
+      | _ => getAffectedFiles(root, [two, ...rest])
+    }
+  | [one, ...rest] => {
+    /* Log.log(
+      "Not covered " ++ one
+    ); */
+    getAffectedFiles(root, rest)
+  }
+};
+
+let runBuildCommand = (state, root, buildCommand) => {
+  /** TODO check for a bsb.lock file & bail if it's there */
+  let%opt_consume (buildCommand, commandDirectory) = buildCommand;
+  let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
+  Log.log(">> Build system: " ++ buildCommand);
+  Log.log(Utils.joinLines(stdout));
+  Log.log(">> Error");
+  Log.log(Utils.joinLines(stderr));
+  let files = getAffectedFiles(commandDirectory, stdout @ stderr);
+  Log.log("Affected files " ++ String.concat(" ", files));
+  files |. Belt.List.forEach(uri => {
+    Hashtbl.remove(state.compiledDocuments, uri);
+    Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() -. 0.01)
+  })
+  /* TODO report notifications here */
+};
+
+let newBsPackage = (state, rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
+  let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
   let%try buildSystem = BuildSystem.detect(rootPath, config);
+  let bsb = bsPlatform /+ "lib" /+ "bsb.exe";
+  let buildCommand = switch buildSystem {
+    | Bsb(_) => bsb ++ " -make-world"
+    | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
+    | Dune => assert(false)
+  };
+  runBuildCommand(state, rootPath, Some((buildCommand, rootPath)));
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
   let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
   let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
-  let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
+  let tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
   let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
@@ -48,25 +96,38 @@ let newBsPackage = (rootPath) => {
   let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
-  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.getName(rel), (full, rel)));
+  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.namespacedName(~namespace, rel), (full, rel)));
   
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
+
+  let opens = switch (namespace) {
+    | None => []
+    | Some(namespace) => {
+      let cmt = compiledBase /+ namespace ++ ".cmt";
+      /* Log.log("Namespaced as " ++ namespace ++ " at " ++ cmt); */
+      Hashtbl.add(pathsForModule, namespace, (cmt, None));
+      [FindFiles.nameSpaceToName(namespace)]
+    }
+  };
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
   let flags = switch buildSystem {
     | Bsb(_) | BsbNative(_, Js) => {
-      let jsPackageMode = config
-      |> Json.get("package-specs")
-      |?> Json.nth(0)
-      |?> Json.get("module")
-      |?> Json.string
-      |? "commonjs";
+      let jsPackageMode = {
+        let specs = config |> Json.get("package-specs");
+        let spec = switch specs {
+          | Some(Json.Array([item, ..._])) => Some(item)
+          | Some(Json.Object(_)) => specs
+          | _ => None
+        };
+        spec |?> Json.get("module") |?> Json.string
+      } |? "commonjs";
       let flags = jsPackageMode == "es6" ? [
         "-bs-package-name",
         config |> Json.get("name") |?> Json.string |? "unnamed",
         "-bs-package-output",
-        "es6:src",
+        "es6:node_modules/.lsp",
         ...flags] : flags;
       ["-bs-no-builtin-ppx-ml", ...flags];
     }
@@ -80,23 +141,29 @@ let newBsPackage = (rootPath) => {
 
   {
     basePath: rootPath,
+    rebuildTimer: 0.,
     localModules,
     dependencyModules,
     pathsForModule,
     buildSystem,
-    opens: [],
+    buildCommand: Some((buildCommand, rootPath)),
+    opens,
     tmpPath,
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
     includeDirectories: 
-      stdLibDirectories @ 
-      dependencyDirectories @ localCompiledDirs,
+      localCompiledDirs @
+      dependencyDirectories @
+      stdLibDirectories
+      ,
     compilerPath,
-    refmtPath,
+    refmtPath: Some(refmtPath),
+    /** TODO detect this from node_modules */
+    lispRefmtPath: None,
   };
 };
 
-let newJbuilderPackage = (rootPath) => {
+let newJbuilderPackage = (state, rootPath) => {
   let rec findJbuilderProjectRoot = path => {
     if (path == "/") {
       Result.Error("Unable to find _build directory")
@@ -113,8 +180,11 @@ let newJbuilderPackage = (rootPath) => {
 
   let buildSystem = BuildSystem.Dune;
 
-  let%try jbuildRaw = Files.readFileResult(rootPath /+ "jbuild");
-  let jbuildConfig = JbuildFile.parse(jbuildRaw);
+  let%try jbuildRaw = JbuildFile.readFromDir(rootPath);
+  let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
+    | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
+    | x => Ok(x)
+  };
   let packageName = JbuildFile.findName(jbuildConfig);
 
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
@@ -134,7 +204,7 @@ let newJbuilderPackage = (rootPath) => {
   };
 
   let localModules = sourceFiles |> List.map(filename => {
-    let name = FindFiles.getName(filename) |> String.capitalize;
+    let name = FindFiles.getName(filename);
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
       | `Library(libraryName) => libraryName ++ "__" ++ name
@@ -156,8 +226,11 @@ let newJbuilderPackage = (rootPath) => {
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
-      let%try jbuildRaw = Files.readFileResult(otherPath /+ "jbuild");
-      let jbuildConfig = JbuildFile.parse(jbuildRaw);
+      let%try jbuildRaw = JbuildFile.readFromDir(otherPath);
+      let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
+        | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
+        | x => Ok(x)
+      };
       let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
         | `Library(name) => Result.Ok(name)
         | _ => Error("Not a library")
@@ -182,9 +255,9 @@ let newJbuilderPackage = (rootPath) => {
     }
   }) |> List.split;
 
-  let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "" && s.[0] != '.'))];
+  let dependencyDirectories = (source |> List.filter(s => s != "" && s.[0] != '.')) @ [ocamllib];
 
-  let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
   let dependencyModules = dependencyDirectories
@@ -206,19 +279,28 @@ let newJbuilderPackage = (rootPath) => {
   libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
-  /* localModules |. Belt.List.forEach(((name, _)) => {
-    Hashtbl.add(interModuleDependencies, name, Hashtbl.create(10))
-  }); */
+
+  /** TODO support non-esy as well */
+  let buildCommand = {
+    let%opt cmd = switch (Commands.execOption("esy which dune")) {
+      | None => Commands.execOption("esy which jbuilder")
+      | Some(x) => Some(x)
+    };
+    Some(("esy " ++ cmd ++ " build @install", projectRoot))
+  };
+  runBuildCommand(state, rootPath, buildCommand);
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
-  let%try refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem);
+  let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> Result.toOptionAndLog;
   Ok({
     basePath: rootPath,
     localModules,
+    rebuildTimer: 0.,
     interModuleDependencies,
     dependencyModules,
     pathsForModule,
     buildSystem,
+    buildCommand,
     /* TODO check if there's a module called that */
     opens: fold(libraryName, [], libraryName => [libraryName ++ "__"]),
     tmpPath: hiddenLocation,
@@ -226,6 +308,7 @@ let newJbuilderPackage = (rootPath) => {
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
     compilerPath,
     refmtPath,
+    lispRefmtPath: None,
   });
 };
 
@@ -245,6 +328,7 @@ let findRoot = (uri, packagesByRoot) => {
       Some(`Bs(path))
       /* jbuilder */
     } else if (Files.exists(path /+ ".merlin")) {
+      Log.log("Found a .merlin at " ++ path);
       Some(`Jbuilder(path))
     } else {
       loop(Filename.dirname(path))
@@ -263,12 +347,19 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
-      let%try package = newBsPackage(rootPath);
+      let%try package = newBsPackage(state, rootPath);
+      Files.mkdirp(package.tmpPath);
+      let package = {
+        ...package,
+        refmtPath: state.settings.refmtLocation |?? package.refmtPath,
+        lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
+      };
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
     | `Jbuilder(path) =>
-      let%try package = newJbuilderPackage(path);
+      let%try package = newJbuilderPackage(state, path);
+      Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
@@ -292,7 +383,14 @@ let converter = (src, usePlainText) => {
 };
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
-  let infos = Cmt_format.read_cmt(cmt);
+  /* let infos = Cmt_format.read_cmt(cmt); */
+  let%opt infos = switch (Cmt_format.read_cmt(cmt)) {
+    | exception _ => {
+      Log.log("Invalid cmt format");
+      None
+    }
+    | x => Some(x)
+  };
   /* let%opt src = src; */
   let uri = Utils.toUri(src |? cmt);
   let%opt file = ProcessCmt.forCmt(uri, converter(src, clientNeedsPlainText), infos) |> Result.toOptionAndLog;
@@ -301,7 +399,13 @@ let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
-  let infos = Cmi_format.read_cmi(cmi);
+  let%opt infos = switch (Cmi_format.read_cmi(cmi)) {
+    | exception _ => {
+      Log.log("Invalid cmi format");
+      None
+    }
+    | x => Some(x)
+  };
   /* switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
   | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
   | Some((docstring, items)) => */
@@ -398,10 +502,28 @@ let getContents = (uri, state) => {
   text
 };
 
+let refmtForUri = (uri, package) =>
+  if (Filename.check_suffix(uri, ".ml")
+      || Filename.check_suffix(uri, ".mli")) {
+    Result.Ok(None);
+  } else if (Filename.check_suffix(uri, ".rel")
+             || Filename.check_suffix(uri, ".reli")) {
+    switch (package.lispRefmtPath) {
+    | None =>
+      Error("No lispRefmt path found, cannot process .rel or .reli files")
+    | Some(x) => Ok(Some(x))
+    };
+  } else {
+    switch (package.refmtPath) {
+      | None => Error("No refmt found for dune project. Cannot process .re file")
+      | Some(x) => Ok(Some(x))
+    }
+  };
+
 open Infix;
 let getCompilationResult = (uri, state, ~package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
-    Hashtbl.find(state.compiledDocuments, uri)
+    Belt.Result.Ok(Hashtbl.find(state.compiledDocuments, uri))
   } else {
     let text = Hashtbl.mem(state.documentText, uri) ? {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
@@ -414,13 +536,15 @@ let getCompilationResult = (uri, state, ~package) => {
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;
-    let%try_force result = AsYouType.process(
+    let%try refmtPath = refmtForUri(uri, package);
+    let%try result = AsYouType.process(
       ~uri,
       ~moduleName,
+      ~basePath=package.basePath,
       text,
       ~cacheLocation=package.tmpPath,
       package.compilerPath,
-      package.refmtPath,
+      refmtPath,
       includes,
       package.compilationFlags,
     );
@@ -457,7 +581,6 @@ let getCompilationResult = (uri, state, ~package) => {
           };
         });
 
-
         package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
           let otherUri = Utils.toUri(src);
           switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
@@ -474,7 +597,7 @@ let getCompilationResult = (uri, state, ~package) => {
       }
     }
     };
-    result
+    Ok(result)
   }
 };
 
@@ -484,16 +607,23 @@ let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefiniti
   Some(data)
 };
 
+let tryExtra = p => {
+  let%try p = p;
+  Ok(AsYouType.getResult(p))
+};
+
 /* If there's a previous "good" version, use that, otherwise use the current version */
 let getBestDefinitions = (uri, state, ~package) => {
   if (Hashtbl.mem(state.lastDefinitions, uri)) {
-    Hashtbl.find(state.lastDefinitions, uri)
+    Belt.Result.Ok(Hashtbl.find(state.lastDefinitions, uri))
   } else {
-    getCompilationResult(uri, state, ~package) |> AsYouType.getResult
+    tryExtra(getCompilationResult(uri, state, ~package))
   }
 };
 
-let getDefinitionData = (uri, state, ~package) => AsYouType.getResult(getCompilationResult(uri, state, ~package));
+let getDefinitionData = (uri, state, ~package) => {
+  getCompilationResult(uri, state, ~package) |> tryExtra
+};
 
 let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
@@ -507,8 +637,8 @@ let docsForModule = (modname, state, ~package) =>
     };
 
 let fileForUri = (state,  ~package, uri) => {
-  let moduleData = getCompilationResult(uri, state, ~package) |> AsYouType.getResult;
-  Some((moduleData.file, moduleData.extra))
+  let%try moduleData = getCompilationResult(uri, state, ~package) |> tryExtra;
+  Ok((moduleData.file, moduleData.extra))
 };
 
 let fileForModule = (state,  ~package, modname) => {
@@ -519,7 +649,7 @@ let fileForModule = (state,  ~package, modname) => {
     /* Log.log("Found it " ++ src); */
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
-      let%opt (file, _) = fileForUri(state, ~package, uri);
+      let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> Result.toOptionAndLog;
       Some(file)
     } else {
       None
@@ -537,7 +667,7 @@ let extraForModule = (state, ~package, modname) => {
   if (Hashtbl.mem(package.pathsForModule, modname)) {
     let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
     let%opt src = src;
-    let%opt (file, extra) = fileForUri(state, ~package, Utils.toUri(src));
+    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> Result.toOptionAndLog;
     Some(extra)
   } else {
     None;
