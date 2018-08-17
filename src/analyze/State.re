@@ -26,7 +26,6 @@ let makePathsForModule = (localModules, dependencyModules) => {
   });
 
   pathsForModule
-
 };
 
 let rec getAffectedFiles = (root, lines) => switch lines {
@@ -153,8 +152,10 @@ let newBsPackage = (state, rootPath) => {
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
     includeDirectories: 
-      stdLibDirectories @ 
-      dependencyDirectories @ localCompiledDirs,
+      localCompiledDirs @
+      dependencyDirectories @
+      stdLibDirectories
+      ,
     compilerPath,
     refmtPath: Some(refmtPath),
     /** TODO detect this from node_modules */
@@ -254,7 +255,7 @@ let newJbuilderPackage = (state, rootPath) => {
     }
   }) |> List.split;
 
-  let dependencyDirectories = [ocamllib, ...(source |> List.filter(s => s != "" && s.[0] != '.'))];
+  let dependencyDirectories = (source |> List.filter(s => s != "" && s.[0] != '.')) @ [ocamllib];
 
   let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
