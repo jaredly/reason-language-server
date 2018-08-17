@@ -15,13 +15,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@glennsl/bs-json": "^2.0.0",
+    "@glennsl/bs-json": "^3.0.0",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "reason-react": ">=0.4.0"
   },
   "devDependencies": {
-    "bs-platform": "^3.2.0",
+    "@glennsl/bs-jest": "^0.4.3",
+    "bs-platform": "^4.0.0",
     "webpack": "^4.0.1",
     "webpack-cli": "^2.0.10"
   }
