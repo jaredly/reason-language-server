@@ -46,7 +46,8 @@
 				},
 				"reason_language_server.format_width": {
 					"type": "number",
-					"description": "Format width (default=80)"
+					"description": "Format width (default=80)",
+					"default": "80"
 				},
 				"reason_language_server.per_value_codelens": {
 					"type": "boolean",
