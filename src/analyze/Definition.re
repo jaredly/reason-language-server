@@ -1,27 +1,3 @@
-/*
-
- Ok folks, what I think I want is ...
- to compute for the whole file and then cache that.
- Also that way I can better handle definitions
-
- What will come out of this?
- A mapping of stamp -> (location, type, option(docs))
- And toplevelname -> stamp
- andddd maybe that's it?
- Oh right, a list of [loc, type, path] for the hover bit
- and probably a happing of stamp -> list(loc) of references
-
- umm I also want open mapping
-
- also thinking about providing rename functionality, and "find references"
-
-
- err what about stamps that are modules?
- maybe have a separate map for that?
-
- */
-open Infix;
-
 /* TODO move these to utils */
 
 let maybeFound = (fn, a) =>

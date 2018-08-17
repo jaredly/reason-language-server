@@ -7,6 +7,7 @@ let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
     /* TODO store a "defined" for Open (the module) */
     | Open => Some("an open")
     | TypeDefinition(name, tdecl, stamp) => None
+    /* TODO: show information on the module */
     | Module(_) => Some("its a module")
     | TopLevelModule(name) => Some("File: " ++ name)
     | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
@@ -27,8 +28,8 @@ let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
         );
 
         let uri = Utils.startsWith(uri, rootUri)
-        ? "<root>" ++ Utils.sliceToEnd(uri, String.length(rootUri))
-        : uri;
+          ? "<root>" ++ Utils.sliceToEnd(uri, String.length(rootUri))
+          : uri;
 
         let parts = switch (res) {
           | `Declared => {

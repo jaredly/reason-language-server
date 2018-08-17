@@ -382,7 +382,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%try startPos = PartialParser.positionToOffset(text, start) |> orError("Invalid start position");
       let%try endPos = PartialParser.positionToOffset(text, end_) |> orError("Invalid end position");
 
-      /** TODO: instead of bailing, it should extend the selection to encompass the whole line, and then go for it. */;
+      /** TODO: instead of bailing, it should extend the selection to encompass the whole line, and then go for it. */
       if (fst(start) == fst(end_) && text.[endPos] != '\n') {
         Belt.Result.Ok((state, Rpc.J.null));
       } else {
