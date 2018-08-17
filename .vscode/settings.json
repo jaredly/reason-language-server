@@ -8,5 +8,6 @@
   //"reason_language_server.location": "./lib/bs/native/bin.native.exe",
   // "reason_language_server.reloadOnChange": true,
   "editor.tabSize": 2,
-  "editor.parameterHints": true
+  "editor.parameterHints": true,
+  "editor.formatOnPaste": true
 }
