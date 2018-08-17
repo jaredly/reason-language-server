@@ -1,0 +1,1 @@
+type assertion = Jest.assertion;

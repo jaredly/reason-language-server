@@ -61,6 +61,8 @@ let getSourceDirectories = (~includeDev=false, base, config) => {
  */
 let getDependencyDirs = (base, config, ~buildSystem) => {
   let deps = config |> Json.get("bs-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  let devDeps = config |> Json.get("bs-dev-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  let deps = deps @ devDeps;
   deps |> List.map(name => {
     let locOpt = ModuleResolution.resolveNodeModulePath(~startPath=base, name);
     switch(locOpt) {
