@@ -1,6 +1,6 @@
 {
 	"name": "reason-vscode",
-	"description": "a vscode client for the reason-language-server",
+	"description": "IDE & Syntax support for Reason/OCaml",
 	"author": "Jared Forsyth",
 	"license": "ISC",
 	"version": "1.0.0-beta.7-1",

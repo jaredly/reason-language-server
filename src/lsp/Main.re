@@ -25,7 +25,6 @@ let capabilities =
         ("resolveProvider", t)
       ])),
       ("documentHighlightProvider", t),
-      ("renameProvider", t),
       ("documentRangeFormattingProvider", t),
       ("documentFormattingProvider", t),
       /*
