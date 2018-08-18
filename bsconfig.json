@@ -7,12 +7,15 @@
     "error": "+8"
   },
   "sources": [
-    {"dir": "ppx", "type": "ppx"},
-    {"dir": "src", "subdirs": true},
-    {"dir": "bin", "type": "dev"},
-    {"dir": "tests", "type": "dev", "subdirs": true},
-    "omd",
-    "odoc_parser"
+    {"dir": "vendor", "subdirs": ["omd", "odoc_parser"]},
+    {"dir": "src", "subdirs": [
+      {"dir": "bin", "type": "dev"},
+      {"dir": "analyze", "subdirs": ["core"]},
+      {"dir": "ppx", "type": "ppx"},
+      "lsp",
+      "util"
+    ]},
+    {"dir": "tests", "type": "dev", "subdirs": true}
   ],
   "ppx-flags": ["Ppx_Monads"],
   "bs-dependencies": ["rex-json"],

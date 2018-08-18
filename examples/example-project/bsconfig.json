@@ -1,6 +1,7 @@
 {
   "name": "tryit",
   "sources": "src",
+  "bsc-flags": ["-bs-super-errors", "-w -32-26-27-33", "-open Belt"],
   "namespace": true,
   "refmt": 3
 }

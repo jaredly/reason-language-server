@@ -7,6 +7,7 @@ open Infix;
 let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);
 
 let log = Log.log;
+let (-?>) = (a,b) => b;
 
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
@@ -38,7 +39,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     } |? Ok((state, Json.Null))
   }),
 
-  /** TODO implement */
   ("textDocument/signatureHelp", (state, params) => {
     let%try (uri, position) = Protocol.rPositionParams(params);
     let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
@@ -500,22 +500,19 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/formatting", (state, params) => {
     open InfixResult;
-    params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string
-    |?> uri => State.getPackage(uri, state)
-    |?> package => {
-      let text = State.getContents(uri, state);
-      let%try refmtPath = State.refmtForUri(uri, package);
-      let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
-      AsYouType.format(~formatWidth=state.settings.formatWidth, text, refmtPath) |?>> newText => {
-        open Rpc.J;
-        (state, text == newText ? Json.Null : l([o([
-          ("range", Protocol.rangeOfInts(
-            0, 0,
-            List.length(Str.split(Str.regexp_string("\n"), text)) + 1, 0
-          )),
-          ("newText", s(newText))
-        ])]))
-      }
-    }
+    let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
+    let%try package = State.getPackage(uri, state);
+    let text = State.getContents(uri, state);
+    let%try refmtPath = State.refmtForUri(uri, package);
+    let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
+    let%try_wrap newText = AsYouType.format(~formatWidth=state.settings.formatWidth, text, refmtPath);
+    open Rpc.J;
+    (state, text == newText ? Json.Null : l([o([
+      ("range", Protocol.rangeOfInts(
+        0, 0,
+        List.length(Str.split(Str.regexp_string("\n"), text)) + 1, 0
+      )),
+      ("newText", s(newText))
+    ])]))
   })
 ];

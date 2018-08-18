@@ -1,14 +1,6 @@
 
 
-let shellEscape = path => {
-  Filename.quote(path)
-  /* if (Sys.os_type == "Win32") {
-    /* TODO allow spaces in path...  */
-    path
-  } else {
-    Printf.sprintf("%S", path)
-  } */
-};
+let shellEscape = path => Filename.quote(path);
 
 let execFull = (~input=?, ~pwd=?, ~env=Unix.environment(), cmd) => {
   let env = switch pwd {
