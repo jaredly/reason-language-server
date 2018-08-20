@@ -243,18 +243,20 @@ module F = (Collector: {
   };
 
   let rec addForLongident = (top, path: Path.t, txt: Longident.t, loc) => {
-    let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
-    switch (top) {
-      | Some((t, tip)) => addForPath(path, txt, l, t, tip)
-      | None => addForPathParent(path, txt, l)
-    };
-    switch (path, txt) {
-      | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
-        addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
-      }
-      | (Pident(_), Lident(name)) => ()
-      | _ => ()
-    };
+    if (!loc.Location.loc_ghost) {
+      let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
+      switch (top) {
+        | Some((t, tip)) => addForPath(path, txt, l, t, tip)
+        | None => addForPathParent(path, txt, l)
+      };
+      switch (path, txt) {
+        | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
+          addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
+        }
+        | (Pident(_), Lident(name)) => ()
+        | _ => ()
+      };
+    }
   };
 
   let rec handle_module_expr = expr => switch expr {
@@ -407,6 +409,9 @@ module F = (Collector: {
       | _ => ()
     });
     switch (expression.exp_desc) {
+    /* | Texp_apply({exp_desc: Pexp_ident(_, {txt: Ldot(Lident("ReasonReact"), "element")})}, [(_, {exp_desc: Pexp_apply({exp_desc: Pexp_ident(_, {txt})}, _)})]) =>{
+
+    } */
     | Texp_ident(path, {txt, loc}, {val_type}) => {
       addForLongident(Some((val_type, Value)), path, txt, loc);
     }

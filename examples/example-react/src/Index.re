@@ -1,3 +1,11 @@
 ReactDOMRe.renderToElementWithId(<Component1 message="Hello!" />, "index1");
 
-ReactDOMRe.renderToElementWithId(<Component2 greeting="Hello!" />, "index2");
+module Awesome = {
+  let make = _ => ReasonReact.statelessComponent("hi")
+};
+
+let x = 12 |. string_of_int;
+
+let er = <Awesome />;
+
+ReactDOMRe.renderToElementWithId(<Component2 greeting=""/>, "index2");

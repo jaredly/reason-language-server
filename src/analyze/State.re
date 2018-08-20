@@ -111,9 +111,41 @@ let newBsPackage = (state, rootPath) => {
   };
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
-  let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
+  let flags = switch buildSystem {
+    /* Bsb-native's support for merlin is not dependable */
+    /* So I have to reimplement the compiler flags here. */
+    | BsbNative(v, _) =>
+      let defaultFlags = [
+        "-w -30-40+6+7+27+32..39+44+45+101",
+      ];
+      let flags = config |> Json.get("bsc-flags") |?> Json.array |?>> Utils.filterMap(Json.string) |? [];
+      let flags = defaultFlags @ flags;
+      let flags = switch namespace {
+        | None => flags
+        | Some(name) => flags @ ["-open " ++ FindFiles.nameSpaceToName(name)]
+      };
+      let flags = config |> Json.get("reason") |?> Json.get("react-jsx") != None
+      ? flags @ ["-ppx " ++ bsPlatform /+ "lib" /+ "reactjs_jsx_ppx_2.exe"]
+      : flags;
+      let ppxs = config |> Json.get("ppx-flags") |?> Json.array |?>> Utils.filterMap(Json.string) |? [];
+      Log.log("Getting hte ppxs yall");
+      let flags = flags @ (Belt.List.map(ppxs, name => {
+        MerlinFile.fixPpx("-ppx " ++ name, rootPath)
+      }));
+      let flags = switch (config |> Json.get("warnings") |?> Json.get("number") |?> Json.string) {
+        | None => flags
+        | Some(w) => flags @ ["-w " ++ w]
+      };
+      flags @ [
+        "-ppx " ++ bsPlatform /+ "lib" /+ "bsppx.exe"
+
+      ]
+    | _ => MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
+  };
+
   let flags = switch buildSystem {
     | Bsb(_) | BsbNative(_, Js) => {
+
       let jsPackageMode = {
         let specs = config |> Json.get("package-specs");
         let spec = switch specs {
@@ -129,6 +161,7 @@ let newBsPackage = (state, rootPath) => {
         "-bs-package-output",
         "es6:node_modules/.lsp",
         ...flags] : flags;
+      /* flags */
       ["-bs-no-builtin-ppx-ml", ...flags];
     }
     | _ => flags
