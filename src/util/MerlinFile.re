@@ -79,12 +79,10 @@ let getModulesFromMerlin = (base, text) => {
   (local, deps, flags)
 };
 
-/* let use = base => {
-  open Result.InfixResult;
-  Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> getModulesFromMerlin(base)
-}; */
-
-let getFlags = base => {
-  open Result.InfixResult;
-  Files.readFile(base ++ "/.merlin") |> Result.orError("no .merlin file") |?>> parseMerlin(base) |?>> ((_, _, flags)) => flags
-};
+let getFlags = base =>
+  Result.InfixResult.(
+    Files.readFile(base ++ "/.merlin")
+    |> Result.orError("no .merlin file")
+    |?>> parseMerlin(base)
+    |?>> (((_, _, flags)) => flags)
+  );

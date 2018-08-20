@@ -42,8 +42,8 @@ let runRefmt = (~interface, ~moduleName, ~cacheLocation, text, refmt) => {
   }
 };
 
-let format = (~formatWidth, text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse re", Commands.shellEscape(refmt), formatWidth |? 80));
+let format = (~formatWidth, ~interface, text, refmt) => {
+  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse re%s", Commands.shellEscape(refmt), formatWidth |? 80, interface ? " -i true" : ""));
   if (success) {
     Ok(String.concat("\n", out))
   } else {

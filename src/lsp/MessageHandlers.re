@@ -437,7 +437,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             |> String.concat("\n");
           };
         };
-        let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, substring, refmtPath);
+        let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), substring, refmtPath);
         Rpc.J.(
           state,
           l([
@@ -505,7 +505,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let text = State.getContents(uri, state);
     let%try refmtPath = State.refmtForUri(uri, package);
     let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
-    let%try_wrap newText = AsYouType.format(~formatWidth=state.settings.formatWidth, text, refmtPath);
+    let%try_wrap newText = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), text, refmtPath);
     open Rpc.J;
     (state, text == newText ? Json.Null : l([o([
       ("range", Protocol.rangeOfInts(
