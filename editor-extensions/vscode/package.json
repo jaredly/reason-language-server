@@ -3,11 +3,11 @@
 	"description": "IDE & Syntax support for Reason/OCaml",
 	"author": "Jared Forsyth",
 	"license": "ISC",
-	"version": "1.0.0-beta.7-1",
+	"version": "1.0.0",
 	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/jaredly/language-server"
+		"url": "https://github.com/jaredly/reason-language-server"
 	},
 	"engines": {
 		"vscode": "^1.22.0"
