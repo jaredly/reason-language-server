@@ -28,6 +28,8 @@ let setPackageTimer = package => {
   }
 };
 
+let watchedFileContentsMap = Hashtbl.create(100);
+
 let notificationHandlers: list((string, (state, Json.t) => result(state, string))) = [
   ("textDocument/didOpen", (state, params) => {
     (params |> Json.get("textDocument") |?> getTextDocument |?>> ((uri, version, text))  => {
@@ -118,12 +120,22 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let shouldReload = Belt.List.some(changes, change => {
       let%try t = RJson.get("type", change) |?> RJson.number;
       let%try uri = RJson.get("uri", change) |?> RJson.string;
-      Ok(
+      let isRelevant =
         Utils.endsWith(uri, "/bsconfig.json") ||
         Utils.endsWith(uri, "/jbuild") ||
-        Utils.endsWith(uri, "/dune")
-      /* || Utils.endsWith(uri, ".merlin") */
-      )
+        Utils.endsWith(uri, "/dune");
+      if (!isRelevant) {
+        Ok(false)
+      } else {
+        let%try path = Utils.parseUri(uri) |> Result.orError("Cannot parse URI");
+        let%try contents = Files.readFileResult(path);
+        if (Hashtbl.mem(watchedFileContentsMap, uri) && Hashtbl.find(watchedFileContentsMap, uri) == contents) {
+          Ok(false)
+        } else {
+          Hashtbl.replace(watchedFileContentsMap, uri, contents);
+          Ok(true)
+        }
+      }
     } |? false);
 
     if (shouldReload) {
