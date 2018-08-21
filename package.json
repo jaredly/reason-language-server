@@ -20,7 +20,7 @@
     "IDE"
   ],
   "repository": {
-    "url": "jaredly/language-server",
+    "url": "jaredly/reason-language-server",
     "type": "git"
   },
   "description": "A pure-reason implementation of a language server",
