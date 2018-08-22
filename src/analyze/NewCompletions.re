@@ -507,7 +507,7 @@ let get =
       );
     let localModuleNames =
       Belt.List.keepMap(allModules, name =>
-        Utils.startsWith(name, suffix) ?
+        Utils.startsWith(name, suffix) && !String.contains(name, '-') ?
           Some((
             "wait for uri",
             {...emptyDeclared(name), contents: FileModule(name)},
