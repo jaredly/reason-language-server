@@ -218,6 +218,12 @@ let getEnvWithOpens =
   | None =>
     let rec loop = opens =>
       switch (opens) {
+      | [env, ...rest] =>
+        Log.log("Looking for env in " ++ env.Query.file.uri);
+        switch (Query.resolvePath(~env, ~getModule, ~path)) {
+        | Some(x) => Some(x)
+        | None => loop(rest)
+        }
       | [] =>
         switch (path) {
         | Tip(_) => None
@@ -228,11 +234,6 @@ let getEnvWithOpens =
           let env = Query.fileEnv(file);
           Query.resolvePath(~env, ~getModule, ~path)
           |> Infix.logIfAbsent("Unable to resolve the path");
-        }
-      | [env, ...rest] =>
-        switch (Query.resolvePath(~env, ~getModule, ~path)) {
-        | Some(x) => Some(x)
-        | None => loop(rest)
         }
       };
     loop(opens);

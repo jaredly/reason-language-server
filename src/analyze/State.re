@@ -135,7 +135,7 @@ let newBsPackage = (state, rootPath) => {
   };
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
-  let flags = switch buildSystem {
+  let (flags, opens) = switch buildSystem {
     /* Bsb-native's support for merlin is not dependable */
     /* So I have to reimplement the compiler flags here. */
     | BsbNative(v, _) =>
@@ -160,11 +160,23 @@ let newBsPackage = (state, rootPath) => {
         | None => flags
         | Some(w) => flags @ ["-w " ++ w]
       };
-      flags @ [
+      (flags @ [
         "-ppx " ++ bsPlatform /+ "lib" /+ "bsppx.exe"
 
-      ]
-    | _ => MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
+      ], opens)
+    | _ => {
+      let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
+      let opens = List.fold_left((opens, item) => {
+        let parts = Utils.split_on_char(' ', item);
+        let rec loop = items => switch items {
+          | ["-open", name, ...rest] => [name, ...loop(rest)]
+          | [_, ...rest] => loop(rest)
+          | [] => []
+        };
+        opens @ loop(parts)
+      }, opens, flags);
+      (flags, opens)
+    }
   };
 
   let flags = switch buildSystem {
