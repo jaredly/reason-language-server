@@ -61,10 +61,34 @@ let runBuildCommand = (state, root, buildCommand) => {
   Log.log(Utils.joinLines(stderr));
   let files = getAffectedFiles(commandDirectory, stdout @ stderr);
   Log.log("Affected files " ++ String.concat(" ", files));
+  let bsconfigJson = root /+ "bsconfig.json" |> Utils.toUri;
+  let bsconfigClean = ref(true);
   files |. Belt.List.forEach(uri => {
+    if (Utils.endsWith(uri, "bsconfig.json")) {
+      bsconfigClean := false;
+      open Rpc.J;
+      Log.log("Bsconfig.json sending");
+      Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
+        ("uri", s(uri)),
+        ("diagnostics", l([
+          o([
+            ("range", Protocol.rangeOfInts(0, 0, 5, 0)),
+            ("message", s(String.concat("\n", stdout @ stderr))),
+            ("severity", i(1)),
+          ])
+        ]))]))
+    };
     Hashtbl.remove(state.compiledDocuments, uri);
     Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() -. 0.01)
-  })
+  });
+  if (bsconfigClean^) {
+    Log.log("Cleaning bsconfig.json");
+      open Rpc.J;
+    Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
+      ("uri", s(bsconfigJson)),
+      ("diagnostics", l([]))
+    ]))
+  }
   /* TODO report notifications here */
 };
 

@@ -16,6 +16,7 @@
     "dir": "__tests__",
     "type": "dev"
   }],
+  "bsc-flags": ["-open Belt"],
   "package-specs": [{
     "module": "commonjs",
     "in-source": true
@@ -25,6 +26,6 @@
   "bs-dependencies": [
     "reason-react", "@glennsl/bs-json"
   ],
-  "bs-dev-dependencies": ["@glennsl/bs-jest"],
+  // "bs-dev-dependencies": ["@glennsl/bs-jest"],
   "refmt": 3
 }
