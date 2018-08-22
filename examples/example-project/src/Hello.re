@@ -2,6 +2,7 @@ let someLongName = 10;
 
 let otherLongName = "string";
 
+let x = [%bs.obj {a: 3}];
 
 let r = Other.something;
 

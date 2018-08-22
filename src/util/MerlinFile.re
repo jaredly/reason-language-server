@@ -84,5 +84,5 @@ let getFlags = base =>
     Files.readFile(base ++ "/.merlin")
     |> Result.orError("no .merlin file")
     |?>> parseMerlin(base)
-    |?>> (((_, _, flags)) => flags)
+    |?>> (((_, _, flags)) => flags |> List.rev)
   );
