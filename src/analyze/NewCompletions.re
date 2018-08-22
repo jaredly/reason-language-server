@@ -7,9 +7,10 @@ let rec pathOfModuleOpen = items =>
   };
 
 /* TODO local opens */
-let resolveOpens = (~env, opens, ~getModule) =>
+let resolveOpens = (~env, ~previous, opens, ~getModule) =>
   List.fold_left(
     (previous, path) => {
+      /** Finding an open, first trying to find it in previoulsly resolved opens */
       let rec loop = prev =>
         switch (prev) {
         | [] =>
@@ -52,7 +53,7 @@ let resolveOpens = (~env, opens, ~getModule) =>
       };
       /* loop(previous) */
     },
-    [],
+    previous,
     opens,
   );
 
@@ -458,22 +459,23 @@ let get =
     ++ String.concat(" ... ", opens),
   );
   let env = Query.fileEnv(full.file);
+
+  let packageOpens = ["Pervasives", ...package.TopTypes.opens];
+  Log.log("Package opens " ++ String.concat(" ", packageOpens));
+
   let opens =
     resolveOpens(
       ~env,
+      ~previous=
+        Belt.List.map(
+          Belt.List.keepMap(packageOpens, getModule),
+          Query.fileEnv,
+        ),
       opens
       |> List.map(Str.split(Str.regexp_string(".")))
       |> List.map(pathOfModuleOpen),
       ~getModule,
     );
-  let packageOpens = ["Pervasives", ...package.TopTypes.opens];
-  Log.log("Package opens " ++ String.concat(" ", packageOpens));
-  let opens =
-    Belt.List.map(
-      Belt.List.keepMap(packageOpens, getModule),
-      Query.fileEnv,
-    )
-    @ opens;
   Log.log(
     "Opens nows "
     ++ string_of_int(List.length(opens))
@@ -506,13 +508,16 @@ let get =
         },
       );
     let localModuleNames =
-      Belt.List.keepMap(allModules, name =>
+      Belt.List.keepMap(allModules, name => {
+        /* Log.log("Checking " ++ name); */
+
         Utils.startsWith(name, suffix) && !String.contains(name, '-') ?
           Some((
             "wait for uri",
             {...emptyDeclared(name), contents: FileModule(name)},
           )) :
           None
+      }
       );
     locallyDefinedValues @ valuesFromOpens @ localModuleNames;
   | multiple =>
