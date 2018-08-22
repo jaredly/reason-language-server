@@ -115,20 +115,20 @@ let parseDependencyError = text => {
   }
 };
 
-let justBscCommand = (~interface, compilerPath, sourceFile, includes, flags) => {
+let justBscCommand = (~interface, ~reasonFormat, compilerPath, sourceFile, includes, flags) => {
   /* TODO make sure that bsc supports -color */
   Printf.sprintf(
     {|%s %s -bin-annot %s %s %s|},
     compilerPath,
     includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),
-    flags,
+    flags ++ (reasonFormat ? " -bs-re-out" : ""),
     interface ? "-intf" : "-impl",
     sourceFile
   )
 };
 
-let runBsc = (~basePath, ~interface, compilerPath, sourceFile, includes, flags) => {
-  let cmd = justBscCommand(~interface, compilerPath, sourceFile, includes, flags);
+let runBsc = (~basePath, ~interface, ~reasonFormat, compilerPath, sourceFile, includes, flags) => {
+  let cmd = justBscCommand(~interface, ~reasonFormat, compilerPath, sourceFile, includes, flags);
   Log.log("running bsc " ++ cmd ++ " with pwd " ++ basePath);
   let (out, error, success) = Commands.execFull(~pwd=basePath, cmd);
   if (success) {
@@ -140,6 +140,7 @@ let runBsc = (~basePath, ~interface, compilerPath, sourceFile, includes, flags) 
 
 let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
+  let reasonFormat = Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei");
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
@@ -148,7 +149,7 @@ let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath,
       Ok((None, astFile))
     }
   };
-  switch (runBsc(~basePath, ~interface, compilerPath, astFile, includes, flags)) {
+  switch (runBsc(~basePath, ~interface, ~reasonFormat, compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       if (!Files.isFile(cmtPath)) {
