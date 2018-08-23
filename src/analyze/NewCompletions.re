@@ -354,12 +354,13 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
   let results = [];
   let results =
     if (suffix == "" || isCapitalized(suffix)) {
-      /* Log.log("capitalized"); */
-      results
-      @ completionForExporteds(
+      let moduleCompletions = completionForExporteds(
           env.exported.modules, env.file.stamps.modules, suffix, m =>
           Module(m)
-        )
+        );
+      /* Log.log("capitalized"); */
+      results
+      @ moduleCompletions
       @ (
         /* TODO declared thingsz */
         completionForConstructors(
@@ -497,17 +498,18 @@ let get =
         (results, env) => {
           let completionsFromThisOpen =
             valueCompletions(~env, ~getModule, suffix);
-          Belt.List.keep(completionsFromThisOpen, ((name, declared)) =>
-            if (! Hashtbl.mem(alreadyUsedIdentifiers, name)) {
-              Hashtbl.add(alreadyUsedIdentifiers, name, true);
+          Belt.List.keep(completionsFromThisOpen, ((uri, declared)) => {
+            if (! Hashtbl.mem(alreadyUsedIdentifiers, declared.name.txt)) {
+              Hashtbl.add(alreadyUsedIdentifiers, declared.name.txt, true);
               true;
             } else {
               false;
-            }
+            }}
           )
           @ results;
         },
       );
+    /* TODO complete the namespaced name too */
     let localModuleNames =
       Belt.List.keepMap(allModules, name => {
         /* Log.log("Checking " ++ name); */
@@ -525,9 +527,6 @@ let get =
     open Infix;
     let env = Query.fileEnv(full.file);
 
-    /* Log.log(SharedTypes.showExtra(full.extra)); */
-
-    Log.log("multiepl");
     switch (determineCompletion(multiple)) {
     | `Normal(path) =>
       {
