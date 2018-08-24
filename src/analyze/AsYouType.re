@@ -17,7 +17,7 @@ let getResult = result => switch result {
 let runRefmt = (~interface, ~moduleName, ~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ moduleName ++ ".ast";
   let cmd = Printf.sprintf("%s --print binary %s--parse re > %s",
-    refmt,
+    Commands.shellEscape(refmt),
     interface ? "-i true " : "",
     Commands.shellEscape(target)
   );
