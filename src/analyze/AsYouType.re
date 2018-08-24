@@ -17,7 +17,7 @@ let getResult = result => switch result {
 let runRefmt = (~interface, ~moduleName, ~cacheLocation, text, refmt) => {
   let target = cacheLocation /+ moduleName ++ ".ast";
   let cmd = Printf.sprintf("%s --print binary %s--parse re > %s",
-    Commands.shellEscape(refmt),
+    refmt,
     interface ? "-i true " : "",
     Commands.shellEscape(target)
   );
@@ -138,9 +138,8 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, compilerPath, sourceFile, in
   }
 };
 
-let process = (~uri, ~moduleName, ~basePath, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
-  let reasonFormat = Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei");
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {

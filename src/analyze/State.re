@@ -610,6 +610,10 @@ let getCompilationResult = (uri, state, ~package) => {
       ~uri,
       ~moduleName,
       ~basePath=package.basePath,
+      ~reasonFormat=switch (package.buildSystem) {
+        | Bsb(_) | BsbNative(_, Js) => Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei")
+        | _ => false
+      },
       text,
       ~cacheLocation=package.tmpPath,
       package.compilerPath,
