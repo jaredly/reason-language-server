@@ -160,6 +160,29 @@ and forSignatureType = (env, signature) => {
   | Mty_functor(argIdent, argType, resultType) => forModuleType(env, resultType)
 };
 
+let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind}) => {
+  let declared = addItem(~extent=typ_loc, ~contents={
+    Type.params: typ_params |> List.map(((t, _)) => (t.ctyp_type, t.ctyp_loc)),
+    typ: typ_type,
+    kind: switch typ_kind {
+      | Ttype_abstract => Abstract
+      | Ttype_open => Open
+      | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp}, cd_name: name, cd_args, cd_res, cd_attributes}) => {
+        Type.Constructor.stamp,
+        name,
+        args: cd_args |> List.map(t => (t.ctyp_type, t.ctyp_loc)),
+        res: cd_res |?>> t => t.ctyp_type,
+      }))
+      | Ttype_record(labels) => Record(labels |> List.map(
+        ({ld_id: {stamp: astamp}, ld_name: name, ld_type: {ctyp_type, ctyp_loc}}) => {
+          {Type.Attribute.stamp: astamp, name, typ: ctyp_type, typLoc: ctyp_loc}
+        }
+      ))
+    }
+  }, ~name, ~stamp, ~env, typ_attributes, exported.types, env.stamps.types);
+  {...declared, contents: Module.Type(declared.contents)}
+};
+
 let forSignatureItem = (~env, ~exported: Module.exported, item) => {
   switch (item.sig_desc) {
   | Tsig_value({val_id: {stamp}, val_loc, val_name: name, val_desc, val_attributes}) => {
@@ -173,16 +196,20 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
       exported.values,
       env.stamps.values
     );
-    Some({...declared, contents: Module.Value(declared.contents)})
+    [{...declared, contents: Module.Value(declared.contents)}]
   }
-  | _ => None
+  | Tsig_type(decls) => {
+    decls |. Belt.List.map(forTypeDeclaration(~env, ~exported))
+  }
+  /* TODO: process other things here */
+  | _ => []
   }
 };
 
 let rec forSignature = (~env, items) => {
   let (doc, items) = getTopSigDoc(items);
   let exported = Module.initExported();
-  let topLevel = Belt.List.keepMap(items, forSignatureItem(~env, ~exported));
+  let topLevel = Belt.List.map(items, forSignatureItem(~env, ~exported)) |> Belt.List.flatten;
   (doc, {Module.exported, topLevel})
 };
 
@@ -230,29 +257,8 @@ let rec forItem = (
   let declared = addItem(~extent=val_loc, ~contents={Value.recursive: false, typ: val_type}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
   [{...declared, contents: Module.Value(declared.contents)}]
 }
-| Tstr_type(decls) => decls |> List.map(({typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind}) => {
-  let declared = addItem(~extent=typ_loc, ~contents={
-    Type.params: typ_params |> List.map(((t, _)) => (t.ctyp_type, t.ctyp_loc)),
-    typ: typ_type,
-    kind: switch typ_kind {
-      | Ttype_abstract => Abstract
-      | Ttype_open => Open
-      | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp}, cd_name: name, cd_args, cd_res, cd_attributes}) => {
-        Type.Constructor.stamp,
-        name,
-        args: cd_args |> List.map(t => (t.ctyp_type, t.ctyp_loc)),
-        res: cd_res |?>> t => t.ctyp_type,
-      }))
-      | Ttype_record(labels) => Record(labels |> List.map(
-        ({ld_id: {stamp: astamp}, ld_name: name, ld_type: {ctyp_type, ctyp_loc}}) => {
-          {Type.Attribute.stamp: astamp, name, typ: ctyp_type, typLoc: ctyp_loc}
-        }
-      ))
-    }
-  }, ~name, ~stamp, ~env, typ_attributes, exported.types, env.stamps.types);
-  {...declared, contents: Module.Type(declared.contents)}
-})
-  | _ => []
+| Tstr_type(decls) => decls |> List.map(forTypeDeclaration(~env, ~exported))
+| _ => []
 }
 
 and forModule = (env, mod_desc, moduleName) => switch mod_desc {
@@ -343,7 +349,6 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
   let env = {scope: Utils.sigItemsExtent(signature.sig_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forSignature(~env, signature.sig_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
-  /* Some(forSignature(processDoc, signature.sig_items)) */
 }
 | _ => {
   Error("Not a valid cmt")

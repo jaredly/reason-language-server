@@ -176,7 +176,6 @@ let findJsxTag = text => {
 type completable = Nothing | Labeled(string) | Lident(string);
 
 let findCompletable = (text, offset) => {
-  Log.log("Finding completable");
   /* NOTE disabled the unterminated check... it got in the way too often */
   /* if (hasUnterminatedCommentOrString(text, offset)) {
     Log.log("Unterminated comment or string, can't do it. Sorry");

@@ -105,18 +105,19 @@ let completionForConstructors =
       exportedTypes,
       stamps: Hashtbl.t(int, SharedTypes.declared(SharedTypes.Type.t)),
       prefix,
-    ) =>
+    ) => {
+
   Hashtbl.fold(
     (_name, stamp, results) => {
       let t = Hashtbl.find(stamps, stamp);
       switch (t.contents.kind) {
       | Variant(constructors) =>
-        (
+        {
           Belt.List.keep(constructors, c =>
             Utils.startsWith(c.name.txt, prefix)
           )
           |. Belt.List.map(c => (c, t))
-        )
+        }
         @ results
       | _ => results
       };
@@ -124,6 +125,7 @@ let completionForConstructors =
     exportedTypes,
     [],
   );
+    };
 
 let completionForAttributes =
     (
@@ -303,6 +305,7 @@ let detail = (name, contents) =>
 
 let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => {
   let results = [];
+  Log.log("---------------- LOCAL VAL");
   let results =
     if (suffix == "" || isCapitalized(suffix)) {
       results
@@ -351,6 +354,7 @@ let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => 
 };
 
 let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
+  Log.log(" - Completing in " ++ env.file.uri);
   let results = [];
   let results =
     if (suffix == "" || isCapitalized(suffix)) {
@@ -358,7 +362,8 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
           env.exported.modules, env.file.stamps.modules, suffix, m =>
           Module(m)
         );
-      /* Log.log("capitalized"); */
+      /* Log.log(" -- capitalized " ++ string_of_int(Hashtbl.length(env.exported.types)) ++ " exported types"); */
+      /* env.exported.types |> Hashtbl.iter((name, _) => Log.log("    > " ++ name)); */
       results
       @ moduleCompletions
       @ (
@@ -378,7 +383,7 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
 
   let results =
     if (suffix == "" || ! isCapitalized(suffix)) {
-      /* Log.log("not capitalized"); */
+      Log.log(" -- not capitalized");
       results
       @ completionForExporteds(
           env.exported.values, env.file.stamps.values, suffix, v =>
@@ -526,6 +531,7 @@ let get =
   | multiple =>
     open Infix;
     let env = Query.fileEnv(full.file);
+    Log.log("Completing for " ++ String.concat("<.>", multiple));
 
     switch (determineCompletion(multiple)) {
     | `Normal(path) =>
