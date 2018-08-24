@@ -55,11 +55,12 @@ let getBsbExecutable = rootPath =>
 let detect = (rootPath, bsconfig) => {
   let%try bsbExecutable = getBsbExecutable(rootPath);
   let%try_wrap bsbVersion = {
-    let (output, success) = Commands.execSync(bsbExecutable ++ " -version");
+    let cmd = bsbExecutable ++ " -version";
+    let (output, success) = Commands.execSync(cmd);
     success ? switch output {
     | [line] => Ok(String.trim(line))
-    | _ => Error("Unable to determine bsb version")
-    } : Error("Could not run bsb");
+    | _ => Error("Unable to determine bsb version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
+    } : Error("Could not run bsb (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
   };
 
   /* TODO add a config option to specify native vs bytecode vs js backend */
