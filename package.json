@@ -8,7 +8,7 @@
     "test": "./lib/bs/native/testcompletions.native; ./lib/bs/native/testdefinition.native; ./lib/bs/native/testreferences.native",
     "watch": "bsb -make-world -backend native -w",
     "watch:byte": "bsb -make-world -backend bytecode -w",
-    "package": "cp lib/bs/native/bin.native editor-extensions/vscode; cd editor-extensions/vscode; vsce package",
+    "package": "npm run build && cp lib/bs/native/bin.native editor-extensions/vscode",
     "zip": "./release.sh",
     "package:linux": "cp lib/bs/native/bin.native editor-extensions/vscode/bin.native.linux; cd editor-extensions/vscode; vsce package",
     "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe editor-extensions/vscode & chdir editor-extensions/vscode & vsce package",
