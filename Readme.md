@@ -8,8 +8,15 @@ It is written in Reason, and compiled via bsb-native. The goal is for it to work
 
 ### VSCode
 
-(for now) download the `.vsix` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), and in the vscode extensions panel, open the menu and click "install from .vsix". And that's it!
-Works for macos, windows, linux.
+Install through VS Code extensions. Search for `reason-vscode`
+
+[Visual Studio Code Marketplace: reason-vscode](https://marketplace.visualstudio.com/items?itemName=jaredly.reason-vscode)
+
+Can also be installed with VS Code Quick Open: press `Cmd/Ctrl + P`, paste the following command, and press enter.
+
+```
+ext install jaredly.reason-vscode
+```
 
 ### OniVim
 
