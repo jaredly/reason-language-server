@@ -216,27 +216,19 @@ let rec dig = (typ) =>
 
 let digConstructor = (~env, ~getModule, expr) => {
   let expr = dig(expr);
-  /* Log.log("digging"); */
   switch (expr.desc) {
-    | Tconstr(path, _args, _memo) => {
-      /* Log.log("dug"); */
-      switch (resolveFromCompilerPath(~env, ~getModule, path)) {
-      | `Not_found => None
-      | `Stamp(stamp) =>
-        /* Log.log("stamp"); */
-        let%opt t = hashFind(env.file.stamps.types, stamp);
-        Some((env, t))
-      | `Exported(env, name) =>
-        /* Log.log("exported " ++ name); */
-        let%opt stamp = hashFind(env.exported.types, name);
-        let%opt t = hashFind(env.file.stamps.types, stamp);
-        Some((env, t))
-      | _ => None
-      };
+  | Tconstr(path, _args, _memo) =>
+    switch (resolveFromCompilerPath(~env, ~getModule, path)) {
+    | `Not_found => None
+    | `Stamp(stamp) =>
+      let%opt t = hashFind(env.file.stamps.types, stamp);
+      Some((env, t));
+    | `Exported(env, name) =>
+      let%opt stamp = hashFind(env.exported.types, name);
+      let%opt t = hashFind(env.file.stamps.types, stamp);
+      Some((env, t));
+    | _ => None
     }
-    | _ => {
-      /* Log.log("not a constructor: " ++ (PrintType.default.expr(PrintType.default, expr) |> PrintType.prettyString)); */
-      None
-    }
-  }
+  | _ => None
+  };
 };

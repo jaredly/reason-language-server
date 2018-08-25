@@ -3,13 +3,6 @@ open Typedtree;
 open SharedTypes;
 open Infix;
 
-let rec dig = (typ) =>
-  switch typ.Types.desc {
-  | Types.Tlink(inner) => dig(inner)
-  | Types.Tsubst(inner) => dig(inner)
-  | _ => typ
-  };
-
 let rec relative = (ident, path) =>
   switch (ident, path) {
   | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
@@ -142,7 +135,7 @@ module F = (Collector: {
   };
 
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
-    switch (dig(recordType).desc) {
+    switch (Query.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         let {Types.lbl_loc, lbl_res} = item;
@@ -172,7 +165,7 @@ module F = (Collector: {
   };
 
   let addForRecord = (recordType, items) => {
-    switch (dig(recordType).desc) {
+    switch (Query.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
@@ -203,7 +196,7 @@ module F = (Collector: {
   };
 
   let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
-    switch (dig(constructorType).desc) {
+    switch (Query.dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
         /* let name = Longident.last(txt); */
 

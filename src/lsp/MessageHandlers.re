@@ -56,6 +56,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | Typed(t, _) => Some(t)
         | _ => None
       };
+      /* TODO move this into ProcessExtra or somewheres */
       let rec loop = t => switch (t.Types.desc) {
         | Types.Tsubst(t)
         | Tlink(t) => loop(t)
