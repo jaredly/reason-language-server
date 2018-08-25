@@ -31,11 +31,8 @@ let output = TestUtils.process(lines, (files, mainFile) => {
           ~getModule=State.fileForModule(state, ~package),
           cpos,
         )
-        /* State.definitionForPos(
-        curi,
-        cpos, moduleData, state, ~package) */
       ) {
-        | None => "Couldn't find a definition for " ++ showPos(cpos)
+        | None => "Couldn't find a definition for " ++ showPos(cpos) ++ " " ++ curi
         | Some((uri, {loc_start: {pos_cnum}, loc_end: {pos_cnum: cend}})) => {
           if (uri != turi) {
             "FAIL wrong uri " ++ uri ++ " expected " ++ turi

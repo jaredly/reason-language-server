@@ -10,7 +10,7 @@ let here = {<c6>name: "fred", age: 3};
 let a = <c10>A(3, 4.);
 --- Other.re
 <t11>let thing = {Lib.name: "hi", age: 2};
-let <t3>contain = {Lib.v: <c9>B({name: "inner", age: 1}), r: {name: "one", <c8>age: 5}};
+let <t3>contain = {Lib.v: Lib.<c9>B({name: "inner", age: 1}), r: {name: "one", <c8>age: 5}};
 ---
 let <t1>awesome_awesome = 10;
 let <t2>m = <c1>awesome_awesome;
@@ -20,13 +20,13 @@ let m = A(2,3);
 -->
 1: PASS
 2: PASS
-3: No definition! at 4, 6
+3: PASS
 4: PASS
 5: PASS
 6: PASS
 7: PASS
-8: No definition! at 2, 67
-9: No definition! at 2, 22
+8: PASS
+9: PASS
 10: PASS
 11: PASS
 
