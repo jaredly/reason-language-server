@@ -13,8 +13,10 @@ let output = TestUtils.process(lines, (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints) / 2;
-  package.localModules |. Belt.List.forEach(((a, (src, ex))) => {
-      let%try_force {SharedTypes.file, extra} = State.getDefinitionData(Utils.toUri(ex), state, ~package);
+  package.localModules |. Belt.List.forEach(((modname, _)) => {
+      let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
+      let%opt_consume src = src;
+      let%try_force {SharedTypes.file, extra} = State.getDefinitionData(Utils.toUri(src), state, ~package);
       Log.log(SharedTypes.showExtra(extra));
   });
   let process = i => {

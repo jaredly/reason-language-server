@@ -71,7 +71,9 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     setPackageTimer(package);
     let moduleName = FindFiles.getName(uri);
 
-    package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+    package.localModules |. Belt.List.forEach(((mname, _)) => {
+      let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
+      let%opt_consume src = src;
       let otherUri = Utils.toUri(src);
       let refs = Query.hashFind(package.interModuleDependencies, mname);
       open Infix;

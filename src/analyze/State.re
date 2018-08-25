@@ -204,9 +204,6 @@ let newBsPackage = (state, rootPath) => {
   };
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
-  /* localModules |. Belt.List.forEach(((name, _)) => {
-    Hashtbl.add(interModuleDependencies, name, Hashtbl.create(10))
-  }); */
 
   {
     basePath: rootPath,
@@ -617,7 +614,9 @@ let getCompilationResult = (uri, state, ~package) => {
 
       if (state.settings.crossFileAsYouType) {
         /** Check dependencies */
-        package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+        package.localModules |. Belt.List.forEach(((mname, _)) => {
+          let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
+          let%opt_consume src = src;
           let otherUri = Utils.toUri(src);
           if (mname != moduleName
               && List.mem(
@@ -633,7 +632,9 @@ let getCompilationResult = (uri, state, ~package) => {
           };
         });
 
-        package.localModules |. Belt.List.forEach(((mname, (cmt, src))) => {
+        package.localModules |. Belt.List.forEach(((mname, _)) => {
+          let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
+          let%opt_consume src = src;
           let otherUri = Utils.toUri(src);
           switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
             | exception Not_found => ()
@@ -697,7 +698,9 @@ let fileForModule = (state,  ~package, modname) => {
   let file = state.settings.crossFileAsYouType ? {
     /* Log.log("✅ Gilr got mofilr " ++ modname); */
     Log.log(package.localModules |> List.map(fst) |> String.concat(" "));
-    let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==));
+    let%opt (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
+    let%opt src = src;
+    /* let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==)); */
     /* Log.log("Found it " ++ src); */
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
