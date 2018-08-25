@@ -27,6 +27,18 @@
 			"sourceMaps": false,
 		},
 		{
+			"name": "Launch es6 project",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/examples/example-es6-imports"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
 			"name": "Launch Native Project",
 			"type": "extensionHost",
 			"request": "launch",
