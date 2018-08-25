@@ -20,9 +20,19 @@ let makeDiagnostic = (documentText, ((line, c1, c2), message)) => {
   ]);
 };
 
+let getText = (state, uri) => {
+  switch (MessageHandlers.maybeHash(state.documentText, uri)) {
+    | None => switch (Utils.parseUri(uri)) {
+      | None => Error("Not a uri " ++ uri)
+      | Some(src) => Files.readFileResult(src)
+    }
+    | Some((text, _version, _isClean)) => Ok(text)
+  };
+};
+
 let runDiagnostics = (uri, state, ~package) => {
   Log.log("Running diagnostics for " ++ uri);
-  let%try_consume (documentText, _verison, _isClean) = MessageHandlers.maybeHash(state.documentText, uri) |> orError("No document text found");
+  let%try_consume documentText = getText(state, uri);
   let%try_consume result = State.getCompilationResult(uri, state, ~package);
 
   open Rpc.J;
