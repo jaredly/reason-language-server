@@ -154,12 +154,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
-        let%try cmt = switch (Cmt_format.read_cmt(cmtPath)) {
-          | exception _ => Error("Invalid cmt response - probably wrong ocaml version")
-          | x => Ok(x)
-        };
-        let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
-        let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
+        let%try_wrap {file, extra} = ProcessFull.fullForCmt(cmtPath, uri, x => x);
         let errorText = String.concat("\n", lines);
         switch (syntaxError) {
           | Some(s) =>
@@ -176,13 +171,9 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       }
     }
     | Ok(lines) => {
-      let%try cmt = switch (Cmt_format.read_cmt(cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : ""))) {
-        | exception _ => Error("Invalid cmt response - probably wrong ocaml version")
-        | x => Ok(x)
-      };
-      let%try file = ProcessCmt.forCmt(uri, x => x, cmt);
-      let%try_wrap extra = ProcessExtra.forCmt(~file, cmt);
-      Success(String.concat("\n", lines), {file, extra})
+      let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
+      let%try_wrap full = ProcessFull.fullForCmt(cmt, uri, x => x);
+      Success(String.concat("\n", lines), full)
     }
   }
 };

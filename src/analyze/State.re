@@ -452,37 +452,16 @@ let converter = (src, usePlainText) => {
 };
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
-  /* let infos = Cmt_format.read_cmt(cmt); */
-  let%opt infos = switch (Cmt_format.read_cmt(cmt)) {
-    | exception _ => {
-      Log.log("Invalid cmt format");
-      None
-    }
-    | x => Some(x)
-  };
-  /* let%opt src = src; */
   let uri = Utils.toUri(src |? cmt);
-  let%opt file = ProcessCmt.forCmt(uri, converter(src, clientNeedsPlainText), infos) |> Result.toOptionAndLog;
+  let%opt file = ProcessFull.fileForCmt(cmt, uri, converter(src, clientNeedsPlainText)) |> Result.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
-  let%opt infos = switch (Cmi_format.read_cmi(cmi)) {
-    | exception _ => {
-      Log.log("Invalid cmi format");
-      None
-    }
-    | x => Some(x)
-  };
-  /* switch (Docs.forCmi(converter(src, clientNeedsPlainText), infos)) {
-  | None => {Log.log("Docs.forCmi gave me nothing " ++ cmi);None}
-  | Some((docstring, items)) => */
-    let%opt file = ProcessCmt.forCmi(Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText), infos);
-    /* let docs = Docs.moduleDocs(docstring, items, file); */
-    Hashtbl.replace(cmiCache, cmi, (changed, file));
-    Some(file);
-  /* }; */
+  let%opt file = ProcessFull.fileForCmi(cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
+  Hashtbl.replace(cmiCache, cmi, (changed, file));
+  Some(file);
 };
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
