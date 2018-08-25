@@ -217,34 +217,4 @@ let showLocation = ({Location.loc_start, loc_end}) =>
     )
   );
 
-let itemsExtent = items => {
-  open Typedtree;
-  items == [] ? Location.none : {
-    let first = List.hd(items);
-    let last = List.nth(items, List.length(items) - 1);
-    let (first, last) = first.str_loc.loc_start.pos_cnum <
-      last.str_loc.loc_start.pos_cnum ? (first, last) : (last, first);
-
-    {
-      Location.loc_ghost: true,
-      loc_start: first.str_loc.loc_start,
-      loc_end: last.str_loc.loc_end,
-    };
-  };
-};
-
-let sigItemsExtent = items => {
-  open Typedtree;
-  items == [] ? Location.none : {
-    let first = List.hd(items);
-    let last = List.nth(items, List.length(items) - 1);
-
-    {
-      Location.loc_ghost: true,
-      loc_start: first.sig_loc.loc_start,
-      loc_end: last.sig_loc.loc_end,
-    };
-  };
-};
-
 let joinLines = String.concat("\n");

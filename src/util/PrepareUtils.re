@@ -65,26 +65,6 @@ let cleanOffStars = doc => {
   }
 };
 
-/* TODO should I hang on to location? */
-let rec findDocAttribute = (attributes) => {
-  open Parsetree;
-  switch attributes {
-  | [] => None
-  | [({Asttypes.txt: "ocaml.doc"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])), ...rest] => Some(cleanOffStars(doc))
-  | [_, ...rest] => findDocAttribute(rest)
-  }
-};
-
-/* TODO should I hang on to location? */
-let rec findDeprecatedAttribute = (attributes) => {
-  open Parsetree;
-  switch attributes {
-  | [] => None
-  | [({Asttypes.txt: "ocaml.deprecated" | "deprecated"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(message, _))}, _)}])), ...rest] => Some(message)
-  | [_, ...rest] => findDeprecatedAttribute(rest)
-  }
-};
-
 let rec hasNoDoc = attributes => {
   switch attributes {
   | [] => false

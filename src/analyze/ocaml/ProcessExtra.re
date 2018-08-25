@@ -493,7 +493,7 @@ let forFile = (~file) => {
 let forItems = (~file, items, parts) => {
   let extra = forFile(~file);
 
-  let extent = Utils.itemsExtent(items);
+  let extent = ProcessCmt.itemsExtent(items);
   let extent = {...extent, loc_end: {
     ...extent.loc_end,
     pos_lnum: extent.loc_end.pos_lnum + 1000000,

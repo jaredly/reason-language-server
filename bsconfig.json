@@ -10,7 +10,7 @@
     {"dir": "vendor", "subdirs": ["omd", "odoc_parser"]},
     {"dir": "src", "subdirs": [
       {"dir": "bin", "type": "dev"},
-      {"dir": "analyze", "subdirs": ["core"]},
+      {"dir": "analyze", "subdirs": ["core", "ocaml"]},
       {"dir": "ppx", "type": "ppx"},
       "lsp",
       "util"

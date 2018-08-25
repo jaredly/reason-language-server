@@ -3,6 +3,56 @@ open Typedtree;
 open SharedTypes;
 open Infix;
 
+/* TODO should I hang on to location? */
+let rec findDocAttribute = (attributes) => {
+  open Parsetree;
+  switch attributes {
+  | [] => None
+  | [({Asttypes.txt: "ocaml.doc"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])), ...rest] => Some(PrepareUtils.cleanOffStars(doc))
+  | [_, ...rest] => findDocAttribute(rest)
+  }
+};
+
+/* TODO should I hang on to location? */
+let rec findDeprecatedAttribute = (attributes) => {
+  open Parsetree;
+  switch attributes {
+  | [] => None
+  | [({Asttypes.txt: "ocaml.deprecated" | "deprecated"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(message, _))}, _)}])), ...rest] => Some(message)
+  | [_, ...rest] => findDeprecatedAttribute(rest)
+  }
+};
+
+let itemsExtent = items => {
+  open Typedtree;
+  items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
+    let (first, last) = first.str_loc.loc_start.pos_cnum <
+      last.str_loc.loc_start.pos_cnum ? (first, last) : (last, first);
+
+    {
+      Location.loc_ghost: true,
+      loc_start: first.str_loc.loc_start,
+      loc_end: last.str_loc.loc_end,
+    };
+  };
+};
+
+let sigItemsExtent = items => {
+  open Typedtree;
+  items == [] ? Location.none : {
+    let first = List.hd(items);
+    let last = List.nth(items, List.length(items) - 1);
+
+    {
+      Location.loc_ghost: true,
+      loc_start: first.sig_loc.loc_start,
+      loc_end: last.sig_loc.loc_end,
+    };
+  };
+};
+
 let locStartPos = ({Location.loc_start: {pos_cnum, pos_lnum, pos_bol}}) => (
   pos_lnum,
   pos_cnum - pos_bol
@@ -36,10 +86,10 @@ let newDeclared = (~contents, ~scope, ~extent, ~name, ~stamp, ~modulePath, ~proc
     stamp,
     extentLoc: extent,
     scopeLoc: scope,
-    deprecated: PrepareUtils.findDeprecatedAttribute(attributes),
+    deprecated: findDeprecatedAttribute(attributes),
     exported,
     modulePath,
-    docstring: PrepareUtils.findDocAttribute(attributes) |?>> processDoc,
+    docstring: findDocAttribute(attributes) |?>> processDoc,
     contents,
     /* scopeType: Let, */
     /* scopeStart: env.scopeStart, */
@@ -264,7 +314,7 @@ let rec forItem = (
 and forModule = (env, mod_desc, moduleName) => switch mod_desc {
   | Tmod_ident(path, lident) => Module.Ident(path)
   | Tmod_structure(structure) => {
-    let env = {...env, scope: Utils.itemsExtent(structure.str_items), modulePath: ExportedModule(moduleName, env.modulePath)};
+    let env = {...env, scope: itemsExtent(structure.str_items), modulePath: ExportedModule(moduleName, env.modulePath)};
     let (doc, contents) = forStructure(~env, structure.str_items);
     Module.Structure(contents)
   }
@@ -315,7 +365,7 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
     | Partial_structure_item(str) => Some([str])
     | _ => None
   }) |> List.concat;
-  let extent = Utils.itemsExtent(items);
+  let extent = itemsExtent(items);
   let extent = {...extent, loc_end: {
     ...extent.loc_end,
     pos_lnum: extent.loc_end.pos_lnum + 1000000,
@@ -336,17 +386,17 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
     | Partial_signature_item(str) => Some([str])
     | _ => None
   }) |> List.concat;
-  let env = {scope: Utils.sigItemsExtent(items), stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: sigItemsExtent(items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forSignature(~env, items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Implementation(structure) => {
-  let env = {scope: Utils.itemsExtent(structure.str_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: itemsExtent(structure.str_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forStructure(~env, structure.str_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Interface(signature) => {
-  let env = {scope: Utils.sigItemsExtent(signature.sig_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: sigItemsExtent(signature.sig_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
   let (docstring, contents) = forSignature(~env, signature.sig_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
