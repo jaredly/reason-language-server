@@ -1,5 +1,8 @@
 let someLongName = 10;
 
+%bs.raw "import things from 'hello'";
+%bs.raw {|import moreThings from 'other'|};
+
 let otherLongName = "string";
 
 let x = [%bs.obj {a: 3}];
@@ -75,11 +78,6 @@ let a = [
 ];
 
 let div = (~x, ~y, ~children, ()) => 10;
-
-let m = <div
-  x=10
-  y=20
- />;
 
  let something = animal => switch animal {
    | blank => ()

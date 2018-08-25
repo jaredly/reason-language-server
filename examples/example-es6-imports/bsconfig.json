@@ -1,10 +1,16 @@
 {
-  "name": "tryit",
-  "sources": "src",
-  "bsc-flags": ["-bs-super-errors", "-open Belt"],
-  "warnings": {
-    "number": "-32-26-27-33"
+  "name": "web",
+  "reason": {
+    "react-jsx": 2
   },
-  "namespace": true,
+  "sources": {
+    "dir": "src",
+    "subdirs": true
+  },
+  "package-specs": {
+    "module": "es6",
+    "in-source": true
+  },
+  "suffix": ".bs.js",
   "refmt": 3
 }
