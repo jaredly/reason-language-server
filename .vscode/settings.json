@@ -5,6 +5,7 @@
   "editor.codeLens": true,
   "reason_language_server.location": "./lib/bs/native/bin.native",
   "reason_language_server.show_debug_errors": true,
+  "reason_language_server.format_width": 120,
   // "reason_language_server.location": "./lib/bs/native/bin.native.exe",
   // "reason_language_server.reloadOnChange": true,
   "editor.tabSize": 2,
