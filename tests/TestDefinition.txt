@@ -16,17 +16,17 @@ let <t1>awesome_awesome = 10;
 let <t2>m = <c1>awesome_awesome;
 let z = string_of_int(<c2>m);
 O<c11>ther.<c3>contain.<c4>r.<c5>age;
-let m = A(2,3);
+let m = Lib.A(2,3.);
 -->
 1: PASS
 2: PASS
-3: Couldn't find a definition for 4, 6 file:///path/to/Test.re
+3: PASS
 4: PASS
 5: PASS
 6: PASS
 7: PASS
-8: Couldn't find a definition for 2, 71 file:///path/to/Other.re
-9: Couldn't find a definition for 2, 26 file:///path/to/Other.re
+8: PASS
+9: PASS
 10: PASS
 11: PASS
 

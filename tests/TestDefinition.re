@@ -16,8 +16,17 @@ let output = TestUtils.process(lines, (files, mainFile) => {
   package.localModules |. Belt.List.forEach(((modname, _)) => {
       let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
       let%opt_consume src = src;
-      let%try_force {SharedTypes.file, extra} = State.getDefinitionData(Utils.toUri(src), state, ~package);
-      Log.log(SharedTypes.showExtra(extra));
+      let%try_force result = State.getCompilationResult(Utils.toUri(src), state, ~package);
+      switch result {
+        | Success(_, {extra}) => Log.log(SharedTypes.showExtra(extra));
+        | TypeError(text, _) => {
+          Log.log(text);
+          failwith("Local module failed to compile")
+        }
+        | SyntaxError(text, _, _) =>
+          Log.log(text);
+          failwith("Local module syntax error")
+      }
   });
   let process = i => {
       let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
