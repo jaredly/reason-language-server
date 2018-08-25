@@ -18,7 +18,3 @@ let getOutput = (files, text) => {
 let testFile = "./tests/TestCodeLens.txt";
 let output = Files.readFileExn(testFile) |> Utils.splitLines |. TestUtils.process(getOutput) |> String.concat("\n");
 Files.writeFileExn(testFile, output);
-
-let _ = {
-  print_endline("Parse windows " ++ Utils.parseWindowsUri("/c%3A/Users/Jared/awesome.txt"))
-};

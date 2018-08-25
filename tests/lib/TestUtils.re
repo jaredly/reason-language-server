@@ -112,11 +112,10 @@ let setUp = (files, text) => {
   files |> List.iter(((name, contents)) => {
     let moduleName = Filename.chop_extension(name);
     let uri = uriForName(name);
-    /* print_endline("Compiling " ++ moduleName); */
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
-      ~basePath=package.basePath,
+      ~basePath=".",
       ~reasonFormat=false,
       contents,
       ~cacheLocation=tmp,
@@ -127,13 +126,19 @@ let setUp = (files, text) => {
     );
     let moduleData = AsYouType.getResult(result);
     Hashtbl.replace(state.compiledDocuments, uri, result);
-    Hashtbl.replace(state.lastDefinitions, uri, moduleData)
+    Hashtbl.replace(state.lastDefinitions, uri, moduleData);
+
+    /* switch result {
+      | AsYouType.SyntaxError(syntaxError, _, full) => Log.log("Syntax error! " ++ syntaxError)
+      | TypeError(errorText, full) => Log.log("Type Error: " ++ errorText)
+      | _ => ()
+    }; */
   });
 
   let%try_force result = AsYouType.process(
     ~uri=mainUri,
     ~moduleName="Test",
-    ~basePath=package.basePath,
+    ~basePath=".",
     ~reasonFormat=false,
     text,
     ~cacheLocation=tmp,
@@ -142,6 +147,11 @@ let setUp = (files, text) => {
     [tmp],
     ""
   );
+  /* switch result {
+    | AsYouType.SyntaxError(syntaxError, _, full) => Log.log("Syntax error! " ++ syntaxError)
+    | TypeError(errorText, full) => Log.log("Type Error: " ++ errorText)
+    | _ => ()
+  }; */
 
   let moduleData = AsYouType.getResult(result);
   Hashtbl.replace(state.compiledDocuments, mainUri, result);

@@ -35,7 +35,7 @@ let output = TestUtils.process(lines, (files, mainFile) => {
         curi,
         cpos, moduleData, state, ~package) */
       ) {
-        | None => "No definition! at " ++ showPos(cpos)
+        | None => "Couldn't find a definition for " ++ showPos(cpos)
         | Some((uri, {loc_start: {pos_cnum}, loc_end: {pos_cnum: cend}})) => {
           if (uri != turi) {
             "FAIL wrong uri " ++ uri ++ " expected " ++ turi

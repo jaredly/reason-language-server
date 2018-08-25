@@ -142,12 +142,12 @@ let m = {
   a<*>
 };
 -->
-awesome
-- path: file:///path/to/A.re
-> let awesome: int
 awkward
 - path: file:///path/to/B.re
 > let awkward: int
+awesome
+- path: file:///path/to/A.re
+> let awesome: int
 
 === Mutli-attribute 2 - wrong URIs
 --- A.re

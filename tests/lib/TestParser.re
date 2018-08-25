@@ -99,9 +99,9 @@ let rec parseSections = lines => switch lines {
 
 let printFiles = (mainFile, files) => {
   switch files {
-    | [] => mainFile
+    | [] => String.trim(mainFile)
     | files => files |> List.map(((name, content)) => {
-      "--- " ++ name ++ "\n" ++ content
+      "--- " ++ name ++ "\n" ++ String.trim(content)
     }) |> String.concat("\n") |> files => files ++ "\n---\n" ++ mainFile
   }
 };
