@@ -251,6 +251,17 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
   | Tsig_type(decls) => {
     decls |. Belt.List.map(forTypeDeclaration(~env, ~exported))
   }
+  | Tsig_module({md_id: {stamp}, md_attributes, md_loc, md_name: name, md_type: {mty_desc, mty_type}}) => {
+    let contents = forModuleType(env, mty_type);
+    let declared = addItem(~contents, ~name, ~extent=md_loc, ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
+    [{...declared, contents: Module.Module(declared.contents)}]
+  }
+  | Tsig_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
+    let topLevel = List.fold_right((item, items) => {
+      forSignatureTypeItem(env, exported, item) @ items
+    }, incl_type, []) |> List.rev;
+
+    topLevel
   /* TODO: process other things here */
   | _ => []
   }

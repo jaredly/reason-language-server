@@ -16,6 +16,9 @@ let n = More.n;
 More.party;
 string_of_bool;
 
+Belt.Array.blit;
+Js.Console.error;
+
 /* let m = {More.a: 2, b: 32.}; */
 
 module Something = {
