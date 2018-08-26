@@ -120,9 +120,6 @@ module M = (N: {let <c1>x: int}) => {
   1: ✅ PASS
 
 === Kitchen sink
---- Other.re
-let thing = {Lib.<t2>name: "hi", <t3>age: 2};
-let contain = {Lib.v: B({<t2>name: "inner", <t3>age: 1}), r: {<t2>name: "one", <t3>age: 5}};
 --- Lib.re
 type <c1>record = {
   <c2>name: string,
@@ -132,6 +129,9 @@ type variant = <c4>A(int, float) | B(<t1>record);
 type container = {v: variant, r: <t1>record};
 let here = {<t2>name: "fred", <t3>age: 3};
 let a = <t4>A(3, 4.);
+--- Other.re
+let thing = {Lib.<t2>name: "hi", <t3>age: 2};
+let contain = {Lib.v: B({<t2>name: "inner", <t3>age: 1}), r: {<t2>name: "one", <t3>age: 5}};
 ---
 let awesome_awesome = 10;
 let m = awesome_awesome;
