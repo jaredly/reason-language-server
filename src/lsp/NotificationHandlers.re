@@ -71,7 +71,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     setPackageTimer(package);
     let moduleName = FindFiles.getName(uri);
 
-    package.localModules |. Belt.List.forEach(((mname, _)) => {
+    package.localModules |. Belt.List.forEach((mname) => {
       let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
       let%opt_consume src = src;
       let otherUri = Utils.toUri(src);

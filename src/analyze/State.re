@@ -3,10 +3,13 @@ open Infix;
 open TopTypes;
 
 module Show = {
-  let state = ({rootPath}, {localModules, compilerPath, dependencyModules}) => {
+  let state = ({rootPath}, {localModules, compilerPath, dependencyModules, pathsForModule}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
-    (Belt.List.map(localModules, ((name, (cmt, src))) => Printf.sprintf("%s (%s : %s)", name, cmt, src)) |> String.concat("\n"))
+    (Belt.List.map(localModules, (name) => {
+      let (cmt, src) = Hashtbl.find(pathsForModule, name);
+      Printf.sprintf("%s (%s : %s)", name, cmt, src |? "(no src!)")
+    }) |> String.concat("\n"))
     ++
     "\nDeps\n" ++ 
     (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", modpath, cmt, src |? "")) |> String.concat("\n"))
@@ -208,7 +211,7 @@ let newBsPackage = (state, rootPath) => {
   {
     basePath: rootPath,
     rebuildTimer: 0.,
-    localModules,
+    localModules: localModules |. Belt.List.map(fst),
     dependencyModules,
     pathsForModule,
     buildSystem,
@@ -360,7 +363,7 @@ let newJbuilderPackage = (state, rootPath) => {
   let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> Result.toOptionAndLog;
   Ok({
     basePath: rootPath,
-    localModules,
+    localModules: localModules |. Belt.List.map(fst),
     rebuildTimer: 0.,
     interModuleDependencies,
     dependencyModules,
@@ -614,7 +617,7 @@ let getCompilationResult = (uri, state, ~package) => {
 
       if (state.settings.crossFileAsYouType) {
         /** Check dependencies */
-        package.localModules |. Belt.List.forEach(((mname, _)) => {
+        package.localModules |. Belt.List.forEach((mname) => {
           let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
           let%opt_consume src = src;
           let otherUri = Utils.toUri(src);
@@ -632,7 +635,7 @@ let getCompilationResult = (uri, state, ~package) => {
           };
         });
 
-        package.localModules |. Belt.List.forEach(((mname, _)) => {
+        package.localModules |. Belt.List.forEach((mname) => {
           let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
           let%opt_consume src = src;
           let otherUri = Utils.toUri(src);
@@ -697,7 +700,7 @@ let fileForUri = (state,  ~package, uri) => {
 let fileForModule = (state,  ~package, modname) => {
   let file = state.settings.crossFileAsYouType ? {
     /* Log.log("✅ Gilr got mofilr " ++ modname); */
-    Log.log(package.localModules |> List.map(fst) |> String.concat(" "));
+    Log.log(package.localModules |> String.concat(" "));
     let%opt (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
     let%opt src = src;
     /* let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==)); */

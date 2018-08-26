@@ -13,7 +13,7 @@ type package = {
   compilationFlags: string,
 
   /* Depend on bsb having already run */
-  localModules: list((moduleName, (filePath, filePath))),
+  localModules: list(moduleName),
   interModuleDependencies: Hashtbl.t(moduleName, list(moduleName)),
   dependencyModules: list((moduleName, (filePath, option(string)))),
   pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),

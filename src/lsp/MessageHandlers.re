@@ -58,7 +58,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | None =>
           let tokenParts = Utils.split_on_char('.', lident);
           let rawOpens = PartialParser.findOpens(text, offset);
-          let allModules = List.map(package.localModules, fst) @ List.map(package.dependencyModules, fst);
+          let allModules = package.localModules @ List.map(package.dependencyModules, fst);
           let%opt declared = NewCompletions.findDeclaredValue(
             ~full,
             ~package,
@@ -152,7 +152,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let useMarkdown = !state.settings.clientNeedsPlainText;
-      let allModules = List.map(package.localModules, fst) @ List.map(package.dependencyModules, fst);
+      let allModules = package.localModules @ List.map(package.dependencyModules, fst);
       let items = NewCompletions.get(
         ~full={file, extra},
         ~package,
@@ -230,11 +230,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      let allModules = List.map(package.localModules, fst);
       let%opt allReferences = References.forLoc(
         ~file,
         ~extra,
-        ~allModules,
+        ~allModules=package.localModules,
         ~getModule=State.fileForModule(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc
@@ -270,11 +269,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Infix;
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      let allModules = List.map(package.localModules, fst);
       let%opt allReferences = References.forLoc(
         ~file,
         ~extra,
-        ~allModules,
+        ~allModules=package.localModules,
         ~getModule=State.fileForModule(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc

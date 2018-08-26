@@ -4,7 +4,7 @@ Files.mkdirp(tmp);
 let getPackage = (localModules) => {
   {
     TopTypes.basePath: tmp,
-    localModules,
+    localModules: localModules |. Belt.List.map(fst),
     dependencyModules: [],
     pathsForModule: State.makePathsForModule(localModules, []),
     buildSystem: BuildSystem.Bsb("3.2.0"),

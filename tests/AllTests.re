@@ -21,8 +21,6 @@ let (args, debug) = {
   loop(args |> List.rev, [], false)
 };
 
-/* print_endline(String.concat("--", Array.to_list(Sys.argv))); */
-
 let (suite, name) = switch (args) {
   | [_] => (None, None)
   | [_, suite] => (Some(suite), None)

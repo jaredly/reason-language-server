@@ -16,7 +16,7 @@ let getOutput = (files, text) => {
     let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
     let rawOpens = PartialParser.findOpens(text, offset);
     let useMarkdown = !state.settings.clientNeedsPlainText;
-    let allModules = package.localModules |> List.map(fst);
+    let allModules = package.localModules;
     Log.log(showExtra(full.extra));
     NewCompletions.get(
       ~full,
