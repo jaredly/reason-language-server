@@ -197,6 +197,8 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
     |?> Json.array
     |? []
     |> optMap(Json.string);
+  let devDeps = config |> Json.get("bs-dev-dependencies") |?> Json.array |? [] |> optMap(Json.string);
+  let deps = deps @ devDeps;
   Log.log("Deps " ++ String.concat(", ", deps));
   let depFiles =
     deps
