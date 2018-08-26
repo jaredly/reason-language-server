@@ -140,7 +140,7 @@ let newBsPackage = (state, rootPath) => {
       [FindFiles.nameSpaceToName(namespace)]
     }
   };
-  Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
+  Log.log("Dependency dirs " ++ String.concat(" ", dependencyDirectories));
 
   let (flags, opens) = switch buildSystem {
     /* Bsb-native's support for merlin is not dependable */
