@@ -255,14 +255,17 @@ let definitionForLoc = (~package, ~file, ~getModule, loc) => {
     | Open => None
     | TopLevelModule(name) =>
       maybeLog("Toplevel " ++ name);
-      switch (Hashtbl.find(package.TopTypes.pathsForModule, name)) {
+      open Infix;
+      let%opt src = Utils.maybeHash(package.TopTypes.pathsForModule, name) |?> TopTypes.getSrc;
+      Some((Utils.toUri(src), Utils.topLoc(src)))
+      /* switch (Hashtbl.find(package.TopTypes.pathsForModule, name)) {
         | (_, Some(src)) => Some((Utils.toUri(src), Utils.topLoc(src)))
         | (_, None) => None
         | exception Not_found => {
           maybeLog("No path for module " ++ name);
           None
         }
-      }
+      } */
     | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {
       maybeLog("Local defn " ++ SharedTypes.tipToString(tip));

@@ -58,7 +58,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | None =>
           let tokenParts = Utils.split_on_char('.', lident);
           let rawOpens = PartialParser.findOpens(text, offset);
-          let allModules = package.localModules @ List.map(package.dependencyModules, fst);
+          let allModules = package.localModules @ package.dependencyModules;
           let%opt declared = NewCompletions.findDeclaredValue(
             ~full,
             ~package,
@@ -152,7 +152,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let useMarkdown = !state.settings.clientNeedsPlainText;
-      let allModules = package.localModules @ List.map(package.dependencyModules, fst);
+      let allModules = package.localModules @ package.dependencyModules;
       let items = NewCompletions.get(
         ~full={file, extra},
         ~package,

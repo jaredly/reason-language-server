@@ -4,6 +4,28 @@ type uri = string;
 type filePath = string;
 type moduleName = string;
 
+type paths =
+| Impl(filePath, option(filePath))
+| Intf(filePath, option(filePath))
+| IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
+
+let getSrc = p => switch p {
+  | Intf(_, s)
+  | Impl(_, s)
+  | IntfAndImpl(_, Some(_) as s, _, _)
+  | IntfAndImpl(_, None, _, s) => s
+};
+
+let getCmt = p => switch p {
+  | Impl(c, _) | Intf(c, _) | IntfAndImpl(c, _, _, _) => c
+};
+
+/* type paths = {
+  cmt: filePath,
+  src: option(filePath),
+  interface: option((filePath, option(filePath))),
+}; */
+
 /* Here are the things that will be different between jbuilder things */
 type package = {
   basePath: filePath,
@@ -15,8 +37,8 @@ type package = {
   /* Depend on bsb having already run */
   localModules: list(moduleName),
   interModuleDependencies: Hashtbl.t(moduleName, list(moduleName)),
-  dependencyModules: list((moduleName, (filePath, option(string)))),
-  pathsForModule: Hashtbl.t(moduleName, (filePath, option(filePath))),
+  dependencyModules: list(moduleName),
+  pathsForModule: Hashtbl.t(moduleName, paths),
 
   opens: list(string),
 

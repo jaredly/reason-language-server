@@ -7,12 +7,15 @@ module Show = {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, (name) => {
-      let (cmt, src) = Hashtbl.find(pathsForModule, name);
-      Printf.sprintf("%s (%s : %s)", name, cmt, src |? "(no src!)")
+      let paths = Hashtbl.find(pathsForModule, name);
+      Printf.sprintf("%s (%s : %s)", name, TopTypes.getCmt(paths), TopTypes.getSrc(paths) |? "(no src!)")
     }) |> String.concat("\n"))
     ++
     "\nDeps\n" ++ 
-    (Belt.List.map(dependencyModules, ((modpath, (cmt, src))) => Printf.sprintf("%s (%s : %s)", modpath, cmt, src |? "")) |> String.concat("\n"))
+    (Belt.List.map(dependencyModules, (modname) => {
+      let paths = Hashtbl.find(pathsForModule, modname);
+      Printf.sprintf("%s (%s : %s)", modname, TopTypes.getCmt(paths), TopTypes.getSrc(paths) |? "")
+    }) |> String.concat("\n"))
   };
 };
 
@@ -20,12 +23,13 @@ let makePathsForModule = (localModules, dependencyModules) => {
   let pathsForModule = Hashtbl.create(30);
   dependencyModules |> List.iter(((modName, (cmt, source))) => {
     Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
-    Hashtbl.replace(pathsForModule, modName, (cmt, source))
+    /* TODO do this right */
+    Hashtbl.replace(pathsForModule, modName, Impl(cmt, source))
   });
 
   localModules |> List.iter(((modName, (cmt, source))) => {
     Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
-    Hashtbl.replace(pathsForModule, modName, (cmt, Some(source)))
+    Hashtbl.replace(pathsForModule, modName, Impl(cmt, Some(source)))
   });
 
   pathsForModule
@@ -132,7 +136,7 @@ let newBsPackage = (state, rootPath) => {
     | Some(namespace) => {
       let cmt = compiledBase /+ namespace ++ ".cmt";
       /* Log.log("Namespaced as " ++ namespace ++ " at " ++ cmt); */
-      Hashtbl.add(pathsForModule, namespace, (cmt, None));
+      Hashtbl.add(pathsForModule, namespace, Impl(cmt, None));
       [FindFiles.nameSpaceToName(namespace)]
     }
   };
@@ -212,7 +216,7 @@ let newBsPackage = (state, rootPath) => {
     basePath: rootPath,
     rebuildTimer: 0.,
     localModules: localModules |. Belt.List.map(fst),
-    dependencyModules,
+    dependencyModules: dependencyModules |. Belt.List.map(fst),
     pathsForModule,
     buildSystem,
     buildCommand: Some((buildCommand, rootPath)),
@@ -345,7 +349,7 @@ let newJbuilderPackage = (state, rootPath) => {
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
-  libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", (compiledBase /+ libraryName ++ "__.cmt", None));
+  libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", Impl(compiledBase /+ libraryName ++ "__.cmt", None));
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
@@ -366,7 +370,7 @@ let newJbuilderPackage = (state, rootPath) => {
     localModules: localModules |. Belt.List.map(fst),
     rebuildTimer: 0.,
     interModuleDependencies,
-    dependencyModules,
+    dependencyModules: dependencyModules |. Belt.List.map(fst),
     pathsForModule,
     buildSystem,
     buildCommand,
@@ -618,8 +622,8 @@ let getCompilationResult = (uri, state, ~package) => {
       if (state.settings.crossFileAsYouType) {
         /** Check dependencies */
         package.localModules |. Belt.List.forEach((mname) => {
-          let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
-          let%opt_consume src = src;
+          let%opt_consume paths = Utils.maybeHash(package.pathsForModule, mname);
+          let%opt_consume src = TopTypes.getSrc(paths);
           let otherUri = Utils.toUri(src);
           if (mname != moduleName
               && List.mem(
@@ -636,8 +640,8 @@ let getCompilationResult = (uri, state, ~package) => {
         });
 
         package.localModules |. Belt.List.forEach((mname) => {
-          let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, mname);
-          let%opt_consume src = src;
+          let%opt_consume paths = Utils.maybeHash(package.pathsForModule, mname);
+          let%opt_consume src = TopTypes.getSrc(paths);
           let otherUri = Utils.toUri(src);
           switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
             | exception Not_found => ()
@@ -683,7 +687,10 @@ let getDefinitionData = (uri, state, ~package) => {
 
 let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
-      let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
+      let paths = Hashtbl.find(package.pathsForModule, modname);
+      /* TODO do better */
+      let cmt = TopTypes.getCmt(paths);
+      let src = TopTypes.getSrc(paths);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
       let%opt_wrap docs = docsForCmt(cmt, src, state);
       (docs, src)
@@ -701,10 +708,9 @@ let fileForModule = (state,  ~package, modname) => {
   let file = state.settings.crossFileAsYouType ? {
     /* Log.log("✅ Gilr got mofilr " ++ modname); */
     Log.log(package.localModules |> String.concat(" "));
-    let%opt (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
-    let%opt src = src;
-    /* let%opt (cmt, src) = Belt.List.getAssoc(package.localModules, modname, (==)); */
-    /* Log.log("Found it " ++ src); */
+    let%opt paths = Utils.maybeHash(package.pathsForModule, modname);
+    /* TODO do better? */
+    let%opt src = TopTypes.getSrc(paths);
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
       let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> Result.toOptionAndLog;
@@ -723,8 +729,9 @@ let fileForModule = (state,  ~package, modname) => {
 
 let extraForModule = (state, ~package, modname) => {
   if (Hashtbl.mem(package.pathsForModule, modname)) {
-    let (cmt, src) = Hashtbl.find(package.pathsForModule, modname);
-    let%opt src = src;
+    let paths = Hashtbl.find(package.pathsForModule, modname);
+    /* TODO do better? */
+    let%opt src = TopTypes.getSrc(paths);
     let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> Result.toOptionAndLog;
     Some(extra)
   } else {
