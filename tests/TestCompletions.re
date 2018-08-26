@@ -32,11 +32,15 @@ let getOutput = (files, text) => {
       );
   };
 
-  completions |> List.map(((uri, item)) => {
-    item.name.txt
-    ++ "\n- path: " ++ uri
-    ++ "\n> " ++ (Str.split(Str.regexp_string("\n"), NewCompletions.detail(item.name.txt, item.contents)) |> String.concat("\n> "))
-  }) |> String.concat("\n");
+  if (completions == []) {
+    "🛑  no completions found"
+  } else {
+    completions |> List.map(((uri, item)) => {
+      item.name.txt
+      ++ "\n- path: " ++ uri
+      ++ "\n> " ++ (Str.split(Str.regexp_string("\n"), NewCompletions.detail(item.name.txt, item.contents)) |> String.concat("\n> "))
+    }) |> String.concat("\n");
+  }
 };
 
 /* let cases = 

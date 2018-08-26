@@ -158,7 +158,6 @@ type b = { person: A.a, age: float };
 let x = (v: B.b) => {
   v.person.n<*>
 };
-
 -->
 name
 - path: file:///path/to/A.re

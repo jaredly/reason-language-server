@@ -11,17 +11,38 @@ let tests: list((module Test)) = [
   (module TestReferences),
 ];
 
+let args = Array.to_list(Sys.argv);
+let (args, debug) = {
+  let rec loop = (items, ok, verbose) => switch items {
+    | ["-v" | "--verbose", ...rest] => loop(rest, ok, true)
+    | [one, ...rest] => loop(rest, [one, ...ok], verbose)
+    | [] => (ok, verbose)
+  };
+  loop(args |> List.rev, [], false)
+};
+
+/* print_endline(String.concat("--", Array.to_list(Sys.argv))); */
+
+let (suite, name) = switch (args) {
+  | [_] => (None, None)
+  | [_, suite] => (Some(suite), None)
+  | [_, suite, name] => (Some(suite), Some(name))
+  | _ => failwith("Invalid args")
+};
+
 Printexc.record_backtrace(true);
-let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
-Log.setLocation(logDest);
-/* Log.spamError := true; */
+if (debug) {
+  Log.spamError := true;
+};
 
 tests |. Belt.List.forEach(m => {
   Files.removeDeep(TestUtils.tmp);
   Files.mkdirp(TestUtils.tmp);
   module M = (val m);
+  if (suite == None || suite == Some(M.name)) {
   print_endline("## " ++ M.name);
-  let fileName = "./tests/" ++ M.name ++ ".txt";
-  let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput) |> String.concat("\n");
-  Files.writeFileExn(fileName, output);
+    let fileName = "./tests/" ++ M.name ++ ".txt";
+    let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput) |> String.concat("\n");
+    Files.writeFileExn(fileName, output);
+  }
 });

@@ -8,7 +8,7 @@ let getOutput = (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints) / 2;
-  package.localModules |. Belt.List.reverse |. Belt.List.forEach(((modname, _)) => {
+  package.localModules |. Belt.List.forEach(((modname, _)) => {
     let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
     let%opt_consume src = src;
     let%try_force result = State.getCompilationResult(Utils.toUri(src), state, ~package);

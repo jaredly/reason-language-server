@@ -69,7 +69,7 @@ let combinedWaypoints = (files, mainFile) => {
   let waypoints = waypoints |> List.map(((tag, offset, pos)) => (tag, (uriForName("Test.re"), offset, pos)));
   let (files, otherWaypoints) = extractAllWaypoints(files);
   let waypoints = waypoints @ otherWaypoints;
-  (files, text, waypoints)
+  (files |> List.rev, text, waypoints)
 };
 
 let getState = () => {
@@ -101,15 +101,14 @@ let getState = () => {
 
 let setUp = (files, text) => {
   let state = getState();
-  let package = getPackage([
-    ("Test", ("/tmp/.lsp-test/Test.cmt", "/path/to/Test.re")),
-    ...(files |> List.map(((name, _)) => (
+  let package = getPackage(
+    (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
       ("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", "/path/to/" ++ name)
-    )))
-  ]);
+    ))) @ [("Test", ("/tmp/.lsp-test/Test.cmt", "/path/to/Test.re"))]
+  );
 
-  files |> List.rev |> List.iter(((name, contents)) => {
+  files |> List.iter(((name, contents)) => {
     /* print_endline("Compiling " ++ name); */
     let moduleName = Filename.chop_extension(name);
     let uri = uriForName(name);
@@ -125,6 +124,11 @@ let setUp = (files, text) => {
       [tmp],
       ""
     );
+    switch result {
+      | AsYouType.SyntaxError(text, _, _) => failwith("Syntax error " ++ text)
+      | AsYouType.TypeError(text, _) => failwith("Type error " ++ text)
+      | _ => ()
+    };
     let moduleData = AsYouType.getResult(result);
     Hashtbl.replace(state.compiledDocuments, uri, result);
     Hashtbl.replace(state.lastDefinitions, uri, moduleData);
