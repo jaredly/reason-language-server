@@ -122,6 +122,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         pos,
         parts,
       );
+      /* TODO(#107): figure out why we're getting duplicates. */
+      let items = Utils.dedup(items);
       /* Log.log("Got items: " ++ string_of_int(List.length(items))); */
 
       List.map(items, ((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([

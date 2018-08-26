@@ -220,3 +220,15 @@ let showLocation = ({Location.loc_start, loc_end}) =>
 let joinLines = String.concat("\n");
 
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
+
+let dedup = items => {
+  let m = Hashtbl.create(List.length(items));
+  items |. Belt.List.keep(a => {
+    if (Hashtbl.mem(m, a)) {
+      false
+    } else {
+      Hashtbl.add(m, a, ());
+      true
+    }
+  })
+};
