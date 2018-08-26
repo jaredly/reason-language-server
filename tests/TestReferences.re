@@ -1,31 +1,34 @@
 
-let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
-Log.setLocation(logDest);
-
-Log.spamError := true;
-Printexc.record_backtrace(true);
-
+let name = "TestReferences";
 let showPos = ((l, c)) => string_of_int(l) ++ ", " ++ string_of_int(c);
 
-let testFile = "./tests/TestReferences.txt";
-let lines = Files.readFileExn(testFile) |> Utils.splitLines;
-let output = TestUtils.process(lines, (files, mainFile) => {
+let getOutput = (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
 
   let fileNames = files |. Belt.List.map(fst);
   let fileNames = ["Test.re", ...fileNames];
-  let fileData = fileNames |. Belt.List.map((name) => {
+  let fileData = fileNames |. Belt.List.reverse |. Belt.List.map((name) => {
+    /* print_endline("Check " ++ name); */
     let moduleName = Filename.chop_extension(name) |. String.capitalize;
     let uri = TestUtils.uriForName(name);
-    open Infix;
-    let%try_force {SharedTypes.file, extra} = State.getCompilationResult(uri, state, ~package) |> State.tryExtra;
+    let%try_force result = State.getCompilationResult(uri, state, ~package);
+    switch result {
+      | Success(_, {file, extra}) => {
+        Log.log(uri);
+        Log.log(SharedTypes.showExtra(extra));
 
-    print_newline();
-    Log.log(uri);
-    Log.log(SharedTypes.showExtra(extra));
+        (moduleName, (uri, file, extra))
+      }
+      | TypeError(text, _) => {
+        print_endline(text);
+        failwith("Local module failed to compile")
+      }
+      | SyntaxError(text, _, _) =>
+        print_endline(text);
+        failwith("Local module syntax error")
+    }
 
-    (moduleName, (uri, file, extra))
   });
 
   let allModules = fileData |. Belt.List.map(((name, _)) => name);
@@ -100,5 +103,4 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     }
   };
   num == 0 ? "NOPE" : loop(1) |> String.concat("\n")
-}) |> String.concat("\n");
-Files.writeFileExn(testFile, output);
+};

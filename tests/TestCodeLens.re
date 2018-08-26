@@ -2,7 +2,7 @@
 open Infix;
 open SharedTypes;
 
-Log.spamError := true;
+/* Log.spamError := true; */
 
 let getOutput = (files, text) => {
   /* let (text, offset, pos) = TestUtils.extractPosition(text); */
@@ -15,6 +15,4 @@ let getOutput = (files, text) => {
   }) |> String.concat("\n");
 };
 
-let testFile = "./tests/TestCodeLens.txt";
-let output = Files.readFileExn(testFile) |> Utils.splitLines |. TestUtils.process(getOutput) |> String.concat("\n");
-Files.writeFileExn(testFile, output);
+let name = "TestCodeLens";

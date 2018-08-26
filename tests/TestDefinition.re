@@ -1,32 +1,27 @@
 
-let logDest = Filename.concat(Filename.get_temp_dir_name(), "lsp-test.log");
-Log.setLocation(logDest);
 
-Log.spamError := true;
-Printexc.record_backtrace(true);
+let name = "TestDefinition";
 
 let showPos = ((l, c)) => string_of_int(l) ++ ", " ++ string_of_int(c);
 
-let testFile = "./tests/TestDefinition.txt";
-let lines = Files.readFileExn(testFile) |> Utils.splitLines;
-let output = TestUtils.process(lines, (files, mainFile) => {
+let getOutput = (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints) / 2;
-  package.localModules |. Belt.List.forEach(((modname, _)) => {
-      let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
-      let%opt_consume src = src;
-      let%try_force result = State.getCompilationResult(Utils.toUri(src), state, ~package);
-      switch result {
-        | Success(_, {extra}) => Log.log(SharedTypes.showExtra(extra));
-        | TypeError(text, _) => {
-          Log.log(text);
-          failwith("Local module failed to compile")
-        }
-        | SyntaxError(text, _, _) =>
-          Log.log(text);
-          failwith("Local module syntax error")
+  package.localModules |. Belt.List.reverse |. Belt.List.forEach(((modname, _)) => {
+    let%opt_consume (cmt, src) = Utils.maybeHash(package.pathsForModule, modname);
+    let%opt_consume src = src;
+    let%try_force result = State.getCompilationResult(Utils.toUri(src), state, ~package);
+    switch result {
+      | Success(_, {extra}) => Log.log(SharedTypes.showExtra(extra));
+      | TypeError(text, _) => {
+        print_endline(text);
+        failwith("Local module failed to compile")
       }
+      | SyntaxError(text, _, _) =>
+        print_endline(text);
+        failwith("Local module syntax error")
+    }
   });
   let process = i => {
       let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
@@ -60,5 +55,4 @@ let output = TestUtils.process(lines, (files, mainFile) => {
     [res, ...loop(i + 1)]
   };
   num == 0 ? "NOPE" : loop(1) |> String.concat("\n")
-}) |> String.concat("\n");
-Files.writeFileExn(testFile, output);
+};

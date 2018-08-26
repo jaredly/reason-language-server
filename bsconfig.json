@@ -30,16 +30,7 @@
     "main-module": "Ppx_Monads"
   }, {
     "backend": "native",
-    "main-module": "TestCompletions"
-  }, {
-    "backend": "native",
-    "main-module": "TestCodeLens"
-  }, {
-    "backend": "native",
-    "main-module": "TestDefinition"
-  }, {
-    "backend": "native",
-    "main-module": "TestReferences"
+    "main-module": "AllTests"
   }],
   "refmt": 3
 }
