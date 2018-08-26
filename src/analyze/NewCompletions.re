@@ -173,6 +173,14 @@ lower.Upper.suffix -> `AbsAttribute([Upper], suffix)
 Upper.lower -> `Normal([Upper], lower)
 */
 
+let rec pathFromTokenParts = items => {
+  switch items {
+    | [] => assert(false)
+    | [one] => Tip(one)
+    | [one, ...rest] => Nested(one, pathFromTokenParts(rest))
+  }
+};
+
 let determineCompletion = items => {
   let rec loop = (offset, items) =>
     switch (items) {
@@ -455,18 +463,9 @@ let attributeCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
 
 TODO filter out things that are defined after the current position
 
- */
+*/
 
-let get =
-    (~full, ~package, ~opens, ~getModule, ~allModules, pos, tokenParts) => {
-  Log.log(
-    "Opens folkz > "
-    ++ string_of_int(List.length(opens))
-    ++ " "
-    ++ String.concat(" ... ", opens),
-  );
-  let env = Query.fileEnv(full.file);
-
+let resolveRawOpens = (~env, ~getModule, ~rawOpens, ~package) => {
   let packageOpens = ["Pervasives", ...package.TopTypes.opens];
   Log.log("Package opens " ++ String.concat(" ", packageOpens));
 
@@ -478,11 +477,54 @@ let get =
           Belt.List.keepMap(packageOpens, getModule),
           Query.fileEnv,
         ),
-      opens
+      rawOpens
       |> List.map(Str.split(Str.regexp_string(".")))
       |> List.map(pathOfModuleOpen),
       ~getModule,
     );
+
+  opens
+};
+
+/** This function should live somewhere else */
+let findDeclaredValue =
+    (
+      ~full,
+      ~package,
+      /* the text that we found e.g. open A.B.C, this is "A.B.C" */
+      ~rawOpens,
+      ~getModule,
+      ~allModules,
+      pos,
+      tokenParts,
+    ) => {
+  let env = Query.fileEnv(full.file);
+
+  let opens = resolveRawOpens(~env, ~getModule, ~rawOpens, ~package);
+
+  let path = pathFromTokenParts(tokenParts);
+
+  let%opt (env, suffix) = getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
+
+  let%opt stamp = Utils.maybeHash(env.exported.values, suffix);
+  Utils.maybeHash(env.file.stamps.values, stamp);
+};
+
+
+let get =
+    (~full, ~package, ~rawOpens, ~getModule, ~allModules, pos, tokenParts) => {
+  Log.log(
+    "Opens folkz > "
+    ++ string_of_int(List.length(rawOpens))
+    ++ " "
+    ++ String.concat(" ... ", rawOpens),
+  );
+  let env = Query.fileEnv(full.file);
+
+  let packageOpens = ["Pervasives", ...package.TopTypes.opens];
+  Log.log("Package opens " ++ String.concat(" ", packageOpens));
+
+  let opens = resolveRawOpens(~env, ~getModule, ~rawOpens, ~package);
   Log.log(
     "Opens nows "
     ++ string_of_int(List.length(opens))
@@ -530,7 +572,6 @@ let get =
     locallyDefinedValues @ valuesFromOpens @ localModuleNames;
   | multiple =>
     open Infix;
-    let env = Query.fileEnv(full.file);
     Log.log("Completing for " ++ String.concat("<.>", multiple));
 
     switch (determineCompletion(multiple)) {

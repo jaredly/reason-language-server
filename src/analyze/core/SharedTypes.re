@@ -111,6 +111,7 @@ module Module = {
     values: namedStampMap,
     modules: namedStampMap,
     moduleTypes: namedStampMap,
+    /* constructors: namedStampMap, */
     /* classes: namedStampMap,
     classTypes: namedStampMap, */
   };
@@ -119,6 +120,7 @@ module Module = {
     values: Hashtbl.create(10),
     modules: Hashtbl.create(10),
     moduleTypes: Hashtbl.create(10),
+    /* constructors: Hashtbl.create(10), */
   };
   type item =
   | Value(Value.t)

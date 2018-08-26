@@ -14,13 +14,13 @@ let getOutput = (files, text) => {
     print_endline("Complete: " ++ string);
     let parts = Str.split(Str.regexp_string("."), string);
     let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
-    let opens = PartialParser.findOpens(text, offset);
+    let rawOpens = PartialParser.findOpens(text, offset);
     let useMarkdown = !state.settings.clientNeedsPlainText;
     let allModules = package.localModules |> List.map(fst);
     Log.log(showExtra(full.extra));
     NewCompletions.get(
       ~full,
-      ~opens,
+      ~rawOpens,
       ~getModule=name => {
         Log.log("Getting module " ++ name);
         State.fileForModule(state, ~package, name) |> logIfAbsent("Unable to find module " ++ name);

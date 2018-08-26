@@ -44,18 +44,53 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = State.getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
-    let%try {extra} = State.getDefinitionData(uri, state, ~package);
+    let%try full = State.getDefinitionData(uri, state, ~package);
+    let {SharedTypes.file, extra} = full;
     let position = Utils.cmtLocFromVscode(position);
 
     {
       let%opt (commas, labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
+      Log.log("Signature help lident " ++ lident);
       let lastPos = i + String.length(lident) - 1;
       let%opt pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode;
-      let%opt (_, loc) = References.locForPos(~extra, pos);
-      let%opt typ = switch loc {
-        | Typed(t, _) => Some(t)
-        | _ => None
+      let%opt (typ, hoverText) = {
+        switch (References.locForPos(~extra, pos)) {
+        | None =>
+          let tokenParts = Utils.split_on_char('.', lident);
+          let rawOpens = PartialParser.findOpens(text, offset);
+          let allModules = List.map(package.localModules, fst) @ List.map(package.dependencyModules, fst);
+          let%opt declared = NewCompletions.findDeclaredValue(
+            ~full,
+            ~package,
+            ~rawOpens,
+            ~getModule=State.fileForModule(state, ~package),
+            ~allModules,
+            pos,
+            tokenParts
+          );
+          let typ = declared.contents.typ;
+          Some((typ, declared.docstring |? "No docs"))
+        | Some((_, loc)) =>
+          let%opt typ =
+            switch (loc) {
+            | Typed(t, _) => Some(t)
+            | _ => None
+            };
+          /* TODO fifgure out why vscode isn't showing this documentation */
+          let%opt hoverText =
+            Hover.newHover(
+              ~rootUri=state.rootUri,
+              ~file,
+              ~extra,
+              ~getModule=State.fileForModule(state, ~package),
+              ~markdown=! state.settings.clientNeedsPlainText,
+              loc,
+            );
+          Some((typ, hoverText));
+        };
       };
+      Log.log("Found a type signature");
+      /* BuildSystem.BsbNative() */
       /* TODO move this into ProcessExtra or somewheres */
       let rec loop = t => switch (t.Types.desc) {
         | Types.Tsubst(t)
@@ -67,12 +102,17 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
       let (args, rest) = loop(typ);
       let%opt args = args == [] ? None : Some(args);
+      let printedType = PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString;
       open Rpc.J;
       Some(Ok((state, o([
         ("activeParameter", i(commas)),
         ("signatures", l([
           o([
-            ("label", s(PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString )),
+            ("label", s(printedType)),
+            ("documention", o([
+              ("kind", s("markdown")),
+              ("value", s(hoverText))
+            ])),
             ("parameters", l(args |. List.map(((label, argt)) => {
               o([
                 ("label", s(label)),
@@ -108,7 +148,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let parts = Str.split(Str.regexp_string("."), string);
       let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
       let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
-      let opens = PartialParser.findOpens(text, offset);
+      let rawOpens = PartialParser.findOpens(text, offset);
 
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let useMarkdown = !state.settings.clientNeedsPlainText;
@@ -116,7 +156,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let items = NewCompletions.get(
         ~full={file, extra},
         ~package,
-        ~opens,
+        ~rawOpens,
         ~getModule=State.fileForModule(state, ~package),
         ~allModules,
         pos,
@@ -124,7 +164,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       );
       /* TODO(#107): figure out why we're getting duplicates. */
       let items = Utils.dedup(items);
-      /* Log.log("Got items: " ++ string_of_int(List.length(items))); */
 
       List.map(items, ((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
         ("label", s(name)),
@@ -134,11 +173,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
         s((docstring |? "No docs") ++ "\n\n" ++
         uri ++ ":" ++ string_of_int(pos_lnum))),
-        /* docstring |?>> Protocol.contentKind(useMarkdown) |? Json.Null), */
-        /* ("data", switch kind {
-          | RootModule(cmt, src) => o([("cmt", s(cmt)), ("name", s(label)), ...(fold(src, [], src => [("src", s(src))]))])
-          | _ => null
-          }) */
       ])) |. Ok;
     }
     };
