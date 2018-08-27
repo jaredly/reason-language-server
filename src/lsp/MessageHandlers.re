@@ -109,7 +109,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ("signatures", l([
           o([
             ("label", s(printedType)),
-            ("documention", o([
+            ("documentation", o([
               ("kind", s("markdown")),
               ("value", s(hoverText))
             ])),
