@@ -1,3 +1,12 @@
+let%opt.thing awesome = 10;
+let%o awesome = 10;
+let%oo awesome = 10;
+
+let rec x = 10;
+
+let x = 10
+and y = 30;
+
 let someLongName = 10;
 
 %bs.raw "import things from 'hello'";
