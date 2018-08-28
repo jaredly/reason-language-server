@@ -101,16 +101,25 @@ let canRead = desc => {
 let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialState, ~capabilities) => {
   let stdin_descr = Unix.descr_of_in_channel(stdin);
 
-  let rec loop = state => {
+  let rec loop = (~isShuttingDown, state) => {
     let state = tick(state);
     if (canRead(stdin_descr)) {
       switch (Rpc.readMessage(log, stdin)) {
-      | Message(id, method, params) => loop(handleMessage(log, messageHandlers, id, method, params, state))
-      | Notification("exit", _) => log("Got exit! Terminating loop")
-      | Notification(method, params) => loop(handleNotification(log, notificationHandlers, method, params, state))
+      | Message(id, "shutdown", params) =>
+        Rpc.sendMessage(log, stdout, id, Json.Null);
+        loop(~isShuttingDown=true, state)
+      | Message(id, method, params) => loop(~isShuttingDown, handleMessage(log, messageHandlers, id, method, params, state))
+      | Notification("exit", _) =>
+        if (isShuttingDown) {
+          log("Got exit! Terminating loop")
+        } else {
+          log("Got exit without shutdown. Erroring out");
+          exit(1)
+        }
+      | Notification(method, params) => loop(~isShuttingDown, handleNotification(log, notificationHandlers, method, params, state))
       };
     } else {
-      loop(state);
+      loop(~isShuttingDown, state);
     };
   };
 
@@ -120,7 +129,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
       switch (getInitialState(params)) {
       | Ok(state) =>
         Rpc.sendMessage(log, stdout, id, Json.Object([("capabilities", capabilities(params))]));
-        loop(state);
+        loop(~isShuttingDown=false, state);
       | Error(string) => Rpc.sendError(log, stdout, id, Json.String(string))
       | exception e =>
         Log.log("Failed to get initial state");
