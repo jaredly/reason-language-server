@@ -34,6 +34,7 @@ let getOutput = (files, mainFile) => {
           ~package,
           ~file=file,
           ~extra=extra,
+          ~getUri=State.fileForUri(state, ~package),
           ~getModule=State.fileForModule(state, ~package),
           cpos,
         )

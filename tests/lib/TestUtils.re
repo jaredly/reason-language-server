@@ -2,11 +2,13 @@ let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
+  let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
     localModules: localModules |. Belt.List.map(fst),
     dependencyModules: [],
-    pathsForModule: State.makePathsForModule(localModules, []),
+    pathsForModule,
+    nameForPath,
     buildSystem: BuildSystem.Bsb("3.2.0"),
     buildCommand: None,
     interModuleDependencies: Hashtbl.create(0),
@@ -105,12 +107,12 @@ let makeFilesList = files => {
   files |. List.forEach(((name, _)) => {
     let mname = Filename.chop_extension(name);
     if (Filename.check_suffix(name, "i")) {
-      Hashtbl.add(interfaces, mname, name)
+      Hashtbl.replace(interfaces, mname, name)
     }
   });
   let srcBase = "/path/to/";
   let cmtBase = "/tmp/.lsp-test/";
-  files |. List.keepMap(((name, _)) => {
+  let normals = files |. List.keepMap(((name, _)) => {
     let mname = Filename.chop_extension(name);
     if (!Filename.check_suffix(name, "i")) {
       let intf = Utils.maybeHash(interfaces, mname);
@@ -118,13 +120,15 @@ let makeFilesList = files => {
       Some((mname, switch intf {
         | None => TopTypes.Impl(cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
         | Some(iname) =>
-        print_endline("Ok " ++ iname);
         TopTypes.IntfAndImpl(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname), cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
       }))
     } else {
       None
     }
-  }) |. List.concat(Hashtbl.fold((mname, iname, res) => [(mname, TopTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res], interfaces, []))
+  });
+  normals |. List.concat(Hashtbl.fold((mname, iname, res) =>  {
+  [(mname, TopTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res]
+}, interfaces, []))
 };
 
 let setUp = (files, text) => {

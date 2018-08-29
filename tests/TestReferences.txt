@@ -69,17 +69,20 @@ let m = Lib.<t1>A(2);
 
 === Cross-module with interface
 --- Lib.re
-let <t1>a = 30;
-let b = <t1>a;
+let <t1><c2>a = 30;
+let b = <t1><t2>a;
 --- Lib.rei
-let <t1>a: int
+let <t1><t2>a: int
 ---
-let m = Lib.<c1>a;
+let m = Lib.<c1><t2>a;
 
 -->
   1: 🔴 FAIL
     missing reference - file:///path/to/Lib.re 20 (2, 8)
     missing reference - file:///path/to/Lib.re 4 (1, 4)
+
+  2: 🔴 FAIL
+    missing reference - file:///path/to/Lib.rei 4 (1, 4)
 
 
 === Opens

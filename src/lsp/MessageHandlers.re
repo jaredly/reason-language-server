@@ -29,6 +29,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           ~package,
           ~file=data.file,
           ~extra=data.extra,
+          ~getUri=State.fileForUri(state, ~package),
           ~getModule=State.fileForModule(state, ~package),
           position,
         );

@@ -101,16 +101,16 @@ let isSourceFile = name =>
 
 let compiledNameSpace = name => Str.split(Str.regexp_string("-"), name) |> List.map(String.capitalize) |> String.concat("");
 
-let compiledBase = (~namespace, name) =>
+let compiledBaseName = (~namespace, name) =>
   Filename.chop_extension(name)
   ++ (switch namespace { | None => "" | Some(n) => "-" ++ compiledNameSpace(n) });
 
 let cmtName = (~namespace, name) =>
-  compiledBase(~namespace, name)
+  compiledBaseName(~namespace, name)
   ++ (name.[String.length(name) - 1] == 'i' ? ".cmti" : ".cmt");
 
 let cmiName = (~namespace, name) =>
-  compiledBase(~namespace, name) ++ ".cmi";
+  compiledBaseName(~namespace, name) ++ ".cmi";
 
 let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize;
 let namespacedName = (~namespace, x) => getName(x) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
@@ -159,17 +159,20 @@ let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) =>
   });
 };
 
+
+
 /**
  * returns a list of (absolute path to cmt(i), relative path from base to source file)
  */
 let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase) => {
-  sourceDirectories
+  let files = sourceDirectories
   |> List.map(Infix.fileConcat(root))
   |> ifDebug(debug, "Source directories", String.concat(" - "))
   |> List.map(name => Files.collect(name, isSourceFile))
   |> List.concat
-  |> ifDebug(debug, "Source files found", String.concat(" : "))
-  |> filterDuplicates
+  |> ifDebug(debug, "Source files found", String.concat(" : "));
+
+  /* |> filterDuplicates
   |> Utils.filterMap(path => {
     let rel = Files.relpath(root, path);
     ifOneExists([
@@ -180,7 +183,75 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
   |> List.filter(((full, rel)) => Files.exists(full))
   /* TODO more than just Impl() */
-  |> List.map(((cmt, src)) => (getName(src), TopTypes.Impl(cmt, Some(src))))
+  |> List.map(((cmt, src)) => (getName(src), TopTypes.Impl(cmt, Some(src)))) */
+  let interfaces = Hashtbl.create(100);
+  files |> List.iter(path => if (
+    Filename.check_suffix(path, ".rei")
+    || Filename.check_suffix(path, ".mli")
+    ) {
+      Log.log("Adding intf " ++ path);
+    Hashtbl.replace(interfaces, getName(path), path)
+  });
+
+  let normals = files |. Belt.List.keepMap(path => {
+    if (
+      Filename.check_suffix(path, ".re")
+      || Filename.check_suffix(path, ".rel")
+      || Filename.check_suffix(path, ".ml")
+    ) {
+      let mname = getName(path);
+      let intf = Utils.maybeHash(interfaces, mname);
+      Hashtbl.remove(interfaces, mname);
+      let base = compiledBaseName(~namespace, Files.relpath(root, path));
+      switch intf {
+        | Some(intf) =>
+          let cmti = compiledBase /+ base ++ ".cmti";
+          let cmi = compiledBase /+ base ++ ".cmi";
+          let cmt = compiledBase /+ base ++ ".cmt";
+          if (Files.exists(cmti)) {
+            if (Files.exists(cmt)) {
+              Log.log("Intf and impl " ++ cmti ++ " " ++ cmt);
+              Some((mname, TopTypes.IntfAndImpl(cmti, Some(intf), cmt, Some(path))))
+            } else {
+              Log.log("Just intf " ++ cmti);
+              Some((mname, Intf(cmti, Some(intf))))
+            }
+          } else if (Files.exists(cmi)) {
+              Log.log("Just intf cmi " ++ cmi);
+            Some((mname, Intf(cmi, Some(intf))))
+          } else {
+            None
+          }
+        | None =>
+        Log.log("No intf " ++ path);
+          let cmi = compiledBase /+ base ++ ".cmi";
+          let cmt = compiledBase /+ base ++ ".cmt";
+          if (Files.exists(cmt)) {
+              Some((mname, Impl(cmt, Some(path))))
+          } else if (Files.exists(cmi)) {
+            Some((mname, Impl(cmi, Some(path))))
+          } else {
+            None
+          }
+      }
+    } else {
+      None
+    }
+  });
+
+  normals |. Belt.List.concat(Hashtbl.fold((mname, intf, res) =>  {
+    let base = compiledBaseName(~namespace, Files.relpath(root, intf));
+    Log.log("Extra intf " ++ intf);
+    let cmti = compiledBase /+ base ++ ".cmti";
+    let cmi = compiledBase /+ base ++ ".cmi";
+    if (Files.exists(cmti)) {
+      [(mname, TopTypes.Intf(cmti, Some(intf))), ...res]
+    } else if (Files.exists(cmi)) {
+      [(mname, Intf(cmi, Some(intf))), ...res]
+    } else {
+      res
+    }
+  }, interfaces, []))
 };
 
 /* let loadStdlib = stdlib => {

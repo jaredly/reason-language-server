@@ -168,6 +168,14 @@ let resolveFromCompilerPath = (~env, ~getModule, path) => {
   }
 };
 
+let declaredForExportedTip = (~stamps: SharedTypes.stamps, ~exported: SharedTypes.Module.exported, name, tip) => switch tip {
+  | Value => hashFind(exported.values, name) |?> stamp => hashFind(stamps.values, stamp) |?>> x => {...x, contents: ()}
+  | Attribute(_) | Constructor(_)
+  | Type => hashFind(exported.types, name) |?> stamp => hashFind(stamps.types, stamp) |?>> x => {...x, contents: ()}
+  | Module => hashFind(exported.modules, name) |?> stamp => hashFind(stamps.modules, stamp) |?>> x => {...x, contents: ()}
+  | ModuleType => hashFind(exported.moduleTypes, name) |?> stamp => hashFind(stamps.moduleTypes, stamp) |?>> x => {...x, contents: ()}
+};
+
 let declaredForTip = (~stamps, stamp, tip) => switch tip {
   | Value => hashFind(stamps.values, stamp) |?>> x => {...x, contents: ()}
   | Attribute(_) | Constructor(_)

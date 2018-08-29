@@ -21,18 +21,28 @@ module Show = {
 
 let makePathsForModule = (localModules: list((string, TopTypes.paths)), dependencyModules: list((string, TopTypes.paths))) => {
   let pathsForModule = Hashtbl.create(30);
+  let nameForPath = Hashtbl.create(30);
+  let add = (name, paths) => switch paths {
+    | TopTypes.Intf(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
+    | TopTypes.Impl(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
+    | TopTypes.IntfAndImpl(_, intf, _, impl) =>
+        intf |?< path => Hashtbl.replace(nameForPath, path, name);
+        impl |?< path => Hashtbl.replace(nameForPath, path, name);
+    | _ => ()
+  };
+
   dependencyModules |> List.iter(((modName, paths)) => {
-    /* Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? "")); */
-    /* TODO do this right */
+    add(modName, paths);
     Hashtbl.replace(pathsForModule, modName, paths)
   });
 
   localModules |> List.iter(((modName, paths)) => {
+    add(modName, paths);
     /* Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source); */
     Hashtbl.replace(pathsForModule, modName, paths)
   });
 
-  pathsForModule
+  (pathsForModule, nameForPath)
 };
 
 let rec getAffectedFiles = (root, lines) => switch lines {
@@ -133,7 +143,7 @@ let newBsPackage = (state, rootPath) => {
       | None => name
       | Some(n) => name ++ "-" ++ n }, paths));
   
-  let pathsForModule = makePathsForModule(localModules, dependencyModules);
+  let (pathsForModule, nameForPath) = makePathsForModule(localModules, dependencyModules);
 
   let opens = switch (namespace) {
     | None => []
@@ -222,6 +232,7 @@ let newBsPackage = (state, rootPath) => {
     localModules: localModules |. Belt.List.map(fst),
     dependencyModules: dependencyModules |. Belt.List.map(fst),
     pathsForModule,
+    nameForPath,
     buildSystem,
     buildCommand: Some((buildCommand, rootPath)),
     opens,
@@ -350,7 +361,8 @@ let newJbuilderPackage = (state, rootPath) => {
   |> List.concat;
 
   let dependencyModules = List.concat(otherFiles) @ dependencyModules;
-  let pathsForModule = makePathsForModule(localModules, dependencyModules);
+  /* let pathsForModule = makePathsForModule(localModules, dependencyModules); */
+  let (pathsForModule, nameForPath) = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", Impl(compiledBase /+ libraryName ++ "__.cmt", None));
@@ -376,6 +388,7 @@ let newJbuilderPackage = (state, rootPath) => {
     interModuleDependencies,
     dependencyModules: dependencyModules |. Belt.List.map(fst),
     pathsForModule,
+    nameForPath,
     buildSystem,
     buildCommand,
     /* TODO check if there's a module called that */
@@ -577,10 +590,11 @@ let refmtForUri = (uri, package) =>
   };
 
 open Infix;
-let getCompilationResult = (uri, state, ~package) => {
+let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
     Belt.Result.Ok(Hashtbl.find(state.compiledDocuments, uri))
   } else {
+    let%try path = Utils.parseUri(uri) |> Result.orError("Not a uri");
     let text = Hashtbl.mem(state.documentText, uri) ? {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
       text
@@ -588,7 +602,8 @@ let getCompilationResult = (uri, state, ~package) => {
       let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
-    let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.getName;
+    let%try moduleName = Utils.maybeHash(package.nameForPath, path) |> Result.orError("Can't find module name");
+    /* let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.namespacedName(~namespace=package.namespace); */
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;

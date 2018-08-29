@@ -260,13 +260,50 @@ let rec definition = (~file, ~getModule, stamp, tip) => {
   };
 };
 
-let definitionForLoc = (~package, ~file, ~getModule, loc) => {
+let definitionForLoc = (~package: TopTypes.package, ~file, ~getUri, ~getModule, loc) => {
   switch (loc) {
+    | Loc.Typed(_, Definition(stamp, tip)) => {
+      Log.log("Trying to find a defintion for a definition");
+      let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
+      Log.log("Declared");
+      if (declared.exported) {
+        Log.log("exported, looking for " ++ file.moduleName);
+        let%opt paths = Utils.maybeHash(package.pathsForModule, file.moduleName);
+        Log.log("paths for " ++ file.moduleName);
+        switch paths {
+          | TopTypes.IntfAndImpl(_, Some(intf), _, Some(impl)) => {
+              Log.log("Have both!!");
+            let intf = Utils.toUri(intf);
+            let impl = Utils.toUri(impl);
+            if (intf == file.uri) {
+              let%opt (file, extra) = getUri(impl) |> Result.toOptionAndLog;
+              let%opt declared = Query.declaredForExportedTip(~stamps=file.stamps, ~exported=file.contents.exported, declared.name.txt, tip);
+              let loc = validateLoc(declared.name.loc, declared.extentLoc);
+              Some((file.uri, loc))
+              /* None */
+            } else {
+              let%opt (file, extra) = getUri(intf) |> Result.toOptionAndLog;
+              let%opt declared = Query.declaredForExportedTip(~stamps=file.stamps, ~exported=file.contents.exported, declared.name.txt, tip);
+              let loc = validateLoc(declared.name.loc, declared.extentLoc);
+              Some((file.uri, loc))
+              /* None */
+            }
+          }
+          | Intf(_) => {
+            Log.log("Intf");
+            None
+          }
+          | _ => None
+        }
+      } else {
+        None
+      }
+    }
     | Loc.Explanation(_)
-    | Typed(_, NotFound | Definition(_, _))
+    | Typed(_, NotFound)
     | Module(NotFound | Definition(_, _))
     | TypeDefinition(_, _, _)
-  | Constant(_)
+    | Constant(_)
     | Open => None
     | TopLevelModule(name) =>
       maybeLog("Toplevel " ++ name);
@@ -300,8 +337,8 @@ let definitionForLoc = (~package, ~file, ~getModule, loc) => {
   }
 };
 
-let definitionForPos = (~package, ~file, ~extra, ~getModule, pos) => {
+let definitionForPos = (~package, ~file, ~extra, ~getUri, ~getModule, pos) => {
   let%opt (_, loc) = locForPos(~extra, pos);
   maybeLog("Got a loc for pos");
-  definitionForLoc(~package, ~file, ~getModule, loc)
+  definitionForLoc(~package, ~file, ~getUri, ~getModule, loc)
 };

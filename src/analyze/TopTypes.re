@@ -39,6 +39,7 @@ type package = {
   interModuleDependencies: Hashtbl.t(moduleName, list(moduleName)),
   dependencyModules: list(moduleName),
   pathsForModule: Hashtbl.t(moduleName, paths),
+  nameForPath: Hashtbl.t(uri, moduleName),
 
   opens: list(string),
 
