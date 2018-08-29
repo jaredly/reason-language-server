@@ -58,9 +58,11 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
         PrintType.default.expr(PrintType.default, t)
         |> PrintType.prettyString;
 
-      let typeString = markdown
-        ? "```\n" ++ typeString ++ "\n```"
-        : typeString;
+      let codeBlock = t => markdown
+        ? "```\n" ++ t ++ "\n```"
+        : t;
+
+      let typeString = codeBlock(typeString);
 
       Some({
         let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
@@ -78,7 +80,16 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
             [Some(typeString), docstring, Some(uri)]
           }
           | `Constructor({name: {txt}, args, res}) => {
-            [Some(typeString), docstring, Some(uri)]
+            [Some(typeString),
+            Some(codeBlock(txt ++ "(" ++ (args |. Belt.List.map(((t, _)) => {
+              let typeString = 
+                PrintType.default.expr(PrintType.default, t)
+                |> PrintType.prettyString;
+              typeString
+
+            }) |> String.concat(", ")) ++ ")")),
+            docstring,
+            Some(uri)]
           }
           | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
             [Some(typeString), docstring, Some(uri)]
