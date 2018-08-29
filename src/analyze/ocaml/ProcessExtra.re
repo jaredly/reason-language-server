@@ -411,6 +411,9 @@ module F = (Collector: {
     | Texp_record(items, _) => {
       addForRecord(expression.exp_type, items);
     }
+    | Texp_constant(constant) => {
+      addLocation(expression.exp_loc, Loc.Constant(constant));
+    }
     /* Skip unit and list literals */
     | Texp_construct({txt: Lident("()" | "::"), loc}, _, args) when loc.loc_end.pos_cnum - loc.loc_start.pos_cnum != 2 =>
       ()

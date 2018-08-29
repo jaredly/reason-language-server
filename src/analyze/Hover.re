@@ -11,6 +11,17 @@ let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
     | Module(_) => Some("its a module")
     | TopLevelModule(name) => Some("File: " ++ name)
     | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
+    | Constant(t) => {
+      Some(switch t {
+      | Const_int(_) => "int"
+      | Const_char(_) => "char"
+      | Const_string(_) => "string"
+      | Const_float(_) => "float"
+      | Const_int32(_) => "int32"
+      | Const_int64(_) => "int64"
+      | Const_nativeint(_) => "int"
+      })
+    }
     | Typed(t, _) => {
       let typeString = 
         PrintType.default.expr(PrintType.default, t)

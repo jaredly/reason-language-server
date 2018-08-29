@@ -221,6 +221,7 @@ module Loc = {
   | Definition(int, tip);
   type t =
   | Typed(Types.type_expr, typed)
+  | Constant(Asttypes.constant)
   | Module(typed)
   | TopLevelModule(string)
   | TypeDefinition(string, Types.type_declaration, int)

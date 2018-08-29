@@ -32,6 +32,7 @@ let local = (~file, ~extra, loc) =>
   | Typed(_, NotFound)
   | Module(NotFound)
   | TopLevelModule(_)
+  | Constant(_)
   | Open => None
   | TypeDefinition(_, _, stamp) => {
     extra.internalReferences |. Query.hashFind(stamp)
@@ -79,6 +80,7 @@ let definedForLoc = (~file, ~getModule, loc) => {
   | Typed(_, NotFound)
   | Module(NotFound)
   | TopLevelModule(_)
+  | Constant(_)
   | Open => None
   | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
   | Module(LocalReference(stamp, tip) | Definition(stamp, tip)) =>
@@ -141,6 +143,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
     | Typed(_, NotFound)
     | Module(NotFound)
     | TopLevelModule(_)
+    | Constant(_)
     | Open => Result.Error("Not a valid loc")
     | TypeDefinition(_, _, stamp) => {
       forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> Result.orError("Could not get for local stamp")
@@ -252,6 +255,7 @@ let definitionForLoc = (~package, ~file, ~getModule, loc) => {
     | Typed(_, NotFound | Definition(_, _))
     | Module(NotFound | Definition(_, _))
     | TypeDefinition(_, _, _)
+    | Constant(_)
     | Open => None
     | TopLevelModule(name) =>
       maybeLog("Toplevel " ++ name);
