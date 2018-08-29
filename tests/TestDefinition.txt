@@ -1,3 +1,14 @@
+=== Cross-module with interface
+--- Lib.re
+let a = 30;
+let b = a;
+--- Lib.rei
+let <t1>a: int
+---
+let m = Lib.<c1>a;
+-->
+1: PASS
+
 === Kitchen sink
 --- Lib.re
 type <t7>record = {

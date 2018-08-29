@@ -99,13 +99,43 @@ let getState = () => {
   };
 };
 
+let makeFilesList = files => {
+  open Belt;
+  let interfaces = Hashtbl.create(10);
+  files |. List.forEach(((name, _)) => {
+    let mname = Filename.chop_extension(name);
+    if (Filename.check_suffix(name, "i")) {
+      Hashtbl.add(interfaces, mname, name)
+    }
+  });
+  let srcBase = "/path/to/";
+  let cmtBase = "/tmp/.lsp-test/";
+  files |. List.keepMap(((name, _)) => {
+    let mname = Filename.chop_extension(name);
+    if (!Filename.check_suffix(name, "i")) {
+      let intf = Utils.maybeHash(interfaces, mname);
+      Hashtbl.remove(interfaces, mname);
+      Some((mname, switch intf {
+        | None => TopTypes.Impl(cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
+        | Some(iname) =>
+        print_endline("Ok " ++ iname);
+        TopTypes.IntfAndImpl(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname), cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
+      }))
+    } else {
+      None
+    }
+  }) |. List.concat(Hashtbl.fold((mname, iname, res) => [(mname, TopTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res], interfaces, []))
+};
+
 let setUp = (files, text) => {
   let state = getState();
   let package = getPackage(
-    (files |> List.map(((name, _)) => (
+    /* (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
       TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
-    ))) @ [("Test", Impl("/tmp/.lsp-test/Test.cmt", Some("/path/to/Test.re")))]
+    ))) */
+    makeFilesList(files)
+    @ [("Test", Impl("/tmp/.lsp-test/Test.cmt", Some("/path/to/Test.re")))]
   );
 
   files |> List.iter(((name, contents)) => {
