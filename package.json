@@ -9,6 +9,7 @@
     "watch": "bsb -make-world -backend native -w",
     "watch:byte": "bsb -make-world -backend bytecode -w",
     "package": "npm run build && cp lib/bs/native/bin.native editor-extensions/vscode",
+    "vsce": "cd editor-extensions/vscode && vsce package",
     "zip": "./release.sh",
     "package:linux": "cp lib/bs/native/bin.native editor-extensions/vscode/bin.native.linux; cd editor-extensions/vscode; vsce package",
     "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe editor-extensions/vscode & chdir editor-extensions/vscode & vsce package",

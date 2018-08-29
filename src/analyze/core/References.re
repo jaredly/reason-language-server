@@ -26,7 +26,10 @@ let locForPos = (~extra, pos) => {
   });
 };
 
-let local = (~file, ~extra, loc) =>
+/** Other locations *within this file* that refer to the same thing.
+ *
+ * Useful for "highlight" stuff. */
+let localReferencesForLoc = (~file, ~extra, loc) =>
   switch (loc) {
   | Loc.Explanation(_)
   | Typed(_, NotFound)
@@ -137,7 +140,7 @@ let forLocalStamp = (~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, t
   Some([(file.uri, local), ...externals])
 };
 
-let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
+let allReferencesForLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
   switch (loc) {
     | Loc.Explanation(_)
     | Typed(_, NotFound)
@@ -170,7 +173,7 @@ let forLoc = (~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
 let forPos = (~file, ~extra, pos) => {
   let%opt (_, loc) = locForPos(~extra, pos);
   maybeLog("Got a loc for pos");
-  let%opt refs = local(~file, ~extra, loc);
+  let%opt refs = localReferencesForLoc(~file, ~extra, loc);
   Some(refs)
 };
 

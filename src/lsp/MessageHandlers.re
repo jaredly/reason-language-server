@@ -231,7 +231,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      let%opt allReferences = References.forLoc(
+      let%opt allReferences = References.allReferencesForLoc(
         ~file,
         ~extra,
         ~allModules=package.localModules,
@@ -270,7 +270,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Infix;
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
-      let%opt allReferences = References.forLoc(
+      let%opt allReferences = References.allReferencesForLoc(
         ~file,
         ~extra,
         ~allModules=package.localModules,
