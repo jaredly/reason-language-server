@@ -67,6 +67,19 @@ let m = Lib.<t1>A(2);
 -->
   1: ✅ PASS
 
+=== Cross-module with interface
+--- Lib.re
+let <t1>a = 30
+--- Lib.rei
+let <t1>a: int
+---
+let m = Lib.<c1>a;
+
+-->
+  1: 🔴 FAIL
+    missing reference - file:///path/to/Lib.re 4 (1, 4)
+
+
 === Opens
 module Lib = {
   module M = {
