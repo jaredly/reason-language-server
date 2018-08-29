@@ -155,7 +155,7 @@ let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) =>
     let modName = getName(path);
     let compiled = directory /+ path;
     let source = Utils.find(name => compiledTransform(getName(name)) == modName ? Some(sourceBase /+ name) : None, sources);
-    (modName, (compiled, source))
+    (modName, TopTypes.Impl(compiled, source))
   });
 };
 
@@ -179,12 +179,14 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   })
   |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
   |> List.filter(((full, rel)) => Files.exists(full))
+  /* TODO more than just Impl() */
+  |> List.map(((cmt, src)) => (getName(src), TopTypes.Impl(cmt, Some(src))))
 };
 
-let loadStdlib = stdlib => {
+/* let loadStdlib = stdlib => {
   collectFiles(stdlib)
   |> List.filter(((_, (cmt, src))) => Files.exists(cmt))
-};
+}; */
 
 let needsCompilerLibs = config => {
   config |> Json.get("ocaml-dependencies") |?> Json.array |? [] |> optMap(Json.string) |> List.mem("compiler-libs")
@@ -238,20 +240,11 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
                  let files =
                    switch (namespace) {
                    | None =>
-                     List.map(
-                       ((full, rel)) => (
-                         getName(rel),
-                         (full, Some(rel)),
-                       ),
-                       files,
-                     )
-                   | Some(name) =>
+                      files
+                   | Some(namespace) =>
                      files
-                     |> List.map(((full, rel)) =>
-                          (
-                            name ++ "-" ++ getName(rel),
-                            (full, Some(rel)),
-                          )
+                     |> List.map(((name, paths)) =>
+                          (namespace ++ "-" ++ name, paths)
                         )
                    };
                  Some((compiledDirectories, files));
@@ -271,7 +264,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
   let files = List.concat(files);
   let%try stdlibDirectories = BuildSystem.getStdlib(base, buildSystem);
   let directories = stdlibDirectories @ List.concat(directories);
-  let results = files @ List.concat(List.map(loadStdlib, stdlibDirectories));
+  let results = files @ List.concat(List.map(collectFiles, stdlibDirectories));
   let%try bsPlatformDir = BuildSystem.getBsPlatformDir(base);
   Result.Ok((
     needsCompilerLibs(config) ?
@@ -286,7 +279,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
       ] :
       directories,
     needsCompilerLibs(config) ?
-      loadStdlib(
+      collectFiles(
         bsPlatformDir
         /+ "vendor"
         /+ "ocaml"

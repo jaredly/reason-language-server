@@ -19,17 +19,17 @@ module Show = {
   };
 };
 
-let makePathsForModule = (localModules, dependencyModules) => {
+let makePathsForModule = (localModules: list((string, TopTypes.paths)), dependencyModules: list((string, TopTypes.paths))) => {
   let pathsForModule = Hashtbl.create(30);
-  dependencyModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? ""));
+  dependencyModules |> List.iter(((modName, paths)) => {
+    /* Log.log("Dependency " ++ cmt ++ " - " ++ Infix.(source |? "")); */
     /* TODO do this right */
-    Hashtbl.replace(pathsForModule, modName, Impl(cmt, source))
+    Hashtbl.replace(pathsForModule, modName, paths)
   });
 
-  localModules |> List.iter(((modName, (cmt, source))) => {
-    Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source);
-    Hashtbl.replace(pathsForModule, modName, Impl(cmt, Some(source)))
+  localModules |> List.iter(((modName, paths)) => {
+    /* Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source); */
+    Hashtbl.replace(pathsForModule, modName, paths)
   });
 
   pathsForModule
@@ -127,7 +127,11 @@ let newBsPackage = (state, rootPath) => {
   let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
-  let localModules = FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase) |> List.map(((full, rel)) => (FindFiles.namespacedName(~namespace, rel), (full, rel)));
+  let localModules =
+    FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase)
+    |> List.map(((name, paths)) => (switch (namespace) {
+      | None => name
+      | Some(n) => name ++ "-" ++ n }, paths));
   
   let pathsForModule = makePathsForModule(localModules, dependencyModules);
 
@@ -284,14 +288,14 @@ let newJbuilderPackage = (state, rootPath) => {
     };
     (
       namespaced,
-      (
+      Impl(
         compiledBase
         /+ (
           fold(libraryName, "", l => l ++ "__")
           ++ Filename.chop_extension(filename)
           ++ ".cmt"
         ),
-        rootPath /+ filename,
+        Some(rootPath /+ filename),
       ),
     );
   });
@@ -340,7 +344,7 @@ let newJbuilderPackage = (state, rootPath) => {
     |> List.filter(FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (Filename.chop_extension(name) |> String.capitalize, (compiled, Some(path /+ name)));
+      (Filename.chop_extension(name) |> String.capitalize, Impl(compiled, Some(path /+ name)));
     })
   })
   |> List.concat;

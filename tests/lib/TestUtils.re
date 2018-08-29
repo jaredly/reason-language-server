@@ -104,8 +104,8 @@ let setUp = (files, text) => {
   let package = getPackage(
     (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
-      ("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", "/path/to/" ++ name)
-    ))) @ [("Test", ("/tmp/.lsp-test/Test.cmt", "/path/to/Test.re"))]
+      TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
+    ))) @ [("Test", Impl("/tmp/.lsp-test/Test.cmt", Some("/path/to/Test.re")))]
   );
 
   files |> List.iter(((name, contents)) => {
