@@ -1024,9 +1024,9 @@ let rec markdown_of_md md =
       in
         begin
           Printf.bprintf b "%s" (String.make n '`');
-          if c.[0] = '`' then Buffer.add_char b ' ';
+          if (String.length c > 0) && c.[0] = '`' then Buffer.add_char b ' ';
           Printf.bprintf b "%s" c;
-          if c.[String.length c - 1] = '`' then Buffer.add_char b ' ';
+          if (String.length c > 0) && c.[String.length c - 1] = '`' then Buffer.add_char b ' ';
           Printf.bprintf b "%s" (String.make n '`');
         end;
         loop list_indent tl

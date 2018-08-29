@@ -1,14 +1,45 @@
 open Result;
 
+let showModuleTopLevel = (~markdown, topLevel: list(SharedTypes.declared(SharedTypes.Module.item))) => {
+  let contents = topLevel |. Belt.List.map(item => {
+    item.name.txt
+  }) |> String.concat("\n");
+  Some(markdown ? "```\n" ++ contents ++ "\n```" : contents)
+};
+
+let showModule = (~markdown, ~file: SharedTypes.file, declared: option(SharedTypes.declared(SharedTypes.Module.kind))) => {
+  switch declared {
+    | None => showModuleTopLevel(~markdown, file.contents.topLevel)
+    | Some({contents: Structure({topLevel})}) => {
+      showModuleTopLevel(~markdown, topLevel)
+    }
+    | Some({contents: Ident(_)}) => Some("Unable to resolve module reference")
+  }
+};
+
 open Infix;
-let newHover = (~rootUri, ~file, ~extra, ~getModule, ~markdown, loc) => {
+let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown, loc) => {
   switch (loc) {
     | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
     | Open => Some("an open")
     | TypeDefinition(name, tdecl, stamp) => None
     /* TODO: show information on the module */
-    | Module(_) => Some("its a module")
+    | Module(LocalReference(stamp, tip)) => {
+      let%opt md = Query.hashFind(file.stamps.modules, stamp);
+      let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
+      showModule(~markdown, ~file, declared)
+    }
+    | Module(GlobalReference(moduleName, path, tip)) => {
+      let%opt file = getModule(moduleName);
+      let env = {Query.file, exported: file.contents.exported};
+      let%opt (env, name) = Query.resolvePath(~env, ~path, ~getModule);
+      let%opt stamp = Query.exportedForTip(~env, name, tip);
+      let%opt md = Query.hashFind(file.stamps.modules, stamp);
+      let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
+      showModule(~markdown, ~file, declared)
+    }
+    | Module(_) => Some("A module")
     | TopLevelModule(name) => Some("File: " ++ name)
     | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
     | Constant(t) => {
