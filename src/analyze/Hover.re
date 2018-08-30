@@ -41,7 +41,6 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
     /* TODO store a "defined" for Open (the module) */
     | Open => Some("an open")
     | TypeDefinition(name, tdecl, stamp) => None
-    /* TODO: show information on the module */
     | Module(LocalReference(stamp, tip)) => {
       let%opt md = Query.hashFind(file.stamps.modules, stamp);
       let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
@@ -84,48 +83,20 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
     | Typed(t, _) => {
       let typeString = 
         PrintType.default.expr(PrintType.default, t)
-        |> PrintType.prettyString;
+        |> PrintType.prettyString(~width=40);
 
       let env = {Query.file, exported: file.contents.exported};
       let codeBlock = t => markdown
         ? "```\n" ++ t ++ "\n```"
         : t;
 
-
       let typeString = codeBlock(typeString);
       let extraTypeInfo = {
-        let%opt (env, {name, contents}) = Query.digConstructor(~env, ~getModule, t);
-        switch (contents.kind) {
-          | Record(attributes) => {
-            Some("\n\n" ++ codeBlock("type " ++ name.txt  ++ " = {\n" ++ (attributes |. Belt.List.map(({name: {txt}, typ}) => {
-              "  " ++ txt ++ ": " ++ (
-                PrintType.default.expr(PrintType.default, typ)
-                |> PrintType.prettyString
-              )
-            }) |> String.concat(",\n")) ++ "\n}"))
-          }
-          | Variant(constructors) => {
-            Some("\n\n" ++ codeBlock(
-              "type " ++ name.txt ++ " = \n" ++
-              (
-                constructors |.Belt.List.map(({name: {txt}, args}) => {
-                  "  | " ++ txt ++ (
-                    args == []
-                    ? ""
-                    : "(" ++ String.concat(", ",
-                    args |> List.map(((typ, _)) => {
-                      PrintType.default.expr(PrintType.default, typ)
-                      |> PrintType.prettyString
-
-                    })
-                    ) ++ ")"
-                  )
-                }) |> String.concat("\n")
-              )
-            ))
-          }
-          | _ => None
-        }
+        let%opt (env, {name: {txt}, contents: {typ}}) = Query.digConstructor(~env, ~getModule, t);
+        Some("\n\n" ++ codeBlock(
+          PrintType.default.decl(PrintType.default, txt, txt, typ)
+          |> PrintType.prettyString(~width=40)
+        ))
       };
       let typeString = typeString ++ (extraTypeInfo |? "");
 
