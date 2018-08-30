@@ -58,11 +58,48 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
         PrintType.default.expr(PrintType.default, t)
         |> PrintType.prettyString;
 
+      let env = {Query.file, exported: file.contents.exported};
       let codeBlock = t => markdown
         ? "```\n" ++ t ++ "\n```"
         : t;
 
+
       let typeString = codeBlock(typeString);
+      let extraTypeInfo = {
+        let%opt (env, {name, contents}) = Query.digConstructor(~env, ~getModule, t);
+        switch (contents.kind) {
+          | Record(attributes) => {
+            Some("\n\n" ++ codeBlock("type " ++ name.txt  ++ " = {\n" ++ (attributes |. Belt.List.map(({name: {txt}, typ}) => {
+              "  " ++ txt ++ ": " ++ (
+                PrintType.default.expr(PrintType.default, typ)
+                |> PrintType.prettyString
+              )
+            }) |> String.concat(",\n")) ++ "\n}"))
+          }
+          | Variant(constructors) => {
+            Some("\n\n" ++ codeBlock(
+              "type " ++ name.txt ++ " = \n" ++
+              (
+                constructors |.Belt.List.map(({name: {txt}, args}) => {
+                  "  | " ++ txt ++ (
+                    args == []
+                    ? ""
+                    : "(" ++ String.concat(", ",
+                    args |> List.map(((typ, _)) => {
+                      PrintType.default.expr(PrintType.default, typ)
+                      |> PrintType.prettyString
+
+                    })
+                    ) ++ ")"
+                  )
+                }) |> String.concat("\n")
+              )
+            ))
+          }
+          | _ => None
+        }
+      };
+      let typeString = typeString ++ (extraTypeInfo |? "");
 
       Some({
         let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
