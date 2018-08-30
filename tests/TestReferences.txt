@@ -67,6 +67,15 @@ let m = Lib.<t1>A(2);
 -->
   1: ✅ PASS
 
+=== Through a module alias
+module A = {
+  let <t1>a = 10;
+};
+module B = A;
+let z = B.<c1>a;
+-->
+  1: ✅ PASS
+
 === Cross-module with interface
 --- Lib.re
 let <t1><c2>a = 30;
@@ -77,13 +86,8 @@ let <t1><t2>a: int
 let m = Lib.<c1><t2>a;
 
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 20 (2, 8)
-    missing reference - file:///path/to/Lib.re 4 (1, 4)
-
-  2: 🔴 FAIL
-    missing reference - file:///path/to/Lib.rei 4 (1, 4)
-
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Opens
 module Lib = {

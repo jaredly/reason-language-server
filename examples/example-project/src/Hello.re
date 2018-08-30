@@ -6,7 +6,7 @@ let x = [%bs.obj {a: 3}];
 
 let r = Other.something;
 
-let l = More.outer + More.n + Other.inner;
+let l = More.inner + More.n + Other.inner;
 
 let n = More.n;
 

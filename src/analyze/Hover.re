@@ -1,17 +1,34 @@
 open Result;
 
-let showModuleTopLevel = (~markdown, topLevel: list(SharedTypes.declared(SharedTypes.Module.item))) => {
-  let contents = topLevel |. Belt.List.map(item => {
-    item.name.txt
-  }) |> String.concat("\n");
-  Some(markdown ? "```\n" ++ contents ++ "\n```" : contents)
+let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(SharedTypes.Module.item))) => {
+  let contents =
+    topLevel
+    |. Belt.List.map(item =>
+         switch (item.contents) {
+         /** TODO pretty print module contents */
+         | Module(_) => "  module " ++ item.name.txt ++ ";"
+         | Type({typ}) =>
+           "  "
+           ++ (PrintType.indentGroup(PrintType.default.decl(PrintType.default, item.name.txt, item.name.txt, typ)) |> PrintType.prettyString)
+         | Value({typ}) =>
+           "  let "
+           ++ item.name.txt
+           ++ ": "
+           ++ (PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString)
+           ++ ";"
+         | ModuleType(_) => "  module type " ++ item.name.txt ++ ";"
+         }
+       )
+    |> String.concat("\n");
+  let full = "module " ++ name ++ " = {" ++ "\n" ++ contents ++ "\n}";
+  Some(markdown ? "```\n" ++ full ++ "\n```" : full);
 };
 
-let showModule = (~markdown, ~file: SharedTypes.file, declared: option(SharedTypes.declared(SharedTypes.Module.kind))) => {
+let showModule = (~markdown, ~file: SharedTypes.file, ~name, declared: option(SharedTypes.declared(SharedTypes.Module.kind))) => {
   switch declared {
-    | None => showModuleTopLevel(~markdown, file.contents.topLevel)
+    | None => showModuleTopLevel(~name, ~markdown, file.contents.topLevel)
     | Some({contents: Structure({topLevel})}) => {
-      showModuleTopLevel(~markdown, topLevel)
+      showModuleTopLevel(~name, ~markdown, topLevel)
     }
     | Some({contents: Ident(_)}) => Some("Unable to resolve module reference")
   }
@@ -28,7 +45,11 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
     | Module(LocalReference(stamp, tip)) => {
       let%opt md = Query.hashFind(file.stamps.modules, stamp);
       let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
-      showModule(~markdown, ~file, declared)
+      let name = switch declared {
+        | Some(d) => d.name.txt
+        | None => file.moduleName
+      };
+      showModule(~name, ~markdown, ~file, declared)
     }
     | Module(GlobalReference(moduleName, path, tip)) => {
       let%opt file = getModule(moduleName);
@@ -37,10 +58,17 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       let%opt stamp = Query.exportedForTip(~env, name, tip);
       let%opt md = Query.hashFind(file.stamps.modules, stamp);
       let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
-      showModule(~markdown, ~file, declared)
+      let name = switch declared {
+        | Some(d) => d.name.txt
+        | None => file.moduleName
+      };
+      showModule(~name, ~markdown, ~file, declared)
     }
-    | Module(_) => Some("A module")
-    | TopLevelModule(name) => Some("File: " ++ name)
+    | Module(_) => None
+    | TopLevelModule(name) => {
+      let%opt file = getModule(name);
+      showModule(~name=file.moduleName, ~markdown, ~file, None)
+    }
     | Typed(_, Definition(_, Attribute(_) | Constructor(_))) => None
     | Constant(t) => {
       Some(switch t {

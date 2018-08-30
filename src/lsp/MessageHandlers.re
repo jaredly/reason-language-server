@@ -232,9 +232,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
       let%opt allReferences = References.allReferencesForLoc(
+        ~package,
         ~file,
         ~extra,
         ~allModules=package.localModules,
+        ~getUri=State.fileForUri(state, ~package),
         ~getModule=State.fileForModule(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc
@@ -273,8 +275,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt allReferences = References.allReferencesForLoc(
         ~file,
         ~extra,
+        ~package,
         ~allModules=package.localModules,
         ~getModule=State.fileForModule(state, ~package),
+        ~getUri=State.fileForUri(state, ~package),
         ~getExtra=State.extraForModule(state, ~package),
         loc
       ) |> toOptionAndLog;

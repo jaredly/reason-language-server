@@ -5,6 +5,6 @@
   "warnings": {
     "number": "-32-26-27-33"
   },
-  "namespace": true,
+  // "namespace": true,
   "refmt": 3
 }

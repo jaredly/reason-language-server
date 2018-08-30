@@ -1,5 +1,5 @@
 
 let contnets: string;
-let outer: int;
+let inner: int;
 let n: int;
 let party: int;
