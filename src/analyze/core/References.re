@@ -131,6 +131,40 @@ let alternateDeclared = (~file, ~package: TopTypes.package, ~getUri, declared, t
   };
 };
 
+let resolveModuleReference = (~file, ~getModule, declared: SharedTypes.declared(SharedTypes.Module.kind)) => {
+  switch (declared.contents) {
+    | SharedTypes.Module.Structure(_) =>
+      Some((file, Some(declared)))
+    | Ident(path) => 
+      let env = {Query.file, exported: file.contents.exported};
+      switch (Query.fromCompilerPath(~env, path)) {
+        | `Not_found => None
+        | `Exported(env, name) =>
+          let%opt stamp = Query.hashFind(env.exported.modules, name);
+          let%opt md = Query.hashFind(env.file.stamps.modules, stamp);
+          Some((env.file, Some(md)))
+          /* Some((env.file.uri, validateLoc(md.name.loc, md.extentLoc))) */
+        | `Global(moduleName, path) =>
+          let%opt file = getModule(moduleName);
+          let env = {file, Query.exported: file.contents.exported};
+          let%opt (env, name) = Query.resolvePath(~env, ~getModule, ~path);
+          let%opt stamp = Query.hashFind(env.exported.modules, name);
+          let%opt md = Query.hashFind(env.file.stamps.modules, stamp);
+          Some((env.file, Some(md)))
+          /* Some((env.file.uri, validateLoc(md.name.loc, md.extentLoc))) */
+        | `Stamp(stamp) =>
+          let%opt md = Query.hashFind(file.stamps.modules, stamp);
+          Some((file, Some(md)))
+          /* Some((file.uri, validateLoc(md.name.loc, md.extentLoc))) */
+        | `GlobalMod(name) =>
+          let%opt file = getModule(name);
+          /* Log.log("Congrats, found a global mod"); */
+          Some((file, None))
+        | _ => None
+      };
+  }
+};
+
 let forLocalStamp = (~package: TopTypes.package, ~file, ~extra, ~allModules, ~getModule, ~getUri, ~getExtra, stamp, tip) => {
   let env = {Query.file, exported: file.contents.exported};
   open Infix;
@@ -202,8 +236,8 @@ let allReferencesForLoc = (~package, ~getUri, ~file, ~extra, ~allModules, ~getMo
       let env = {Query.file, exported: file.contents.exported};
       let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
       let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
-      let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri);
-      maybeLog("Finding references for (global) " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
+      let%try (file, extra) = getUri(env.file.uri);
+      maybeLog("Finding references for (global) " ++ env.file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
       forLocalStamp(~package, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
     }
   }
@@ -239,40 +273,6 @@ let validateLoc = (loc: Location.t, backup: Location.t) => {
     }
   } else {
     loc
-  }
-};
-
-let resolveModuleReference = (~file, ~getModule, declared: SharedTypes.declared(SharedTypes.Module.kind)) => {
-  switch (declared.contents) {
-    | SharedTypes.Module.Structure(_) =>
-      Some((file, Some(declared)))
-    | Ident(path) => 
-      let env = {Query.file, exported: file.contents.exported};
-      switch (Query.fromCompilerPath(~env, path)) {
-        | `Not_found => None
-        | `Exported(env, name) =>
-          let%opt stamp = Query.hashFind(env.exported.modules, name);
-          let%opt md = Query.hashFind(env.file.stamps.modules, stamp);
-          Some((env.file, Some(md)))
-          /* Some((env.file.uri, validateLoc(md.name.loc, md.extentLoc))) */
-        | `Global(moduleName, path) =>
-          let%opt file = getModule(moduleName);
-          let env = {file, Query.exported: file.contents.exported};
-          let%opt (env, name) = Query.resolvePath(~env, ~getModule, ~path);
-          let%opt stamp = Query.hashFind(env.exported.modules, name);
-          let%opt md = Query.hashFind(env.file.stamps.modules, stamp);
-          Some((env.file, Some(md)))
-          /* Some((env.file.uri, validateLoc(md.name.loc, md.extentLoc))) */
-        | `Stamp(stamp) =>
-          let%opt md = Query.hashFind(file.stamps.modules, stamp);
-          Some((file, Some(md)))
-          /* Some((file.uri, validateLoc(md.name.loc, md.extentLoc))) */
-        | `GlobalMod(name) =>
-          let%opt file = getModule(name);
-          /* Log.log("Congrats, found a global mod"); */
-          Some((file, None))
-        | _ => None
-      };
   }
 };
 

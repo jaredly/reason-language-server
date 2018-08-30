@@ -14,7 +14,7 @@ let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(
            "  let "
            ++ item.name.txt
            ++ ": "
-           ++ (PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString)
+           ++ (PrintType.indentGroup(PrintType.default.expr(PrintType.default, typ)) |> PrintType.prettyString)
            ++ ";"
          | ModuleType(_) => "  module type " ++ item.name.txt ++ ";"
          }

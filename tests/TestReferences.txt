@@ -76,6 +76,37 @@ let z = B.<c1>a;
 -->
   1: ✅ PASS
 
+=== Global through an alias
+--- A.re
+let <t2><c1>a = 10;
+--- B.re
+module C = A;
+---
+let z = B.C.<c2><t1>a;
+
+-->
+  1: 🔴 FAIL
+    missing reference - file:///path/to/Test.re 12 (1, 12)
+
+  2: ✅ PASS
+
+=== Simulate bucklscript namespaced
+--- Lib_Packaged.re
+let <t1><c2>a = 30;
+let b = <t1><t2>a;
+--- Lib_Packaged.rei
+let <t1><t2>a: int
+--- Package.re
+module Lib = Lib_Packaged;
+---
+open Package;
+let m = Lib.<c1><t2>a;
+-->
+  1: ✅ PASS
+  2: 🔴 FAIL
+    missing reference - file:///path/to/Test.re 26 (2, 12)
+
+
 === Cross-module with interface
 --- Lib.re
 let <t1><c2>a = 30;
