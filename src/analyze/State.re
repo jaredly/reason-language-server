@@ -45,11 +45,10 @@ let makePathsForModule = (localModules: list((string, TopTypes.paths)), dependen
   (pathsForModule, nameForPath)
 };
 
-/**
-ninja: error: dependency cycle: src/analyze/AsYouType.cmx -> src/util/FindFiles.cmx -> src/analyze/TopTypes.cmx -> src/analyze/AsYouType.cmx
- */
 let rec getAffectedFiles = (root, lines) => switch lines {
   | [] => []
+  | [one, ...rest] when Utils.startsWith(one, "ninja: error: ") =>
+    [Utils.toUri(root /+ "bsconfig.json"), ...getAffectedFiles(root, rest)]
   | [one, ...rest] when Utils.startsWith(one, "File \"") =>
     switch (Utils.split_on_char('"', String.trim(one))) {
       | [_, name, ..._] => [(root /+ name) |> Utils.toUri, ...getAffectedFiles(root, rest)]
@@ -93,7 +92,7 @@ let runBuildCommand = (state, root, buildCommand) => {
         ("diagnostics", l([
           o([
             ("range", Protocol.rangeOfInts(0, 0, 5, 0)),
-            ("message", s(String.concat("\n", stdout @ stderr))),
+            ("message", s(Utils.stripAnsii(String.concat("\n", stdout @ stderr)))),
             ("severity", i(1)),
           ])
         ]))]))
