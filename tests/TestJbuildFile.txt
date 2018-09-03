@@ -1,0 +1,10 @@
+=== Flags
+(jbuild_version 1)
+
+(library
+  ((name MyLib)
+  (flags (:standard "-open" "Containers"))
+  (library_flags (-linkall))))
+-->
+PASS: [jbuild_version, 1.]
+[library, [[name, MyLib], [flags, [:standard, "-open", "Containers"]], [library_flags, [-linkall]]]]
