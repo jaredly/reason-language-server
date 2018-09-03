@@ -76,7 +76,10 @@ module F = (Collector: {
 
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
-  let addExternalReference = (moduleName, path, tip, loc) => Hashtbl.replace(extra.externalReferences, moduleName, [(path, tip, loc), ...Hashtbl.mem(extra.externalReferences, moduleName) ? Hashtbl.find(extra.externalReferences, moduleName) : []]);
+  let addExternalReference = (moduleName, path, tip, loc) => {
+    /* TODO need to follow the path, and be able to load the files to follow module references... */
+    Hashtbl.replace(extra.externalReferences, moduleName, [(path, tip, loc), ...Hashtbl.mem(extra.externalReferences, moduleName) ? Hashtbl.find(extra.externalReferences, moduleName) : []]);
+  };
   let env = {Query.file: Collector.file, exported: Collector.file.contents.exported};
 
   let getTypeAtPath = getTypeAtPath(~env);

@@ -76,7 +76,7 @@ let z = B.<c1>a;
 -->
   1: ✅ PASS
 
-=== Global through an alias
+=== * Global through an alias
 --- A.re
 let <t2><c1>a = 10;
 --- B.re
