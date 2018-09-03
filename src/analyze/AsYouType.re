@@ -107,11 +107,11 @@ let parseDependencyError = text => {
   switch (Str.search_forward(rx, text, 0)) {
   | exception Not_found => None
   | x =>
-    let dep = Str.matched_group(1, text) |> String.capitalize;
-    let base = Str.matched_group(2, text);
-    let baseName = Str.matched_group(3, text);
+    let dep = Str.matched_group(1, text) |> Filename.basename |> String.capitalize;
+    let base = Str.matched_group(2, text) |> Filename.basename |> String.capitalize;
+    let interface = Str.matched_group(3, text);
     let final = Str.match_end();
-    Some(Filename.dirname(dep))
+    Some((dep, base, interface))
   }
 };
 
@@ -162,7 +162,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
             SyntaxError(String.concat("\n", s), errorText, {file, extra})
           | None => {
             let errorText = switch (parseDependencyError(errorText)) {
-              | Some(name) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
+              | Some((name, oname, iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
               | None => errorText
             };
             TypeError(errorText, {file, extra})

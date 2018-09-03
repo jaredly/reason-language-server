@@ -1,4 +1,9 @@
 
+## 1.0.4
+
+- better support for interface files
+- improved hover text
+
 ## [pending release]
 
 - signature help!

@@ -13,11 +13,18 @@ let makeDiagnostic = (documentText, ((line, c1, c2), message)) => {
       PartialParser.offsetToPosition(documentText, off2);
     }
     |? (line, c2);
-  o([
-    ("range", Protocol.rangeOfInts(line, c1, l2, c22)),
-    ("message", s(text)),
-    ("severity", i(Utils.startsWith(text, "Warning") ? 2 : 1)),
-  ]);
+  switch (AsYouType.parseDependencyError(text)) {
+  | None =>
+    Some(o([
+      ("range", Protocol.rangeOfInts(line, c1, l2, c22)),
+      ("message", s(text)),
+      ("severity", i(Utils.startsWith(text, "Warning") ? 2 : 1)),
+    ]))
+  | Some((one, two, iface)) =>
+    Log.log("Ignoring 'inconsistent assumptions' error");
+    Log.log(text);
+    None
+  };
 };
 
 let getText = (state, uri) => {
@@ -43,14 +50,14 @@ let runDiagnostics = (uri, state, ~package) => {
       let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(otherText)));
       let errors = errors |. Belt.List.keep(((loc, message)) => message != ["Error: Uninterpreted extension 'merlin.syntax-error'."]);
       let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text))) @ errors;
-      l(errors |. Belt.List.map(makeDiagnostic(documentText)))
+      l(errors |. Belt.List.keepMap(makeDiagnostic(documentText)))
     }
     | Success(text, _) => {
       if (String.trim(text) == "") {
         l([])
       } else {
         let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text)));
-        l(errors |. Belt.List.map(makeDiagnostic(documentText)))
+        l(errors |. Belt.List.keepMap(makeDiagnostic(documentText)))
       }
     }
     | TypeError(text, _) => {
@@ -60,7 +67,7 @@ let runDiagnostics = (uri, state, ~package) => {
         !Str.string_match(Str.regexp({|.*Missing dependency [a-zA-Z]+ in search path|}), String.concat(" ", message), 0)
       })
       ;
-      l(errors |. Belt.List.map(makeDiagnostic(documentText)))
+      l(errors |. Belt.List.keepMap(makeDiagnostic(documentText)))
     }
     })
   ]));

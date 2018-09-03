@@ -45,6 +45,9 @@ let makePathsForModule = (localModules: list((string, TopTypes.paths)), dependen
   (pathsForModule, nameForPath)
 };
 
+/**
+ninja: error: dependency cycle: src/analyze/AsYouType.cmx -> src/util/FindFiles.cmx -> src/analyze/TopTypes.cmx -> src/analyze/AsYouType.cmx
+ */
 let rec getAffectedFiles = (root, lines) => switch lines {
   | [] => []
   | [one, ...rest] when Utils.startsWith(one, "File \"") =>
