@@ -132,9 +132,12 @@ let rec parseAtom = (raw, ln, i) => switch (raw.[i]) {
     let (items, i) = parseList(raw, ln, i + 1);
     (`List(items), i)
   }
-  | 'a'..'z' | 'A'..'Z' =>
+  | 'a'..'z'
+  | 'A'..'Z'
+  | ':'
+  | '-' =>
     let last = parseIdent(raw, ln, i + 1);
-    (`Ident(String.sub(raw, i, last - i)), last)
+    (`Ident(String.sub(raw, i, last - i)), last);
   | '0'..'9' =>
     let last = parseNumber(raw, ln, i + 1);
     (`Number(float_of_string(String.sub(raw, i, last - i))), last)
