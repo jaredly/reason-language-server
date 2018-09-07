@@ -1,0 +1,7 @@
+(include_subdirs unqualified)
+
+(executable
+  (name Bin)
+  (public_name Bin)
+  (libraries compiler-libs Belt)
+  )

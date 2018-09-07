@@ -1,0 +1,20 @@
+{
+  "name": "reason-language-server",
+  "version": "1.0.0",
+  "esy": {
+    "build": "dune build -p #{self.name}",
+    "NOTE": "Optional release Section. Customizes result of `esy release`"
+  },
+  "dependencies": {
+    "@opam/dune": "*",
+    "@esy-ocaml/reason": "*",
+    "rex-json": "*",
+    "ocaml": "~4.6.0"
+  },
+  "resolutions": {
+    "@esy-ocaml/esy-installer": "0.0.1"
+  },
+  "devDependencies": {
+    "ocaml": "~4.6.0"
+  }
+}

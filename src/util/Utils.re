@@ -112,7 +112,7 @@ let toUri = (path) =>
     "file://"
     ++ (
       Str.global_replace(Str.regexp_string("\\"), "/", path)
-      |> Str.substitute_first(Str.regexp("^\([A-Z]\):"), text => {
+      |> Str.substitute_first(Str.regexp("^\\([A-Z]\\):"), text => {
         let name = Str.matched_group(1, text);
         "/" ++ String.lowercase(name) ++ "%3A"
       })
@@ -121,7 +121,7 @@ let toUri = (path) =>
 
 let parseWindowsUri = withoutScheme => {
   withoutScheme
-  |> Str.substitute_first(Str.regexp("^/\([a-z]\)%3A"), text => {
+  |> Str.substitute_first(Str.regexp("^/\\([a-z]\\)%3A"), text => {
     let name = Str.matched_group(1, text);
     String.uppercase(name) ++ ":"
   })
