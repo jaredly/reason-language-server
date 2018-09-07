@@ -3,6 +3,6 @@
 (executable
   (name Bin)
   (public_name Bin)
-  (libraries compiler-libs.common Belt Vendor str Types_402)
-  (flags :standard -open Vendor -w -26-32-50-9-27-39-33-35-6)
+  (libraries Belt Vendor str Types_402)
+  (flags :standard -open Vendor -open Types_402 -w -26-32-50-9-27-39-33-35-6-3)
   (preprocess (pps Belt_ppx Ppx_monads)))

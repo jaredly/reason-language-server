@@ -2894,7 +2894,7 @@ and type_format loc str env =
           mk_constr "Ignored_int64" [ mk_iconv iconv; mk_int_opt pad_opt ]
         | Ignored_float (pad_opt, prec_opt) ->
           mk_constr "Ignored_float" [ mk_int_opt pad_opt; mk_int_opt prec_opt ]
-        | Ignored_bool ->
+        | Ignored_bool _ ->
           mk_constr "Ignored_bool" []
         | Ignored_format_arg (pad_opt, fmtty) ->
           mk_constr "Ignored_format_arg" [ mk_int_opt pad_opt; mk_fmtty fmtty ]
@@ -2948,7 +2948,7 @@ and type_format loc str env =
         | Float (fconv, pad, prec, rest) ->
           mk_constr "Float" [
             mk_fconv fconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
-        | Bool rest ->
+        | Bool (_, rest) ->
           mk_constr "Bool" [ mk_fmt rest ]
         | Flush rest ->
           mk_constr "Flush" [ mk_fmt rest ]
