@@ -112,7 +112,7 @@ let symbolKind = (kind) =>
   };
 
 let rec variableKind = (t) =>
-  switch t.Types.desc {
+  switch t.UnifiedTypes.desc {
   | Tlink(t) => variableKind(t)
   | Tsubst(t) => variableKind(t)
   | Tarrow(_) => `Function
@@ -127,7 +127,7 @@ let rec variableKind = (t) =>
   };
 
 let typeKind = (t) =>
-  switch t.Types.type_kind {
+  switch t.UnifiedTypes.type_kind {
   | Type_open
   | Type_abstract => `TypeParameter
   | Type_record(_) => `Interface

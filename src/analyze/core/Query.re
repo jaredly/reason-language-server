@@ -215,10 +215,10 @@ let exportedForTip = (~env, name, tip) => switch tip {
 };
 
 let rec dig = (typ) =>
-  switch typ.Types.desc {
-  | Types.Tlink(inner) => dig(inner)
-  | Types.Tsubst(inner) => dig(inner)
-  | Types.Tpoly(inner, _) => dig(inner)
+  switch typ.UnifiedTypes.desc {
+  | UnifiedTypes.Tlink(inner) => dig(inner)
+  | UnifiedTypes.Tsubst(inner) => dig(inner)
+  | UnifiedTypes.Tpoly(inner, _) => dig(inner)
   | _ => typ
   };
 

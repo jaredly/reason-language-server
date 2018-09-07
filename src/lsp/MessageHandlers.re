@@ -93,8 +93,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
       /* TODO move this into ProcessExtra or somewheres */
-      let rec loop = t => switch (t.Types.desc) {
-        | Types.Tsubst(t)
+      let rec loop = t => switch (t.UnifiedTypes.desc) {
+        | UnifiedTypes.Tsubst(t)
         | Tlink(t) => loop(t)
         | Tarrow(label, argt, res, _) =>
           let (args, fin) = loop(res);

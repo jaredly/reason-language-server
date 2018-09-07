@@ -41,7 +41,7 @@ module Type = {
     type t = {
       stamp: int,
       name: Location.loc(string),
-      typ: Types.type_expr,
+      typ: UnifiedTypes.type_expr,
       typLoc: Location.t,
     };
   };
@@ -50,8 +50,8 @@ module Type = {
     type t = {
       stamp: int,
       name: Location.loc(string),
-      args: list((Types.type_expr, Location.t)),
-      res: option(Types.type_expr),
+      args: list((UnifiedTypes.type_expr, Location.t)),
+      res: option(UnifiedTypes.type_expr),
     };
     open Infix;
     let show = ({name: {txt}, args, res}) => {
@@ -72,14 +72,14 @@ module Type = {
   ;
   type t = {
     kind,
-    params: list((Types.type_expr, Location.t)),
-    typ: Types.type_declaration,
+    params: list((UnifiedTypes.type_expr, Location.t)),
+    typ: UnifiedTypes.type_declaration,
   };
 };
 
 module Value = {
   type t = {
-    typ: Types.type_expr,
+    typ: UnifiedTypes.type_expr,
     recursive: bool,
   };
 };
@@ -138,7 +138,7 @@ module Module = {
   | Structure(contents);
   /* | JustType */
   /* and t = {
-    typ: Types.module_type,
+    typ: UnifiedTypes.module_type,
     kind,
   }; */
 };
@@ -221,11 +221,11 @@ module Loc = {
   | NotFound
   | Definition(int, tip);
   type t =
-  | Typed(Types.type_expr, typed)
+  | Typed(UnifiedTypes.type_expr, typed)
   | Constant(Asttypes.constant)
   | Module(typed)
   | TopLevelModule(string)
-  | TypeDefinition(string, Types.type_declaration, int)
+  | TypeDefinition(string, UnifiedTypes.type_declaration, int)
   | Explanation(string)
   | Open;
 };
