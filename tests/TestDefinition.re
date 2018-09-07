@@ -10,7 +10,7 @@ let getOutput = (files, mainFile) => {
   let num = List.length(waypoints) / 2;
   package.localModules |. Belt.List.forEach((modname) => {
     let%opt_consume paths = Utils.maybeHash(package.pathsForModule, modname);
-    let%opt_consume src = TopTypes.getSrc(paths);
+    let%opt_consume src = SharedTypes.getSrc(paths);
     let%try_force result = State.getCompilationResult(Utils.toUri(src), state, ~package);
     switch result {
       | Success(_, {extra}) => Log.log(SharedTypes.showExtra(extra));

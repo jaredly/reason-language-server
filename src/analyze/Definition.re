@@ -12,19 +12,3 @@ let inRange = ((l, c), ((l0, c0), (l1, c1))) => {
 };
 
 let dig = Query.dig;
-
-let handleConstructor = (path, txt) => {
-  let typeName =
-    switch path {
-    | Types_402.Path.Pdot(path, typename, _) => typename
-    | Pident({Types_402.Ident.name}) => name
-    | _ => assert false
-    };
-  Longident.(
-    switch txt {
-    | Longident.Lident(name) => (name, Lident(typeName))
-    | Ldot(left, name) => (name, Ldot(left, typeName))
-    | Lapply(left, _) => assert false
-    }
-  )
-};

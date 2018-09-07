@@ -154,7 +154,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
-        let%try_wrap {file, extra} = ProcessFull.fullForCmt(cmtPath, uri, x => x);
+        let%try_wrap {file, extra} = Process_402.fullForCmt(cmtPath, uri, x => x);
         let errorText = String.concat("\n", lines);
         switch (syntaxError) {
           | Some(s) =>
@@ -172,7 +172,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     }
     | Ok(lines) => {
       let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
-      let%try_wrap full = ProcessFull.fullForCmt(cmt, uri, x => x);
+      let%try_wrap full = Process_402.fullForCmt(cmt, uri, x => x);
       Success(String.concat("\n", lines), full)
     }
   }

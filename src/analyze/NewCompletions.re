@@ -1,5 +1,15 @@
 open SharedTypes;
 
+open Infix;
+let showConstructor = ({SharedTypes.Type.Constructor.name: {txt}, args, res}) => {
+  txt ++ (args == []
+    ? ""
+    : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
+      PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString
+    ))) ++ ")")
+  ++ ((res |?>> typ => "\n" ++ PrintType.prettyString(PrintType.default.expr(PrintType.default, typ))) |? "")
+};
+
 let rec pathOfModuleOpen = items =>
   switch (items) {
   | [] => Tip("place holder")
@@ -298,7 +308,7 @@ let detail = (name, contents) =>
       |> PrintType.prettyString
     )
   | Constructor(c, t) =>
-    SharedTypes.Type.Constructor.show(c)
+  showConstructor(c)
     ++ "\n\n"
     ++ (
       PrintType.default.decl(

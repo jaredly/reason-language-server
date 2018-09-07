@@ -1,4 +1,17 @@
 
+type filePath = string
+type paths =
+| Impl(filePath, option(filePath))
+| Intf(filePath, option(filePath))
+| IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
+
+let getSrc = p => switch p {
+  | Intf(_, s)
+  | Impl(_, s)
+  | IntfAndImpl(_, Some(_) as s, _, _)
+  | IntfAndImpl(_, None, _, s) => s
+};
+
 /* TODO maybe track the loc's of these things */
 type visibilityPath =
 | File(string)
@@ -53,14 +66,6 @@ module Type = {
       res: option(UnifiedTypes.type_expr),
     };
     open Infix;
-    let show = ({name: {txt}, args, res}) => {
-      txt ++ (args == []
-        ? ""
-        : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
-          PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString
-        ))) ++ ")")
-      ++ ((res |?>> typ => "\n" ++ PrintType.prettyString(PrintType.default.expr(PrintType.default, typ))) |? "")
-    };
   };
 
   type kind =

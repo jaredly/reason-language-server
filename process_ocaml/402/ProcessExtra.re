@@ -4,6 +4,22 @@ open Typedtree;
 open SharedTypes;
 open Infix;
 
+let handleConstructor = (path, txt) => {
+  let typeName =
+    switch path {
+    | Types_402.Path.Pdot(path, typename, _) => typename
+    | Pident({Types_402.Ident.name}) => name
+    | _ => assert false
+    };
+  Longident.(
+    switch txt {
+    | Longident.Lident(name) => (name, Lident(typeName))
+    | Ldot(left, name) => (name, Ldot(left, typeName))
+    | Lapply(left, _) => assert false
+    }
+  )
+};
+
 let rec relative = (ident, path) =>
   switch (ident, path) {
   | (Longident.Lident(name), Types_402.Path.Pdot(path, pname, _)) when pname == name => Some(path)
@@ -145,7 +161,7 @@ module F = (Collector: {
         let {UnifiedTypes.lbl_loc, lbl_res} = item;
         let name = Longident.last(txt);
 
-        let (name, typeLident) = Definition.handleConstructor(path, txt);
+        let (name, typeLident) = handleConstructor(path, txt);
         maybeAddUse(path, typeLident, loc, Attribute(name));
 
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
@@ -175,7 +191,7 @@ module F = (Collector: {
         items |> List.iter((({Asttypes.txt, loc}, {UnifiedTypes.lbl_loc, lbl_res}, _)) => {
           /* let name = Longident.last(txt); */
 
-          let (name, typeLident) = Definition.handleConstructor(path, txt);
+          let (name, typeLident) = handleConstructor(path, txt);
           maybeAddUse(path, typeLident, loc, Attribute(name));
 
           let nameLoc = Utils.endOfLocation(loc, String.length(name));
@@ -204,7 +220,7 @@ module F = (Collector: {
       | Tconstr(path, _args, _memo) => {
         /* let name = Longident.last(txt); */
 
-        let (name, typeLident) = Definition.handleConstructor(path, txt);
+        let (name, typeLident) = handleConstructor(path, txt);
         maybeAddUse(path, typeLident, loc, Constructor(name));
 
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
@@ -317,7 +333,7 @@ module F = (Collector: {
   let enter_signature_item = item => switch (item.sig_desc) {
   | Tsig_value({val_id: {stamp}, val_loc, val_name: name, val_desc, val_attributes}) => {
     if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
-      let declared = ProcessCmt.newDeclared(
+      let declared = ProcessAttributes.newDeclared(
         ~name,
         ~stamp,
         ~extent=val_loc,
@@ -353,7 +369,7 @@ module F = (Collector: {
   let rec enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
     let addForPattern = (stamp, name) => {
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
-          let declared = ProcessCmt.newDeclared(
+          let declared = ProcessAttributes.newDeclared(
             ~name,
             ~stamp,
             ~scope={

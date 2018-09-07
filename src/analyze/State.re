@@ -8,24 +8,24 @@ module Show = {
     "\nLocal\n"++
     (Belt.List.map(localModules, (name) => {
       let paths = Hashtbl.find(pathsForModule, name);
-      Printf.sprintf("%s (%s : %s)", name, TopTypes.getCmt(paths), TopTypes.getSrc(paths) |? "(no src!)")
+      Printf.sprintf("%s (%s : %s)", name, TopTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "(no src!)")
     }) |> String.concat("\n"))
     ++
     "\nDeps\n" ++ 
     (Belt.List.map(dependencyModules, (modname) => {
       let paths = Hashtbl.find(pathsForModule, modname);
-      Printf.sprintf("%s (%s : %s)", modname, TopTypes.getCmt(paths), TopTypes.getSrc(paths) |? "")
+      Printf.sprintf("%s (%s : %s)", modname, TopTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "")
     }) |> String.concat("\n"))
   };
 };
 
-let makePathsForModule = (localModules: list((string, TopTypes.paths)), dependencyModules: list((string, TopTypes.paths))) => {
+let makePathsForModule = (localModules: list((string, SharedTypes.paths)), dependencyModules: list((string, SharedTypes.paths))) => {
   let pathsForModule = Hashtbl.create(30);
   let nameForPath = Hashtbl.create(30);
   let add = (name, paths) => switch paths {
-    | TopTypes.Intf(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
-    | TopTypes.Impl(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
-    | TopTypes.IntfAndImpl(_, intf, _, impl) =>
+    | SharedTypes.Intf(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
+    | SharedTypes.Impl(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
+    | SharedTypes.IntfAndImpl(_, intf, _, impl) =>
         intf |?< path => Hashtbl.replace(nameForPath, path, name);
         impl |?< path => Hashtbl.replace(nameForPath, path, name);
     | _ => ()
@@ -301,7 +301,7 @@ let newJbuilderPackage = (state, rootPath) => {
     };
     (
       namespaced,
-      Impl(
+      SharedTypes.Impl(
         compiledBase
         /+ (
           fold(libraryName, "", l => l ++ "__")
@@ -357,7 +357,7 @@ let newJbuilderPackage = (state, rootPath) => {
     |> List.filter(FindFiles.isSourceFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (Filename.chop_extension(name) |> String.capitalize, Impl(compiled, Some(path /+ name)));
+      (Filename.chop_extension(name) |> String.capitalize, SharedTypes.Impl(compiled, Some(path /+ name)));
     })
   })
   |> List.concat;
@@ -476,13 +476,13 @@ let converter = (src, usePlainText) => {
 
 let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   let uri = Utils.toUri(src |? cmt);
-  let%opt file = ProcessFull.fileForCmt(cmt, uri, converter(src, clientNeedsPlainText)) |> Result.toOptionAndLog;
+  let%opt file = Process_402.fileForCmt(cmt, uri, converter(src, clientNeedsPlainText)) |> Result.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
 
 let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
-  let%opt file = ProcessFull.fileForCmi(cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
+  let%opt file = Process_402.fileForCmi(cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
   Hashtbl.replace(cmiCache, cmi, (changed, file));
   Some(file);
 };
@@ -644,7 +644,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
         /** Check dependencies */
         package.localModules |. Belt.List.forEach((mname) => {
           let%opt_consume paths = Utils.maybeHash(package.pathsForModule, mname);
-          let%opt_consume src = TopTypes.getSrc(paths);
+          let%opt_consume src = SharedTypes.getSrc(paths);
           let otherUri = Utils.toUri(src);
           if (mname != moduleName
               && List.mem(
@@ -662,7 +662,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
 
         package.localModules |. Belt.List.forEach((mname) => {
           let%opt_consume paths = Utils.maybeHash(package.pathsForModule, mname);
-          let%opt_consume src = TopTypes.getSrc(paths);
+          let%opt_consume src = SharedTypes.getSrc(paths);
           let otherUri = Utils.toUri(src);
           switch (Hashtbl.find(state.compiledDocuments, otherUri)) {
             | exception Not_found => ()
@@ -711,7 +711,7 @@ let docsForModule = (modname, state, ~package) =>
       let paths = Hashtbl.find(package.pathsForModule, modname);
       /* TODO do better */
       let cmt = TopTypes.getCmt(paths);
-      let src = TopTypes.getSrc(paths);
+      let src = SharedTypes.getSrc(paths);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
       let%opt_wrap docs = docsForCmt(cmt, src, state);
       (docs, src)
@@ -731,7 +731,7 @@ let fileForModule = (state,  ~package, modname) => {
     Log.log(package.localModules |> String.concat(" "));
     let%opt paths = Utils.maybeHash(package.pathsForModule, modname);
     /* TODO do better? */
-    let%opt src = TopTypes.getSrc(paths);
+    let%opt src = SharedTypes.getSrc(paths);
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
       let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> Result.toOptionAndLog;
@@ -752,7 +752,7 @@ let extraForModule = (state, ~package, modname) => {
   if (Hashtbl.mem(package.pathsForModule, modname)) {
     let paths = Hashtbl.find(package.pathsForModule, modname);
     /* TODO do better? */
-    let%opt src = TopTypes.getSrc(paths);
+    let%opt src = SharedTypes.getSrc(paths);
     let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> Result.toOptionAndLog;
     Some(extra)
   } else {

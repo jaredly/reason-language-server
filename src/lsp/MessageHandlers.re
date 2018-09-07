@@ -26,7 +26,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     {
       let%opt (uri, loc) =
         References.definitionForPos(
-          ~package,
+          ~pathsForModule=package.pathsForModule,
           ~file=data.file,
           ~extra=data.extra,
           ~getUri=State.fileForUri(state, ~package),
@@ -232,7 +232,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
       let%opt allReferences = References.allReferencesForLoc(
-        ~package,
+        ~pathsForModule=package.pathsForModule,
         ~file,
         ~extra,
         ~allModules=package.localModules,
@@ -275,7 +275,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt allReferences = References.allReferencesForLoc(
         ~file,
         ~extra,
-        ~package,
+        ~pathsForModule=package.pathsForModule,
         ~allModules=package.localModules,
         ~getModule=State.fileForModule(state, ~package),
         ~getUri=State.fileForUri(state, ~package),

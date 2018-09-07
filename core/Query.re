@@ -16,13 +16,17 @@ let hashFind = (tbl, key) => switch (Hashtbl.find(tbl, key)) {
   | result => Some(result)
 };
 
+let tupleOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => (pos_lnum - 1, pos_cnum - pos_bol);
+let locationIsBefore = ({Location.loc_start}, pos) =>
+  tupleOfLexing(loc_start) <= pos;
+
 let findInScope = (pos, name, stamps) => {
   /* Log.log("Find " ++ name ++ " with " ++ string_of_int(Hashtbl.length(stamps)) ++ " stamps"); */
   Hashtbl.fold((_stamp, declared, result) => {
     if (declared.name.txt == name) {
       let (l, c) = pos;
       /* Log.log("a stamp " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ string_of_int(l) ++ "," ++ string_of_int(c)); */
-      if (Protocol.locationIsBefore(declared.scopeLoc, pos)) {
+      if (locationIsBefore(declared.scopeLoc, pos)) {
         switch result {
           | None => Some(declared)
           | Some(current) =>

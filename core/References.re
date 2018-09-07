@@ -108,11 +108,11 @@ let definedForLoc = (~file, ~getModule, loc) => {
   };
 };
 
-let alternateDeclared = (~file, ~package: TopTypes.package, ~getUri, declared, tip) => {
-  let%opt paths = Utils.maybeHash(package.pathsForModule, file.moduleName);
+let alternateDeclared = (~file, ~pathsForModule, ~getUri, declared, tip) => {
+  let%opt paths = Utils.maybeHash(pathsForModule, file.moduleName);
   Log.log("paths for " ++ file.moduleName);
   switch (paths) {
-  | TopTypes.IntfAndImpl(_, Some(intf), _, Some(impl)) =>
+  | SharedTypes.IntfAndImpl(_, Some(intf), _, Some(impl)) =>
     Log.log("Have both!!");
     let intf = Utils.toUri(intf);
     let impl = Utils.toUri(impl);
@@ -165,7 +165,7 @@ let resolveModuleReference = (~file, ~getModule, declared: SharedTypes.declared(
   }
 };
 
-let forLocalStamp = (~package: TopTypes.package, ~file, ~extra, ~allModules, ~getModule, ~getUri, ~getExtra, stamp, tip) => {
+let forLocalStamp = (~pathsForModule, ~file, ~extra, ~allModules, ~getModule, ~getUri, ~getExtra, stamp, tip) => {
   let env = {Query.file, exported: file.contents.exported};
   open Infix;
   let%opt localStamp = switch tip {
@@ -184,7 +184,7 @@ let forLocalStamp = (~package: TopTypes.package, ~file, ~extra, ~allModules, ~ge
       also find the references in that file.
        */
       let alternativeReferences = {
-        let%opt (file, extra, {stamp}) = alternateDeclared(~package, ~file, ~getUri, declared, tip);
+        let%opt (file, extra, {stamp}) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
         let%opt localStamp = switch tip {
           | Constructor(name) => Query.getConstructor(file, stamp, name) |?>> x => x.stamp
           | Attribute(name) => Query.getAttribute(file, stamp, name) |?>> x => x.stamp
@@ -213,7 +213,7 @@ let forLocalStamp = (~package: TopTypes.package, ~file, ~extra, ~allModules, ~ge
   Some([(file.uri, local), ...externals])
 };
 
-let allReferencesForLoc = (~package, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
+let allReferencesForLoc = (~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, loc) => {
   switch (loc) {
     | Loc.Explanation(_)
     | Typed(_, NotFound)
@@ -222,13 +222,13 @@ let allReferencesForLoc = (~package, ~getUri, ~file, ~extra, ~allModules, ~getMo
     | Constant(_)
     | Open => Result.Error("Not a valid loc")
     | TypeDefinition(_, _, stamp) => {
-      forLocalStamp(~package, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> Result.orError("Could not get for local stamp")
+      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> Result.orError("Could not get for local stamp")
     }
     | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
     | Module(LocalReference(stamp, tip) | Definition(stamp, tip))
     => {
       maybeLog("Finding references for " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
-      forLocalStamp(~package, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
+      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
     }
     | Module(GlobalReference(moduleName, path, tip))
     | Typed(_, GlobalReference(moduleName, path, tip)) => {
@@ -238,7 +238,7 @@ let allReferencesForLoc = (~package, ~getUri, ~file, ~extra, ~allModules, ~getMo
       let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
       let%try (file, extra) = getUri(env.file.uri);
       maybeLog("Finding references for (global) " ++ env.file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
-      forLocalStamp(~package, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
+      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
     }
   }
 };
@@ -302,7 +302,7 @@ let rec definition = (~file, ~getModule, stamp, tip) => {
   };
 };
 
-let definitionForLoc = (~package: TopTypes.package, ~file, ~getUri, ~getModule, loc) => {
+let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
   switch (loc) {
     | Loc.Typed(_, Definition(stamp, tip)) => {
       Log.log("Trying to find a defintion for a definition");
@@ -310,7 +310,7 @@ let definitionForLoc = (~package: TopTypes.package, ~file, ~getUri, ~getModule, 
       Log.log("Declared");
       if (declared.exported) {
         Log.log("exported, looking for alternate " ++ file.moduleName);
-        let%opt (file, extra, declared) = alternateDeclared(~package, ~file, ~getUri, declared, tip);
+        let%opt (file, extra, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
         let loc = validateLoc(declared.name.loc, declared.extentLoc);
         Some((file.uri, loc))
       } else {
@@ -326,16 +326,8 @@ let definitionForLoc = (~package: TopTypes.package, ~file, ~getUri, ~getModule, 
     | TopLevelModule(name) =>
       maybeLog("Toplevel " ++ name);
       open Infix;
-      let%opt src = Utils.maybeHash(package.TopTypes.pathsForModule, name) |?> TopTypes.getSrc;
+      let%opt src = Utils.maybeHash(pathsForModule, name) |?> SharedTypes.getSrc;
       Some((Utils.toUri(src), Utils.topLoc(src)))
-      /* switch (Hashtbl.find(package.TopTypes.pathsForModule, name)) {
-        | (_, Some(src)) => Some((Utils.toUri(src), Utils.topLoc(src)))
-        | (_, None) => None
-        | exception Not_found => {
-          maybeLog("No path for module " ++ name);
-          None
-        }
-      } */
     | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {
       maybeLog("Local defn " ++ SharedTypes.tipToString(tip));
@@ -355,8 +347,8 @@ let definitionForLoc = (~package: TopTypes.package, ~file, ~getUri, ~getModule, 
   }
 };
 
-let definitionForPos = (~package, ~file, ~extra, ~getUri, ~getModule, pos) => {
+let definitionForPos = (~pathsForModule, ~file, ~extra, ~getUri, ~getModule, pos) => {
   let%opt (_, loc) = locForPos(~extra, pos);
   maybeLog("Got a loc for pos");
-  definitionForLoc(~package, ~file, ~getUri, ~getModule, loc)
+  definitionForLoc(~pathsForModule, ~file, ~getUri, ~getModule, loc)
 };

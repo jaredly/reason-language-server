@@ -4,20 +4,8 @@ type uri = string;
 type filePath = string;
 type moduleName = string;
 
-type paths =
-| Impl(filePath, option(filePath))
-| Intf(filePath, option(filePath))
-| IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
-
-let getSrc = p => switch p {
-  | Intf(_, s)
-  | Impl(_, s)
-  | IntfAndImpl(_, Some(_) as s, _, _)
-  | IntfAndImpl(_, None, _, s) => s
-};
-
 let getCmt = p => switch p {
-  | Impl(c, _) | Intf(c, _) | IntfAndImpl(c, _, _, _) => c
+  | SharedTypes.Impl(c, _) | Intf(c, _) | IntfAndImpl(c, _, _, _) => c
 };
 
 /* type paths = {
@@ -38,7 +26,7 @@ type package = {
   localModules: list(moduleName),
   interModuleDependencies: Hashtbl.t(moduleName, list(moduleName)),
   dependencyModules: list(moduleName),
-  pathsForModule: Hashtbl.t(moduleName, paths),
+  pathsForModule: Hashtbl.t(moduleName, SharedTypes.paths),
   nameForPath: Hashtbl.t(uri, moduleName),
 
   opens: list(string),

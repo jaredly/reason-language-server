@@ -105,7 +105,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
 
     package.localModules |. Belt.List.forEach((mname) => {
       let%opt_consume paths = Utils.maybeHash(package.pathsForModule, mname);
-      let%opt_consume src = TopTypes.getSrc(paths);
+      let%opt_consume src = SharedTypes.getSrc(paths);
       let otherUri = Utils.toUri(src);
       let refs = Query.hashFind(package.interModuleDependencies, mname);
       open Infix;

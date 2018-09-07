@@ -155,7 +155,7 @@ let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) =>
     let modName = getName(path);
     let compiled = directory /+ path;
     let source = Utils.find(name => compiledTransform(getName(name)) == modName ? Some(sourceBase /+ name) : None, sources);
-    (modName, TopTypes.Impl(compiled, source))
+    (modName, SharedTypes.Impl(compiled, source))
   });
 };
 
@@ -183,7 +183,7 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   |> ifDebug(debug, "With compiled base", (items) => String.concat("\n", List.map(((a, b)) => a ++ " : " ++ b, items)))
   |> List.filter(((full, rel)) => Files.exists(full))
   /* TODO more than just Impl() */
-  |> List.map(((cmt, src)) => (getName(src), TopTypes.Impl(cmt, Some(src)))) */
+  |> List.map(((cmt, src)) => (getName(src), SharedTypes.Impl(cmt, Some(src)))) */
   let interfaces = Hashtbl.create(100);
   files |> List.iter(path => if (
     Filename.check_suffix(path, ".rei")
@@ -211,7 +211,7 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
           if (Files.exists(cmti)) {
             if (Files.exists(cmt)) {
               Log.log("Intf and impl " ++ cmti ++ " " ++ cmt);
-              Some((mname, TopTypes.IntfAndImpl(cmti, Some(intf), cmt, Some(path))))
+              Some((mname, SharedTypes.IntfAndImpl(cmti, Some(intf), cmt, Some(path))))
             } else {
               Log.log("Just intf " ++ cmti);
               Some((mname, Intf(cmti, Some(intf))))
@@ -245,7 +245,7 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
     let cmti = compiledBase /+ base ++ ".cmti";
     let cmi = compiledBase /+ base ++ ".cmi";
     if (Files.exists(cmti)) {
-      [(mname, TopTypes.Intf(cmti, Some(intf))), ...res]
+      [(mname, SharedTypes.Intf(cmti, Some(intf))), ...res]
     } else if (Files.exists(cmi)) {
       [(mname, Intf(cmi, Some(intf))), ...res]
     } else {

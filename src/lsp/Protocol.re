@@ -1,4 +1,5 @@
 open Rpc.J;
+module Types = UnifiedTypes;
 
 let pos = (~line, ~character) => o([("line", i(line)), ("character", i(character))]);
 
@@ -71,9 +72,6 @@ let rangeOfInts = (l0, c0, l1, c1) =>
 let locationContains = ({Location.loc_start, loc_end}, pos) =>
   tupleOfLexing(loc_start) <= pos && tupleOfLexing(loc_end) >= pos;
 
-let locationIsBefore = ({Location.loc_start}, pos) =>
-  tupleOfLexing(loc_start) <= pos;
-
 /** Check if pos is within the location, but be fuzzy about when the location ends.
 If it's within 5 lines, go with it.
  */
@@ -112,7 +110,7 @@ let symbolKind = (kind) =>
   };
 
 let rec variableKind = (t) =>
-  switch t.UnifiedTypes.desc {
+  switch t.Types.desc {
   | Tlink(t) => variableKind(t)
   | Tsubst(t) => variableKind(t)
   | Tarrow(_) => `Function
@@ -127,7 +125,7 @@ let rec variableKind = (t) =>
   };
 
 let typeKind = (t) =>
-  switch t.UnifiedTypes.type_kind {
+  switch t.Types.type_kind {
   | Type_open
   | Type_abstract => `TypeParameter
   | Type_record(_) => `Interface
