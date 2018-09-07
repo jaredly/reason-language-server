@@ -30,13 +30,45 @@ let setPackageTimer = package => {
 
 let watchedFileContentsMap = Hashtbl.create(100);
 
+let reloadAllState = state => {
+  Log.log("RELOADING ALL STATE");
+  Hashtbl.iter(
+    (uri, _) => Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime),
+    state.documentText,
+  );
+  {
+    ...TopTypes.empty(),
+    documentText: state.documentText,
+    documentTimers: state.documentTimers,
+    settings: state.settings,
+  };
+};
+
 let notificationHandlers: list((string, (state, Json.t) => result(state, string))) = [
   ("textDocument/didOpen", (state, params) => {
-    (params |> Json.get("textDocument") |?> getTextDocument |?>> ((uri, version, text))  => {
-      Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
-      Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
-      state
-    }) |> orError("Invalid params")
+    let%try (uri, version, text) = Json.get("textDocument", params) |?> getTextDocument |> Result.orError("Invalid params");
+    Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
+    Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
+    
+    let%try path = Utils.parseUri(uri) |> Result.orError("Invalid uri");
+    if (FindFiles.isSourceFile(path)) {
+      let%try package = State.getPackage(uri, state);
+      let name = FindFiles.getName(path);
+      if (!Hashtbl.mem(package.nameForPath, name)) {
+        Ok(reloadAllState(state))
+        /* Hashtbl.add(package.nameForPath, path, name);
+        Hashtbl.add(package.pathsForModule, name, Impl(path, Some(path)));
+        Hashtbl.replace(state.packagesByRoot, package.basePath, {
+          ...package,
+          localModules: [name, ...package.localModules]
+        });
+        Ok(state) */
+      } else {
+        Ok(state)
+      }
+    } else {
+      Ok(state)
+    }
   }),
   ("workspace/didChangeConfiguration", (state, params) => {
     let nullIfEmpty = item => item == "" ? None : Some(item);
@@ -141,20 +173,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     } |? false);
 
     if (shouldReload) {
-      Log.log("RELOADING ALL STATE");
-      Hashtbl.iter((uri, _) =>
-        Hashtbl.replace(
-          state.documentTimers,
-          uri,
-          Unix.gettimeofday() +. recompileDebounceTime,
-        ), state.documentText
-      );
-      Ok({
-        ...TopTypes.empty(),
-        documentText: state.documentText,
-        documentTimers: state.documentTimers,
-        settings: state.settings,
-      })
+      Ok(reloadAllState(state))
     } else {
       Ok(state)
     }
