@@ -168,7 +168,7 @@ and forSignatureType = (env, signature) => {
 
   {Module.exported, topLevel}
 } and forModuleType = (env, moduleType) => switch moduleType {
-  | UnifiedTypes.Mty_ident(path) => Module.Ident(path)
+  | Types.Mty_ident(path) => Module.Ident(path)
   | Mty_alias(path) => Module.Ident(path)
   | Mty_signature(signature) => {
     Module.Structure(forSignatureType(env, signature))

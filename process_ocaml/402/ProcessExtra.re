@@ -158,7 +158,7 @@ module F = (Collector: {
     switch (Query.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
-        let {UnifiedTypes.lbl_loc, lbl_res} = item;
+        let {Types.lbl_loc, lbl_res} = item;
         let name = Longident.last(txt);
 
         let (name, typeLident) = handleConstructor(path, txt);
@@ -188,7 +188,7 @@ module F = (Collector: {
     switch (Query.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
-        items |> List.iter((({Asttypes.txt, loc}, {UnifiedTypes.lbl_loc, lbl_res}, _)) => {
+        items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
           /* let name = Longident.last(txt); */
 
           let (name, typeLident) = handleConstructor(path, txt);
@@ -215,7 +215,7 @@ module F = (Collector: {
     }
   };
 
-  let addForConstructor = (constructorType, {Asttypes.txt, loc}, {UnifiedTypes.cstr_name, cstr_loc}) => {
+  let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
     switch (Query.dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
         /* let name = Longident.last(txt); */
@@ -496,7 +496,7 @@ let forFile = (~file) => {
       });
       | Variant(constructos) => constructos |> List.iter(({Type.Constructor.stamp, name}) => {
         addReference(stamp, name.loc);
-        let t = {UnifiedTypes.id: 0, level: 0, desc: Tconstr(Compiler_libs_402.Path.Pident({Compiler_libs_402.Ident.stamp, name: d.name.txt, flags: 0}), [], ref(UnifiedTypes.Mnil))};
+        let t = {Types.id: 0, level: 0, desc: Tconstr(Compiler_libs_402.Path.Pident({Compiler_libs_402.Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))};
         addLocation(name.loc, Loc.Typed(t, Loc.Definition(d.stamp, Constructor(name.txt))))
       });
       | _ => ()
