@@ -1,7 +1,6 @@
 open Result;
 
-let digConstructor = (~env, ~getModule, expr) => {
-  let%opt path = Process_402.digConstructor(expr);
+let digConstructor = (~env, ~getModule, path) => {
   switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
   | `Not_found => None
   | `Stamp(stamp) =>
@@ -95,11 +94,12 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       | Const_nativeint(_) => "int"
       })
     }
-    | Typed(dontUseT, _) => {
-      let typeString = dontUseT.toString();
+    | Typed(t, _) => {
+      let typeString = t.toString();
       let extraTypeInfo = {
         let env = {Query.file, exported: file.contents.exported};
-        let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, t);
+        let%opt path = t.getConstructorPath();
+        let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
         Some(typ.toString())
       };
 

@@ -1,6 +1,7 @@
 
 type flexibleType = {
   toString: unit => string,
+  getConstructorPath: unit => option(Path.t),
   getArguments: unit => list((string, flexibleType)),
 };
 

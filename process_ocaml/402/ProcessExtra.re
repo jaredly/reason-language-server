@@ -155,7 +155,7 @@ module F = (Collector: {
   };
 
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
-    switch (ProcessCmt.dig(recordType).desc) {
+    switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         let {Types.lbl_loc, lbl_res} = item;
@@ -185,7 +185,7 @@ module F = (Collector: {
   };
 
   let addForRecord = (recordType, items) => {
-    switch (ProcessCmt.dig(recordType).desc) {
+    switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
@@ -216,7 +216,7 @@ module F = (Collector: {
   };
 
   let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
-    switch (ProcessCmt.dig(constructorType).desc) {
+    switch (Shared.dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
         /* let name = Longident.last(txt); */
 

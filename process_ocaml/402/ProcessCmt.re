@@ -395,20 +395,3 @@ let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
     contents,
   });
 };
-
-/** TODO move to the Process_ stuff */
-let rec dig = (typ) =>
-  switch typ.UnifiedTypes.desc {
-  | UnifiedTypes.Tlink(inner) => dig(inner)
-  | UnifiedTypes.Tsubst(inner) => dig(inner)
-  | UnifiedTypes.Tpoly(inner, _) => dig(inner)
-  | _ => typ
-  };
-
-let makeFlexible = t => {
-  toString: () => {
-    PrintType.default.expr(PrintType.default, t)
-    |> PrintType.prettyString(~width=40)
-  },
-  getArguments: () => []
-};
