@@ -109,15 +109,28 @@ let tick = state => {
 };
 
 let main = () => {
-  log("Booting up");
-  BasicServer.run(
-    ~tick,
-    ~log,
-    ~messageHandlers=MessageHandlers.handlers,
-    ~notificationHandlers=NotificationHandlers.notificationHandlers,
-    ~capabilities=_params => capabilities,
-    ~getInitialState
-  );
-  log("Finished");
-  out^ |?< close_out;
+  switch (Sys.argv) {
+    | [|_|] =>
+      log("Booting up");
+      BasicServer.run(
+        ~tick,
+        ~log,
+        ~messageHandlers=MessageHandlers.handlers,
+        ~notificationHandlers=NotificationHandlers.notificationHandlers,
+        ~capabilities=_params => capabilities,
+        ~getInitialState
+      );
+      log("Finished");
+      out^ |?< close_out;
+    | [|_, "-h" | "--help"|] | _ =>
+      print_endline({|
+## Reason Language Server ##
+
+Usage: run without arguments, and communicate over stdin/stdout,
+following the language server protocol as defined in
+https://microsoft.github.io/language-server-protocol/specification
+
+Logs are stored in `<project_root>/node_modules/.lsp/debug.log`.
+      |})
+  }
 };
