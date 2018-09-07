@@ -4,6 +4,8 @@ open Typedtree;
 open SharedTypes;
 open Infix;
 
+
+
 let getTopDoc = structure => {
   switch structure {
   | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
@@ -392,4 +394,21 @@ let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
     docstring: Some("No docstring for cmi files"),
     contents,
   });
+};
+
+/** TODO move to the Process_ stuff */
+let rec dig = (typ) =>
+  switch typ.UnifiedTypes.desc {
+  | UnifiedTypes.Tlink(inner) => dig(inner)
+  | UnifiedTypes.Tsubst(inner) => dig(inner)
+  | UnifiedTypes.Tpoly(inner, _) => dig(inner)
+  | _ => typ
+  };
+
+let makeFlexible = t => {
+  toString: () => {
+    PrintType.default.expr(PrintType.default, t)
+    |> PrintType.prettyString(~width=40)
+  },
+  getArguments: () => []
 };

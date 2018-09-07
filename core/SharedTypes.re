@@ -1,4 +1,9 @@
 
+type flexibleType = {
+  toString: unit => string,
+  getArguments: unit => list((string, flexibleType)),
+};
+
 type filePath = string
 type paths =
 | Impl(filePath, option(filePath))

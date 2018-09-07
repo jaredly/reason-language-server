@@ -1,22 +1,18 @@
 open Result;
 
 let digConstructor = (~env, ~getModule, expr) => {
-  let expr = Process_402.dig(expr);
-  switch (expr.desc) {
-  | Tconstr(path, _args, _memo) =>
-    switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
-    | `Not_found => None
-    | `Stamp(stamp) =>
-      let%opt t = Query.hashFind(env.file.stamps.types, stamp);
-      Some((env, t));
-    | `Exported(env, name) =>
-      let%opt stamp = Query.hashFind(env.exported.types, name);
-      let%opt t = Query.hashFind(env.file.stamps.types, stamp);
-      Some((env, t));
-    | _ => None
-    }
+  let%opt path = Process_402.digConstructor(expr);
+  switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
+  | `Not_found => None
+  | `Stamp(stamp) =>
+    let%opt t = Query.hashFind(env.file.stamps.types, stamp);
+    Some((env, t));
+  | `Exported(env, name) =>
+    let%opt stamp = Query.hashFind(env.exported.types, name);
+    let%opt t = Query.hashFind(env.file.stamps.types, stamp);
+    Some((env, t));
   | _ => None
-  };
+  }
 };
 
 let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(SharedTypes.Module.item))) => {
@@ -99,25 +95,20 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       | Const_nativeint(_) => "int"
       })
     }
-    | Typed(t, _) => {
-      let typeString = 
-        Process_402.PrintType.default.expr(Process_402.PrintType.default, t)
-        |> Process_402.PrintType.prettyString(~width=40);
-
-      let env = {Query.file, exported: file.contents.exported};
-      let codeBlock = t => markdown
-        ? "```\n" ++ t ++ "\n```"
-        : t;
-
-      let typeString = codeBlock(typeString);
+    | Typed(dontUseT, _) => {
+      let typeString = dontUseT.toString();
       let extraTypeInfo = {
+        let env = {Query.file, exported: file.contents.exported};
         let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, t);
-        Some("\n\n" ++ codeBlock(
-          Process_402.PrintType.default.decl(Process_402.PrintType.default, txt, txt, typ)
-          |> Process_402.PrintType.prettyString(~width=40)
-        ))
+        Some(typ.toString())
       };
-      let typeString = typeString ++ (extraTypeInfo |? "");
+
+      let codeBlock = text => markdown ? "```\n" ++ text ++ "\n```" : text;
+      let typeString = codeBlock(typeString);
+      let typeString = typeString ++ (switch (extraTypeInfo) {
+        | None => ""
+        | Some(extra) => "\n\n" ++ codeBlock(extra)
+      });
 
       Some({
         let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(

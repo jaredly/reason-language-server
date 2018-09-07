@@ -77,7 +77,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             | Typed(t, _) => Some(t)
             | _ => None
             };
-          /* TODO fifgure out why vscode isn't showing this documentation */
           let%opt hoverText =
             Hover.newHover(
               ~rootUri=state.rootUri,

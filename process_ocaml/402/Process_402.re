@@ -3,7 +3,13 @@ open Compiler_libs_402;
 open SharedTypes;
 open Belt.Result;
 
-let dig = ProcessExtra.dig;
+let digConstructor = (expr) => {
+  let expr = ProcessCmt.dig(expr);
+  switch (expr.desc) {
+  | Tconstr(path, _args, _memo) => Some(path)
+  | _ => None
+  };
+};
 
 let tryReadCmi = cmi =>
   switch (Cmi_format.read_cmi(cmi)) {
