@@ -132,7 +132,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
           }
         };
 
-        Some(String.concat("\n\n", parts |. Belt_List.keepMap(x => x)))
+        Some(String.concat("\n\n", parts |. Belt.List.keepMap(x => x)))
       } |? typeString)
 
     }

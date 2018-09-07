@@ -1,2 +1,5 @@
+(include_subdirs unqualified)
+
 (library
+(c_names stubs)
   (name Belt))

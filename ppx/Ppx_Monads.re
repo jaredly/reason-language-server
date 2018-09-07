@@ -47,6 +47,9 @@ the result of the whole thing to be unit, use `let%consume`.
 
  */
 
+open Migrate_parsetree
+open OCaml_402.Ast
+
 /***
  * https://ocsigen.org/lwt/dev/api/Ppx_lwt
  * https://github.com/zepalmer/ocaml-monadic
@@ -148,7 +151,7 @@ This is intented for performing side-effects only -- `otherStuff`
 must end up as type `unit`.
 |};
 
-let mapper = _argv =>
+let mapper = 
   Parsetree.{
     ...Ast_mapper.default_mapper,
     expr: (mapper, expr) =>
@@ -184,4 +187,4 @@ let mapper = _argv =>
       }
   };
 
-let () = Ast_mapper.run_main(mapper);
+let () = Driver.register(~name="ppx_monads", ~args=[], Versions.ocaml_402, (_config, _cookies) => mapper);

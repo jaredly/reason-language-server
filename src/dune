@@ -3,6 +3,6 @@
 (executable
   (name Bin)
   (public_name Bin)
-  (libraries compiler-libs Belt Vendor ocaml-migrate-parsetree ppx_tools_versioned)
-  (flags :standard -open Vendor)
-  (preprocess (pps Belt_ppx )))
+  (libraries compiler-libs.common Belt Vendor str)
+  (flags :standard -open Vendor -w -26)
+  (preprocess (pps Belt_ppx Ppx_monads)))
