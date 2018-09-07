@@ -1,9 +1,16 @@
 
+type kinds = [ `Function | `Array | `Variable | `Object | `Null | `EnumMember | `Module | `Enum | `Interface | `TypeParameter | `ModuleType ];
+
 type flexibleType = {
   toString: unit => string,
-  variableKind: [ `Function | `Array | `Variable | `Object | `Null | `EnumMember | `Module | `Enum | `Interface | `TypeParameter | `ModuleType ],
+  variableKind: kinds,
   getConstructorPath: unit => option(Path.t),
   getArguments: unit => (list((string, flexibleType)), flexibleType),
+};
+
+type flexibleDeclaration = {
+  declToString: string => string,
+  declarationKind: kinds,
 };
 
 type filePath = string
@@ -84,7 +91,7 @@ module Type = {
   type t = {
     kind,
     params: list((flexibleType, Location.t)),
-    typ: UnifiedTypes.type_declaration,
+    typ: flexibleDeclaration,
   };
 };
 
@@ -236,7 +243,7 @@ module Loc = {
   | Constant(Asttypes.constant)
   | Module(typed)
   | TopLevelModule(string)
-  | TypeDefinition(string, UnifiedTypes.type_declaration, int)
+  | TypeDefinition(string, flexibleDeclaration, int)
   | Explanation(string)
   | Open;
 };

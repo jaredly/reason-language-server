@@ -282,8 +282,7 @@ let kindToInt = k =>
 let detail = (name, contents) =>
   switch (contents) {
   | Type({typ}) =>
-    Process_402.PrintType.default.decl(Process_402.PrintType.default, name, name, typ)
-    |> Process_402.PrintType.prettyString
+    typ.declToString(name)
   | Value({typ}) =>
     typ.toString()
   | Module(m) => "module"
@@ -297,25 +296,13 @@ let detail = (name, contents) =>
     )
     ++ "\n\n"
     ++ (
-      Process_402.PrintType.default.decl(
-        Process_402.PrintType.default,
-        t.name.txt,
-        t.name.txt,
-        t.contents.typ,
-      )
-      |> Process_402.PrintType.prettyString
+      t.contents.typ.declToString(t.name.txt)
     )
   | Constructor(c, t) =>
   showConstructor(c)
     ++ "\n\n"
     ++ (
-      Process_402.PrintType.default.decl(
-        Process_402.PrintType.default,
-        t.name.txt,
-        t.name.txt,
-        t.contents.typ,
-      )
-      |> Process_402.PrintType.prettyString
+      t.contents.typ.declToString(t.name.txt)
     )
   };
 

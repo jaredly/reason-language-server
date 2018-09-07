@@ -505,7 +505,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let fn = ({name: {txt, loc}, extentLoc, contents}) => {
         let (item, siblings) = switch contents {
           | Module.Value(v) => (v.typ.variableKind, [])
-          | Type(t) => (Protocol.typeKind(t.typ), [])
+          | Type(t) => (t.typ.declarationKind, [])
           | Module(Structure(contents)) => (`Module, getItems(contents))
           | Module(Ident(_)) => (`Module, [])
           | ModuleType(_) => (`ModuleType, [])

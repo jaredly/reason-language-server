@@ -33,6 +33,20 @@ let rec variableKind = (t) =>
   | _ => `Variable
   };
 
+let typeKind = (t) =>
+  switch t.Types.type_kind {
+  | Type_open
+  | Type_abstract => `TypeParameter
+  | Type_record(_) => `Interface
+  | Type_variant(_) => `Enum
+  };
+
+let makeDeclaration = t => {
+  SharedTypes.declToString: name =>
+PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
+  declarationKind: typeKind(t)
+}
+
 let rec makeFlexible = t => {
   SharedTypes.toString: () => {
     PrintType.default.expr(PrintType.default, t)

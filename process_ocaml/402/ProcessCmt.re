@@ -110,7 +110,7 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
   | Sig_type({stamp, name}, {type_params, type_loc, type_kind, type_attributes} as decl, _) => {
     let declared = addItem(~extent=type_loc, ~contents={
       Type.params: type_params |> List.map(t => (Shared.makeFlexible(t), Location.none)),
-      typ: decl,
+      typ: Shared.makeDeclaration(decl),
       kind: switch type_kind {
         | Type_abstract => Abstract
         | Type_open => Open
@@ -181,7 +181,7 @@ and forSignatureType = (env, signature) => {
 let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind}) => {
   let declared = addItem(~extent=typ_loc, ~contents={
     Type.params: typ_params |> List.map(((t, _)) => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
-    typ: typ_type,
+    typ: Shared.makeDeclaration(typ_type),
     kind: switch typ_kind {
       | Ttype_abstract => Abstract
       | Ttype_open => Open

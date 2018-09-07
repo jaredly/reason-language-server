@@ -23,7 +23,7 @@ let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(
          | Module(_) => "  module " ++ item.name.txt ++ ";"
          | Type({typ}) =>
            "  "
-           ++ (Process_402.PrintType.indentGroup(Process_402.PrintType.default.decl(Process_402.PrintType.default, item.name.txt, item.name.txt, typ)) |> Process_402.PrintType.prettyString)
+           ++ (typ.declToString(item.name.txt))
          | Value({typ}) =>
            "  let "
            ++ item.name.txt
@@ -100,7 +100,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
         let env = {Query.file, exported: file.contents.exported};
         let%opt path = t.getConstructorPath();
         let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
-        Some(Process_402.PrintType.default.decl(Process_402.PrintType.default, txt, txt, typ) |> Process_402.PrintType.prettyString)
+        Some(typ.declToString(txt))
         /* TODO type declaration */
         /* None */
         /* Some(typ.toString()) */

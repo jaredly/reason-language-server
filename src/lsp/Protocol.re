@@ -115,13 +115,3 @@ let hasMarkdownCap = (markupKind) => {
   let%opt kinds = Json.array(markupKind) |?>> optMap(Json.string);
   Some(List.mem("markdown", kinds))
 };
-
-module Types = UnifiedTypes;
-
-let typeKind = (t) =>
-  switch t.Types.type_kind {
-  | Type_open
-  | Type_abstract => `TypeParameter
-  | Type_record(_) => `Interface
-  | Type_variant(_) => `Enum
-  };
