@@ -12,7 +12,7 @@
 
 (* Identifiers (unique names) *)
 
-type t = { stamp: int; name: string; mutable flags: int }
+type t = Current.ident = { stamp: int; name: string; mutable flags: int }
 
 val create: string -> t
 val create_persistent: string -> t

@@ -16,7 +16,7 @@ let absname = ref false
     (* This reference should be in Clflags, but it would create an additional
        dependency and make bootstrapping Camlp4 more difficult. *)
 
-type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
+type t = Current.location ={ loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
   let loc = {
@@ -297,7 +297,7 @@ let echo_eof () =
   print_newline ();
   incr num_loc_lines
 
-type 'a loc = {
+type 'a loc = 'a Current.loc = {
   txt : 'a;
   loc : t;
 }

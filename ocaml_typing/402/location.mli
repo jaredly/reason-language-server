@@ -14,7 +14,7 @@
 
 open Format
 
-type t = {
+type t = Current.location = {
   loc_start: Lexing.position;
   loc_end: Lexing.position;
   loc_ghost: bool;
@@ -68,7 +68,7 @@ val default_warning_printer : t -> formatter -> Warnings.t -> unit
 
 val highlight_locations: formatter -> t list -> bool
 
-type 'a loc = {
+type 'a loc = 'a Current.loc = {
   txt : 'a;
   loc : t;
 }

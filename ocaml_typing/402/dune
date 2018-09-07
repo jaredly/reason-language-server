@@ -2,5 +2,6 @@
 (library
   (name Types_402)
   (modules_without_implementation annot outcometree asttypes parsetree)
+  (libraries Current)
   (flags :standard -w -A)
 )

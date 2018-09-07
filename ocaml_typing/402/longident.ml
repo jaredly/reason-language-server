@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-type t =
+type t = Current.longident =
     Lident of string
   | Ldot of t * string
   | Lapply of t * t

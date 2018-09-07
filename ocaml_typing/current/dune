@@ -1,0 +1,4 @@
+
+(library
+  (name Current)
+  (libraries compiler-libs.common))
