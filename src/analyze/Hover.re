@@ -9,12 +9,12 @@ let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(
          | Module(_) => "  module " ++ item.name.txt ++ ";"
          | Type({typ}) =>
            "  "
-           ++ (PrintType.indentGroup(PrintType.default.decl(PrintType.default, item.name.txt, item.name.txt, typ)) |> PrintType.prettyString)
+           ++ (Process_402.PrintType.indentGroup(Process_402.PrintType.default.decl(Process_402.PrintType.default, item.name.txt, item.name.txt, typ)) |> Process_402.PrintType.prettyString)
          | Value({typ}) =>
            "  let "
            ++ item.name.txt
            ++ ": "
-           ++ (PrintType.indentGroup(PrintType.default.expr(PrintType.default, typ)) |> PrintType.prettyString)
+           ++ (Process_402.PrintType.indentGroup(Process_402.PrintType.default.expr(Process_402.PrintType.default, typ)) |> Process_402.PrintType.prettyString)
            ++ ";"
          | ModuleType(_) => "  module type " ++ item.name.txt ++ ";"
          }
@@ -82,8 +82,8 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
     }
     | Typed(t, _) => {
       let typeString = 
-        PrintType.default.expr(PrintType.default, t)
-        |> PrintType.prettyString(~width=40);
+        Process_402.PrintType.default.expr(Process_402.PrintType.default, t)
+        |> Process_402.PrintType.prettyString(~width=40);
 
       let env = {Query.file, exported: file.contents.exported};
       let codeBlock = t => markdown
@@ -94,8 +94,8 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       let extraTypeInfo = {
         let%opt (env, {name: {txt}, contents: {typ}}) = Query.digConstructor(~env, ~getModule, t);
         Some("\n\n" ++ codeBlock(
-          PrintType.default.decl(PrintType.default, txt, txt, typ)
-          |> PrintType.prettyString(~width=40)
+          Process_402.PrintType.default.decl(Process_402.PrintType.default, txt, txt, typ)
+          |> Process_402.PrintType.prettyString(~width=40)
         ))
       };
       let typeString = typeString ++ (extraTypeInfo |? "");
@@ -119,8 +119,8 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
             [Some(typeString),
             Some(codeBlock(txt ++ "(" ++ (args |. Belt.List.map(((t, _)) => {
               let typeString = 
-                PrintType.default.expr(PrintType.default, t)
-                |> PrintType.prettyString;
+                Process_402.PrintType.default.expr(Process_402.PrintType.default, t)
+                |> Process_402.PrintType.prettyString;
               typeString
 
             }) |> String.concat(", ")) ++ ")")),

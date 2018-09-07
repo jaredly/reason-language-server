@@ -5,9 +5,9 @@ let showConstructor = ({SharedTypes.Type.Constructor.name: {txt}, args, res}) =>
   txt ++ (args == []
     ? ""
     : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
-      PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString
+      Process_402.PrintType.default.expr(Process_402.PrintType.default, typ) |> Process_402.PrintType.prettyString
     ))) ++ ")")
-  ++ ((res |?>> typ => "\n" ++ PrintType.prettyString(PrintType.default.expr(PrintType.default, typ))) |? "")
+  ++ ((res |?>> typ => "\n" ++ Process_402.PrintType.prettyString(Process_402.PrintType.default.expr(Process_402.PrintType.default, typ))) |? "")
 };
 
 let rec pathOfModuleOpen = items =>
@@ -282,11 +282,11 @@ let kindToInt = k =>
 let detail = (name, contents) =>
   switch (contents) {
   | Type({typ}) =>
-    PrintType.default.decl(PrintType.default, name, name, typ)
-    |> PrintType.prettyString
+    Process_402.PrintType.default.decl(Process_402.PrintType.default, name, name, typ)
+    |> Process_402.PrintType.prettyString
   | Value({typ}) =>
-    PrintType.default.value(PrintType.default, name, name, typ)
-    |> PrintType.prettyString
+    Process_402.PrintType.default.value(Process_402.PrintType.default, name, name, typ)
+    |> Process_402.PrintType.prettyString
   | Module(m) => "module"
   | ModuleType(m) => "module type"
   | FileModule(m) => "file module"
@@ -294,30 +294,30 @@ let detail = (name, contents) =>
     name
     ++ ": "
     ++ (
-      PrintType.default.expr(PrintType.default, typ)
-      |> PrintType.prettyString
+      Process_402.PrintType.default.expr(Process_402.PrintType.default, typ)
+      |> Process_402.PrintType.prettyString
     )
     ++ "\n\n"
     ++ (
-      PrintType.default.decl(
-        PrintType.default,
+      Process_402.PrintType.default.decl(
+        Process_402.PrintType.default,
         t.name.txt,
         t.name.txt,
         t.contents.typ,
       )
-      |> PrintType.prettyString
+      |> Process_402.PrintType.prettyString
     )
   | Constructor(c, t) =>
   showConstructor(c)
     ++ "\n\n"
     ++ (
-      PrintType.default.decl(
-        PrintType.default,
+      Process_402.PrintType.default.decl(
+        Process_402.PrintType.default,
         t.name.txt,
         t.name.txt,
         t.contents.typ,
       )
-      |> PrintType.prettyString
+      |> Process_402.PrintType.prettyString
     )
   };
 

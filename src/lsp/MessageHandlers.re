@@ -103,7 +103,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
       let (args, rest) = loop(typ);
       let%opt args = args == [] ? None : Some(args);
-      let printedType = PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString;
+      let printedType = Process_402.PrintType.default.expr(Process_402.PrintType.default, typ) |> Process_402.PrintType.prettyString;
       open Rpc.J;
       Some(Ok((state, o([
         ("activeParameter", i(commas)),
@@ -117,7 +117,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             ("parameters", l(args |. List.map(((label, argt)) => {
               o([
                 ("label", s(label)),
-                ("documentation", s(PrintType.default.expr(PrintType.default, argt) |> PrintType.prettyString))
+                ("documentation", s(Process_402.PrintType.default.expr(Process_402.PrintType.default, argt) |> Process_402.PrintType.prettyString))
               ])
             })))
           ])
@@ -339,7 +339,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? file.contents.topLevel |. List.keepMap(({name: {loc}, contents}) => {
           switch contents {
-          | Value({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s => Some((s, loc))
+          | Value({typ}) => Process_402.PrintType.default.expr(Process_402.PrintType.default, typ) |> Process_402.PrintType.prettyString |> s => Some((s, loc))
           | _ => None
           }
         }) : [];

@@ -31,3 +31,5 @@ let fullForCmt = (cmt, uri, processDoc) => {
   let%try_wrap extra = ProcessExtra.forCmt(~file, infos);
   {file, extra}
 };
+
+module PrintType = PrintType
