@@ -1,4 +1,5 @@
 
+
 /* TODO maybe track the loc's of these things */
 type visibilityPath =
 | File(string)

@@ -3,5 +3,5 @@
 (library
   (name Vendor)
   (flags :standard -w -A)
-  (libraries compiler-libs bigarray)
+  (libraries compiler-libs.common bigarray)
   )

@@ -1,4 +1,7 @@
 
+module A = {
+
+};
 open Typedtree;
 open SharedTypes;
 open Infix;
