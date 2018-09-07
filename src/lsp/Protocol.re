@@ -1,5 +1,4 @@
 open Rpc.J;
-module Types = UnifiedTypes;
 
 let pos = (~line, ~character) => o([("line", i(line)), ("character", i(character))]);
 
@@ -109,6 +108,16 @@ let symbolKind = (kind) =>
   | `TypeParameter => 26
   };
 
+/*
+  returns true if a MarkupKind[] contains "markdown"
+*/
+let hasMarkdownCap = (markupKind) => {
+  let%opt kinds = Json.array(markupKind) |?>> optMap(Json.string);
+  Some(List.mem("markdown", kinds))
+};
+
+module Types = UnifiedTypes;
+
 let rec variableKind = (t) =>
   switch t.Types.desc {
   | Tlink(t) => variableKind(t)
@@ -131,11 +140,3 @@ let typeKind = (t) =>
   | Type_record(_) => `Interface
   | Type_variant(_) => `Enum
   };
-
-/*
-  returns true if a MarkupKind[] contains "markdown"
-*/
-let hasMarkdownCap = (markupKind) => {
-  let%opt kinds = Json.array(markupKind) |?>> optMap(Json.string);
-  Some(List.mem("markdown", kinds))
-};

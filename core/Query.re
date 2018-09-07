@@ -217,31 +217,3 @@ let exportedForTip = (~env, name, tip) => switch tip {
   | Module => hashFind(env.exported.modules, name)
   | ModuleType => hashFind(env.exported.moduleTypes, name)
 };
-
-/** TODO move to the Process_ stuff */
-let rec dig = (typ) =>
-  switch typ.UnifiedTypes.desc {
-  | UnifiedTypes.Tlink(inner) => dig(inner)
-  | UnifiedTypes.Tsubst(inner) => dig(inner)
-  | UnifiedTypes.Tpoly(inner, _) => dig(inner)
-  | _ => typ
-  };
-
-let digConstructor = (~env, ~getModule, expr) => {
-  let expr = dig(expr);
-  switch (expr.desc) {
-  | Tconstr(path, _args, _memo) =>
-    switch (resolveFromCompilerPath(~env, ~getModule, path)) {
-    | `Not_found => None
-    | `Stamp(stamp) =>
-      let%opt t = hashFind(env.file.stamps.types, stamp);
-      Some((env, t));
-    | `Exported(env, name) =>
-      let%opt stamp = hashFind(env.exported.types, name);
-      let%opt t = hashFind(env.file.stamps.types, stamp);
-      Some((env, t));
-    | _ => None
-    }
-  | _ => None
-  };
-};

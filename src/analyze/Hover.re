@@ -1,5 +1,24 @@
 open Result;
 
+let digConstructor = (~env, ~getModule, expr) => {
+  let expr = Process_402.dig(expr);
+  switch (expr.desc) {
+  | Tconstr(path, _args, _memo) =>
+    switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
+    | `Not_found => None
+    | `Stamp(stamp) =>
+      let%opt t = Query.hashFind(env.file.stamps.types, stamp);
+      Some((env, t));
+    | `Exported(env, name) =>
+      let%opt stamp = Query.hashFind(env.exported.types, name);
+      let%opt t = Query.hashFind(env.file.stamps.types, stamp);
+      Some((env, t));
+    | _ => None
+    }
+  | _ => None
+  };
+};
+
 let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(SharedTypes.Module.item))) => {
   let contents =
     topLevel
@@ -92,7 +111,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
 
       let typeString = codeBlock(typeString);
       let extraTypeInfo = {
-        let%opt (env, {name: {txt}, contents: {typ}}) = Query.digConstructor(~env, ~getModule, t);
+        let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, t);
         Some("\n\n" ++ codeBlock(
           Process_402.PrintType.default.decl(Process_402.PrintType.default, txt, txt, typ)
           |> Process_402.PrintType.prettyString(~width=40)

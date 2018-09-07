@@ -3,6 +3,8 @@ open Compiler_libs_402;
 open SharedTypes;
 open Belt.Result;
 
+let dig = ProcessExtra.dig;
+
 let tryReadCmi = cmi =>
   switch (Cmi_format.read_cmi(cmi)) {
   | exception _ => Error("Invalid cmi format - probably wrong ocaml version")

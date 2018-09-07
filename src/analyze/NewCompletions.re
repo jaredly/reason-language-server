@@ -605,7 +605,7 @@ let get =
             Query.findInScope(pos, first, env.file.stamps.values);
           Log.log("Found it! " ++ declared.name.txt);
           let%opt (env, typ) =
-            Query.digConstructor(~env, ~getModule, declared.contents.typ);
+            Hover.digConstructor(~env, ~getModule, declared.contents.typ);
           let%opt (env, typ) =
             Belt.List.reduce(
               rest,
@@ -617,7 +617,7 @@ let get =
                   let%opt attr =
                     attributes |. Belt.List.getBy(a => a.name.txt == name);
                   Log.log("Found attr " ++ name);
-                  Query.digConstructor(~env, ~getModule, attr.typ);
+                  Hover.digConstructor(~env, ~getModule, attr.typ);
                 | _ => None
                 };
               },

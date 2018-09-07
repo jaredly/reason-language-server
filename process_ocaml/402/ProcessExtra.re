@@ -4,6 +4,15 @@ open Typedtree;
 open SharedTypes;
 open Infix;
 
+/** TODO move to the Process_ stuff */
+let rec dig = (typ) =>
+  switch typ.UnifiedTypes.desc {
+  | UnifiedTypes.Tlink(inner) => dig(inner)
+  | UnifiedTypes.Tsubst(inner) => dig(inner)
+  | UnifiedTypes.Tpoly(inner, _) => dig(inner)
+  | _ => typ
+  };
+
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
@@ -155,7 +164,7 @@ module F = (Collector: {
   };
 
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
-    switch (Query.dig(recordType).desc) {
+    switch (dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         let {Types.lbl_loc, lbl_res} = item;
@@ -185,7 +194,7 @@ module F = (Collector: {
   };
 
   let addForRecord = (recordType, items) => {
-    switch (Query.dig(recordType).desc) {
+    switch (dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(path);
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
@@ -216,7 +225,7 @@ module F = (Collector: {
   };
 
   let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
-    switch (Query.dig(constructorType).desc) {
+    switch (dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
         /* let name = Longident.last(txt); */
 
