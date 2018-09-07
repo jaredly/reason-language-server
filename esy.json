@@ -9,12 +9,12 @@
     "@opam/dune": "*",
     "@esy-ocaml/reason": "*",
     "rex-json": "*",
-    "ocaml": "~4.6.0"
+    "ocaml": "~4.2.3"
   },
   "resolutions": {
     "@esy-ocaml/esy-installer": "0.0.1"
   },
   "devDependencies": {
-    "ocaml": "~4.6.0"
+    "ocaml": "~4.2.3"
   }
 }
