@@ -16,8 +16,8 @@ let dig = Query.dig;
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
-    | Path.Pdot(path, typename, _) => typename
-    | Pident({Ident.name}) => name
+    | Types_402.Path.Pdot(path, typename, _) => typename
+    | Pident({Types_402.Ident.name}) => name
     | _ => assert false
     };
   Longident.(

@@ -1,12 +1,13 @@
 
+open Types_402;
 open Typedtree;
 open SharedTypes;
 open Infix;
 
 let rec relative = (ident, path) =>
   switch (ident, path) {
-  | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
-  | (Longident.Ldot(ident, name), Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
+  | (Longident.Lident(name), Types_402.Path.Pdot(path, pname, _)) when pname == name => Some(path)
+  | (Longident.Ldot(ident, name), Types_402.Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
   /* | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => None */
   | _ => None
   };
@@ -20,7 +21,7 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
 
   let matching = Hashtbl.fold((l, op, res) => {
-    if (Utils.locWithinLoc(loc, op.extent) && Path.same(op.path, openNeedle)) {
+    if (Utils.locWithinLoc(loc, op.extent) && Types_402.Path.same(op.path, openNeedle)) {
       [op, ...res]
     } else {
       res
@@ -238,7 +239,7 @@ module F = (Collector: {
     Collector.scopeExtent := List.tl(Collector.scopeExtent^);
   };
 
-  let rec addForLongident = (top, path: Path.t, txt: Longident.t, loc) => {
+  let rec addForLongident = (top, path: Types_402.Path.t, txt: Longident.t, loc) => {
     if (!loc.Location.loc_ghost) {
       let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
       switch (top) {
@@ -479,7 +480,7 @@ let forFile = (~file) => {
       });
       | Variant(constructos) => constructos |> List.iter(({Type.Constructor.stamp, name}) => {
         addReference(stamp, name.loc);
-        let t = {UnifiedTypes.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(UnifiedTypes.Mnil))};
+        let t = {UnifiedTypes.id: 0, level: 0, desc: Tconstr(Types_402.Path.Pident({Types_402.Ident.stamp, name: d.name.txt, flags: 0}), [], ref(UnifiedTypes.Mnil))};
         addLocation(name.loc, Loc.Typed(t, Loc.Definition(d.stamp, Constructor(name.txt))))
       });
       | _ => ()

@@ -1,4 +1,5 @@
 
+open Types_402;
 open SharedTypes;
 
 /* TODO maybe keep track of the "current module path" */
@@ -43,24 +44,24 @@ let findInScope = (pos, name, stamps) => {
 
 let rec joinPaths = (modulePath, path) => {
   switch modulePath {
-    | Path.Pident({stamp, name}) => (stamp, name, path)
-    | Path.Papply(fnPath, _argPath) => joinPaths(fnPath, path)
-    | Path.Pdot(inner, name, _) => joinPaths(inner, Nested(name, path))
+    | Types_402.Path.Pident({stamp, name}) => (stamp, name, path)
+    | Types_402.Path.Papply(fnPath, _argPath) => joinPaths(fnPath, path)
+    | Types_402.Path.Pdot(inner, name, _) => joinPaths(inner, Nested(name, path))
   }
 };
 
 let rec makePath = (modulePath) => {
   switch modulePath {
-    | Path.Pident({stamp: 0, name}) => `GlobalMod(name)
-    | Path.Pident({stamp, name}) => `Stamp(stamp)
-    | Path.Papply(fnPath, _argPath) => makePath(fnPath)
-    | Path.Pdot(inner, name, _) => `Path(joinPaths(inner, Tip(name)))
+    | Types_402.Path.Pident({stamp: 0, name}) => `GlobalMod(name)
+    | Types_402.Path.Pident({stamp, name}) => `Stamp(stamp)
+    | Types_402.Path.Papply(fnPath, _argPath) => makePath(fnPath)
+    | Types_402.Path.Pdot(inner, name, _) => `Path(joinPaths(inner, Tip(name)))
   }
 };
 
 let rec makeRelativePath = (basePath, otherPath) => {
   let rec loop = (base, other, tip) => {
-    if (Path.same(base, other)) {
+    if (Types_402.Path.same(base, other)) {
       Some(tip)
     } else {
       switch other {
@@ -70,7 +71,7 @@ let rec makeRelativePath = (basePath, otherPath) => {
     }
   };
   switch otherPath {
-    | Path.Pdot(inner, name, _) => loop(basePath, inner, Tip(name))
+    | Types_402.Path.Pdot(inner, name, _) => loop(basePath, inner, Tip(name))
     | _ => None
   }
 };

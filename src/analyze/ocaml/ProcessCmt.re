@@ -1,7 +1,5 @@
 
-module A = {
-
-};
+open Types_402;
 open Typedtree;
 open SharedTypes;
 open Infix;

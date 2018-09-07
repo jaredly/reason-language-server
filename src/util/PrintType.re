@@ -1,4 +1,5 @@
 
+open Types_402;
 open Outcometree;
 
 let rec collectArgs = (coll, typ) => switch typ.UnifiedTypes.desc {
@@ -12,9 +13,9 @@ type pathType = PModule | PModuleType | PValue | PType;
 
 module T = {
   type stringifier = {
-    path: (stringifier, Path.t, pathType) => Pretty.doc,
+    path: (stringifier, Types_402.Path.t, pathType) => Pretty.doc,
     expr: (stringifier, UnifiedTypes.type_expr) => Pretty.doc,
-    ident: (stringifier, Ident.t) => Pretty.doc,
+    ident: (stringifier, Types_402.Ident.t) => Pretty.doc,
     decl: (stringifier, string, string, UnifiedTypes.type_declaration) => Pretty.doc,
     value: (stringifier, string, string, UnifiedTypes.type_expr) => Pretty.doc,
     constructor: (stringifier, UnifiedTypes.constructor_declaration) => Pretty.doc,
@@ -105,7 +106,7 @@ let print_expr = (stringifier, typ) => {
   | Tobject(_, _) => {
     let txt = {
       try {
-        Printtyp.type_expr(Format.str_formatter, typ);
+        Types_402.Printtyp.type_expr(Format.str_formatter, typ);
       } { 
         | _ => Format.fprintf(Format.str_formatter, "Unable to print type")
       };
@@ -179,9 +180,9 @@ let print_decl = (stringifier, realName, name, decl) => {
 };
 
 let default = {
-  ident: (_, {Ident.name}) => str(name),
+  ident: (_, {Types_402.Ident.name}) => str(name),
   path: (stringifier, path, pathType) => switch path {
-    | Path.Pident(ident) => stringifier.ident(stringifier, ident)
+    | Types_402.Path.Pident(ident) => stringifier.ident(stringifier, ident)
     | Pdot(path, name, _) => {stringifier.path(stringifier, path, pathType) @! str("." ++ name)}
     | Papply(_, _) => str("<apply>")
   },
