@@ -178,7 +178,7 @@ module F = (Collector: {
             Loc.GlobalReference(moduleName, path, Attribute(name))
           | _ => Loc.NotFound
         };
-        addLocation(nameLoc, Loc.Typed(lbl_res, locType))
+        addLocation(nameLoc, Loc.Typed(Shared.makeFlexible(lbl_res), locType))
       }
       | _ => ()
     }
@@ -208,7 +208,7 @@ module F = (Collector: {
               Loc.GlobalReference(moduleName, path, Attribute(name))
             | _ => Loc.NotFound
           };
-          addLocation(nameLoc, Loc.Typed(lbl_res, locType))
+          addLocation(nameLoc, Loc.Typed(Shared.makeFlexible(lbl_res), locType))
         })
       }
       | _ => ()
@@ -237,7 +237,7 @@ module F = (Collector: {
             Loc.GlobalReference(moduleName, path, Constructor(name))
           | _ => Loc.NotFound
         };
-        addLocation(nameLoc, Loc.Typed(constructorType, locType));
+        addLocation(nameLoc, Loc.Typed(Shared.makeFlexible(constructorType), locType));
       }
       | _ => ()
     }
@@ -344,13 +344,13 @@ module F = (Collector: {
         },
         ~modulePath=NotVisible,
         ~processDoc=x => x,
-        ~contents={Value.typ: val_desc.ctyp_type, recursive: false},
+        ~contents={Value.typ: Shared.makeFlexible(val_desc.ctyp_type), recursive: false},
         false,
         val_attributes
       );
       Hashtbl.add(Collector.file.stamps.values, stamp, declared);
       addReference(stamp, name.loc);
-      addLocation(name.loc, Loc.Typed(val_desc.ctyp_type, Loc.Definition(stamp, Value)));
+      addLocation(name.loc, Loc.Typed(Shared.makeFlexible(val_desc.ctyp_type), Loc.Definition(stamp, Value)));
     }
   }
   | _ => ()
@@ -359,7 +359,7 @@ module F = (Collector: {
   let enter_core_type = ({ctyp_loc, ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
       | Ttyp_constr(path, {txt, loc}, args) => {
-        addForPath(path, txt, loc, ctyp_type, Type)
+        addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type)
       }
       | _ => ()
     }
@@ -380,13 +380,13 @@ module F = (Collector: {
             ~modulePath=NotVisible,
             ~extent=pat_loc,
             ~processDoc=x => x,
-            ~contents={Value.typ: pat_type, recursive: false},
+            ~contents={Value.typ: Shared.makeFlexible(pat_type), recursive: false},
             false,
             pat_attributes
           );
           Hashtbl.add(Collector.file.stamps.values, stamp, declared);
           addReference(stamp, name.loc);
-          addLocation(name.loc, Loc.Typed(pat_type, Loc.Definition(stamp, Value)));
+          addLocation(name.loc, Loc.Typed(Shared.makeFlexible(pat_type), Loc.Definition(stamp, Value)));
         }
     };
     /* Log.log("Entering pattern " ++ Utils.showLocation(pat_loc)); */
@@ -426,7 +426,7 @@ module F = (Collector: {
 
     } */
     | Texp_ident(path, {txt, loc}, {val_type}) => {
-      addForLongident(Some((val_type, Value)), path, txt, loc);
+      addForLongident(Some((Shared.makeFlexible(val_type), Value)), path, txt, loc);
     }
     | Texp_record(items, _) => {
       addForRecord(expression.exp_type, items);
@@ -497,7 +497,7 @@ let forFile = (~file) => {
       | Variant(constructos) => constructos |> List.iter(({Type.Constructor.stamp, name}) => {
         addReference(stamp, name.loc);
         let t = {Types.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))};
-        addLocation(name.loc, Loc.Typed(t, Loc.Definition(d.stamp, Constructor(name.txt))))
+        addLocation(name.loc, Loc.Typed(Shared.makeFlexible(t), Loc.Definition(d.stamp, Constructor(name.txt))))
       });
       | _ => ()
     };

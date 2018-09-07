@@ -91,18 +91,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
-      /* TODO move this into ProcessExtra or somewheres */
-      let rec loop = t => switch (t.UnifiedTypes.desc) {
-        | UnifiedTypes.Tsubst(t)
-        | Tlink(t) => loop(t)
-        | Tarrow(label, argt, res, _) =>
-          let (args, fin) = loop(res);
-          ([(label, argt), ...args], fin)
-        | _ => ([], t)
-      };
-      let (args, rest) = loop(typ);
+      let (args, rest) = typ.getArguments();
       let%opt args = args == [] ? None : Some(args);
-      let printedType = Process_402.PrintType.default.expr(Process_402.PrintType.default, typ) |> Process_402.PrintType.prettyString;
+      let printedType = typ.toString();
       open Rpc.J;
       Some(Ok((state, o([
         ("activeParameter", i(commas)),
@@ -116,7 +107,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             ("parameters", l(args |. List.map(((label, argt)) => {
               o([
                 ("label", s(label)),
-                ("documentation", s(Process_402.PrintType.default.expr(Process_402.PrintType.default, argt) |> Process_402.PrintType.prettyString))
+                ("documentation", s(argt.toString()))
               ])
             })))
           ])
@@ -338,7 +329,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? file.contents.topLevel |. List.keepMap(({name: {loc}, contents}) => {
           switch contents {
-          | Value({typ}) => Process_402.PrintType.default.expr(Process_402.PrintType.default, typ) |> Process_402.PrintType.prettyString |> s => Some((s, loc))
+          | Value({typ}) => Some((typ.toString(), loc))
           | _ => None
           }
         }) : [];
@@ -513,7 +504,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let rec getItems = ({Module.topLevel}) => {
       let fn = ({name: {txt, loc}, extentLoc, contents}) => {
         let (item, siblings) = switch contents {
-          | Module.Value(v) => (Protocol.variableKind(v.typ), [])
+          | Module.Value(v) => (v.typ.variableKind, [])
           | Type(t) => (Protocol.typeKind(t.typ), [])
           | Module(Structure(contents)) => (`Module, getItems(contents))
           | Module(Ident(_)) => (`Module, [])

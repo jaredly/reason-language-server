@@ -1,8 +1,9 @@
 
 type flexibleType = {
   toString: unit => string,
+  variableKind: [ `Function | `Array | `Variable | `Object | `Null | `EnumMember | `Module | `Enum | `Interface | `TypeParameter | `ModuleType ],
   getConstructorPath: unit => option(Path.t),
-  getArguments: unit => list((string, flexibleType)),
+  getArguments: unit => (list((string, flexibleType)), flexibleType),
 };
 
 type filePath = string
@@ -59,7 +60,7 @@ module Type = {
     type t = {
       stamp: int,
       name: Location.loc(string),
-      typ: UnifiedTypes.type_expr,
+      typ: flexibleType,
       typLoc: Location.t,
     };
   };
@@ -68,8 +69,8 @@ module Type = {
     type t = {
       stamp: int,
       name: Location.loc(string),
-      args: list((UnifiedTypes.type_expr, Location.t)),
-      res: option(UnifiedTypes.type_expr),
+      args: list((flexibleType, Location.t)),
+      res: option(flexibleType),
     };
     open Infix;
   };
@@ -82,14 +83,14 @@ module Type = {
   ;
   type t = {
     kind,
-    params: list((UnifiedTypes.type_expr, Location.t)),
+    params: list((flexibleType, Location.t)),
     typ: UnifiedTypes.type_declaration,
   };
 };
 
 module Value = {
   type t = {
-    typ: UnifiedTypes.type_expr,
+    typ: flexibleType,
     recursive: bool,
   };
 };
@@ -231,7 +232,7 @@ module Loc = {
   | NotFound
   | Definition(int, tip);
   type t =
-  | Typed(UnifiedTypes.type_expr, typed)
+  | Typed(flexibleType, typed)
   | Constant(Asttypes.constant)
   | Module(typed)
   | TopLevelModule(string)

@@ -28,7 +28,7 @@ let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(
            "  let "
            ++ item.name.txt
            ++ ": "
-           ++ (Process_402.PrintType.indentGroup(Process_402.PrintType.default.expr(Process_402.PrintType.default, typ)) |> Process_402.PrintType.prettyString)
+           ++ (typ.toString()) /* TODO indent */
            ++ ";"
          | ModuleType(_) => "  module type " ++ item.name.txt ++ ";"
          }
@@ -100,7 +100,10 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
         let env = {Query.file, exported: file.contents.exported};
         let%opt path = t.getConstructorPath();
         let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
-        Some(typ.toString())
+        Some(Process_402.PrintType.default.decl(Process_402.PrintType.default, txt, txt, typ) |> Process_402.PrintType.prettyString)
+        /* TODO type declaration */
+        /* None */
+        /* Some(typ.toString()) */
       };
 
       let codeBlock = text => markdown ? "```\n" ++ text ++ "\n```" : text;
@@ -129,8 +132,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
             [Some(typeString),
             Some(codeBlock(txt ++ "(" ++ (args |. Belt.List.map(((t, _)) => {
               let typeString = 
-                Process_402.PrintType.default.expr(Process_402.PrintType.default, t)
-                |> Process_402.PrintType.prettyString;
+                t.toString();
               typeString
 
             }) |> String.concat(", ")) ++ ")")),

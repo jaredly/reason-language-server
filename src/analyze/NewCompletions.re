@@ -5,9 +5,9 @@ let showConstructor = ({SharedTypes.Type.Constructor.name: {txt}, args, res}) =>
   txt ++ (args == []
     ? ""
     : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
-      Process_402.PrintType.default.expr(Process_402.PrintType.default, typ) |> Process_402.PrintType.prettyString
+      typ.toString()
     ))) ++ ")")
-  ++ ((res |?>> typ => "\n" ++ Process_402.PrintType.prettyString(Process_402.PrintType.default.expr(Process_402.PrintType.default, typ))) |? "")
+  ++ ((res |?>> typ => "\n" ++ typ.toString()) |? "")
 };
 
 let rec pathOfModuleOpen = items =>
@@ -285,8 +285,7 @@ let detail = (name, contents) =>
     Process_402.PrintType.default.decl(Process_402.PrintType.default, name, name, typ)
     |> Process_402.PrintType.prettyString
   | Value({typ}) =>
-    Process_402.PrintType.default.value(Process_402.PrintType.default, name, name, typ)
-    |> Process_402.PrintType.prettyString
+    typ.toString()
   | Module(m) => "module"
   | ModuleType(m) => "module type"
   | FileModule(m) => "file module"
@@ -294,8 +293,7 @@ let detail = (name, contents) =>
     name
     ++ ": "
     ++ (
-      Process_402.PrintType.default.expr(Process_402.PrintType.default, typ)
-      |> Process_402.PrintType.prettyString
+      typ.toString()
     )
     ++ "\n\n"
     ++ (
@@ -604,8 +602,9 @@ let get =
           let%opt declared =
             Query.findInScope(pos, first, env.file.stamps.values);
           Log.log("Found it! " ++ declared.name.txt);
+          let%opt path = declared.contents.typ.getConstructorPath();
           let%opt (env, typ) =
-            Hover.digConstructor(~env, ~getModule, declared.contents.typ);
+            Hover.digConstructor(~env, ~getModule, path);
           let%opt (env, typ) =
             Belt.List.reduce(
               rest,
@@ -617,7 +616,8 @@ let get =
                   let%opt attr =
                     attributes |. Belt.List.getBy(a => a.name.txt == name);
                   Log.log("Found attr " ++ name);
-                  Hover.digConstructor(~env, ~getModule, attr.typ);
+          let%opt path = attr.typ.getConstructorPath();
+                  Hover.digConstructor(~env, ~getModule, path);
                 | _ => None
                 };
               },
