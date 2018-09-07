@@ -345,7 +345,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         }) : [];
 
         let showOpens = state.settings.opensCodelens;
-        /* let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses; */
         let lenses = showOpens ? lenses @ {
           CodeLens.forOpens(extra)
         } : lenses;

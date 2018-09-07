@@ -760,7 +760,11 @@ let extraForModule = (state, ~package, modname) => {
   }
 };
 
-let maybeFound = Definition.maybeFound;
+let maybeFound = (fn, a) =>
+  switch (fn(a)) {
+  | exception Not_found => None
+  | x => Some(x)
+  };
 
 let topLocation = uri => {
   Location.loc_ghost: false,
