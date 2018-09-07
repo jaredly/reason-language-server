@@ -1,0 +1,6 @@
+
+(library
+  (name Belt_ppx)
+  (libraries compiler-libs ocaml-migrate-parsetree ppx_tools_versioned)
+  (preprocess (pps ppx_tools_versioned.metaquot_402))
+  (kind ppx_rewriter))

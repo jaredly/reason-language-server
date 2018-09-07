@@ -8,6 +8,8 @@
   "dependencies": {
     "@opam/dune": "*",
     "@esy-ocaml/reason": "*",
+    "@opam/ocaml-migrate-parsetree": "*",
+    "@opam/ppx_tools_versioned": "*",
     "rex-json": "*",
     "ocaml": "~4.2.3"
   },

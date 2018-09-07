@@ -1,0 +1,6 @@
+(include_subdirs unqualified)
+
+(library
+  (name Vendor)
+  (libraries compiler-libs bigarray)
+  )

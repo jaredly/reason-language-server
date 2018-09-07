@@ -108,8 +108,8 @@ let getData = S.data
 let getId (type key) (type identity) (m : (key,_,identity) t) =
   (let module T =
      struct
-       type nonrec identity = identity[@@nonrec ]
-       type nonrec t = key[@@nonrec ]
+       type nonrec identity = identity
+       type nonrec t = key
        let cmp = S.cmp m
      end in (module T) : (key,identity) id)
 let packIdData (type key) (type idx) ~id:(id : (key,idx) id)  ~data  =
