@@ -1,5 +1,9 @@
 
+#if 406
 open Compiler_libs_406;
+#elif 402
+open Compiler_libs_402;
+#endif
 open Typedtree;
 open SharedTypes;
 open Infix;
@@ -8,14 +12,26 @@ open Infix;
 
 let getTopDoc = structure => {
   switch structure {
-  | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+  | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+#if 402
+    Const_string
+#else
+    Pconst_string
+#endif
+    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
   | _ => (None, structure)
   };
 };
 
 let getTopSigDoc = structure => {
   switch structure {
-  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+#if 402
+    Const_string
+#else
+    Pconst_string
+#endif
+    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
   | _ => (None, structure)
   };
 };
@@ -119,11 +135,16 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
             let contents = {
               Type.Constructor.stamp,
               name: Location.mknoloc(name),
-              /* TODO(406): constructor record args support */
+#if 402
+              args: cd_args |>
+#else
               args: switch (cd_args) {
                 | Cstr_tuple(args) => args
+              /* TODO(406): constructor record args support */
                 | Cstr_record(_) => []
-              } |> List.map(t => (Shared.makeFlexible(t), Location.none)),
+              } |>
+#endif
+                List.map(t => (Shared.makeFlexible(t), Location.none)),
               res: cd_res |?>> Shared.makeFlexible,
             };
             let declared = newDeclared(
@@ -175,7 +196,12 @@ and forSignatureType = (env, signature) => {
   {Module.exported, topLevel}
 } and forModuleType = (env, moduleType) => switch moduleType {
   | Types.Mty_ident(path) => Module.Ident(path)
-  | Mty_alias(_ /* 402*/, path) => Module.Ident(path)
+#if 402
+  | Mty_alias(path) =>
+#else
+  | Mty_alias(_ /* 402*/, path) =>
+#endif
+      Module.Ident(path)
   | Mty_signature(signature) => {
     Module.Structure(forSignatureType(env, signature))
   }
@@ -192,11 +218,16 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, ty
       | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp}, cd_name: name, cd_args, cd_res, cd_attributes}) => {
         Type.Constructor.stamp,
         name,
-        /** TODO(406) */
+#if 402
+        args: cd_args |>
+#else
         args: switch (cd_args) {
           | Cstr_tuple(args) => args
+        /** TODO(406) */
           | Cstr_record(_) => []
-        } |> List.map(t => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
+        } |>
+#endif
+          List.map(t => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
         res: cd_res |?>> t => Shared.makeFlexible(t.ctyp_type),
       }))
       | Ttype_record(labels) => Record(labels |> List.map(
@@ -224,7 +255,11 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
     );
     [{...declared, contents: Module.Value(declared.contents)}]
   }
+#if 402
+  | Tsig_type(decls) => {
+#else
   | Tsig_type(_/*402*/, decls) => {
+#endif
     decls |. Belt.List.map(forTypeDeclaration(~env, ~exported))
   }
   | Tsig_module({md_id: {stamp}, md_attributes, md_loc, md_name: name, md_type: {mty_desc, mty_type}}) => {
@@ -294,7 +329,12 @@ let rec forItem = (
   let declared = addItem(~extent=val_loc, ~contents={Value.recursive: false, typ: Shared.makeFlexible(val_type)}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
   [{...declared, contents: Module.Value(declared.contents)}]
 }
-| Tstr_type(/*402*/_,decls) => decls |> List.map(forTypeDeclaration(~env, ~exported))
+#if 402
+| Tstr_type(decls) =>
+#else
+| Tstr_type(_, decls) =>
+#endif
+  decls |> List.map(forTypeDeclaration(~env, ~exported))
 | _ => []
 }
 

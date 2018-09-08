@@ -284,7 +284,9 @@ module F = (Collector: {
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
-  | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(/*402*/Pconst_string(doc, _))}, _)}]))) => {
+  | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+      Pconst_string
+      (doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
   }
   | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
@@ -478,6 +480,7 @@ module F = (Collector: {
     }
     | _ => ()
     };
+
   };
 };
 

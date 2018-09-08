@@ -1,5 +1,9 @@
 
+#if 406
 open Compiler_libs_406;
+#elif 402
+open Compiler_libs_402;
+#endif
 open Typedtree;
 open SharedTypes;
 open Infix;
@@ -284,7 +288,13 @@ module F = (Collector: {
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
-  | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(/*402*/Pconst_string(doc, _))}, _)}]))) => {
+  | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+#if 402
+      Const_string
+#else
+      Pconst_string
+#endif
+      (doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
   }
   | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
@@ -428,6 +438,10 @@ module F = (Collector: {
     | Texp_ident(path, {txt, loc}, {val_type}) => {
       addForLongident(Some((Shared.makeFlexible(val_type), Value)), path, txt, loc);
     }
+#if 402
+    | Texp_record(items, _) => {
+      addForRecord(expression.exp_type, items);
+#else
     | Texp_record({fields}) => {
       addForRecord(
         expression.exp_type,
@@ -438,6 +452,7 @@ module F = (Collector: {
           }
         })
       );
+#endif
     }
     | Texp_constant(constant) => {
       addLocation(expression.exp_loc, Loc.Constant(constant));
@@ -455,7 +470,11 @@ module F = (Collector: {
       addScopeExtent(expression.exp_loc)
       /* TODO this scope tracking won't work for recursive */
     }
+#if 402
+    | Texp_function(_label, cases, _partial) => {
+#else
     | Texp_function({cases}) => {
+#endif
       switch cases {
         | [{c_rhs}] => addScopeExtent(c_rhs.exp_loc)
         | _ => ()
@@ -470,7 +489,11 @@ module F = (Collector: {
     | Texp_let(_isrec, _bindings, _expr) => {
       popScopeExtent();
     }
+#if 402
+    | Texp_function(_label, cases, _partial) => {
+#else
     | Texp_function({cases}) => {
+#endif
       switch cases {
         | [{c_rhs}] => popScopeExtent()
         | _ => ()
@@ -478,6 +501,7 @@ module F = (Collector: {
     }
     | _ => ()
     };
+
   };
 };
 

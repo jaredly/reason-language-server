@@ -8,14 +8,18 @@ open Infix;
 
 let getTopDoc = structure => {
   switch structure {
-  | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+  | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+    Pconst_string
+    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
   | _ => (None, structure)
   };
 };
 
 let getTopSigDoc = structure => {
   switch structure {
-  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+    Pconst_string
+    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
   | _ => (None, structure)
   };
 };
@@ -119,11 +123,12 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
             let contents = {
               Type.Constructor.stamp,
               name: Location.mknoloc(name),
-              /* TODO(406): constructor record args support */
               args: switch (cd_args) {
                 | Cstr_tuple(args) => args
+              /* TODO(406): constructor record args support */
                 | Cstr_record(_) => []
-              } |> List.map(t => (Shared.makeFlexible(t), Location.none)),
+              } |>
+                List.map(t => (Shared.makeFlexible(t), Location.none)),
               res: cd_res |?>> Shared.makeFlexible,
             };
             let declared = newDeclared(
@@ -175,7 +180,8 @@ and forSignatureType = (env, signature) => {
   {Module.exported, topLevel}
 } and forModuleType = (env, moduleType) => switch moduleType {
   | Types.Mty_ident(path) => Module.Ident(path)
-  | Mty_alias(_ /* 402*/, path) => Module.Ident(path)
+  | Mty_alias(_ /* 402*/, path) =>
+      Module.Ident(path)
   | Mty_signature(signature) => {
     Module.Structure(forSignatureType(env, signature))
   }
@@ -192,11 +198,12 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, ty
       | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp}, cd_name: name, cd_args, cd_res, cd_attributes}) => {
         Type.Constructor.stamp,
         name,
-        /** TODO(406) */
         args: switch (cd_args) {
           | Cstr_tuple(args) => args
+        /** TODO(406) */
           | Cstr_record(_) => []
-        } |> List.map(t => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
+        } |>
+          List.map(t => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
         res: cd_res |?>> t => Shared.makeFlexible(t.ctyp_type),
       }))
       | Ttype_record(labels) => Record(labels |> List.map(
@@ -294,7 +301,8 @@ let rec forItem = (
   let declared = addItem(~extent=val_loc, ~contents={Value.recursive: false, typ: Shared.makeFlexible(val_type)}, ~name, ~stamp, ~env, val_attributes, exported.values, env.stamps.values);
   [{...declared, contents: Module.Value(declared.contents)}]
 }
-| Tstr_type(/*402*/_,decls) => decls |> List.map(forTypeDeclaration(~env, ~exported))
+| Tstr_type(_, decls) =>
+  decls |> List.map(forTypeDeclaration(~env, ~exported))
 | _ => []
 }
 

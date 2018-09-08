@@ -1,5 +1,9 @@
 
+#if 406
 open Compiler_libs_406;
+#elif 402
+open Compiler_libs_402;
+#endif
 open Belt.Result;
 
 let tryReadCmi = cmi =>
