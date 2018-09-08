@@ -1,0 +1,6 @@
+
+(library
+  (name Compiler_libs_406)
+  (libraries compiler-libs.common)
+  (flags :standard -w -A)
+)
