@@ -200,7 +200,7 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, ty
         name,
         args: switch (cd_args) {
           | Cstr_tuple(args) => args
-        /** TODO(406) */
+        /* TODO(406) */
           | Cstr_record(_) => []
         } |>
           List.map(t => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),

@@ -223,7 +223,7 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, ty
 #else
         args: switch (cd_args) {
           | Cstr_tuple(args) => args
-        /** TODO(406) */
+        /* TODO(406) */
           | Cstr_record(_) => []
         } |>
 #endif
