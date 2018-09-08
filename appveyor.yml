@@ -19,5 +19,7 @@ install:
 
 build_script:
     - esy build
+    # Validate binary
+    - _build\install\default\bin\Bin.exe --help
 
 test: off
