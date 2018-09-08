@@ -9,12 +9,28 @@ let getOutput = (files, mainFile) => {
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints) / 2;
   package.localModules |. Belt.List.forEach((modname) => {
-    let%opt_consume paths = Utils.maybeHash(package.pathsForModule, modname);
-    let%opt_consume src = SharedTypes.getSrc(paths);
+    let%opt_force paths = Utils.maybeHash(package.pathsForModule, modname);
+    let%opt_force src = SharedTypes.getSrc(paths);
     let%try_force result = State.getCompilationResult(Utils.toUri(src), state, ~package);
+    switch paths {
+      | IntfAndImpl(_, _, _, Some(impl)) =>
+        let%try_force res = State.getCompilationResult(Utils.toUri(impl), state, ~package);
+        switch (res) {
+          | TypeError(text, _) =>
+            print_endline("Module: " ++ modname);
+            print_endline(text);
+            failwith("Local module failed to compile")
+          | SyntaxError(text, _, _) =>
+            print_endline(text);
+            failwith("Local module syntax error")
+          | _ => ()
+        }
+      | _ => ()
+    };
     switch result {
       | Success(_, {extra}) => Log.log(SharedTypes.showExtra(extra));
       | TypeError(text, _) => {
+        print_endline("Module: " ++ modname);
         print_endline(text);
         failwith("Local module failed to compile")
       }

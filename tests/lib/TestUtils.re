@@ -3,7 +3,8 @@ let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
-  let%try_wrap refmtPath = BuildSystem.getRefmt(".", BuildSystem.Dune);
+  let%try refmtPath = BuildSystem.getRefmt(".", BuildSystem.Dune);
+  let%try_wrap compilerPath = BuildSystem.getCompiler(".", BuildSystem.Dune);
   let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
@@ -20,7 +21,7 @@ let getPackage = (localModules) => {
     compilerVersion: Lib.BuildSystem.V406,
     rebuildTimer: 0.,
     includeDirectories: [],
-    compilerPath: "esy ocamlc",
+    compilerPath,
     refmtPath: Some(refmtPath),
     lispRefmtPath: None,
   };

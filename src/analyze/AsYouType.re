@@ -15,7 +15,7 @@ let getResult = result => switch result {
 };
 
 let runRefmt = (~interface, ~moduleName, ~cacheLocation, text, refmt) => {
-  let target = cacheLocation /+ moduleName ++ ".ast";
+  let target = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
   let cmd = Printf.sprintf("%s --print binary %s--parse re > %s",
     Commands.shellEscape(refmt),
     interface ? "-i true " : "",
@@ -143,7 +143,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
-      let astFile = cacheLocation /+ moduleName ++ ".ast";
+      let astFile = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
       let%try () = Files.writeFileResult(astFile, text);
       Ok((None, astFile))
     }

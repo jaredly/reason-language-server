@@ -1,0 +1,9 @@
+(include_subdirs unqualified)
+
+(executable
+  (name AllTests)
+  (public_name AllTests)
+  (libraries Belt str Core Util Lib)
+  (flags :standard -open Lib -w -26-32-50-9-27-39-33-35-6-3)
+  (preprocess (pps Belt_ppx Ppx_monads))
+  )

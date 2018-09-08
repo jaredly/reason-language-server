@@ -33,12 +33,13 @@ if (debug) {
   Log.spamError := true;
 };
 
+print_endline("Test dir: " ++ TestUtils.tmp);
 tests |. Belt.List.forEach(m => {
   Files.removeDeep(TestUtils.tmp);
   Files.mkdirp(TestUtils.tmp);
   module M = (val m);
   if (suite == None || suite == Some(M.name)) {
-  print_endline("## " ++ M.name);
+    print_endline("## " ++ M.name);
     let fileName = "./tests/" ++ M.name ++ ".txt";
     let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput) |> String.concat("\n");
     Files.writeFileExn(fileName, output);
