@@ -1,17 +1,30 @@
 open Infix;
 open Result;
 
+let rec show = item => switch item {
+  | `Ident(text) => "Ident<" ++ text ++ ">"
+  | `Number(n) => "Number<" ++ string_of_float(n) ++ ">"
+  | `String(s) => "String<" ++ s ++ ">"
+  | `List(items) => "[" ++ String.concat(", ", List.map(show, items)) ++ "]"
+};
+
+let rec getNamedIdent = items => switch items {
+  | [] => None
+  | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
+  | [`List([`Ident("name"), ..._]), ...rest] => {
+    getNamedIdent(rest)
+  }
+  | [_, ...rest] => getNamedIdent(rest)
+};
 
 let findLibraryName = jbuildConfig => {
   let rec loop = items => switch items {
     | [] => None
-    | [`List([`Ident("library"), `List(items), ..._]), ..._] =>
-      let rec get = items => switch items {
-        | [] => None
-        | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
-        | [_, ...rest] => get(rest)
-      };
-      get(items)
+    | [`List([`Ident("library"), `List(items)]), ..._]
+    | [`List([`Ident("library"), ...items]), ..._] =>
+      /* Log.log("Found a library!");
+      Log.log(String.concat("\n", List.map(show, items))); */
+      getNamedIdent(items)
     | [item, ...rest] => {
       loop(rest)
     }
@@ -22,13 +35,9 @@ let findLibraryName = jbuildConfig => {
 let findExecutableName = jbuildConfig => {
   let rec loop = items => switch items {
     | [] => None
-    | [`List([`Ident("executable"), `List(items), ..._]), ..._] =>
-      let rec get = items => switch items {
-        | [] => None
-        | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
-        | [_, ...rest] => get(rest)
-      };
-      get(items)
+    | [`List([`Ident("executable"), `List(items)]), ..._]
+    | [`List([`Ident("executable"), ...items]), ..._] =>
+      getNamedIdent(items)
     | [item, ...rest] => {
       loop(rest)
     }

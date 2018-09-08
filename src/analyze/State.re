@@ -295,6 +295,7 @@ let newJbuilderPackage = (state, rootPath) => {
     | _ => None
   };
 
+  /* Log.log("Got a compiled base " ++ compiledBase); */
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename);
     let namespaced = switch packageName {
@@ -438,7 +439,7 @@ let getPackage = (uri, state) => {
     Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
   } else {
     let%try root = findRoot(uri, state.packagesByRoot) |> Result.orError("No root directory found");
-    switch root {
+    let%try package = switch root {
     | `Root(rootPath) =>
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
@@ -459,7 +460,27 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       Result.Ok(package)
-    }
+    };
+
+    /* {
+      let rootName = switch root {
+        | `Bs(s) => Some("bs:" ++ s)
+        | `Jbuilder(s) => Some("dune:" ++ s)
+        | `Root(_) => None
+      };
+      let%opt_consume root = rootName;
+      Log.log("[[[  New package : at root " ++ root ++ " ]]]");
+      Log.log("# Local packages")
+      package.localModules |. Belt.List.forEach(name => Log.log(" - " ++ name))
+      Log.log("# All detected modules");
+      package.pathsForModule |> Hashtbl.iter((name, paths) => Log.log(" - " ++ name ++ "\t\t\t" ++ switch paths {
+        | SharedTypes.Impl(cmt, _) => "impl " ++ cmt
+        | Intf(cmt, _) => "intf " ++ cmt
+        | IntfAndImpl(cmt, _, cmpl, _) => "both " ++ cmt ++ " " ++ cmpl
+      }));
+    }; */
+
+    Ok(package)
   }
 };
 

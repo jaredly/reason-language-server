@@ -53,8 +53,11 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let%try path = Utils.parseUri(uri) |> Result.orError("Invalid uri");
     if (FindFiles.isSourceFile(path)) {
       let%try package = State.getPackage(uri, state);
-      let name = FindFiles.getName(path);
-      if (!Hashtbl.mem(package.nameForPath, name)) {
+      /* let name = FindFiles.getName(path); */
+      if (!Hashtbl.mem(package.nameForPath, path)) {
+        /* Log.log(path); */
+        /* package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name)); */
+        /* Log.log("Reloading because you created a new file"); */
         Ok(reloadAllState(state))
         /* Hashtbl.add(package.nameForPath, path, name);
         Hashtbl.add(package.pathsForModule, name, Impl(path, Some(path)));
@@ -163,10 +166,11 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       } else {
         let%try path = Utils.parseUri(uri) |> Result.orError("Cannot parse URI");
         let%try contents = Files.readFileResult(path);
-        if (Hashtbl.mem(watchedFileContentsMap, uri) && Hashtbl.find(watchedFileContentsMap, uri) == contents) {
+        if (!Hashtbl.mem(watchedFileContentsMap, uri) || Hashtbl.find(watchedFileContentsMap, uri) == contents) {
           Ok(false)
         } else {
           Hashtbl.replace(watchedFileContentsMap, uri, contents);
+          Log.log("Reloading because a file changed: " ++ uri);
           Ok(true)
         }
       }
