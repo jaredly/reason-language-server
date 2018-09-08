@@ -14,24 +14,48 @@ jobs:
 
     steps:
       - checkout
+      - run: sudo npm install -g esy@next
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "package.json" }}
+          - v2-dependencies-{{ checksum "esy.json" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-
 
-      - run: npm install
+      - run: esy install
 
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+            - ~/.esy
+          key: v2-dependencies-{{ checksum "esy.json" }}
 
       # run tests!
-      - run: npm run build
+      - run: esy b
 
       - store_artifacts:
-          path: ./lib/bs/native/bin.native
+          path: ./_build/default/src/Bin.exe
 
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.10
+    working_directory: ~/repo
+    steps:
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            FILE=./_build/default/src/Bin.exe
+            VERSION=$(my-binary --version)
+            curl -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: $(file -b --mime-type $FILE)" --data-binary @$FILE "https://uploads.github.com/repos/jaredly/reason-language-server/releases/${CIRCLE_TAG}/assets?name=bin.linux.exe"
+
+workflows:
+  main:
+    jobs:
+      - build
+      - publish-github-release:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/

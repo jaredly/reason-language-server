@@ -22,4 +22,21 @@ build_script:
     # Validate binary
     - _build\install\default\bin\Bin.exe --help
 
+artifacts:
+    - path: _build/default/src/Bin.exe
+      name: Windows Build
+      type: File
+
 test: off
+
+deploy:
+    - provider: GitHub
+      repository: jaredly/reason-language-server
+      auth_token:
+          secure: uD+IOsS6NN/5Y0E6FFbEhQNWCRE7Ur5cmfPAI2auvK8OCVz1ruf0rU8v8akII9hp
+      draft: false
+      prerelease: false
+      force_update: true
+      on:
+          branch: master
+          appveyor_repo_tag: true
