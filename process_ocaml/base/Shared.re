@@ -64,10 +64,14 @@ PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyStri
   declarationKind: typeKind(t)
 }
 
+#if 402
+let labelToString = label => label;
+#else
 let labelToString = label => switch label {
   | Asttypes.Nolabel => ""
   | Optional(label) | Labelled(label) => label
 };
+#endif
 
 let rec makeFlexible = t => {
   SharedTypes.toString: () => {

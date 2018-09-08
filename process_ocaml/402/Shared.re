@@ -1,5 +1,5 @@
 
-open Compiler_libs_406;
+open Compiler_libs_402;
 open Belt.Result;
 
 let tryReadCmi = cmi =>
@@ -60,10 +60,7 @@ PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyStri
   declarationKind: typeKind(t)
 }
 
-let labelToString = label => switch label {
-  | Asttypes.Nolabel => ""
-  | Optional(label) | Labelled(label) => label
-};
+let labelToString = label => label;
 
 let rec makeFlexible = t => {
   SharedTypes.toString: () => {
