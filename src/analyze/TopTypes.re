@@ -4,16 +4,6 @@ type uri = string;
 type filePath = string;
 type moduleName = string;
 
-let getCmt = p => switch p {
-  | SharedTypes.Impl(c, _) | Intf(c, _) | IntfAndImpl(c, _, _, _) => c
-};
-
-/* type paths = {
-  cmt: filePath,
-  src: option(filePath),
-  interface: option((filePath, option(filePath))),
-}; */
-
 /* Here are the things that will be different between jbuilder things */
 type package = {
   basePath: filePath,
@@ -37,6 +27,7 @@ type package = {
   buildSystem: BuildSystem.t,
   buildCommand: option((string, string)),
   compilerPath: filePath,
+  compilerVersion: BuildSystem.compilerVersion,
   refmtPath: option(filePath),
   /** TODO maybe make this general, so that I can support arbitrary syntaxes? */
   lispRefmtPath: option(filePath),

@@ -26,6 +26,10 @@ let getSrc = p => switch p {
   | IntfAndImpl(_, None, _, s) => s
 };
 
+let getCmt = p => switch p {
+  | Impl(c, _) | Intf(c, _) | IntfAndImpl(c, _, _, _) => c
+};
+
 /* TODO maybe track the loc's of these things */
 type visibilityPath =
 | File(string)

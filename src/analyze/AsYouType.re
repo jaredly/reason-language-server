@@ -138,7 +138,7 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, compilerPath, sourceFile, in
   }
 };
 
-let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
+let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
@@ -154,7 +154,10 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
-        let%try_wrap {file, extra} = Process_402.fullForCmt(cmtPath, uri, x => x);
+        let%try_wrap {file, extra} = (switch compilerVersion {
+          | BuildSystem.V402 => Process_402.fullForCmt
+          | V406 => Process_406.fullForCmt
+        })(cmtPath, uri, x => x);
         let errorText = String.concat("\n", lines);
         switch (syntaxError) {
           | Some(s) =>
@@ -172,7 +175,10 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     }
     | Ok(lines) => {
       let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
-      let%try_wrap full = Process_402.fullForCmt(cmt, uri, x => x);
+      let%try_wrap full = (switch compilerVersion {
+          | BuildSystem.V402 => Process_402.fullForCmt
+          | V406 => Process_406.fullForCmt
+      })(cmt, uri, x => x);
       Success(String.concat("\n", lines), full)
     }
   }

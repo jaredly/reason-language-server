@@ -8,13 +8,13 @@ module Show = {
     "\nLocal\n"++
     (Belt.List.map(localModules, (name) => {
       let paths = Hashtbl.find(pathsForModule, name);
-      Printf.sprintf("%s (%s : %s)", name, TopTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "(no src!)")
+      Printf.sprintf("%s (%s : %s)", name, SharedTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "(no src!)")
     }) |> String.concat("\n"))
     ++
     "\nDeps\n" ++ 
     (Belt.List.map(dependencyModules, (modname) => {
       let paths = Hashtbl.find(pathsForModule, modname);
-      Printf.sprintf("%s (%s : %s)", modname, TopTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "")
+      Printf.sprintf("%s (%s : %s)", modname, SharedTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "")
     }) |> String.concat("\n"))
   };
 };
@@ -239,6 +239,8 @@ let newBsPackage = (state, rootPath) => {
     buildCommand: Some((buildCommand, rootPath)),
     opens,
     tmpPath,
+    /* Bucklescript is always 4.02.3 */
+    compilerVersion: BuildSystem.V402,
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
     includeDirectories: 
@@ -382,6 +384,7 @@ let newJbuilderPackage = (state, rootPath) => {
   runBuildCommand(state, rootPath, buildCommand);
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
+  let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
   let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> Result.toOptionAndLog;
   Ok({
     basePath: rootPath,
@@ -398,6 +401,7 @@ let newJbuilderPackage = (state, rootPath) => {
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
+    compilerVersion,
     compilerPath,
     refmtPath,
     lispRefmtPath: None,
@@ -474,22 +478,28 @@ let converter = (src, usePlainText) => {
   );
 };
 
-let newDocsForCmt = (cmtCache, changed, cmt, src, clientNeedsPlainText) => {
+let newDocsForCmt = (~compilerVersion, cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   let uri = Utils.toUri(src |? cmt);
-  let%opt file = Process_402.fileForCmt(cmt, uri, converter(src, clientNeedsPlainText)) |> Result.toOptionAndLog;
+  let%opt file = (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.fileForCmt
+    | V406 => Process_406.fileForCmt
+  })(cmt, uri, converter(src, clientNeedsPlainText)) |> Result.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
 
-let newDocsForCmi = (cmiCache, changed, cmi, src, clientNeedsPlainText) => {
-  let%opt file = Process_402.fileForCmi(cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
+let newDocsForCmi = (~compilerVersion, cmiCache, changed, cmi, src, clientNeedsPlainText) => {
+  let%opt file = (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.fileForCmi
+    | V406 => Process_406.fileForCmi
+  })(cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
   Hashtbl.replace(cmiCache, cmi, (changed, file));
   Some(file);
 };
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 
-let docsForCmt = (cmt, src, state) =>
+let docsForCmt = (~package, cmt, src, state) =>
   if (Filename.check_suffix(cmt, ".cmi")) {
     if (Hashtbl.mem(state.cmiCache, cmt)) {
       let (mtime, docs) = Hashtbl.find(state.cmiCache, cmt);
@@ -501,6 +511,7 @@ let docsForCmt = (cmt, src, state) =>
       | Some(changed) =>
         if (changed > mtime) {
           newDocsForCmi(
+            ~compilerVersion=package.compilerVersion,
             state.cmiCache,
             changed,
             cmt,
@@ -518,6 +529,7 @@ let docsForCmt = (cmt, src, state) =>
         None;
       | Some(changed) =>
         newDocsForCmi(
+          ~compilerVersion=package.compilerVersion,
           state.cmiCache,
           changed,
           cmt,
@@ -536,6 +548,7 @@ let docsForCmt = (cmt, src, state) =>
     | Some(changed) =>
       if (changed > mtime) {
         newDocsForCmt(
+          ~compilerVersion=package.compilerVersion,
           state.cmtCache,
           changed,
           cmt,
@@ -553,6 +566,7 @@ let docsForCmt = (cmt, src, state) =>
       None;
     | Some(changed) =>
       newDocsForCmt(
+          ~compilerVersion=package.compilerVersion,
         state.cmtCache,
         changed,
         cmt,
@@ -611,6 +625,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
     : package.includeDirectories;
     let%try refmtPath = refmtForUri(uri, package);
     let%try result = AsYouType.process(
+      ~compilerVersion=package.compilerVersion,
       ~uri,
       ~moduleName,
       ~basePath=package.basePath,
@@ -710,10 +725,10 @@ let docsForModule = (modname, state, ~package) =>
     if (Hashtbl.mem(package.pathsForModule, modname)) {
       let paths = Hashtbl.find(package.pathsForModule, modname);
       /* TODO do better */
-      let cmt = TopTypes.getCmt(paths);
+      let cmt = SharedTypes.getCmt(paths);
       let src = SharedTypes.getSrc(paths);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
-      let%opt_wrap docs = docsForCmt(cmt, src, state);
+      let%opt_wrap docs = docsForCmt(~package, cmt, src, state);
       (docs, src)
     } else {
       Log.log("No path for module " ++ modname);
