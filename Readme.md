@@ -72,11 +72,11 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 
 ## Contributing
 
-- clone
+- install `esy` if you don't have it (`npm install -g esy@next`)
+- clone this repo
 - cd to the cloned dir
-- run `npm install` from the main project dir
+- run `esy` from the main project dir
 - install the vscode extension's dependencies `cd editor-extensions/vscode && npm i && cd ../..`
-- start it up `npm start`
 - open this project in vscode
 
 ## To test your changes in one of the example projects
