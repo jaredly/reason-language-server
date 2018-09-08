@@ -1,5 +1,18 @@
 
 open Compiler_libs_402;
+open Belt.Result;
+
+let tryReadCmi = cmi =>
+  switch (Cmi_format.read_cmi(cmi)) {
+  | exception _ => Error("Invalid cmi format - probably wrong ocaml version")
+  | x => Ok(x)
+  };
+
+let tryReadCmt = cmt =>
+  switch (Cmt_format.read_cmt(cmt)) {
+  | exception _ => Error("Invalid cmt format - probably wrong ocaml version")
+  | x => Ok(x)
+  };
 
 /** TODO move to the Process_ stuff */
 let rec dig = (typ) =>
