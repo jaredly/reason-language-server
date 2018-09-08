@@ -118,16 +118,16 @@ let makeFilesList = files => {
       let intf = Utils.maybeHash(interfaces, mname);
       Hashtbl.remove(interfaces, mname);
       Some((mname, switch intf {
-        | None => TopTypes.Impl(cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
+        | None => SharedTypes.Impl(cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
         | Some(iname) =>
-        TopTypes.IntfAndImpl(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname), cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
+        SharedTypes.IntfAndImpl(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname), cmtBase ++ mname ++ ".cmt", Some(srcBase ++ name))
       }))
     } else {
       None
     }
   });
   normals |. List.concat(Hashtbl.fold((mname, iname, res) =>  {
-  [(mname, TopTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res]
+  [(mname, SharedTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res]
 }, interfaces, []))
 };
 

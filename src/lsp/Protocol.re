@@ -71,9 +71,6 @@ let rangeOfInts = (l0, c0, l1, c1) =>
 let locationContains = ({Location.loc_start, loc_end}, pos) =>
   tupleOfLexing(loc_start) <= pos && tupleOfLexing(loc_end) >= pos;
 
-let locationIsBefore = ({Location.loc_start}, pos) =>
-  tupleOfLexing(loc_start) <= pos;
-
 /** Check if pos is within the location, but be fuzzy about when the location ends.
 If it's within 5 lines, go with it.
  */
@@ -109,29 +106,6 @@ let symbolKind = (kind) =>
   | `Event => 24
   | `Operator => 25
   | `TypeParameter => 26
-  };
-
-let rec variableKind = (t) =>
-  switch t.Types.desc {
-  | Tlink(t) => variableKind(t)
-  | Tsubst(t) => variableKind(t)
-  | Tarrow(_) => `Function
-  | Ttuple(_) => `Array
-  | Tconstr(_) => `Variable
-  | Tobject(_) => `Object
-  | Tnil => `Null
-  | Tvariant(_) => `EnumMember
-  | Tpoly(_) => `EnumMember
-  | Tpackage(_) => `Module
-  | _ => `Variable
-  };
-
-let typeKind = (t) =>
-  switch t.Types.type_kind {
-  | Type_open
-  | Type_abstract => `TypeParameter
-  | Type_record(_) => `Interface
-  | Type_variant(_) => `Enum
   };
 
 /*

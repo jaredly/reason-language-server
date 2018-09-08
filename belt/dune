@@ -1,0 +1,6 @@
+(include_subdirs unqualified)
+
+(library
+  (c_names stubs)
+  (flags :standard -w -A)
+  (name Belt))

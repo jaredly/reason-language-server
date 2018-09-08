@@ -10,6 +10,10 @@ let targetName = t => switch t {
   | Native => "native"
 };
 
+type compilerVersion =
+  | V406
+  | V402;
+
 type t =
   | Dune
   | Bsb(string)
@@ -51,6 +55,19 @@ let getBsbExecutable = rootPath =>
     |?>> Filename.dirname
     |?>> (path => path /+ ".bin" /+ "bsb")
   );
+
+let getCompilerVersion = executable => {
+  let cmd = executable ++ " -version";
+  let (output, success) = Commands.execSync(cmd);
+  success ? switch output {
+  | [line] => switch (Utils.split_on_char('.', String.trim(line))) {
+    | ["4", "02", _] => Ok(V402)
+    | ["4", "06", _] => Ok(V406)
+    | version => Error("Unsupported OCaml version: " ++ line)
+  }
+  | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
+  } : Error("Could not run compiler (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
+};
 
 let detect = (rootPath, bsconfig) => {
   let%try bsbExecutable = getBsbExecutable(rootPath);

@@ -14,3 +14,4 @@ tmp
 *.vsix
 examples/markdown-reason-react/
 editor-extensions/vscode/*.zip
+bsb_modules

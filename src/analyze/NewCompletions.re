@@ -1,5 +1,15 @@
 open SharedTypes;
 
+open Infix;
+let showConstructor = ({SharedTypes.Type.Constructor.name: {txt}, args, res}) => {
+  txt ++ (args == []
+    ? ""
+    : "(" ++ String.concat(", ", args |. Belt.List.map(((typ, _)) => (
+      typ.toString()
+    ))) ++ ")")
+  ++ ((res |?>> typ => "\n" ++ typ.toString()) |? "")
+};
+
 let rec pathOfModuleOpen = items =>
   switch (items) {
   | [] => Tip("place holder")
@@ -272,11 +282,9 @@ let kindToInt = k =>
 let detail = (name, contents) =>
   switch (contents) {
   | Type({typ}) =>
-    PrintType.default.decl(PrintType.default, name, name, typ)
-    |> PrintType.prettyString
+    typ.declToString(name)
   | Value({typ}) =>
-    PrintType.default.value(PrintType.default, name, name, typ)
-    |> PrintType.prettyString
+    typ.toString()
   | Module(m) => "module"
   | ModuleType(m) => "module type"
   | FileModule(m) => "file module"
@@ -284,30 +292,17 @@ let detail = (name, contents) =>
     name
     ++ ": "
     ++ (
-      PrintType.default.expr(PrintType.default, typ)
-      |> PrintType.prettyString
+      typ.toString()
     )
     ++ "\n\n"
     ++ (
-      PrintType.default.decl(
-        PrintType.default,
-        t.name.txt,
-        t.name.txt,
-        t.contents.typ,
-      )
-      |> PrintType.prettyString
+      t.contents.typ.declToString(t.name.txt)
     )
   | Constructor(c, t) =>
-    SharedTypes.Type.Constructor.show(c)
+  showConstructor(c)
     ++ "\n\n"
     ++ (
-      PrintType.default.decl(
-        PrintType.default,
-        t.name.txt,
-        t.name.txt,
-        t.contents.typ,
-      )
-      |> PrintType.prettyString
+      t.contents.typ.declToString(t.name.txt)
     )
   };
 
@@ -594,8 +589,9 @@ let get =
           let%opt declared =
             Query.findInScope(pos, first, env.file.stamps.values);
           Log.log("Found it! " ++ declared.name.txt);
+          let%opt path = declared.contents.typ.getConstructorPath();
           let%opt (env, typ) =
-            Query.digConstructor(~env, ~getModule, declared.contents.typ);
+            Hover.digConstructor(~env, ~getModule, path);
           let%opt (env, typ) =
             Belt.List.reduce(
               rest,
@@ -607,7 +603,8 @@ let get =
                   let%opt attr =
                     attributes |. Belt.List.getBy(a => a.name.txt == name);
                   Log.log("Found attr " ++ name);
-                  Query.digConstructor(~env, ~getModule, attr.typ);
+          let%opt path = attr.typ.getConstructorPath();
+                  Hover.digConstructor(~env, ~getModule, path);
                 | _ => None
                 };
               },

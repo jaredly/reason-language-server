@@ -1,5 +1,19 @@
 open Result;
 
+let digConstructor = (~env, ~getModule, path) => {
+  switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
+  | `Not_found => None
+  | `Stamp(stamp) =>
+    let%opt t = Query.hashFind(env.file.stamps.types, stamp);
+    Some((env, t));
+  | `Exported(env, name) =>
+    let%opt stamp = Query.hashFind(env.exported.types, name);
+    let%opt t = Query.hashFind(env.file.stamps.types, stamp);
+    Some((env, t));
+  | _ => None
+  }
+};
+
 let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(SharedTypes.Module.item))) => {
   let contents =
     topLevel
@@ -9,12 +23,12 @@ let showModuleTopLevel = (~name, ~markdown, topLevel: list(SharedTypes.declared(
          | Module(_) => "  module " ++ item.name.txt ++ ";"
          | Type({typ}) =>
            "  "
-           ++ (PrintType.indentGroup(PrintType.default.decl(PrintType.default, item.name.txt, item.name.txt, typ)) |> PrintType.prettyString)
+           ++ (typ.declToString(item.name.txt))
          | Value({typ}) =>
            "  let "
            ++ item.name.txt
            ++ ": "
-           ++ (PrintType.indentGroup(PrintType.default.expr(PrintType.default, typ)) |> PrintType.prettyString)
+           ++ (typ.toString()) /* TODO indent */
            ++ ";"
          | ModuleType(_) => "  module type " ++ item.name.txt ++ ";"
          }
@@ -81,24 +95,23 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       })
     }
     | Typed(t, _) => {
-      let typeString = 
-        PrintType.default.expr(PrintType.default, t)
-        |> PrintType.prettyString(~width=40);
-
-      let env = {Query.file, exported: file.contents.exported};
-      let codeBlock = t => markdown
-        ? "```\n" ++ t ++ "\n```"
-        : t;
-
-      let typeString = codeBlock(typeString);
+      let typeString = t.toString();
       let extraTypeInfo = {
-        let%opt (env, {name: {txt}, contents: {typ}}) = Query.digConstructor(~env, ~getModule, t);
-        Some("\n\n" ++ codeBlock(
-          PrintType.default.decl(PrintType.default, txt, txt, typ)
-          |> PrintType.prettyString(~width=40)
-        ))
+        let env = {Query.file, exported: file.contents.exported};
+        let%opt path = t.getConstructorPath();
+        let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
+        Some(typ.declToString(txt))
+        /* TODO type declaration */
+        /* None */
+        /* Some(typ.toString()) */
       };
-      let typeString = typeString ++ (extraTypeInfo |? "");
+
+      let codeBlock = text => markdown ? "```\n" ++ text ++ "\n```" : text;
+      let typeString = codeBlock(typeString);
+      let typeString = typeString ++ (switch (extraTypeInfo) {
+        | None => ""
+        | Some(extra) => "\n\n" ++ codeBlock(extra)
+      });
 
       Some({
         let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
@@ -119,8 +132,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
             [Some(typeString),
             Some(codeBlock(txt ++ "(" ++ (args |. Belt.List.map(((t, _)) => {
               let typeString = 
-                PrintType.default.expr(PrintType.default, t)
-                |> PrintType.prettyString;
+                t.toString();
               typeString
 
             }) |> String.concat(", ")) ++ ")")),
@@ -132,7 +144,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
           }
         };
 
-        Some(String.concat("\n\n", parts |. Belt_List.keepMap(x => x)))
+        Some(String.concat("\n\n", parts |. Belt.List.keepMap(x => x)))
       } |? typeString)
 
     }

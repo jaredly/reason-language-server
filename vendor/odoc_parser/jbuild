@@ -1,6 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name model)
-  (preprocess (action (run ${bin:cppo} -V OCAML:${ocaml_version} ${<})))
-  (libraries (compiler-libs.common))))

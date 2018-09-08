@@ -26,7 +26,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     {
       let%opt (uri, loc) =
         References.definitionForPos(
-          ~package,
+          ~pathsForModule=package.pathsForModule,
           ~file=data.file,
           ~extra=data.extra,
           ~getUri=State.fileForUri(state, ~package),
@@ -77,7 +77,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             | Typed(t, _) => Some(t)
             | _ => None
             };
-          /* TODO fifgure out why vscode isn't showing this documentation */
           let%opt hoverText =
             Hover.newHover(
               ~rootUri=state.rootUri,
@@ -92,18 +91,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
-      /* TODO move this into ProcessExtra or somewheres */
-      let rec loop = t => switch (t.Types.desc) {
-        | Types.Tsubst(t)
-        | Tlink(t) => loop(t)
-        | Tarrow(label, argt, res, _) =>
-          let (args, fin) = loop(res);
-          ([(label, argt), ...args], fin)
-        | _ => ([], t)
-      };
-      let (args, rest) = loop(typ);
+      let (args, rest) = typ.getArguments();
       let%opt args = args == [] ? None : Some(args);
-      let printedType = PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString;
+      let printedType = typ.toString();
       open Rpc.J;
       Some(Ok((state, o([
         ("activeParameter", i(commas)),
@@ -117,7 +107,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             ("parameters", l(args |. List.map(((label, argt)) => {
               o([
                 ("label", s(label)),
-                ("documentation", s(PrintType.default.expr(PrintType.default, argt) |> PrintType.prettyString))
+                ("documentation", s(argt.toString()))
               ])
             })))
           ])
@@ -232,7 +222,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     {
       let%opt (_, loc) = References.locForPos(~extra, Utils.cmtLocFromVscode(pos));
       let%opt allReferences = References.allReferencesForLoc(
-        ~package,
+        ~pathsForModule=package.pathsForModule,
         ~file,
         ~extra,
         ~allModules=package.localModules,
@@ -275,7 +265,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt allReferences = References.allReferencesForLoc(
         ~file,
         ~extra,
-        ~package,
+        ~pathsForModule=package.pathsForModule,
         ~allModules=package.localModules,
         ~getModule=State.fileForModule(state, ~package),
         ~getUri=State.fileForUri(state, ~package),
@@ -339,13 +329,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? file.contents.topLevel |. List.keepMap(({name: {loc}, contents}) => {
           switch contents {
-          | Value({typ}) => PrintType.default.expr(PrintType.default, typ) |> PrintType.prettyString |> s => Some((s, loc))
+          | Value({typ}) => Some((typ.toString(), loc))
           | _ => None
           }
         }) : [];
 
         let showOpens = state.settings.opensCodelens;
-        /* let lenses = showOpens ? lenses @ Definition.opens(moduleData) : lenses; */
         let lenses = showOpens ? lenses @ {
           CodeLens.forOpens(extra)
         } : lenses;
@@ -515,8 +504,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let rec getItems = ({Module.topLevel}) => {
       let fn = ({name: {txt, loc}, extentLoc, contents}) => {
         let (item, siblings) = switch contents {
-          | Module.Value(v) => (Protocol.variableKind(v.typ), [])
-          | Type(t) => (Protocol.typeKind(t.typ), [])
+          | Module.Value(v) => (v.typ.variableKind, [])
+          | Type(t) => (t.typ.declarationKind, [])
           | Module(Structure(contents)) => (`Module, getItems(contents))
           | Module(Ident(_)) => (`Module, [])
           | ModuleType(_) => (`ModuleType, [])

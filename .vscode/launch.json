@@ -99,6 +99,18 @@
 			"sourceMaps": false,
 		},
 		{
+			"name": "Esy Dune 4.06",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/../esy-dune-4.06"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
 			"name": "Esy",
 			"type": "extensionHost",
 			"request": "launch",
