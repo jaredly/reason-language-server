@@ -49,13 +49,3 @@ jobs:
             VERSION=$(my-binary --version)
             curl -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: $(file -b --mime-type $FILE)" --data-binary @$FILE "https://uploads.github.com/repos/jaredly/reason-language-server/releases/${CIRCLE_TAG}/assets?name=bin.linux.exe"
 
-workflows:
-  main:
-    jobs:
-      - build
-      - publish-github-release:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^\d+\.\d+\.\d+$/
