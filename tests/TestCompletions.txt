@@ -6,7 +6,7 @@ let x = awe<*>
 -->
 awesome
 - path: file:///path/to/Test.re
-> let awesome: int
+> int
 
 === Basic expr
 {
@@ -17,7 +17,7 @@ awesome
 -->
 awesome
 - path: file:///path/to/Test.re
-> let awesome: int
+> int
 
 === Basic expr
 let awesome = 10;
@@ -32,7 +32,7 @@ let b = {
 -->
 awesome
 - path: file:///path/to/Test.re
-> let awesome: int
+> int
 
 === In Module
 module M = {
@@ -42,7 +42,7 @@ let x = M.awe<*>
 -->
 awesome
 - path: file:///path/to/Test.re
-> let awesome: int
+> int
 
 ### Constructors
 
@@ -108,10 +108,10 @@ Lib.<*>
 -->
 awkward
 - path: file:///path/to/Lib.re
-> let awkward: float
+> float
 awesome
 - path: file:///path/to/Lib.re
-> let awesome: string
+> string
 
 === Mutli-attribute
 --- A.re
@@ -144,10 +144,10 @@ let m = {
 -->
 awkward
 - path: file:///path/to/B.re
-> let awkward: int
+> int
 awesome
 - path: file:///path/to/A.re
-> let awesome: int
+> int
 
 === Mutli-attribute 2 - wrong URIs
 --- A.re
@@ -184,10 +184,10 @@ N.v<*>
 -->
 vmiddle
 - path: file:///path/to/Test.re
-> let vmiddle: int
+> int
 vinner
 - path: file:///path/to/Test.re
-> let vinner: int
+> int
 
 === A module
 module Lib = {
@@ -208,4 +208,4 @@ module M = (N: {let x: int}) => {
 -->
 x
 - path: file:///path/to/Test.re
-> let x: int
+> int

@@ -639,8 +639,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
       let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
-    let%try moduleName = Utils.maybeHash(package.nameForPath, path) |> Result.orError("Can't find module name");
-    /* let moduleName = Utils.parseUri(uri) |! "not a uri" |> FindFiles.namespacedName(~namespace=package.namespace); */
+    let%try moduleName = Utils.maybeHash(package.nameForPath, path) |> Result.orError("Can't find module name for path " ++ path);
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;

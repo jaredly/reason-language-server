@@ -58,7 +58,7 @@ let getOutput = (files, mainFile) => {
         | None => "  " ++ string_of_int(i) ++ " - no location at pos " ++ showPos(cpos)
         | Some((_, loc)) => {
           "  " ++ string_of_int(i) ++ ": " ++ switch (References.allReferencesForLoc(
-            ~package,
+            ~pathsForModule=package.pathsForModule,
             ~file,
             ~extra,
             ~allModules,

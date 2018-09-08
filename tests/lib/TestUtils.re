@@ -1,7 +1,9 @@
+open Lib;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
+  let%try_wrap refmtPath = BuildSystem.getRefmt(".", BuildSystem.Dune);
   let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
@@ -9,16 +11,17 @@ let getPackage = (localModules) => {
     dependencyModules: [],
     pathsForModule,
     nameForPath,
-    buildSystem: BuildSystem.Bsb("3.2.0"),
+    buildSystem: BuildSystem.Dune,
     buildCommand: None,
     interModuleDependencies: Hashtbl.create(0),
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
+    compilerVersion: Lib.BuildSystem.V406,
     rebuildTimer: 0.,
     includeDirectories: [],
-    compilerPath: "./node_modules/.bin/bsc",
-    refmtPath: Some("./node_modules/bs-platform/lib/refmt.exe"),
+    compilerPath: "esy ocamlc",
+    refmtPath: Some(refmtPath),
     lispRefmtPath: None,
   };
 };
@@ -133,7 +136,7 @@ let makeFilesList = files => {
 
 let setUp = (files, text) => {
   let state = getState();
-  let package = getPackage(
+  let%try_force package = getPackage(
     /* (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
       TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
@@ -151,10 +154,11 @@ let setUp = (files, text) => {
       ~moduleName,
       ~basePath=".",
       ~reasonFormat=false,
+      ~compilerVersion=package.compilerVersion,
       contents,
       ~cacheLocation=tmp,
-      "./node_modules/.bin/bsc",
-      Some("./node_modules/bs-platform/lib/refmt.exe"),
+      package.compilerPath,
+      package.refmtPath,
       [tmp],
       ""
     );
@@ -179,10 +183,11 @@ let setUp = (files, text) => {
     ~moduleName="Test",
     ~basePath=".",
     ~reasonFormat=false,
+    ~compilerVersion=package.compilerVersion,
     text,
     ~cacheLocation=tmp,
-    "./node_modules/.bin/bsc",
-    Some("./node_modules/bs-platform/lib/refmt.exe"),
+    package.compilerPath,
+    package.refmtPath,
     [tmp],
     ""
   );
