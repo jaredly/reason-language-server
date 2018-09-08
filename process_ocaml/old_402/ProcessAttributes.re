@@ -1,5 +1,5 @@
 
-open Compiler_libs_406;
+open Compiler_libs_402;
 open Typedtree;
 open SharedTypes;
 open Infix;
@@ -9,8 +9,7 @@ let rec findDocAttribute = (attributes) => {
   open Parsetree;
   switch attributes {
   | [] => None
-  /* 402 Const_string */
-  | [({Asttypes.txt: "ocaml.doc"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])), ...rest] => Some(PrepareUtils.cleanOffStars(doc))
+  | [({Asttypes.txt: "ocaml.doc"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}])), ...rest] => Some(PrepareUtils.cleanOffStars(doc))
   | [_, ...rest] => findDocAttribute(rest)
   }
 };
@@ -20,7 +19,7 @@ let rec findDeprecatedAttribute = (attributes) => {
   open Parsetree;
   switch attributes {
   | [] => None
-  | [({Asttypes.txt: "ocaml.deprecated" | "deprecated"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(message, _))}, _)}])), ...rest] => Some(message)
+  | [({Asttypes.txt: "ocaml.deprecated" | "deprecated"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(message, _))}, _)}])), ...rest] => Some(message)
   | [_, ...rest] => findDeprecatedAttribute(rest)
   }
 };

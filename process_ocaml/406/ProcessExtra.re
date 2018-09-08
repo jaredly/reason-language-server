@@ -478,7 +478,6 @@ module F = (Collector: {
     }
     | _ => ()
     };
-
   };
 };
 

@@ -1,5 +1,5 @@
 
-open Compiler_libs_406;
+open Compiler_libs_402;
 open Belt.Result;
 
 let tryReadCmi = cmi =>
@@ -60,11 +60,6 @@ PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyStri
   declarationKind: typeKind(t)
 }
 
-let labelToString = label => switch label {
-  | Asttypes.Nolabel => ""
-  | Optional(label) | Labelled(label) => label
-};
-
 let rec makeFlexible = t => {
   SharedTypes.toString: () => {
     PrintType.default.expr(PrintType.default, t)
@@ -77,11 +72,12 @@ let rec makeFlexible = t => {
   }
 }
 
+/* TODO move this into ProcessExtra or somewheres */
 and loop = t => switch (t.Types.desc) {
   | Types.Tsubst(t)
   | Tlink(t) => loop(t)
   | Tarrow(label, argt, res, _) =>
     let (args, fin) = loop(res);
-    ([(labelToString(label), makeFlexible(argt)), ...args], fin)
+    ([(label, makeFlexible(argt)), ...args], fin)
   | _ => ([], makeFlexible(t))
 };

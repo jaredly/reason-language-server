@@ -1,5 +1,5 @@
 
-open Compiler_libs_406;
+open Compiler_libs_402;
 open Typedtree;
 open SharedTypes;
 open Infix;
@@ -284,7 +284,7 @@ module F = (Collector: {
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
-  | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(/*402*/Pconst_string(doc, _))}, _)}]))) => {
+  | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Const_string(doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
   }
   | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
@@ -428,16 +428,8 @@ module F = (Collector: {
     | Texp_ident(path, {txt, loc}, {val_type}) => {
       addForLongident(Some((Shared.makeFlexible(val_type), Value)), path, txt, loc);
     }
-    | Texp_record({fields}) => {
-      addForRecord(
-        expression.exp_type,
-        fields |. Array.to_list |. Belt.List.keepMap(((desc, item)) => {
-          switch item {
-            | Overridden(loc, _) => Some((loc, desc, ()))
-            | _ => None
-          }
-        })
-      );
+    | Texp_record(items, _) => {
+      addForRecord(expression.exp_type, items);
     }
     | Texp_constant(constant) => {
       addLocation(expression.exp_loc, Loc.Constant(constant));
@@ -455,7 +447,7 @@ module F = (Collector: {
       addScopeExtent(expression.exp_loc)
       /* TODO this scope tracking won't work for recursive */
     }
-    | Texp_function({cases}) => {
+    | Texp_function(_label, cases, _partial) => {
       switch cases {
         | [{c_rhs}] => addScopeExtent(c_rhs.exp_loc)
         | _ => ()
@@ -470,7 +462,7 @@ module F = (Collector: {
     | Texp_let(_isrec, _bindings, _expr) => {
       popScopeExtent();
     }
-    | Texp_function({cases}) => {
+    | Texp_function(_label, cases, _partial) => {
       switch cases {
         | [{c_rhs}] => popScopeExtent()
         | _ => ()
@@ -478,6 +470,7 @@ module F = (Collector: {
     }
     | _ => ()
     };
+
   };
 };
 
