@@ -152,13 +152,7 @@ module Module = {
   }
   and kind =
   | Ident(Path.t)
-  /* , Location.loc(Longident.t)) */
   | Structure(contents);
-  /* | JustType */
-  /* and t = {
-    typ: UnifiedTypes.module_type,
-    kind,
-  }; */
 };
 
 type stampMap('t) = Hashtbl.t(int, 't);

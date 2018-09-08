@@ -2,8 +2,8 @@
 open Compiler_libs_402;
 open Outcometree;
 
-let rec collectArgs = (coll, typ) => switch typ.UnifiedTypes.desc {
-| UnifiedTypes.Tarrow(label, arg, result, _) => collectArgs([(label, arg), ...coll], result)
+let rec collectArgs = (coll, typ) => switch typ.Types.desc {
+| Types.Tarrow(label, arg, result, _) => collectArgs([(label, arg), ...coll], result)
 | Tlink(inner) => collectArgs(coll, inner)
 | Tsubst(inner) => collectArgs(coll, inner)
 | _ => (coll, typ)
@@ -14,11 +14,11 @@ type pathType = PModule | PModuleType | PValue | PType;
 module T = {
   type stringifier = {
     path: (stringifier, Compiler_libs_402.Path.t, pathType) => Pretty.doc,
-    expr: (stringifier, UnifiedTypes.type_expr) => Pretty.doc,
+    expr: (stringifier, Types.type_expr) => Pretty.doc,
     ident: (stringifier, Compiler_libs_402.Ident.t) => Pretty.doc,
-    decl: (stringifier, string, string, UnifiedTypes.type_declaration) => Pretty.doc,
-    value: (stringifier, string, string, UnifiedTypes.type_expr) => Pretty.doc,
-    constructor: (stringifier, UnifiedTypes.constructor_declaration) => Pretty.doc,
+    decl: (stringifier, string, string, Types.type_declaration) => Pretty.doc,
+    value: (stringifier, string, string, Types.type_expr) => Pretty.doc,
+    constructor: (stringifier, Types.constructor_declaration) => Pretty.doc,
   };
 };
 open T;
@@ -117,7 +117,7 @@ let print_expr = (stringifier, typ) => {
   }
 };
 
-let print_constructor = (loop, {UnifiedTypes.cd_id: {name}, cd_args, cd_res}) => {
+let print_constructor = (loop, {Types.cd_id: {name}, cd_args, cd_res}) => {
   str(name) @!
   (switch cd_args {
   | [] => Pretty.empty
@@ -132,7 +132,7 @@ let print_constructor = (loop, {UnifiedTypes.cd_id: {name}, cd_args, cd_res}) =>
   })
 };
 
-let print_attr = (printer, {UnifiedTypes.ld_id, ld_mutable, ld_type}) => {
+let print_attr = (printer, {Types.ld_id, ld_mutable, ld_type}) => {
   switch ld_mutable {
   | Asttypes.Immutable => Pretty.empty
   | Mutable => str("mut ")
