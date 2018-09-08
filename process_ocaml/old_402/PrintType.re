@@ -13,9 +13,9 @@ type pathType = PModule | PModuleType | PValue | PType;
 
 module T = {
   type stringifier = {
-    path: (stringifier, Compiler_libs_402.Path.t, pathType) => Pretty.doc,
+    path: (stringifier, Path.t, pathType) => Pretty.doc,
     expr: (stringifier, Types.type_expr) => Pretty.doc,
-    ident: (stringifier, Compiler_libs_402.Ident.t) => Pretty.doc,
+    ident: (stringifier, Ident.t) => Pretty.doc,
     decl: (stringifier, string, string, Types.type_declaration) => Pretty.doc,
     value: (stringifier, string, string, Types.type_expr) => Pretty.doc,
     constructor: (stringifier, Types.constructor_declaration) => Pretty.doc,
@@ -106,7 +106,7 @@ let print_expr = (stringifier, typ) => {
   | Tobject(_, _) => {
     let txt = {
       try {
-        Compiler_libs_402.Printtyp.type_expr(Format.str_formatter, typ);
+        Printtyp.type_expr(Format.str_formatter, typ);
       } { 
         | _ => Format.fprintf(Format.str_formatter, "Unable to print type")
       };
@@ -180,9 +180,9 @@ let print_decl = (stringifier, realName, name, decl) => {
 };
 
 let default = {
-  ident: (_, {Compiler_libs_402.Ident.name}) => str(name),
+  ident: (_, {Ident.name}) => str(name),
   path: (stringifier, path, pathType) => switch path {
-    | Compiler_libs_402.Path.Pident(ident) => stringifier.ident(stringifier, ident)
+    | Path.Pident(ident) => stringifier.ident(stringifier, ident)
     | Pdot(path, name, _) => {stringifier.path(stringifier, path, pathType) @! str("." ++ name)}
     | Papply(_, _) => str("<apply>")
   },

@@ -1,5 +1,9 @@
 
+#if 406
 open Compiler_libs_406;
+#elif 402
+open Compiler_libs_402;
+#endif
 open Outcometree;
 
 let rec collectArgs = (coll, typ) => switch typ.Types.desc {
@@ -65,8 +69,11 @@ let print_expr = (stringifier, typ) => {
     let (args, result) = collectArgs([(label, arg)], result);
     let args = List.rev(args);
     switch args {
-    /* 402 | [("", typ)] => { */
+#if 402
+    | [("", typ)] => {
+#else
     | [(Nolabel, typ)] => {
+#endif
       loop(typ)
     }
     | _ => {
@@ -75,13 +82,15 @@ let print_expr = (stringifier, typ) => {
     indentGroup(
       break @!
     commad_list(((label, typ)) => {
+#if 402
+      if (label == "") {
+        loop(typ)
+      } else {
+#else
       switch label {
         | Asttypes.Nolabel => loop(typ)
         | Labelled(label) | Optional(label) =>
-
-      /* 402 if (label == "") {
-        loop(typ)
-      } else { */
+#endif
         str("~" ++ label ++ ": ") @! loop(typ)
       }
     }, args)
@@ -125,10 +134,15 @@ let print_expr = (stringifier, typ) => {
 let print_constructor = (loop, {Types.cd_id: {name}, cd_args, cd_res}) => {
   str(name) @!
   (switch cd_args {
+#if 402
+  | [] => Pretty.empty
+  | args =>
+#else
   | Cstr_tuple([]) => Pretty.empty
-  /* 402 | [] => Pretty.empty */
-  | Cstr_tuple(args) => tuple_list(args, loop)
   | Cstr_record(decl) => str("{...printing not supported...}")
+  | Cstr_tuple(args) =>
+#endif
+    tuple_list(args, loop)
   }) @!
   (switch cd_res {
   | None => Pretty.empty

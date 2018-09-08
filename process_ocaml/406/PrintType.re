@@ -65,7 +65,6 @@ let print_expr = (stringifier, typ) => {
     let (args, result) = collectArgs([(label, arg)], result);
     let args = List.rev(args);
     switch args {
-    /* 402 | [("", typ)] => { */
     | [(Nolabel, typ)] => {
       loop(typ)
     }
@@ -78,10 +77,6 @@ let print_expr = (stringifier, typ) => {
       switch label {
         | Asttypes.Nolabel => loop(typ)
         | Labelled(label) | Optional(label) =>
-
-      /* 402 if (label == "") {
-        loop(typ)
-      } else { */
         str("~" ++ label ++ ": ") @! loop(typ)
       }
     }, args)
@@ -126,9 +121,9 @@ let print_constructor = (loop, {Types.cd_id: {name}, cd_args, cd_res}) => {
   str(name) @!
   (switch cd_args {
   | Cstr_tuple([]) => Pretty.empty
-  /* 402 | [] => Pretty.empty */
-  | Cstr_tuple(args) => tuple_list(args, loop)
   | Cstr_record(decl) => str("{...printing not supported...}")
+  | Cstr_tuple(args) =>
+    tuple_list(args, loop)
   }) @!
   (switch cd_res {
   | None => Pretty.empty

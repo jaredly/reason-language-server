@@ -7,14 +7,17 @@ const preprocess = (text, flags) => {
   const result = []
   let current = null
   lines.forEach(line => {
-    let match = line.match(/^#if\s+([A-Za-z]+)\s*$/)
+    // console.log(current, line)
+    let match = line.match(/^#if\s+([A-Za-z0-9_-]+)\s*$/)
     if (match) {
+      // console.log('match')
       if (current !== null) {
         throw new Error("Cannot nest ifs")
       }
-      current = !!flags[match[0]]
+      current = !!flags[match[1]]
+            // console.log(flags, match[1], current)
     } else {
-      match = line.match(/^#endif/)
+      match = line.match(/^#endif\s*$/)
       if (match) {
         if (current === null) {
           throw new Error("dangling #endif")
@@ -28,9 +31,10 @@ const preprocess = (text, flags) => {
           }
           current = !current
         } else {
-          match = line.match(/^#elif\s+([A-Za-z]+)\s*$/)
+          match = line.match(/^#elif\s+([A-Za-z0-9_-]+)\s*$/)
           if (match) {
-            current = !!flags[match[0]]
+            current = !!flags[match[1]]
+            // console.log(flags, match[1], current)
           } else if (current === null || current === true) {
             result.push(line)
           }
@@ -41,12 +45,12 @@ const preprocess = (text, flags) => {
   return result.join('\n')
 }
 
-const flags = []
+const flags = {}
 const files = []
 const dest = process.argv[2]
 process.argv.slice(3).forEach(arg => {
   if (arg[0] === '-') {
-    flags.push(arg.slice(1))
+    flags[arg.slice(1)] = true
   } else {
     files.push(arg)
   }
