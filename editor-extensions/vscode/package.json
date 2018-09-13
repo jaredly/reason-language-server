@@ -64,6 +64,11 @@
 					"default": true,
 					"description": "Indicate what values have been used from an open"
 				},
+				"reason_language_server.show_module_path_on_hover": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the module path on hover"
+				},
 				"reason_language_server.reloadOnChange": {
 					"type": "boolean",
 					"default": false,

@@ -49,7 +49,7 @@ let showModule = (~markdown, ~file: SharedTypes.file, ~name, declared: option(Sh
 };
 
 open Infix;
-let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown, loc) => {
+let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown, ~showPath, loc) => {
   switch (loc) {
     | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
@@ -126,7 +126,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
 
         let parts = switch (res) {
           | `Declared => {
-            [Some(typeString), docstring, Some(uri)]
+            [Some(typeString), docstring]
           }
           | `Constructor({name: {txt}, args, res}) => {
             [Some(typeString),
@@ -136,17 +136,18 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
               typeString
 
             }) |> String.concat(", ")) ++ ")")),
-            docstring,
-            Some(uri)]
+            docstring]
           }
           | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
-            [Some(typeString), docstring, Some(uri)]
+            [Some(typeString), docstring]
           }
         };
+
+        let parts = showPath ? parts @ [Some(uri)] : parts;
 
         Some(String.concat("\n\n", parts |. Belt.List.keepMap(x => x)))
       } |? typeString)
 
     }
   };
-}; 
+};
