@@ -60,13 +60,13 @@ let showType = (~env, ~getModule, loop, {modulePath, contents: typ}: SharedTypes
     (
       "kind",
       switch (typ.kind) {
-      | Abstract(None) => Json.String("[abstract]")
+      | Open => Json.String("open")
+      | Abstract(None) => Json.String("abstract")
       | Abstract(Some((path, args))) => showConstructor(~env, ~getModule, loop, path, args)
       | Tuple(items) => o([
         ("kind", s("tuple")),
         ("items", l(items->Belt.List.map(showFlexible(~env, ~getModule, loop))))
       ])
-      | Open => Json.String("[open]")
       | Record(items) =>
         Rpc.J.(
           o([
