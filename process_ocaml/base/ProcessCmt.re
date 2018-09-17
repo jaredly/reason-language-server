@@ -123,12 +123,19 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
     );
     [{...declared, contents: Module.Value(declared.contents)}]
   }
-  | Sig_type({stamp, name}, {type_params, type_loc, type_kind, type_attributes} as decl, _) => {
+  | Sig_type({stamp, name}, {type_params, type_loc, type_kind, type_manifest, type_attributes} as decl, _) => {
     let declared = addItem(~extent=type_loc, ~contents={
       Type.params: type_params |> List.map(t => (Shared.makeFlexible(t), Location.none)),
       typ: Shared.makeDeclaration(decl),
       kind: switch type_kind {
-        | Type_abstract => Abstract
+        | Type_abstract =>
+        Abstract(switch (type_manifest) {
+          | Some({desc: Tconstr(path, args, _)}) => Some((
+            path,
+            args |> List.map(Shared.makeFlexible)
+          ))
+          | _ => None
+        })
         | Type_open => Open
         | Type_variant(constructors) => {
           Variant(constructors |. Belt.List.map(({cd_loc, cd_id: {name, stamp}, cd_args, cd_res, cd_attributes}) => {
@@ -208,12 +215,20 @@ and forSignatureType = (env, signature) => {
   | Mty_functor(argIdent, argType, resultType) => forModuleType(env, resultType)
 };
 
-let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind}) => {
+let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind, typ_manifest}) => {
   let declared = addItem(~extent=typ_loc, ~contents={
     Type.params: typ_params |> List.map(((t, _)) => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
     typ: Shared.makeDeclaration(typ_type),
     kind: switch typ_kind {
-      | Ttype_abstract => Abstract
+      | Ttype_abstract =>
+        Abstract(switch (typ_manifest) {
+          | Some({ctyp_desc: Ttyp_constr(path, lident, args)}) => Some((
+            path,
+            args |> List.map(t => Shared.makeFlexible(t.ctyp_type))
+          ))
+          /* TODO dig */
+          | _ => None
+        })
       | Ttype_open => Open
       | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp}, cd_name: name, cd_args, cd_res, cd_attributes}) => {
         Type.Constructor.stamp,

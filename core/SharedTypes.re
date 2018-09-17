@@ -38,6 +38,17 @@ type visibilityPath =
 | HiddenModule(string, visibilityPath)
 | Expression(visibilityPath);
 
+let rec showVisibilityPath = path => switch path {
+  | File(uri) => Some((uri, []))
+  | NotVisible => None
+  | ExportedModule(name, inner) => switch (showVisibilityPath(inner)) {
+    | None => None
+    | Some((uri, path)) => Some((uri, path @ [name]))
+  }
+  | HiddenModule(_) => None
+  | Expression(inner) => None
+};
+
 /* TODO maybe keep track of the "current module path" */
 type declared('t) = {
   name: Location.loc(string),
@@ -87,7 +98,7 @@ module Type = {
   };
 
   type kind =
-  | Abstract
+  | Abstract(option((Path.t, list(flexibleType))))
   | Open
   | Record(list(Attribute.t))
   | Variant(list(Constructor.t))
