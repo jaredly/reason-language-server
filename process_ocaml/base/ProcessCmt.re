@@ -129,13 +129,15 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
       typ: Shared.makeDeclaration(decl),
       kind: switch type_kind {
         | Type_abstract =>
-        Abstract(switch (type_manifest) {
-          | Some({desc: Tconstr(path, args, _)}) => Some((
+        switch (type_manifest) {
+          | Some({desc: Tconstr(path, args, _)}) => Abstract(Some((
             path,
             args |> List.map(Shared.makeFlexible)
-          ))
-          | _ => None
-        })
+          )))
+          | Some({desc: Ttuple(items)}) => Tuple(items |> List.map(Shared.makeFlexible))
+          /* TODO dig */
+          | _ => Abstract(None)
+        }
         | Type_open => Open
         | Type_variant(constructors) => {
           Variant(constructors |. Belt.List.map(({cd_loc, cd_id: {name, stamp}, cd_args, cd_res, cd_attributes}) => {
@@ -221,14 +223,15 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, ty
     typ: Shared.makeDeclaration(typ_type),
     kind: switch typ_kind {
       | Ttype_abstract =>
-        Abstract(switch (typ_manifest) {
-          | Some({ctyp_desc: Ttyp_constr(path, lident, args)}) => Some((
+        switch (typ_manifest) {
+          | Some({ctyp_desc: Ttyp_constr(path, lident, args)}) => Abstract(Some((
             path,
             args |> List.map(t => Shared.makeFlexible(t.ctyp_type))
-          ))
+          )))
+          | Some({ctyp_desc: Ttyp_tuple(items)}) => Tuple(items |> List.map(t => Shared.makeFlexible(t.ctyp_type)))
           /* TODO dig */
-          | _ => None
-        })
+          | _ => Abstract(None)
+        }
       | Ttype_open => Open
       | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id: {stamp}, cd_name: name, cd_args, cd_res, cd_attributes}) => {
         Type.Constructor.stamp,

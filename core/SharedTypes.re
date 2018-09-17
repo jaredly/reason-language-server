@@ -100,6 +100,7 @@ module Type = {
   type kind =
   | Abstract(option((Path.t, list(flexibleType))))
   | Open
+  | Tuple(list(flexibleType))
   | Record(list(Attribute.t))
   | Variant(list(Constructor.t))
   ;
