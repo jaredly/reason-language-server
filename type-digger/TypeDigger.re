@@ -65,10 +65,10 @@ let main = (base, src, name) => {
   let%try declared = getType(~stamps, ~exported, name) |> Result.orError("No declared type named " ++ name);
   let tbl = Hashtbl.create(10);
   digType(~tbl, ~state, ~package, full, name, declared.contents);
-  tbl |> Hashtbl.iter((k, v) => {
-    print_endline(Json.stringifyPretty(v))
-  })
-  print_endline("Hello folks");
+  let json = Rpc.J.o(Hashtbl.fold(((filename, name), v, items) => {
+    [(filename ++ ":" ++ name, v), ...items]
+  }, tbl, []));
+  print_endline(Json.stringifyPretty(json));
   Ok(())
 };
 
