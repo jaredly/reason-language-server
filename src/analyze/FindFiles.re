@@ -210,20 +210,19 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
           let cmt = compiledBase /+ base ++ ".cmt";
           if (Files.exists(cmti)) {
             if (Files.exists(cmt)) {
-              Log.log("Intf and impl " ++ cmti ++ " " ++ cmt);
+              /* Log.log("Intf and impl " ++ cmti ++ " " ++ cmt); */
               Some((mname, SharedTypes.IntfAndImpl(cmti, Some(intf), cmt, Some(path))))
             } else {
-              Log.log("Just intf " ++ cmti);
+              /* Log.log("Just intf " ++ cmti); */
               Some((mname, Intf(cmti, Some(intf))))
             }
           } else if (Files.exists(cmi)) {
-              Log.log("Just intf cmi " ++ cmi);
+              /* Log.log("Just intf cmi " ++ cmi); */
             Some((mname, Intf(cmi, Some(intf))))
           } else {
             None
           }
         | None =>
-        Log.log("No intf " ++ path);
           let cmi = compiledBase /+ base ++ ".cmi";
           let cmt = compiledBase /+ base ++ ".cmt";
           if (Files.exists(cmt)) {

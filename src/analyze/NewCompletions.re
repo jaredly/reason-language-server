@@ -589,7 +589,7 @@ let get =
           let%opt declared =
             Query.findInScope(pos, first, env.file.stamps.values);
           Log.log("Found it! " ++ declared.name.txt);
-          let%opt path = declared.contents.typ.getConstructorPath();
+          let%opt (path, _args) = declared.contents.typ.getConstructorPath();
           let%opt (env, typ) =
             Hover.digConstructor(~env, ~getModule, path);
           let%opt (env, typ) =
@@ -603,7 +603,7 @@ let get =
                   let%opt attr =
                     attributes |. Belt.List.getBy(a => a.name.txt == name);
                   Log.log("Found attr " ++ name);
-          let%opt path = attr.typ.getConstructorPath();
+                  let%opt (path, _args) = attr.typ.getConstructorPath();
                   Hover.digConstructor(~env, ~getModule, path);
                 | _ => None
                 };

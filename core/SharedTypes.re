@@ -4,7 +4,7 @@ type kinds = [ `Function | `Array | `Variable | `Object | `Null | `EnumMember | 
 type flexibleType = {
   toString: unit => string,
   variableKind: kinds,
-  getConstructorPath: unit => option(Path.t),
+  getConstructorPath: unit => option((Path.t, list(flexibleType))),
   getArguments: unit => (list((string, flexibleType)), flexibleType),
 };
 
