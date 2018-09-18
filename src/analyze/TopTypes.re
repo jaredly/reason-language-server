@@ -17,7 +17,7 @@ type package = {
   interModuleDependencies: Hashtbl.t(moduleName, list(moduleName)),
   dependencyModules: list(moduleName),
   pathsForModule: Hashtbl.t(moduleName, SharedTypes.paths),
-  nameForPath: Hashtbl.t(uri, moduleName),
+  nameForPath: Hashtbl.t(filePath, moduleName),
 
   opens: list(string),
 
@@ -87,4 +87,10 @@ let empty = () => {
     clientNeedsPlainText: false,
     showModulePathOnHover: true,
   },
+};
+
+let forRootPath = (rootPath) => {
+  ...empty(),
+  rootPath,
+  rootUri: Utils.toUri(rootPath),
 };

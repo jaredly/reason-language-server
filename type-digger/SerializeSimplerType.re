@@ -2,6 +2,17 @@
 open SharedTypes.SimpleType;
 open Lib.Rpc.J;
 
+let sourceToJson = source => switch source {
+  | DigTypes.NotFound => s("NotFound")
+  | Public({uri, modulePath, name, moduleName}) => o([
+    ("uri", s(uri)),
+    ("moduleName", s(moduleName)),
+    ("modulePath", l(modulePath->Belt.List.map(s))),
+    ("name", s(name)),
+  ])
+  | DigTypes.Builtin(name) => o([("builtin", s(name))])
+};
+
 let rec toJson = (sourceToJson, t) => switch t {
   | Variable(string) => l([s("Variable"), s(string)])
   | AnonVariable => s("AnonVariable")
@@ -22,6 +33,7 @@ let rec toJson = (sourceToJson, t) => switch t {
     ]))),
     toJson(sourceToJson, result)
   ])
+  | Other => s("*other*")
 };
 
 let rec declToJson = (sourceToJson, {name, variables, body}) => o([
@@ -46,3 +58,5 @@ let rec declToJson = (sourceToJson, {name, variables, body}) => o([
     )])
   })
 ]);
+
+
