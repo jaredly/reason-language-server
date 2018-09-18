@@ -25,13 +25,27 @@ let toSerializer = (base, src, name) => {
   let uri = Utils.toUri(Filename.concat(base, src));
   let%try tbl = GetTypeMap.forInitialType(~state, uri, name);
 
-  /* let decls = Hashtbl.fold((())) */
+  let decls = Hashtbl.fold(((moduleName, modulePath, name), decl, bindings) => {
+    [MakeSerializer.decl(
+      MakeSerializer.sourceTransformer,
+      ~moduleName,
+      ~modulePath,
+      ~name,
+      decl
+    ), ...bindings]
+  }, tbl, []);
+
+  Pprintast.structure(Format.str_formatter, [Ast_helper.Str.value(
+    Nonrecursive,
+    decls
+  )]);
+  Files.writeFile("Serialize.ml", Format.flush_str_formatter()) |> ignore;
   Ok(())
 };
 
 switch (Sys.argv) {
   | [|_, src, name|] => {
-    switch (toJson(Sys.getcwd(), src, name)) {
+    switch (toSerializer(Sys.getcwd(), src, name)) {
       | Result.Ok(()) => print_endline("Success")
       | Result.Error(message) => print_endline("Failed: " ++ message)
     }
