@@ -170,9 +170,9 @@ let rec forExpr = (sourceTransformer, t) => switch t {
   | _ => failer("not impl expr")
 };
 
-let forBody = (sourceTransformer, coreType, body) => switch body {
+let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
   | Open => failer("Cannot transform an open type")
-  | Abstract => failer("Cannot transform an abstract type")
+  | Abstract => makeIdent(Ldot(Lident("TransformHelpers"), fullName))
   | Expr(e) =>
     Exp.fun_(
       Nolabel,
@@ -246,7 +246,7 @@ let makeTypArgs = variables =>
         "arg" ++ string_of_int(index)
       });
 
-let declInner = (sourceTransformer, typeLident, {variables, body}) => {
+let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
     | [] => forBody(sourceTransformer,
     Typ.constr(
@@ -255,7 +255,7 @@ let declInner = (sourceTransformer, typeLident, {variables, body}) => {
       ),
       makeTypArgs(variables)->Belt.List.map(name => Typ.var(name)),
     ),
-    body)
+    body, fullName)
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {
@@ -300,14 +300,15 @@ let decl = (sourceTransformer, ~moduleName, ~modulePath, ~name, decl) => {
       typ
     )
   };
+  let fullName = transformerName(~moduleName, ~modulePath, ~name);
 
   Vb.mk(
     Pat.constraint_(
-      Pat.var(Location.mknoloc(transformerName(~moduleName, ~modulePath, ~name))),
+      Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
     declInner(sourceTransformer, 
         lident
-    , decl)
+    , decl, fullName)
   )
 };
