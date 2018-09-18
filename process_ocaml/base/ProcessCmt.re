@@ -385,9 +385,12 @@ and forModule = (env, mod_desc, moduleName) => switch mod_desc {
     forModule(env, resultExpr.mod_desc, moduleName)
   }
   | Tmod_apply(functor_, arg, coersion) => forModule(env, functor_.mod_desc, moduleName)
-  | Tmod_unpack(expr, moduleType) => forModuleType(env, moduleType)
+  | Tmod_unpack(expr, moduleType) =>
+    let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
+    forModuleType(env, moduleType)
   | Tmod_constraint(expr, typ, constraint_, coersion) => {
     /* TODO do this better I think */
+    let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
     forModuleType(env, typ)
   }
 }
