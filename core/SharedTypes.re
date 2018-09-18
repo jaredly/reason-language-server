@@ -3,17 +3,6 @@ type kinds = [ `Function | `Array | `Variable | `Object | `Null | `EnumMember | 
 
 module SimpleType = {
 
-  type reference = {
-    uri: string,
-    modulePath: list(string),
-    name: string,
-  };
-
-  type typeSource =
-    | Builtin(string)
-    | Public(reference)
-    | NotFound;
-
   type expr('source) =
     | Variable(string)
     | AnonVariable
@@ -31,10 +20,36 @@ module SimpleType = {
 
   type declaration('source) = {
     name: string,
-    variables: list(string),
+    variables: list(expr('source)),
     body: body('source)
   };
 
+  let rec mapSource = (fn, expr) => switch expr {
+    | Variable(s) => Variable(s)
+    | AnonVariable => AnonVariable
+    | Reference(s, args) => Reference(fn(s), args->Belt.List.map(mapSource(fn)))
+    | Tuple(items) => Tuple(items->Belt.List.map(mapSource(fn)))
+    | Fn(args, res) => Fn(args->Belt.List.map(
+      ((label, arg)) => (label, mapSource(fn, arg))
+    ), mapSource(fn, res))
+    | Other => Other
+  };
+
+  let declMapSource = (fn, decl) => {
+    name: decl.name,
+    variables: decl.variables->Belt.List.map(mapSource(fn)),
+    body: switch (decl.body) {
+      | Open => Open
+      | Abstract => Abstract
+      | Expr(expr) => Expr(mapSource(fn, expr))
+      | Record(items) => Record(items->Belt.List.map(((label, arg)) => (label, mapSource(fn, arg))))
+      | Variant(constructors) => Variant(constructors->Belt.List.map(((name, args, result)) =>
+        (name, args->Belt.List.map(mapSource(fn)), switch result {
+          | None => None
+          | Some(result) => Some(mapSource(fn, result))
+        })))
+    }
+  };
 };
 
 type flexibleType = {
@@ -48,6 +63,7 @@ type flexibleType = {
 type flexibleDeclaration = {
   declToString: string => string,
   declarationKind: kinds,
+  asSimpleDeclaration: string => SimpleType.declaration(Path.t),
 };
 
 type filePath = string

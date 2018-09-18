@@ -3,111 +3,84 @@ open Lib;
 module Json = Vendor.Json;
 /* Log.spamError := true; */
 
+type reference = {
+  uri: string,
+  modulePath: list(string),
+  name: string,
+};
+
+type typeSource =
+  | Builtin(string)
+  | Public(reference)
+  | NotFound;
+
+let sourceToJson = source => Rpc.J.(switch source {
+  | NotFound => s("NotFound")
+  | Public({uri, modulePath, name}) => o([
+    ("uri", s(uri)),
+    ("modulePath", l(modulePath->Belt.List.map(s))),
+    ("name", s(name)),
+  ])
+  | Builtin(name) => o([("builtin", s(name))])
+});
+
 let getType = (~env: Query.queryEnv, name) => {
   open Infix;
   Query.hashFind(env.exported.types, name) |?> stamp => Query.hashFind(env.file.stamps.types, stamp)
 };
 
-let rec showConstructor = (~env, ~getModule, loop, path, args) => {
-  open Rpc.J;
-  let resolved = Query.resolveFromCompilerPath(~env, ~getModule, path);
-  open Infix;
-  let declared =
-    switch (resolved) {
-    | `Not_found => None
-    | `Stamp(stamp) => Query.hashFind(env.file.stamps.types, stamp) |?>> (d => (d, env.file))
-    | `Exported(env, name) => getType(~env, name) |?>> (d => (d, env.file))
-    };
-  switch (declared) {
-  | None => switch path {
-    | Path.Pident({name: ("list" | "string" | "option" | "int" | "float" | "bool") as name}) => o([
-      ("builtin", s(name)),
-      ("args", l(args |> List.map(showFlexible(~env, ~getModule, loop)))),
-    ])
-    | _ => o([
-      ("error", s("Not found")),
-      ("path", s(Path.name(path))),
-      ("args", l(args |> List.map(showFlexible(~env, ~getModule, loop)))),
-    ])
-  }
-  | Some(({contents, name, modulePath} as declared, file)) =>
-    let%opt_force (uri, path) = SharedTypes.showVisibilityPath(modulePath);
-    loop(uri, String.concat(".", path) ++ ":" ++ name.txt, declared);
-    o([
-      ("uri", s(uri)),
-      ("name", s(name.txt)),
-      ("modPath", l(path |> List.map(s))),
-      ("args", l(args |> List.map(showFlexible(~env, ~getModule, loop)))),
-    ]);
-  };
-}
-and showFlexible = (~env, ~getModule, loop, typ: SharedTypes.flexibleType) =>
-  Rpc.J.(
-    switch (typ.getConstructorPath()) {
-    | None => s(typ.toString())
-    | Some((path, args)) =>
-      showConstructor(~env, ~getModule, loop, path, args)
+let mapSource = (~env, ~getModule, digType, path) => {
+    let resolved = Query.resolveFromCompilerPath(~env, ~getModule, path);
+    open Infix;
+    let declared =
+      switch (resolved) {
+      | `Not_found => None
+      | `Stamp(stamp) => Query.hashFind(env.file.stamps.types, stamp) |?>> (d => (d, env.file))
+      | `Exported(env, name) => getType(~env, name) |?>> (d => (d, env.file))
+      };
+    switch (declared) {
+    | None => switch path {
+      | Path.Pident({name: ("list" | "string" | "option" | "int" | "float" | "bool") as name}) => Builtin(name)
+      | _ => {
+        print_endline("!!! Not found " ++ Path.name(path));
+        NotFound
+      }
     }
-  );
+    | Some(({contents, name, modulePath} as declared, file)) =>
+      let%opt_force (uri, path) = SharedTypes.showVisibilityPath(modulePath);
+      digType(uri, String.concat(".", path) ++ ":" ++ name.txt, declared);
+      Public({
+        uri,
+        modulePath: path,
+        name: name.txt,
+      })
+    };
 
-let showType = (~env, ~getModule, loop, {modulePath, contents: typ}: SharedTypes.declared(SharedTypes.Type.t)) => {
-  let%opt_force (uri, path) = SharedTypes.showVisibilityPath(modulePath);
-  open Rpc.J;
-  o([
-    ("uri", s(uri)),
-    ("modPath", l(path |> List.map(s))),
-    ("params", Rpc.J.l(typ.params->Belt.List.map(((typ, _)) => showFlexible(~env, ~getModule, loop, typ)))),
-    (
-      "kind",
-      switch (typ.kind) {
-      | Open => Json.String("open")
-      | Abstract(None) => Json.String("abstract")
-      | Abstract(Some((path, args))) => showConstructor(~env, ~getModule, loop, path, args)
-      | Tuple(items) => o([
-        ("kind", s("tuple")),
-        ("items", l(items->Belt.List.map(showFlexible(~env, ~getModule, loop))))
-      ])
-      | Record(items) =>
-        Rpc.J.(
-          o([
-            ("kind", s("record")),
-            (
-              "items",
-              l(
-                items
-                ->Belt.List.map(({typ, name: {txt}}) =>
-                    o([("name", s(txt)), ("type", showFlexible(~env, ~getModule, loop, typ))])
-                  ),
-              ),
-            ),
-          ])
-        )
-      | Variant(items) => Rpc.J.(o([
-        ("kind", s("variant")),
-        ("constructors", l(
-          items->Belt.List.map(({name: {txt}, args, res}) => {
-            o([
-              ("name", s(txt)),
-              ("args", l(args->Belt.List.map(((arg, _)) => showFlexible(~env, ~getModule, loop, arg)))),
-              ("res", switch res {
-                | None => Json.Null
-                | Some(t) => showFlexible(~env, ~getModule, loop, t)
-              })
-            ])
-          })
-        ))
-      ]))
-      },
-    ),
-  ]);
+  };
+
+let processExpr = (~env, ~getModule, digType, expr) => {
+  let expr = SharedTypes.SimpleType.mapSource(mapSource(~env, ~getModule, digType), expr);
+  SerializeSimplerType.toJson(sourceToJson, expr)
+};
+
+let processDecl = (~env, ~getModule, digType, {name, contents}: SharedTypes.declared(SharedTypes.Type.t)) => {
+  let decl = contents.typ.asSimpleDeclaration(name.txt)
+  SerializeSimplerType.declToJson(sourceToJson, SharedTypes.SimpleType.declMapSource(
+    mapSource(~env, ~getModule, digType),
+    decl
+  ))
 };
 
 let rec digType = (~tbl, ~state, ~package, ~env, ~getModule, filename, name, t) => {
   if (!Hashtbl.mem(tbl, (filename, name))) {
     Hashtbl.replace(tbl, (filename, name), Json.String("Nope"));
-    Hashtbl.replace(tbl, (filename, name), showType(~env, ~getModule, digType(~tbl, ~state, ~package, ~env, ~getModule), t))
+    /* Hashtbl.replace(tbl, (filename, name),
+      showType(~env, ~getModule, digType(~tbl, ~state, ~package, ~env, ~getModule), t)
+    ) */
+    Hashtbl.replace(tbl, (filename, name),
+      processDecl(~env, ~getModule, digType(~tbl, ~state, ~package, ~env, ~getModule), t)
+    )
   };
-  /* Hashtbl.find(tbl, (filename, name)) */
 };
 
 let main = (base, src, name) => {
@@ -134,7 +107,7 @@ let main = (base, src, name) => {
   let json = Rpc.J.o(Hashtbl.fold(((filename, name), v, items) => {
     [(filename ++ ":" ++ name, v), ...items]
   }, tbl, []));
-  print_endline(Json.stringifyPretty(json));
+  /* print_endline(Json.stringifyPretty(json)); */
   Ok(())
 };
 

@@ -54,17 +54,6 @@ let typeKind = (t) =>
   | Type_variant(_) => `Enum
   };
 
-let makeDeclaration = t => {
-  SharedTypes.declToString: name =>
-PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
-  declarationKind: typeKind(t)
-}
-
-let labelToString = label => switch label {
-  | Asttypes.Nolabel => ""
-  | Optional(label) | Labelled(label) => label
-};
-
 let rec getFnArgs = t => {
   switch (dig(t).desc) {
     | Tarrow(label, arg, res, _) =>
@@ -97,6 +86,53 @@ let rec asSimpleType = t => {
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
     | _ => SimpleType.Other
   }
+};
+
+let rec asSimpleDeclaration = (name, t) => {
+  open SharedTypes;
+  {
+    SimpleType.name,
+    variables: t.Types.type_params->Belt.List.map(param => {
+      asSimpleType(param)
+    }),
+    body: switch (t.type_kind, t.type_manifest) {
+      | (Type_open, _) => Open
+      | (Type_abstract, None) => Abstract
+      | (Type_abstract, Some(expr)) => Expr(asSimpleType(expr))
+      | (Type_record(labels, _), _) => Record(
+        labels->Belt.List.map(({ld_id, ld_type}) => (
+          ld_id.name,
+          asSimpleType(ld_type)
+        ))
+      )
+      | (Type_variant(constructors), _) => Variant(
+        constructors->Belt.List.map(({cd_id, cd_args, cd_res}) => (
+          cd_id.name,
+          switch (cd_args) {
+            | Cstr_tuple(args) =>
+              args->Belt.List.map(asSimpleType)
+            | Cstr_record(labels) => []
+          },
+          switch (cd_res) {
+          | None => None
+          | Some(arg) => Some(asSimpleType(arg))
+          }
+        ))
+      )
+    }
+  }
+};
+
+let makeDeclaration = t => {
+  SharedTypes.declToString: name =>
+PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
+  declarationKind: typeKind(t),
+  asSimpleDeclaration: name => asSimpleDeclaration(name, t)
+}
+
+let labelToString = label => switch label {
+  | Asttypes.Nolabel => ""
+  | Optional(label) | Labelled(label) => label
 };
 
 let rec makeFlexible = t => {
