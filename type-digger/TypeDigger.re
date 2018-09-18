@@ -20,7 +20,7 @@ let rec showConstructor = (~env, ~getModule, loop, path, args) => {
     };
   switch (declared) {
   | None => switch path {
-    | Path.Pident({name: ("list" | "string" | "option" | "int" | "float") as name}) => o([
+    | Path.Pident({name: ("list" | "string" | "option" | "int" | "float" | "bool") as name}) => o([
       ("builtin", s(name)),
       ("args", l(args |> List.map(showFlexible(~env, ~getModule, loop)))),
     ])
@@ -123,13 +123,14 @@ let main = (base, src, name) => {
   let%try package = State.getPackage(uri, state);
   print_endline("Got package...")
   /* print_endline(State.Show.state(state, package)) */
-  let modname = FindFiles.getName(src);
+  let%try modname = package.nameForPath->Query.hashFind(full) |> Result.orError("No modname found for " ++ full);
   let%try (file, _) = State.fileForUri(state, ~package, uri);
   let env = Query.fileEnv(file);
   let%try declared = getType(~env, name) |> Result.orError("No declared type named " ++ name);
   let tbl = Hashtbl.create(10);
   let getModule = State.fileForModule(state, ~package);
   ignore(digType(~tbl, ~state, ~package, ~env, ~getModule, full, name, declared));
+
   let json = Rpc.J.o(Hashtbl.fold(((filename, name), v, items) => {
     [(filename ++ ":" ++ name, v), ...items]
   }, tbl, []));
