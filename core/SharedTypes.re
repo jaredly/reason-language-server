@@ -1,11 +1,48 @@
 
 type kinds = [ `Function | `Array | `Variable | `Object | `Null | `EnumMember | `Module | `Enum | `Interface | `TypeParameter | `ModuleType ];
 
+module SimpleType = {
+
+  type reference = {
+    uri: string,
+    modulePath: list(string),
+    name: string,
+  };
+
+  type typeSource =
+    | Builtin(string)
+    | Public(reference)
+    | NotFound;
+
+  type expr('source) =
+    | Variable(string)
+    | AnonVariable
+    | Reference('source, list(expr('source)))
+    | Tuple(list(expr('source)))
+    | Fn(list((option(string), expr('source))), expr('source))
+    | Other
+
+  type body('source) =
+    | Open
+    | Abstract
+    | Expr(expr('source))
+    | Record(list((string, expr('source))))
+    | Variant(list((string, list(expr('source)), option(expr('source)))))
+
+  type declaration('source) = {
+    name: string,
+    variables: list(string),
+    body: body('source)
+  };
+
+};
+
 type flexibleType = {
   toString: unit => string,
   variableKind: kinds,
   getConstructorPath: unit => option((Path.t, list(flexibleType))),
   getArguments: unit => (list((string, flexibleType)), flexibleType),
+  asSimpleType: unit => SimpleType.expr(Path.t),
 };
 
 type flexibleDeclaration = {

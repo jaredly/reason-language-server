@@ -62,6 +62,36 @@ PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyStri
 
 let labelToString = label => label;
 
+let rec getFnArgs = t => {
+  switch (dig(t).desc) {
+    | Tarrow(label, arg, res, _) =>
+      let (args, res) = getFnArgs(res);
+      ([(label, arg), ...args], res)
+    | _ => ([], t)
+  }
+};
+
+let rec asSimpleType = t => {
+  open SharedTypes;
+  switch (dig(t).desc) {
+    | Tvar(None) => SimpleType.AnonVariable
+    | Tvar(Some(text)) => SimpleType.Variable(text)
+    | Tarrow(label, arg, res, _) =>
+      let (args, res) = getFnArgs(res);
+      let args = [(label, arg), ...args];
+      let args = args->Belt.List.map(((label, arg)) => (
+        /* label */
+        label == "" ? None : Some(label)
+        , asSimpleType(arg)));
+      SimpleType.Fn(args, asSimpleType(res))
+    | Ttuple(items) => 
+      SimpleType.Tuple(items->Belt.List.map(asSimpleType))
+    | Tconstr(path, args, _) =>
+      SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
+    | _ => SimpleType.Other
+  }
+};
+
 let rec makeFlexible = t => {
   SharedTypes.toString: () => {
     PrintType.default.expr(PrintType.default, t)
@@ -74,7 +104,8 @@ let rec makeFlexible = t => {
   },
   getArguments: () => {
       loop(t)
-  }
+  },
+  asSimpleType: () => asSimpleType(t)
 }
 
 and loop = t => switch (t.Types.desc) {
