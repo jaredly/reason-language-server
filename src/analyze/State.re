@@ -144,6 +144,15 @@ let newBsPackage = (state, rootPath) => {
     |> List.map(((name, paths)) => (switch (namespace) {
       | None => name
       | Some(n) => name ++ "-" ++ n }, paths));
+  Log.log("-- All local modules found: " ++ string_of_int(List.length(localModules)));
+  localModules |> List.iter(((name, paths)) => {
+    Log.log(name);
+    switch paths {
+      | SharedTypes.Impl(cmt, _) => Log.log("impl " ++ cmt)
+      | Intf(cmi, _) => Log.log("intf " ++ cmi)
+      | _ => Log.log("Both")
+    }
+  });
   
   let (pathsForModule, nameForPath) = makePathsForModule(localModules, dependencyModules);
 
@@ -639,7 +648,12 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
       let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
-    let%try moduleName = Utils.maybeHash(package.nameForPath, path) |> Result.orError("Can't find module name for path " ++ path);
+    let%try moduleName = switch (Utils.maybeHash(package.nameForPath, path)) {
+      | None =>
+        Hashtbl.iter((k, v) => Log.log("Path: " ++ k ++ "  " ++ v), package.nameForPath);
+        Error("Can't find module name for path " ++ path)
+      | Some(x) => Ok(x)
+    };
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;
