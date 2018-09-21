@@ -26,7 +26,14 @@ open Asttypes;
 open SharedTypes.SimpleType;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
-let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(Ldot(Lident("Js"), "Json"), kind)), [
+let ok = v => Exp.construct(mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(v));
+let expString = message => Exp.constant(Pconst_string(message, None));
+let expError = message => Exp.construct(mknoloc(Lident("Error")), Some(expString(message)));
+let expPassError = Exp.construct(mknoloc(Lident("Error")), Some(makeIdent(Lident("error"))));
+let patPassError = Pat.construct(mknoloc(Lident("Error")), Some(Pat.var(mknoloc("error"))));
+let jsJson = Ldot(Lident("Js"), "Json");
+
+let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(jsJson, kind)), [
   (Nolabel, contents)
 ]);
 
@@ -46,7 +53,7 @@ let jsonArray = items => makeJson(
 );
 
 let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
-  (Nolabel, Exp.constant(Pconst_string(message, None)))
+  (Nolabel, expString(message))
 ]);
 
 let sourceTransformer = source => switch source {
@@ -74,19 +81,30 @@ let sourceTransformer = source => switch source {
         )
       )
     )
-  | Builtin("string") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "string"))
-  | Builtin("bool") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "boolean"))
+  | Builtin("string") =>
+    Exp.fun_(Nolabel, None, Pat.var(mknoloc("json")), Exp.match(
+      makeClassify(makeIdent(Lident("json"))),
+      [
+        Exp.case(
+          Pat.construct(mknoloc(Ldot(jsJson, "JSONString")), Some(Pat.var(mknoloc("string")))),
+          ok(makeIdent(Lident("string")))
+        ),
+        Exp.case(Pat.any(), expError("Expected a string"))
+      ]
+    ))
+  /* makeIdent(Ldot(jsJson, "string")) */
+  | Builtin("bool") => makeIdent(Ldot(jsJson, "boolean"))
   | Builtin("int") =>
     Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc("int")),
       Exp.apply(
-        makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "number")),
+        makeIdent(Ldot(jsJson, "number")),
         [(Nolabel, Exp.apply(
           makeIdent(Lident("float_of_int")),
           [(Nolabel, makeIdent(Lident("int")))]
         ))]
       )
     )
-  | Builtin("float") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "number"))
+  | Builtin("float") => makeIdent(Ldot(jsJson, "number"))
   | Builtin("option") => 
   Exp.fun_(
     Nolabel,
@@ -97,7 +115,7 @@ let sourceTransformer = source => switch source {
       Exp.case(Pat.construct(
         Location.mknoloc(Lident("None")),
         None
-      ), Exp.construct(Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "null")), None)),
+      ), Exp.construct(Location.mknoloc(Ldot(jsJson, "null")), None)),
       Exp.case(Pat.construct(
         Location.mknoloc(Lident("Some")),
         Some(Pat.var(Location.mknoloc("value")))
@@ -224,16 +242,16 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
               ),
             )),
             ~guard=Exp.apply(makeIdent(Lident("=")), [
-              (Nolabel, Exp.construct(mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "JSONString")), Some(Exp.constant(Pconst_string(name, None))))),
+              (Nolabel, Exp.construct(mknoloc(Ldot(jsJson, "JSONString")), Some(Exp.constant(Pconst_string(name, None))))),
               (Nolabel, makeClassify(makeIdent(Lident("tag"))))
             ]),
             {
-              let body = Exp.construct(mknoloc(Lident("Ok")), Some(Exp.constraint_(Exp.construct(mknoloc(Lident(name)), switch args {
+              let body = ok(Exp.constraint_(Exp.construct(mknoloc(Lident(name)), switch args {
                 | [] => None
                 | args => Some(Exp.tuple(args->Belt.List.mapWithIndex((index, _) => {
                   makeIdent(Lident("arg" ++ string_of_int(index)))
                 })))
-              }), coreType)));
+              }), coreType));
               let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
                 let argname = "arg" ++ string_of_int(index);
                 (Exp.match(
@@ -244,9 +262,9 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
                       body
                     ),
                     Exp.case(
-                      Pat.construct(mknoloc(Lident("Error")), Some(Pat.var(mknoloc("error")))),
+                      patPassError,
                       /* TODO annotate error */
-                      Exp.construct(mknoloc(Lident("Error")), Some(makeIdent(Lident("error"))))
+                      expPassError
                     )
                   ]
                 ), index + 1)
@@ -278,7 +296,9 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
             )) */
           )
           
-        })
+        })->Belt.List.concat([
+          Exp.case(Pat.any(), expError("Expected an array"))
+        ])
       )
     )
 };
@@ -311,7 +331,7 @@ let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => 
     loop(variables)
 };
 
-let jsonT = Typ.constr(Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")), []);
+let jsonT = Typ.constr(Location.mknoloc(Ldot(jsJson, "t")), []);
 
 let makeResult = t => Typ.constr(
   Location.mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "t")),
