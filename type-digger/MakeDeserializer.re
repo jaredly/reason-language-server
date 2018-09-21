@@ -65,6 +65,27 @@ let sourceTransformer = source => switch source {
   | DigTypes.NotFound => failer("Not found")
   | Public({modulePath, moduleName, name}) =>
     makeIdent(Lident(transformerName(~moduleName, ~modulePath, ~name)))
+  | Builtin("array") =>
+    [%expr 
+      (transformer, array) => switch (Js.Json.classify(array)) {
+        | JSONArray(items) =>
+          let rec loop = items => switch items {
+            | [] => Belt.Result.Ok([])
+            | [one, ...rest] => switch (transformer(one)) {
+              | Belt.Result.Error(error) => Belt.Result.Error(error)
+              | Ok(value) => switch (loop(rest)) {
+                | Belt.Result.Error(error) => Belt.Result.Error(error)
+                | Ok(rest) => Ok([value, ...rest])
+              }
+            }
+          };
+          switch (loop(items->Belt.List.fromArray)) {
+            | Belt.Result.Error(error) => Belt.Result.Error(error)
+            | Ok(value) => Ok(Belt.List.toArray(value))
+          }
+        | _ => Belt.Result.Error("expected an array")
+      }
+    ];
   | Builtin("list") =>
     [%expr 
       (transformer, list) => switch (Js.Json.classify(list)) {

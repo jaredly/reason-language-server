@@ -50,6 +50,27 @@ let sourceTransformer = source => switch source {
   | DigTypes.NotFound => failer("Not found")
   | Public({modulePath, moduleName, name}) =>
     makeIdent(Lident(transformerName(~moduleName, ~modulePath, ~name)))
+  | Builtin("array") =>
+        
+    Exp.fun_(
+      Nolabel,
+      None,
+      Pat.var(Location.mknoloc("transformer")),
+      Exp.fun_(
+        Nolabel,
+        None,
+        Pat.var(Location.mknoloc("array")),
+        makeJson("array",
+            Exp.apply(
+              makeIdent(Ldot(Ldot(Lident("Belt"), "Array"), "map")),
+              [
+                (Nolabel, makeIdent(Lident("array"))),
+                (Nolabel, makeIdent(Lident("transformer"))),
+              ]
+            )
+        )
+      )
+    )
   | Builtin("list") =>
         
     Exp.fun_(

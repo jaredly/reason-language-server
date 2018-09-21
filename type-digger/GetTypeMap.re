@@ -19,7 +19,7 @@ let mapSource = (~env, ~getModule, ~getModuleName, digType, path) => {
         switch (Query.hashFind(env.file.stamps.types, stamp)) {
           | None =>
             switch (Path.name(path)) {
-              | "list" | "string" | "option" | "int" | "float" | "bool" => None
+              | "list" | "string" | "option" | "int" | "float" | "bool" | "array" => None
               | _ =>
               print_endline("Bad stamp " ++ Path.name(path) ++ " in " ++ env.file.uri ++ " :: " ++ string_of_int(stamp))
               None
@@ -31,7 +31,7 @@ let mapSource = (~env, ~getModule, ~getModuleName, digType, path) => {
       };
     switch (declared) {
     | None => switch path {
-      | Path.Pident({name: ("list" | "string" | "option" | "int" | "float" | "bool") as name}) => Builtin(name)
+      | Path.Pident({name: ("list" | "string" | "option" | "int" | "float" | "bool" | "array") as name}) => Builtin(name)
       | _ => {
         print_endline("!!! Not found " ++ Path.name(path));
         NotFound
