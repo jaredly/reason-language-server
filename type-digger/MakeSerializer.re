@@ -12,7 +12,7 @@ let makeLident = (~moduleName, ~modulePath, ~name) => {
 };
 
 let transformerName = (~moduleName, ~modulePath, ~name) =>
-  "transform_" ++ 
+  "serialize_" ++ 
   Str.global_replace(
     Str.regexp_string("-"),
     "__",
@@ -170,9 +170,20 @@ let rec forExpr = (sourceTransformer, t) => switch t {
   | _ => failer("not impl expr")
 };
 
-let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
+let forBody = (sourceTransformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
-  | Abstract => makeIdent(Ldot(Lident("TransformHelpers"), fullName))
+  | Abstract =>
+    let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
+    switch (variables) {
+      | [] => body
+      | args => Exp.apply(body, args->Belt.List.map(
+        arg => (Nolabel, makeIdent(Lident(switch arg {
+          | Variable(string) => string ++ "Transformer"
+          | AnonVariable => "ANON"
+          | _ => "OTHER"
+        })))
+      ))
+    }
   | Expr(e) =>
     Exp.fun_(
       Nolabel,
@@ -255,7 +266,7 @@ let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => 
       ),
       makeTypArgs(variables)->Belt.List.map(name => Typ.var(name)),
     ),
-    body, fullName)
+    body, fullName, variables)
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {

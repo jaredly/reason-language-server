@@ -65,13 +65,13 @@ let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, ~getModuleNam
   };
 };
 
-let forInitialType = (~state, uri, name) => {
+let forInitialType = (~tbl, ~state, uri, name) => {
   let%try package = State.getPackage(uri, state);
   print_endline("Got package...")
   let%try (file, _) = State.fileForUri(state, ~package, uri);
   let env = Query.fileEnv(file);
   let%try declared = getType(~env, name) |> RResult.orError("No declared type named " ++ name);
-  let tbl = Hashtbl.create(10);
+  /* let tbl = Hashtbl.create(10); */
   let getModule = State.fileForModule(state, ~package);
   let getModuleName = uri => {
     let%opt path = Utils.parseUri(uri);
@@ -88,5 +88,5 @@ let forInitialType = (~state, uri, name) => {
   }; */
   ignore(digType(~tbl, ~set=Hashtbl.create(10), ~state, ~package, ~env, ~getModule, ~getModuleName, (moduleName, [], name), declared));
 
-  Ok(tbl)
+  Ok(())
 };

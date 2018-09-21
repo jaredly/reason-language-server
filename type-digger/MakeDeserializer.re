@@ -88,18 +88,11 @@ let sourceTransformer = source => switch source {
       | JSONString(string) => Belt.Result.Ok(string)
       | _ => Error("epected a string")
     }]
-    /* Exp.fun_(Nolabel, None, Pat.var(mknoloc("json")), Exp.match(
-      makeClassify(makeIdent(Lident("json"))),
-      [
-        Exp.case(
-          Pat.construct(mknoloc(Ldot(jsJson, "JSONString")), Some(Pat.var(mknoloc("string")))),
-          ok(makeIdent(Lident("string")))
-        ),
-        Exp.case(Pat.any(), expError("Expected a string"))
-      ]
-    )) */
-  /* makeIdent(Ldot(jsJson, "string")) */
-  | Builtin("bool") => makeIdent(Ldot(jsJson, "boolean"))
+  | Builtin("bool") => [%expr bool => switch (Js.Json.classify(bool)) {
+    | JSONTrue => Belt.Result.Ok(true)
+    | JSONFalse => Belt.Result.Ok(false)
+    | _ => Belt.Result.Error("Expected a bool")
+  }]
   | Builtin("int") =>
     [%expr number => switch (Js.Json.classify(number)) {
       | JSONNumber(number) => Belt.Result.Ok(int_of_float(number))
@@ -110,37 +103,15 @@ let sourceTransformer = source => switch source {
     | _ => Error("Expected a float")
   }]
   | Builtin("option") => 
-  Exp.fun_(
-    Nolabel,
-    None,
-    Pat.var(Location.mknoloc("transformer")),
-  Exp.function_(
-    [
-      Exp.case(Pat.construct(
-        Location.mknoloc(Lident("None")),
-        None
-      ), Exp.construct(Location.mknoloc(Ldot(jsJson, "null")), None)),
-      Exp.case(Pat.construct(
-        Location.mknoloc(Lident("Some")),
-        Some(Pat.var(Location.mknoloc("value")))
-      ), 
-        Exp.apply(makeIdent(Lident("transformer")), [
-          (Nolabel, makeIdent(Lident("value")))
-        ])
-      )
-    ]
-  )
-
-  )
+    [%expr (transformer, option) => switch (Js.Json.classify(option)) {
+      | JSONNull => Belt.Result.Ok(None)
+      | _ => switch (transformer(option)) {
+        | Belt.Result.Error(error) => Belt.Result.Error(error)
+        | Ok(value) => Ok(Some(value))
+      }
+    }]
   | Builtin(name) => failer("Builtin: " ++ name)
 };
-
-let rec makeList = items => switch items {
-  | [] => Exp.construct(Location.mknoloc(Lident("[]")), None)
-  | [one, ...rest] => Exp.construct(Location.mknoloc(Lident("::")), Some(Exp.tuple([
-    one, makeList(rest)
-  ])))
-}
 
 let rec forArgs = (sourceTransformer, args, body) => {
   let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
@@ -185,20 +156,6 @@ let rec forArgs = (sourceTransformer, args, body) => {
             | _ => Belt.Result.Error("expected an array")
           }
         ]
-        /* Exp.fun_(
-          Nolabel,
-          None,
-          Pat.var(Location.mknoloc("list")),
-          jsonArray(
-              Exp.apply(
-                makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
-                [
-                  (Nolabel, makeIdent(Lident("list"))),
-                  (Nolabel, forExpr(sourceTransformer, arg)),
-                ]
-              )
-          )
-        ) */
 
       | _ =>
         switch args {
@@ -211,25 +168,6 @@ let rec forArgs = (sourceTransformer, args, body) => {
     }
   | Tuple(items) =>
     let patArgs = makeTypArgs(items)->Belt.List.map(name => Pat.var(mknoloc(name)));
-    /* let rec loop = (i, items) => switch items {
-      | [] => ([], [])
-      | [arg, ...rest] =>
-        let name = "arg" ++ string_of_int(i);
-        let (pats, exps) = loop(i + 1, rest);
-        ([
-          Pat.var(Location.mknoloc(name)),
-          ...pats
-        ], [
-          Exp.apply(forExpr(sourceTransformer, arg), [
-            (Nolabel, Exp.ident(Location.mknoloc(Lident(name))))
-          ]),
-          ...exps
-        ])
-    };
-    let (pats, exps) = loop(0, items);
-    Exp.fun_(Nolabel, None, Pat.tuple(pats),
-      makeJson("array", Exp.array(exps))
-    ) */
     let body = ok(Exp.tuple(makeTypArgs(items)->Belt.List.map(name => makeIdent(Lident(name)))));
     let body = forArgs(sourceTransformer, items, body);
     [%expr json => switch (Js.Json.classify(json)) {
@@ -239,9 +177,20 @@ let rec forArgs = (sourceTransformer, args, body) => {
   | _ => failer("not impl expr")
 };
 
-let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
+let forBody = (sourceTransformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
-  | Abstract => makeIdent(Ldot(Lident("TransformHelpers"), fullName))
+  | Abstract =>
+    let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
+    switch (variables) {
+      | [] => body
+      | args => Exp.apply(body, args->Belt.List.map(
+        arg => (Nolabel, makeIdent(Lident(switch arg {
+          | Variable(string) => string ++ "Transformer"
+          | AnonVariable => "ANON"
+          | _ => "OTHER"
+        })))
+      ))
+    }
   | Expr(e) =>
     Exp.fun_(
       Nolabel,
@@ -251,25 +200,30 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) => 
-    Exp.fun_(
-      Nolabel,
-      None,
-      /* Pat.constraint_( */
-        Pat.var(Location.mknoloc("record")),
-        /* coreType */
-      /* ), */
-      jsonObject(items->Belt.List.map(((label, expr)) => {
-        Exp.tuple([
-          Exp.constant(Pconst_string(label, None)),
-          Exp.apply(
-            forExpr(sourceTransformer, expr),
-            [(Nolabel, Exp.field(makeIdent(Lident("record")),
-            Location.mknoloc(Lident(label))
-            ))]
-          )
-        ])
-      }))
-    )
+    let body = ok(
+      /* Exp.constraint_( */
+        Exp.record(items->Belt.List.map(((label, expr)) => {
+      (
+        mknoloc(Lident(label)),
+        makeIdent(Lident("attr_" ++ label))
+      )
+    }), None)
+    /* , coreType) */
+    );
+    let body = items->Belt.List.reduce(body, (body, (label, expr)) => {
+      let inner = forExpr(sourceTransformer, expr);
+      [%expr switch (Js.Dict.get(dict, [%e expString(label)])) {
+        | None => Belt.Result.Error("No attribute " ++ [%e expString(label)])
+        | Some(json) => switch ([%e inner](json)) {
+          | Belt.Result.Error(error) => Belt.Result.Error(error)
+          | Ok([%p Pat.var(mknoloc("attr_" ++ label))]) => [%e body]
+        }
+      }]
+    });
+    [%expr record => switch (Js.Json.classify(record)) {
+      | JSONObject(dict) => [%e body]
+      | _ => Belt.Result.Error("Expected an object")
+    }]
   | Variant(constructors) =>
     Exp.fun_(
       Nolabel,
@@ -301,49 +255,8 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
                 })))
               }), coreType));
               forArgs(sourceTransformer, args, body);
-              /* let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
-                let argname = "arg" ++ string_of_int(index);
-                (Exp.match(
-                  Exp.apply(forExpr(sourceTransformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
-                  [
-                    Exp.case(
-                      Pat.construct(Location.mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(Pat.var(Location.mknoloc(argname)))),
-                      body
-                    ),
-                    Exp.case(
-                      patPassError,
-                      /* TODO annotate error */
-                      expPassError
-                    )
-                  ]
-                ), index + 1)
-              });
-              res */
             }
-
-            /* Pat.construct(
-              Location.mknoloc(Lident(name)),
-              switch args {
-                | [] => None
-                | [one] => Some(Pat.var(Location.mknoloc("arg0")))
-                | many => Some(Pat.tuple(
-                  many->Belt.List.mapWithIndex((index, _) => (
-                    Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
-                  ))
-                ))
-              }
-            ), */
-            /* makeJson("array", Exp.array([
-                makeJson("string", Exp.constant(Pconst_string(name, None))),
-              ] @ (
-                args->Belt.List.mapWithIndex((index, arg) => {
-                  Exp.apply(forExpr(sourceTransformer, arg),
-                  [(Nolabel, makeIdent(Lident("arg" ++ string_of_int(index))))])
-                })
-              )
-            )) */
           )
-          
         })->Belt.List.concat([
           Exp.case(Pat.any(), expError("Expected an array"))
         ])
@@ -360,7 +273,7 @@ let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => 
       ),
       makeTypArgs(variables)->Belt.List.map(name => Typ.var(name)),
     ),
-    body, fullName)
+    body, fullName, variables)
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {

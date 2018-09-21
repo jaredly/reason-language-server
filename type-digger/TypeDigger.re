@@ -44,11 +44,12 @@ let toDeSerializer = (base, src, name, dest) => {
   let%try text = switch (package.refmtPath) {
     | None => Ok(ml)
     | Some(refmt) =>
-    Lib.AsYouType.convertToRe(~formatWidth=Some(100),
+    Ok(ml)
+    /* Lib.AsYouType.convertToRe(~formatWidth=Some(100),
       ~interface=false,
       ml,
       refmt
-      )
+      ) */
   };
   Files.writeFile(dest, text) |> ignore;
   Ok(())
