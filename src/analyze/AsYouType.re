@@ -6,7 +6,7 @@ type result =
   | Success(string, SharedTypes.full)
 ;
 open Infix;
-open Result;
+open RResult;
 
 let getResult = result => switch result {
 | SyntaxError(_, _, data) => data

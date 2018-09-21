@@ -1,5 +1,5 @@
 open Infix;
-open Result;
+open RResult;
 
 let rec show = item => switch item {
   | `Ident(text) => "Ident<" ++ text ++ ">"

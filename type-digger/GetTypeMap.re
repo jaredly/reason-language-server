@@ -70,7 +70,7 @@ let forInitialType = (~state, uri, name) => {
   print_endline("Got package...")
   let%try (file, _) = State.fileForUri(state, ~package, uri);
   let env = Query.fileEnv(file);
-  let%try declared = getType(~env, name) |> Result.orError("No declared type named " ++ name);
+  let%try declared = getType(~env, name) |> RResult.orError("No declared type named " ++ name);
   let tbl = Hashtbl.create(10);
   let getModule = State.fileForModule(state, ~package);
   let getModuleName = uri => {

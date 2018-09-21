@@ -107,9 +107,9 @@ let execOption = cmd => {
 let execResult = cmd => {
   let (lines, success) = execSync(cmd);
   if (success) {
-    Result.Ok(lines)
+    RResult.Ok(lines)
   } else {
-    Result.Error(lines)
+    RResult.Error(lines)
   }
 };
 

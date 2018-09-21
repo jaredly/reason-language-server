@@ -88,8 +88,8 @@ module Continuation = {
 let module C: MonadThing = Continuation;
 
 module NodeContinuation = {
-  open Result;
-  type t('a, 'b) = (Result.result('a, 'b) => unit) => unit;
+  open RResult;
+  type t('a, 'b) = (RResult.result('a, 'b) => unit) => unit;
   let return = (x, fin) => fin(Ok(x));
   let map = (work, ~f as use, fin) => work((result) => fin(Ok(use(result))));
   let bind = (work, ~f as use, fin) => work((result) => (use(result))(fin));
@@ -196,7 +196,7 @@ module Option = {
 module O: MonadThing = Option;
 
 module Result = {
-  open Result;
+  open RResult;
   let return = (x) => Ok(x);
   let map /*: t 'a 'b => f::('a => 'c) => t 'c 'b*/ = (value, ~f as use) =>
     switch value {

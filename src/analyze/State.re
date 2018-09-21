@@ -131,7 +131,7 @@ let newBsPackage = (state, rootPath) => {
   let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
   let tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
   let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
-  let%try_wrap compiledBase = compiledBase |> Result.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
+  let%try_wrap compiledBase = compiledBase |> RResult.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
   let namespace = FindFiles.getNamespace(config);
   let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
@@ -197,7 +197,7 @@ let newBsPackage = (state, rootPath) => {
 
       ], opens)
     | _ => {
-      let flags = MerlinFile.getFlags(rootPath) |> Result.withDefault([""]);
+      let flags = MerlinFile.getFlags(rootPath) |> RResult.withDefault([""]);
       let opens = List.fold_left((opens, item) => {
         let parts = Utils.split_on_char(' ', item);
         let rec loop = items => switch items {
@@ -267,7 +267,7 @@ let newBsPackage = (state, rootPath) => {
 let newJbuilderPackage = (state, rootPath) => {
   let rec findJbuilderProjectRoot = path => {
     if (path == "/") {
-      Result.Error("Unable to find _build directory")
+      RResult.Error("Unable to find _build directory")
     } else if (Files.exists(path /+ "_build")) {
       Ok(path)
     } else {
@@ -334,7 +334,7 @@ let newJbuilderPackage = (state, rootPath) => {
         | x => Ok(x)
       };
       let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
-        | `Library(name) => Result.Ok(name)
+        | `Library(name) => RResult.Ok(name)
         | _ => Error("Not a library")
       };
       let rel = Files.relpath(projectRoot, otherPath);
@@ -395,7 +395,7 @@ let newJbuilderPackage = (state, rootPath) => {
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
-  let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> Result.toOptionAndLog;
+  let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> RResult.toOptionAndLog;
   Ok({
     basePath: rootPath,
     localModules: localModules |. Belt.List.map(fst),
@@ -445,13 +445,13 @@ let findRoot = (uri, packagesByRoot) => {
 
 let getPackage = (uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {
-    Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
+    RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
   } else {
-    let%try root = findRoot(uri, state.packagesByRoot) |> Result.orError("No root directory found");
+    let%try root = findRoot(uri, state.packagesByRoot) |> RResult.orError("No root directory found");
     let%try package = switch root {
     | `Root(rootPath) =>
       Hashtbl.replace(state.rootForUri, uri, rootPath);
-      Result.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
+      RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
       let%try package = newBsPackage(state, rootPath);
       Files.mkdirp(package.tmpPath);
@@ -462,13 +462,13 @@ let getPackage = (uri, state) => {
       };
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
-      Result.Ok(package)
+      RResult.Ok(package)
     | `Jbuilder(path) =>
       let%try package = newJbuilderPackage(state, path);
       Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
-      Result.Ok(package)
+      RResult.Ok(package)
     };
 
     /* {
@@ -513,7 +513,7 @@ let newDocsForCmt = (~compilerVersion, cmtCache, changed, cmt, src, clientNeedsP
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmt
     | V406 => Process_406.fileForCmt
-  })(cmt, uri, converter(src, clientNeedsPlainText)) |> Result.toOptionAndLog;
+  })(cmt, uri, converter(src, clientNeedsPlainText)) |> RResult.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
@@ -620,7 +620,7 @@ let getContents = (uri, state) => {
 let refmtForUri = (uri, package) =>
   if (Filename.check_suffix(uri, ".ml")
       || Filename.check_suffix(uri, ".mli")) {
-    Result.Ok(None);
+    RResult.Ok(None);
   } else if (Filename.check_suffix(uri, ".rel")
              || Filename.check_suffix(uri, ".reli")) {
     switch (package.lispRefmtPath) {
@@ -640,7 +640,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
     Belt.Result.Ok(Hashtbl.find(state.compiledDocuments, uri))
   } else {
-    let%try path = Utils.parseUri(uri) |> Result.orError("Not a uri");
+    let%try path = Utils.parseUri(uri) |> RResult.orError("Not a uri");
     let text = Hashtbl.mem(state.documentText, uri) ? {
       let (text, _, _) = Hashtbl.find(state.documentText, uri);
       text
@@ -783,7 +783,7 @@ let fileForModule = (state,  ~package, modname) => {
     let%opt src = SharedTypes.getSrc(paths);
     let uri = Utils.toUri(src);
     if (Hashtbl.mem(state.documentText, uri)) {
-      let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> Result.toOptionAndLog;
+      let%opt {SharedTypes.file} = tryExtra(getCompilationResult(uri, state, ~package)) |> RResult.toOptionAndLog;
       Some(file)
     } else {
       None
@@ -802,7 +802,7 @@ let extraForModule = (state, ~package, modname) => {
     let paths = Hashtbl.find(package.pathsForModule, modname);
     /* TODO do better? */
     let%opt src = SharedTypes.getSrc(paths);
-    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> Result.toOptionAndLog;
+    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> RResult.toOptionAndLog;
     Some(extra)
   } else {
     None;

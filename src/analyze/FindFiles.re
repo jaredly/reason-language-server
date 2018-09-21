@@ -336,7 +336,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
   let directories = stdlibDirectories @ List.concat(directories);
   let results = files @ List.concat(List.map(collectFiles, stdlibDirectories));
   let%try bsPlatformDir = BuildSystem.getBsPlatformDir(base);
-  Result.Ok((
+  RResult.Ok((
     needsCompilerLibs(config) ?
       [
         bsPlatformDir

@@ -1,6 +1,6 @@
 open TopTypes;
 open Infix;
-open Result;
+open RResult;
 open Log;
 
 let makeDiagnostic = (documentText, ((line, c1, c2), message)) => {

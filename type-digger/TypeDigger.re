@@ -91,14 +91,14 @@ let toSerializer = (base, src, name, dest) => {
 switch (Sys.argv) {
   | [|_, "from-json", src, name, dest|] => {
     switch (toDeSerializer(Sys.getcwd(), src, name, dest)) {
-      | Result.Ok(()) => print_endline("Success")
-      | Result.Error(message) => print_endline("Failed: " ++ message)
+      | RResult.Ok(()) => print_endline("Success")
+      | RResult.Error(message) => print_endline("Failed: " ++ message)
     }
   }
   | [|_, "to-json", src, name, dest|] => {
     switch (toSerializer(Sys.getcwd(), src, name, dest)) {
-      | Result.Ok(()) => print_endline("Success")
-      | Result.Error(message) => print_endline("Failed: " ++ message)
+      | RResult.Ok(()) => print_endline("Success")
+      | RResult.Error(message) => print_endline("Failed: " ++ message)
     }
   }
   | _ => failwith("Bad args")

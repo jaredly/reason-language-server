@@ -23,7 +23,7 @@ let isNative = config => Json.get("entries", config) != None || Json.get("allowe
 
 let getLine = (cmd, ~pwd) => {
   switch (Commands.execFull(~pwd, cmd)) {
-    | ([line], _, true) => Result.Ok(line)
+    | ([line], _, true) => RResult.Ok(line)
     | (out, err, _) => Error("Invalid response for " ++ cmd ++ "\n\n" ++ String.concat("\n", out @ err))
   }
 };
@@ -38,11 +38,11 @@ let getBsPlatformDir = rootPath => {
     );
   switch (result) {
   | Some(path) =>
-    Result.Ok(path);
+    RResult.Ok(path);
   | None =>
     let message = "bs-platform could not be found";
     Log.log(message);
-    Result.Error(message);
+    RResult.Error(message);
   };
 };
 
@@ -50,7 +50,7 @@ let getBsPlatformDir = rootPath => {
     Is .bin always in the modules directory?
    */
 let getBsbExecutable = rootPath =>
-  Result.InfixResult.(
+  RResult.InfixResult.(
     getBsPlatformDir(rootPath)
     |?>> Filename.dirname
     |?>> (path => path /+ ".bin" /+ "bsb")

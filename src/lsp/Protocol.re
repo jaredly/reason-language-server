@@ -20,21 +20,21 @@ let getPosition = (pos) => {
 };
 
 let rgetPosition = (pos) => {
-  open Result.InfixResult;
+  open RResult.InfixResult;
   let%try line = RJson.get("line", pos) |?> RJson.number;
   let%try character = RJson.get("character", pos) |?> RJson.number;
   Ok((int_of_float(line), int_of_float(character)))
 };
 
 let rgetRange = (pos) => {
-  open Result.InfixResult;
+  open RResult.InfixResult;
   let%try start = RJson.get("start", pos) |?> rgetPosition;
   let%try end_ = RJson.get("end", pos) |?> rgetPosition;
   Ok((start, end_))
 };
 
 let rPositionParams = (params) => {
-  open Result.InfixResult;
+  open RResult.InfixResult;
   let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
   let%try pos = RJson.get("position", params) |?> rgetPosition;
   Ok((uri, pos))

@@ -80,9 +80,9 @@ let getModulesFromMerlin = (base, text) => {
 };
 
 let getFlags = base =>
-  Result.InfixResult.(
+  RResult.InfixResult.(
     Files.readFile(base ++ "/.merlin")
-    |> Result.orError("no .merlin file")
+    |> RResult.orError("no .merlin file")
     |?>> parseMerlin(base)
     |?>> (((_, _, flags)) => flags |> List.rev)
   );

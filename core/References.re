@@ -93,18 +93,18 @@ let definedForLoc = (~file, ~getModule, loc) => {
   | Typed(_, GlobalReference(moduleName, path, tip)) =>
     {
       maybeLog("Getting global " ++ moduleName);
-      let%try file = getModule(moduleName) |> Result.orError("Cannot get module " ++ moduleName);
+      let%try file = getModule(moduleName) |> RResult.orError("Cannot get module " ++ moduleName);
       let env = {Query.file, exported: file.contents.exported};
-      let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
-      let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
+      let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> RResult.orError("Cannot resolve path " ++ pathToString(path));
+      let%try stamp = Query.exportedForTip(~env, name, tip) |> RResult.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
       maybeLog("Getting for " ++ string_of_int(stamp) ++ " in " ++ name);
-      let%try res = inner(~file=env.file, stamp, tip) |> Result.orError("could not get defined");
+      let%try res = inner(~file=env.file, stamp, tip) |> RResult.orError("could not get defined");
       maybeLog("Yes!! got it");
       Ok(res)
-    } |> Result.toOptionAndLog
-    /* let%try extra = getExtra(moduleName) |> Result.orError("Failed to get extra for " ++ env.file.uri); */
+    } |> RResult.toOptionAndLog
+    /* let%try extra = getExtra(moduleName) |> RResult.orError("Failed to get extra for " ++ env.file.uri); */
     /* maybeLog("Finding references for (global) " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip)); */
-    /* forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp") */
+    /* forLocalStamp(~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> RResult.orError("Could not get for local stamp") */
   };
 };
 
@@ -117,12 +117,12 @@ let alternateDeclared = (~file, ~pathsForModule, ~getUri, declared, tip) => {
     let intf = Utils.toUri(intf);
     let impl = Utils.toUri(impl);
     if (intf == file.uri) {
-      let%opt (file, extra) = getUri(impl) |> Result.toOptionAndLog;
+      let%opt (file, extra) = getUri(impl) |> RResult.toOptionAndLog;
       let%opt declared =
         Query.declaredForExportedTip(~stamps=file.stamps, ~exported=file.contents.exported, declared.name.txt, tip);
       Some((file, extra, declared));
     } else {
-      let%opt (file, extra) = getUri(intf) |> Result.toOptionAndLog;
+      let%opt (file, extra) = getUri(intf) |> RResult.toOptionAndLog;
       let%opt declared =
         Query.declaredForExportedTip(~stamps=file.stamps, ~exported=file.contents.exported, declared.name.txt, tip);
       Some((file, extra, declared));
@@ -198,12 +198,12 @@ let forLocalStamp = (~pathsForModule, ~file, ~extra, ~allModules, ~getModule, ~g
       maybeLog("Now checking path " ++ pathToString(path));
       let thisModuleName = file.moduleName;
       let externals = allModules |. Belt.List.keep(name => name != file.moduleName) |. Belt.List.keepMap(name => {
-        let%try file = getModule(name) |> Result.orError("Could not get file for module " ++ name);
-        let%try extra = getExtra(name) |> Result.orError("Could not get extra for module " ++ name);
-        let%try refs = extra.externalReferences |. Query.hashFind(thisModuleName) |> Result.orError("No references in " ++ name ++ " for " ++ thisModuleName);
+        let%try file = getModule(name) |> RResult.orError("Could not get file for module " ++ name);
+        let%try extra = getExtra(name) |> RResult.orError("Could not get extra for module " ++ name);
+        let%try refs = extra.externalReferences |. Query.hashFind(thisModuleName) |> RResult.orError("No references in " ++ name ++ " for " ++ thisModuleName);
         let refs = refs |. Belt.List.keepMap(((p, t, l)) => p == path && t == tip ? Some(l) : None);
         Ok((file.uri, refs))
-      } |> Result.toOptionAndLog);
+      } |> RResult.toOptionAndLog);
       Some(alternativeReferences @ externals)
     } else {
       maybeLog("Not visible");
@@ -220,25 +220,25 @@ let allReferencesForLoc = (~pathsForModule, ~getUri, ~file, ~extra, ~allModules,
     | Module(NotFound)
     | TopLevelModule(_)
     | Constant(_)
-    | Open => Result.Error("Not a valid loc")
+    | Open => RResult.Error("Not a valid loc")
     | TypeDefinition(_, _, stamp) => {
-      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> Result.orError("Could not get for local stamp")
+      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, Type) |> RResult.orError("Could not get for local stamp")
     }
     | Typed(_, LocalReference(stamp, tip) | Definition(stamp, tip))
     | Module(LocalReference(stamp, tip) | Definition(stamp, tip))
     => {
       maybeLog("Finding references for " ++ file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
-      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
+      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> RResult.orError("Could not get for local stamp")
     }
     | Module(GlobalReference(moduleName, path, tip))
     | Typed(_, GlobalReference(moduleName, path, tip)) => {
-      let%try file = getModule(moduleName) |> Result.orError("Cannot get module " ++ moduleName);
+      let%try file = getModule(moduleName) |> RResult.orError("Cannot get module " ++ moduleName);
       let env = {Query.file, exported: file.contents.exported};
-      let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> Result.orError("Cannot resolve path " ++ pathToString(path));
-      let%try stamp = Query.exportedForTip(~env, name, tip) |> Result.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
+      let%try (env, name) = Query.resolvePath(~env, ~path, ~getModule) |> RResult.orError("Cannot resolve path " ++ pathToString(path));
+      let%try stamp = Query.exportedForTip(~env, name, tip) |> RResult.orError("Exported not found for tip " ++ name ++ " > " ++ tipToString(tip));
       let%try (file, extra) = getUri(env.file.uri);
       maybeLog("Finding references for (global) " ++ env.file.uri ++ " and stamp " ++ string_of_int(stamp) ++ " and tip " ++ tipToString(tip));
-      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> Result.orError("Could not get for local stamp")
+      forLocalStamp(~pathsForModule, ~getUri, ~file, ~extra, ~allModules, ~getModule, ~getExtra, stamp, tip) |> RResult.orError("Could not get for local stamp")
     }
   }
 };

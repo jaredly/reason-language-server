@@ -1,6 +1,6 @@
 
 open Infix;
-open Result;
+open RResult;
 open Log;
 open TopTypes;
 
@@ -46,11 +46,11 @@ let reloadAllState = state => {
 
 let notificationHandlers: list((string, (state, Json.t) => result(state, string))) = [
   ("textDocument/didOpen", (state, params) => {
-    let%try (uri, version, text) = Json.get("textDocument", params) |?> getTextDocument |> Result.orError("Invalid params");
+    let%try (uri, version, text) = Json.get("textDocument", params) |?> getTextDocument |> RResult.orError("Invalid params");
     Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
     Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
     
-    let%try path = Utils.parseUri(uri) |> Result.orError("Invalid uri");
+    let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
     if (FindFiles.isSourceFile(path)) {
       let%try package = State.getPackage(uri, state);
       /* let name = FindFiles.getName(path); */
@@ -166,7 +166,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       if (!isRelevant) {
         Ok(false)
       } else {
-        let%try path = Utils.parseUri(uri) |> Result.orError("Cannot parse URI");
+        let%try path = Utils.parseUri(uri) |> RResult.orError("Cannot parse URI");
         let%try contents = Files.readFileResult(path);
         if (!Hashtbl.mem(watchedFileContentsMap, uri) || Hashtbl.find(watchedFileContentsMap, uri) == contents) {
           Ok(false)

@@ -1,6 +1,6 @@
 
 open Infix;
-open Result;
+open RResult;
 open Log;
 
 let capabilities =

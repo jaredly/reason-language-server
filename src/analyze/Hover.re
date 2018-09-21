@@ -1,4 +1,4 @@
-open Result;
+open RResult;
 
 let digConstructor = (~env, ~getModule, path) => {
   switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {

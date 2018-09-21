@@ -4,7 +4,7 @@ open SharedTypes;
 open Belt.Result;
 
 let fileForCmi = (cmi, uri, processDoc) => {
-  let%opt infos = Shared.tryReadCmi(cmi) |> Result.toOptionAndLog;
+  let%opt infos = Shared.tryReadCmi(cmi) |> RResult.toOptionAndLog;
   ProcessCmt.forCmi(uri, processDoc, infos);
 };
 

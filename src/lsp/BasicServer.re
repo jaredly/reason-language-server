@@ -1,4 +1,4 @@
-open Result;
+open RResult;
 
 type messageSeverity =
   | Error

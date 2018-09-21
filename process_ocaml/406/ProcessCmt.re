@@ -372,7 +372,7 @@ and forStructure = (~env, items) => {
   (doc, {Module.exported, topLevel})
 };
 
-open Result;
+open RResult;
 let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Partial_implementation(parts) => {
 

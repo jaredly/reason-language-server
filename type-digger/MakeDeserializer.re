@@ -12,6 +12,11 @@ let makeLident = (~moduleName, ~modulePath, ~name) => {
   Ldot(base, name)
 };
 
+let makeTypArgs = variables =>
+      variables->Belt.List.mapWithIndex((index, arg) => {
+        "arg" ++ string_of_int(index)
+      });
+
 let transformerName = (~moduleName, ~modulePath, ~name) =>
   "deserialize_" ++ 
   Str.global_replace(
@@ -61,28 +66,29 @@ let sourceTransformer = source => switch source {
   | Public({modulePath, moduleName, name}) =>
     makeIdent(Lident(transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("list") =>
-        
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("list")),
-        jsonArray(
-            Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("list"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            )
-        )
-      )
-    )
+    [%expr 
+      (transformer, list) => switch (Js.Json.classify(list)) {
+        | JSONArray(items) =>
+          let rec loop = items => switch items {
+            | [] => Ok([])
+            | [one, ...rest] => switch (transformer(one)) {
+              | Belt.Result.Error(error) => Belt.Result.Error(error)
+              | Ok(value) => switch (loop(rest)) {
+                | Belt.Result.Error(error) => Belt.Result.Error(error)
+                | Ok(rest) => Ok([value, ...rest])
+              }
+            }
+          };
+          loop(items)
+        | _ => Belt.Result.Error("expected an array")
+      }
+    ];
   | Builtin("string") =>
-    Exp.fun_(Nolabel, None, Pat.var(mknoloc("json")), Exp.match(
+    [%expr string => switch (Js.Json.classify(string)) {
+      | JSONString(string) => Belt.Result.Ok(string)
+      | _ => Error("epected a string")
+    }]
+    /* Exp.fun_(Nolabel, None, Pat.var(mknoloc("json")), Exp.match(
       makeClassify(makeIdent(Lident("json"))),
       [
         Exp.case(
@@ -91,20 +97,18 @@ let sourceTransformer = source => switch source {
         ),
         Exp.case(Pat.any(), expError("Expected a string"))
       ]
-    ))
+    )) */
   /* makeIdent(Ldot(jsJson, "string")) */
   | Builtin("bool") => makeIdent(Ldot(jsJson, "boolean"))
   | Builtin("int") =>
-    Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc("int")),
-      Exp.apply(
-        makeIdent(Ldot(jsJson, "number")),
-        [(Nolabel, Exp.apply(
-          makeIdent(Lident("float_of_int")),
-          [(Nolabel, makeIdent(Lident("int")))]
-        ))]
-      )
-    )
-  | Builtin("float") => makeIdent(Ldot(jsJson, "number"))
+    [%expr number => switch (Js.Json.classify(number)) {
+      | JSONNumber(number) => Belt.Result.Ok(int_of_float(number))
+      | _ => Error("Expected a float")
+    }]
+  | Builtin("float") => [%expr number => switch (Js.Json.classify(number)) {
+    | JSONNumber(number) => Belt.Result.Ok(number)
+    | _ => Error("Expected a float")
+  }]
   | Builtin("option") => 
   Exp.fun_(
     Nolabel,
@@ -138,13 +142,50 @@ let rec makeList = items => switch items {
   ])))
 }
 
-let rec forExpr = (sourceTransformer, t) => switch t {
+let rec forArgs = (sourceTransformer, args, body) => {
+  let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
+    let argname = "arg" ++ string_of_int(index);
+    (Exp.match(
+      Exp.apply(forExpr(sourceTransformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
+      [
+        Exp.case(
+          Pat.construct(Location.mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(Pat.var(Location.mknoloc(argname)))),
+          body
+        ),
+        Exp.case(
+          patPassError,
+          /* TODO annotate error */
+          expPassError
+        )
+      ]
+    ), index + 1)
+  });
+  res
+} and forExpr = (sourceTransformer, t) => switch t {
   | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
   | AnonVariable => failer("Non variable")
   | Reference(source, args) =>
     switch (source, args) {
       | (DigTypes.Builtin("list"), [arg]) =>
-        Exp.fun_(
+        [%expr
+          (list) => switch (Js.Json.classify(list)) {
+            | JSONArray(items) =>
+              let transformer = [%e forExpr(sourceTransformer, arg)];
+              let rec loop = items => switch items {
+                | [] => Belt.Result.Ok([])
+                | [one, ...rest] => switch (transformer(one)) {
+                  | Belt.Result.Error(error) => Belt.Result.Error(error)
+                  | Ok(value) => switch (loop(rest)) {
+                    | Belt.Result.Error(error) => Belt.Result.Error(error)
+                    | Ok(rest) => Ok([value, ...rest])
+                  }
+                }
+              };
+              loop(Belt.List.fromArray(items))
+            | _ => Belt.Result.Error("expected an array")
+          }
+        ]
+        /* Exp.fun_(
           Nolabel,
           None,
           Pat.var(Location.mknoloc("list")),
@@ -157,7 +198,7 @@ let rec forExpr = (sourceTransformer, t) => switch t {
                 ]
               )
           )
-        )
+        ) */
 
       | _ =>
         switch args {
@@ -169,7 +210,8 @@ let rec forExpr = (sourceTransformer, t) => switch t {
         }
     }
   | Tuple(items) =>
-    let rec loop = (i, items) => switch items {
+    let patArgs = makeTypArgs(items)->Belt.List.map(name => Pat.var(mknoloc(name)));
+    /* let rec loop = (i, items) => switch items {
       | [] => ([], [])
       | [arg, ...rest] =>
         let name = "arg" ++ string_of_int(i);
@@ -187,7 +229,13 @@ let rec forExpr = (sourceTransformer, t) => switch t {
     let (pats, exps) = loop(0, items);
     Exp.fun_(Nolabel, None, Pat.tuple(pats),
       makeJson("array", Exp.array(exps))
-    )
+    ) */
+    let body = ok(Exp.tuple(makeTypArgs(items)->Belt.List.map(name => makeIdent(Lident(name)))));
+    let body = forArgs(sourceTransformer, items, body);
+    [%expr json => switch (Js.Json.classify(json)) {
+      | JSONArray([%p Pat.array(patArgs)]) => [%e body]
+      | _ => Belt.Result.Error("Expected array")
+    }]
   | _ => failer("not impl expr")
 };
 
@@ -252,7 +300,8 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
                   makeIdent(Lident("arg" ++ string_of_int(index)))
                 })))
               }), coreType));
-              let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
+              forArgs(sourceTransformer, args, body);
+              /* let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
                 let argname = "arg" ++ string_of_int(index);
                 (Exp.match(
                   Exp.apply(forExpr(sourceTransformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
@@ -268,9 +317,8 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
                     )
                   ]
                 ), index + 1)
-
               });
-              res
+              res */
             }
 
             /* Pat.construct(
@@ -302,11 +350,6 @@ let forBody = (sourceTransformer, coreType, body, fullName) => switch body {
       )
     )
 };
-
-let makeTypArgs = variables =>
-      variables->Belt.List.mapWithIndex((index, arg) => {
-        "arg" ++ string_of_int(index)
-      });
 
 let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {

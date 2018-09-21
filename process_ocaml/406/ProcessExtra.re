@@ -556,7 +556,7 @@ let forItems = (~file, items, parts) => {
   extra
 };
 
-open Result;
+open RResult;
 let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Partial_implementation(parts) => {
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
