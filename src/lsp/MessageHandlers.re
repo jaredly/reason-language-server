@@ -84,6 +84,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
               ~extra,
               ~getModule=State.fileForModule(state, ~package),
               ~markdown=! state.settings.clientNeedsPlainText,
+              ~showPath=state.settings.showModulePathOnHover,
               loc,
             );
           Some((typ, hoverText));
@@ -386,6 +387,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ~extra,
         ~getModule=State.fileForModule(state, ~package),
         ~markdown=!state.settings.clientNeedsPlainText,
+        ~showPath=state.settings.showModulePathOnHover,
         loc
       );
 

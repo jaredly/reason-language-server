@@ -42,6 +42,7 @@ type settings = {
   dependenciesCodelens: bool,
   clientNeedsPlainText: bool,
   crossFileAsYouType: bool,
+  showModulePathOnHover: bool,
 };
 
 type state = {
@@ -84,5 +85,6 @@ let empty = () => {
     opensCodelens: true,
     dependenciesCodelens: true,
     clientNeedsPlainText: false,
+    showModulePathOnHover: true,
   },
 };

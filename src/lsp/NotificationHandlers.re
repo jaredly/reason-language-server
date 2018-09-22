@@ -85,6 +85,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     /* let crossFileAsYouType = (settings |?> Json.get("cross_file_as_you_type") |?> Json.bool) |? false; */
     /* Disabling this -- too finnicky :/ */
     let crossFileAsYouType = false;
+    let showModulePathOnHover = (settings |?> Json.get("show_module_path_on_hover") |?> Json.bool) |? true;
     Ok({
       ...state,
       settings: {
@@ -96,6 +97,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         formatWidth,
         dependenciesCodelens,
         crossFileAsYouType,
+        showModulePathOnHover,
       },
     });
   }),
