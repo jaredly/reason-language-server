@@ -16,6 +16,8 @@ Like, every expression (which I'm not currently doing).
 
  */
 
+Log.spamError := true;
+
 let replaceErrors = (ctx, expr) =>
   expr
   ->mapExpr((mapper, expr) =>
@@ -53,19 +55,25 @@ let modify = (ctx, structure) =>
 
 let runCodeMod = (root, pathChecker, modify) => {
   let state = Lib.TopTypes.empty();
-  let state = {...state, settings: {...state.settings, recordAllLocations: true}};
+  let state = {...state, settings: {...state.settings,
+    recordAllLocations: true,
+    autoRebuild: false,
+  }};
+  print_endline("Setting up a package");
   let%try_force package = Lib.State.newPackageForRoot(state, root);
+  print_endline("Got a package");
 
   let fullForCmt = (switch (package.compilerVersion) {
-    | BuildSystem.V402 => Process_402.fullForCmt
+    | Lib.BuildSystem.V402 => Process_402.fullForCmt
     | V406 => Process_406.fullForCmt
-  })(~moduleName, ~allLocations);
+  })(~allLocations=true);
 
   package.Lib.TopTypes.localModules->Belt.List.forEach(moduleName => {
     let%opt_force paths = Utils.maybeHash(package.pathsForModule, moduleName);
     let%opt_consume (cmt, src) = SharedTypes.getImpl(paths);
+    print_endline(src);
     if (pathChecker(src, moduleName)) {
-      let full = fullForCmt(cmt, src, x => x);
+      let%try_force full = fullForCmt(~moduleName, cmt, src, x => x);
       let ctx = {state, package, full};
       let%try_force structure = Process_406.parseTreeForCmt(cmt);
       let structure = modify(ctx, structure);
@@ -73,13 +81,12 @@ let runCodeMod = (root, pathChecker, modify) => {
       Files.writeFileExn(src ++ ".transformed", Format.flush_str_formatter());
     };
   });
-
 };
 
 
 switch (Sys.argv) {
   | [|_, root|] =>
-    let ctx = {package};
+    print_endline("Running on this " ++ root);
     runCodeMod(
       root,
       (path, moduleName) => true,

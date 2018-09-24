@@ -123,7 +123,9 @@ let newBsPackage = (state, rootPath) => {
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune => assert(false)
   };
-  runBuildCommand(state, rootPath, Some((buildCommand, rootPath)));
+  if (state.settings.autoRebuild) {
+    runBuildCommand(state, rootPath, Some((buildCommand, rootPath)));
+  };
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
@@ -274,6 +276,7 @@ let newJbuilderPackage = (state, rootPath) => {
       findJbuilderProjectRoot(Filename.dirname(path))
     }
   };
+  print_endline("Finding project root");
   let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
   let buildDir = projectRoot /+ "_build";
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
@@ -288,6 +291,7 @@ let newJbuilderPackage = (state, rootPath) => {
   };
   let packageName = JbuildFile.findName(jbuildConfig);
 
+  print_endline("Get ocamllib");
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
 
   /* TODO support binaries, and other directories */
@@ -304,6 +308,7 @@ let newJbuilderPackage = (state, rootPath) => {
     | _ => None
   };
 
+print_endline("locals");
   /* Log.log("Got a compiled base " ++ compiledBase); */
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename);
@@ -325,6 +330,7 @@ let newJbuilderPackage = (state, rootPath) => {
     );
   });
 
+  print_endline("Getting things");
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
@@ -391,7 +397,10 @@ let newJbuilderPackage = (state, rootPath) => {
     };
     Some(("esy " ++ cmd ++ " build @install", projectRoot))
   };
-  runBuildCommand(state, rootPath, buildCommand);
+  print_endline("Build command?");
+  if (state.settings.autoRebuild) {
+    runBuildCommand(state, rootPath, buildCommand);
+  };
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
@@ -444,16 +453,16 @@ let findRoot = (uri, packagesByRoot) => {
 };
 
 let newPackageForRoot = (state, root) => {
-  if (Files.exists(path /+ "bsconfig.json")) {
-    let%try package = newBsPackage(state, rootPath);
+  if (Files.exists(root /+ "bsconfig.json")) {
+    let%try package = newBsPackage(state, root);
     Files.mkdirp(package.tmpPath);
-    Hashtbl.replace(state.rootForUri, uri, package.basePath);
+    /* Hashtbl.replace(state.rootForUri, uri, package.basePath); */
     Hashtbl.replace(state.packagesByRoot, package.basePath, package);
     RResult.Ok(package)
-  } else if (Files.exists(path /+ "dune-project")) {
-    let%try package = newJbuilderPackage(state, path);
+  } else if (Files.exists(root /+ "dune-project")) {
+    let%try package = newJbuilderPackage(state, root);
     Files.mkdirp(package.tmpPath);
-    Hashtbl.replace(state.rootForUri, uri, package.basePath);
+    /* Hashtbl.replace(state.rootForUri, uri, package.basePath); */
     Hashtbl.replace(state.packagesByRoot, package.basePath, package);
     RResult.Ok(package)
   } else {

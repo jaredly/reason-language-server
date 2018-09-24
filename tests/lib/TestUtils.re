@@ -101,6 +101,9 @@ let getState = () => {
       opensCodelens: true,
       dependenciesCodelens: true,
       clientNeedsPlainText: false,
+      showModulePathOnHover: false,
+      recordAllLocations: false,
+      autoRebuild: false,
     },
   };
 };
@@ -155,6 +158,7 @@ let setUp = (files, text) => {
       ~moduleName,
       ~basePath=".",
       ~reasonFormat=false,
+      ~allLocations=false,
       ~compilerVersion=package.compilerVersion,
       contents,
       ~cacheLocation=tmp,
@@ -185,6 +189,7 @@ let setUp = (files, text) => {
     ~basePath=".",
     ~reasonFormat=false,
     ~compilerVersion=package.compilerVersion,
+    ~allLocations=false,
     text,
     ~cacheLocation=tmp,
     package.compilerPath,

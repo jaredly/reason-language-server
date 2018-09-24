@@ -44,6 +44,7 @@ type settings = {
   crossFileAsYouType: bool,
   showModulePathOnHover: bool,
   recordAllLocations: bool,
+  autoRebuild: bool,
 };
 
 type state = {
@@ -88,6 +89,7 @@ let empty = () => {
     clientNeedsPlainText: false,
     showModulePathOnHover: true,
     recordAllLocations: false,
+    autoRebuild: true,
   },
 };
 
