@@ -32,7 +32,7 @@ let rec showConstructor = (~env, ~getModule, loop, path, args) => {
     ])
   }
   | Some(({contents, name, modulePath} as declared, file)) =>
-    let%opt_force (uri, path) = SharedTypes.showVisibilityPath(modulePath);
+    let%opt_force ((uri, moduleName), path) = SharedTypes.showVisibilityPath(modulePath);
     loop(uri, String.concat(".", path) ++ ":" ++ name.txt, declared);
     o([
       ("uri", s(uri)),
@@ -52,7 +52,7 @@ and showFlexible = (~env, ~getModule, loop, typ: SharedTypes.flexibleType) =>
   );
 
 let showType = (~env, ~getModule, loop, {modulePath, contents: typ}: SharedTypes.declared(SharedTypes.Type.t)) => {
-  let%opt_force (uri, path) = SharedTypes.showVisibilityPath(modulePath);
+  let%opt_force ((uri, moduleName), path) = SharedTypes.showVisibilityPath(modulePath);
   open Rpc.J;
   o([
     ("uri", s(uri)),

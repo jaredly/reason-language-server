@@ -365,7 +365,7 @@ and forStructure = (~env, items) => {
 };
 
 open RResult;
-let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
+let forCmt = (~moduleName, uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Partial_implementation(parts) => {
 
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
@@ -383,7 +383,7 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
     scope: extent,
     stamps: initStamps(),
     processDoc,
-    modulePath: File(uri)
+    modulePath: File(uri, moduleName)
   };
   let (docstring, contents) = forStructure(~env, items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
@@ -394,17 +394,17 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
     | Partial_signature_item(str) => Some([str])
     | _ => None
   }) |> List.concat;
-  let env = {scope: sigItemsExtent(items), stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: sigItemsExtent(items), stamps: initStamps(), processDoc, modulePath: File(uri, moduleName)};
   let (docstring, contents) = forSignature(~env, items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Implementation(structure) => {
-  let env = {scope: itemsExtent(structure.str_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: itemsExtent(structure.str_items), stamps: initStamps(), processDoc, modulePath: File(uri, moduleName)};
   let (docstring, contents) = forStructure(~env, structure.str_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
 | Interface(signature) => {
-  let env = {scope: sigItemsExtent(signature.sig_items), stamps: initStamps(), processDoc, modulePath: File(uri)};
+  let env = {scope: sigItemsExtent(signature.sig_items), stamps: initStamps(), processDoc, modulePath: File(uri, moduleName)};
   let (docstring, contents) = forSignature(~env, signature.sig_items);
   Ok({uri, moduleName: cmt_modname, stamps: env.stamps, docstring, contents})
 }
@@ -413,8 +413,8 @@ let forCmt = (uri, processDoc, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) 
 }
 };
 
-let forCmi = (uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
-  let env = {scope: Location.none, stamps: initStamps(), processDoc, modulePath: File(uri)};
+let forCmi = (~moduleName, uri, processDoc, {cmi_name, cmi_sign}: Cmi_format.cmi_infos) => {
+  let env = {scope: Location.none, stamps: initStamps(), processDoc, modulePath: File(uri, moduleName)};
   let contents = forSignatureType(env, cmi_sign);
   Some({
     uri,

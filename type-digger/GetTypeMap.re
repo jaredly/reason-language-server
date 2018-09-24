@@ -38,8 +38,8 @@ let mapSource = (~env, ~getModule, ~getModuleName, digType, path) => {
       }
     }
     | Some(({contents, name, modulePath} as declared, env)) =>
-      let%opt_force (uri, path) = SharedTypes.showVisibilityPath(modulePath);
-      let%opt_force moduleName = getModuleName(uri);
+      let%opt_force ((uri, moduleName), path) = SharedTypes.showVisibilityPath(modulePath);
+      /* let%opt_force moduleName = getModuleName(uri); */
       /* let key = path @ [name.txt]; */
       digType(~env, (moduleName, path, name.txt), declared);
       Public({

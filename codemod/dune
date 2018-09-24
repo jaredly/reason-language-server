@@ -1,0 +1,7 @@
+(executable
+  (name Codemod)
+  (public_name Codemod.exe)
+  (libraries Lib compiler-libs.common ocaml-migrate-parsetree)
+  (flags :standard -w -26-32-50-9-27-39-33-35-6-3)
+  (preprocess (pps Belt_ppx Ppx_monads ppx_tools_versioned.metaquot_406))
+  )

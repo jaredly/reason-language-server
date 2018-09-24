@@ -508,28 +508,28 @@ let converter = (src, usePlainText) => {
   );
 };
 
-let newDocsForCmt = (~compilerVersion, cmtCache, changed, cmt, src, clientNeedsPlainText) => {
+let newDocsForCmt = (~compilerVersion, ~moduleName, cmtCache, changed, cmt, src, clientNeedsPlainText) => {
   let uri = Utils.toUri(src |? cmt);
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmt
     | V406 => Process_406.fileForCmt
-  })(cmt, uri, converter(src, clientNeedsPlainText)) |> RResult.toOptionAndLog;
+  })(~moduleName, cmt, uri, converter(src, clientNeedsPlainText)) |> RResult.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
 
-let newDocsForCmi = (~compilerVersion, cmiCache, changed, cmi, src, clientNeedsPlainText) => {
+let newDocsForCmi = (~compilerVersion, ~moduleName, cmiCache, changed, cmi, src, clientNeedsPlainText) => {
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmi
     | V406 => Process_406.fileForCmi
-  })(cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
+  })(~moduleName, cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
   Hashtbl.replace(cmiCache, cmi, (changed, file));
   Some(file);
 };
 
 let hasProcessedCmt = (state, cmt) => Hashtbl.mem(state.cmtCache, cmt);
 
-let docsForCmt = (~package, cmt, src, state) =>
+let docsForCmt = (~package, ~moduleName, cmt, src, state) =>
   if (Filename.check_suffix(cmt, ".cmi")) {
     if (Hashtbl.mem(state.cmiCache, cmt)) {
       let (mtime, docs) = Hashtbl.find(state.cmiCache, cmt);
@@ -542,6 +542,7 @@ let docsForCmt = (~package, cmt, src, state) =>
         if (changed > mtime) {
           newDocsForCmi(
             ~compilerVersion=package.compilerVersion,
+            ~moduleName,
             state.cmiCache,
             changed,
             cmt,
@@ -560,6 +561,7 @@ let docsForCmt = (~package, cmt, src, state) =>
       | Some(changed) =>
         newDocsForCmi(
           ~compilerVersion=package.compilerVersion,
+          ~moduleName,
           state.cmiCache,
           changed,
           cmt,
@@ -579,6 +581,7 @@ let docsForCmt = (~package, cmt, src, state) =>
       if (changed > mtime) {
         newDocsForCmt(
           ~compilerVersion=package.compilerVersion,
+          ~moduleName,
           state.cmtCache,
           changed,
           cmt,
@@ -597,6 +600,7 @@ let docsForCmt = (~package, cmt, src, state) =>
     | Some(changed) =>
       newDocsForCmt(
           ~compilerVersion=package.compilerVersion,
+          ~moduleName,
         state.cmtCache,
         changed,
         cmt,
@@ -762,7 +766,7 @@ let docsForModule = (modname, state, ~package) =>
       let cmt = SharedTypes.getCmt(paths);
       let src = SharedTypes.getSrc(paths);
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
-      let%opt_wrap docs = docsForCmt(~package, cmt, src, state);
+      let%opt_wrap docs = docsForCmt(~package, ~moduleName=modname, cmt, src, state);
       (docs, src)
     } else {
       Log.log("No path for module " ++ modname);

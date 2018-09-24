@@ -26,6 +26,12 @@ let locForPos = (~extra, pos) => {
   });
 };
 
+let locForLocations = (~extra, location) => {
+  extra.locations |> Utils.find(((loc, l)) => {
+    loc == location ? Some(l) : None
+  });
+};
+
 /** Other locations *within this file* that refer to the same thing.
  *
  * Useful for "highlight" stuff. */

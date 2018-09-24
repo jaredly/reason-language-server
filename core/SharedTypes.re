@@ -85,18 +85,18 @@ let getCmt = p => switch p {
 
 /* TODO maybe track the loc's of these things */
 type visibilityPath =
-| File(string)
+| File(string, string)
 | NotVisible
 | ExportedModule(string, visibilityPath)
 | HiddenModule(string, visibilityPath)
 | Expression(visibilityPath);
 
 let rec showVisibilityPath = path => switch path {
-  | File(uri) => Some((uri, []))
+  | File(uri, moduleName) => Some(((uri, moduleName), []))
   | NotVisible => None
   | ExportedModule(name, inner) => switch (showVisibilityPath(inner)) {
     | None => None
-    | Some((uri, path)) => Some((uri, path @ [name]))
+    | Some((file, path)) => Some((file, path @ [name]))
   }
   | HiddenModule(_) => None
   | Expression(inner) => None

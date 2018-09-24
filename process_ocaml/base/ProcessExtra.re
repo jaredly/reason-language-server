@@ -84,6 +84,7 @@ module F = (Collector: {
   let extra: extra;
   let file: file;
   let scopeExtent: ref(list(Location.t));
+  let allLocations: bool;
 }) => {
   let extra = Collector.extra;
 
@@ -415,7 +416,10 @@ module F = (Collector: {
         addForPattern(stamp, name);
       }
       | _ => ()
-    }
+    };
+    if (Collector.allLocations) {
+      addLocation(pat_loc, Loc.Typed(Shared.makeFlexible(pat_type), Loc.NotFound));
+    };
   };
 
   let enter_expression = expression => {
@@ -481,7 +485,10 @@ module F = (Collector: {
       }
     }
     | _ => ()
-    }
+    };
+    if (Collector.allLocations) {
+      addLocation(expression.exp_loc, Loc.Typed(Shared.makeFlexible(expression.exp_type), Loc.NotFound));
+    };
   };
 
   let leave_expression = expression => {
@@ -537,7 +544,7 @@ let forFile = (~file) => {
   extra;
 };
 
-let forItems = (~file, items, parts) => {
+let forItems = (~file, ~allLocations, items, parts) => {
   let extra = forFile(~file);
 
   let extent = ProcessCmt.itemsExtent(items);
@@ -553,6 +560,7 @@ let forItems = (~file, items, parts) => {
     let scopeExtent = ref([extent]);
     let extra = extra;
     let file = file;
+    let allLocations = allLocations;
   }));
 
   List.iter(Iter.iter_structure_item, items);
@@ -578,7 +586,7 @@ let forItems = (~file, items, parts) => {
 };
 
 open RResult;
-let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
+let forCmt = (~file, ~allLocations, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Partial_implementation(parts) => {
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
     | Partial_structure(str) => Some(str.str_items)
@@ -586,15 +594,15 @@ let forCmt = (~file, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch 
     /* | Partial_expression(exp) => Some([ str]) */
     | _ => None
   }) |> List.concat;
-  Ok(forItems(~file, items, parts))
+  Ok(forItems(~file, ~allLocations, items, parts))
 }
 | Implementation(structure) => {
-  Ok(forItems(~file, structure.str_items, [||]))
+  Ok(forItems(~file, ~allLocations, structure.str_items, [||]))
 }
 | Partial_interface(_)
 | Interface(_) => {
   /** TODO actually process signature items */
-  Ok(forItems(~file, [], [||]))
+  Ok(forItems(~file, ~allLocations, [], [||]))
 }
 | _ => Error("Invalid cmt file")
 };

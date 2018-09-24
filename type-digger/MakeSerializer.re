@@ -42,9 +42,10 @@ let jsonArray = items => makeJson(
   )
 );
 
-let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
+let failer = message => Exp.fun_(Nolabel, None, Pat.any(), 
+Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
   (Nolabel, Exp.constant(Pconst_string(message, None)))
-]);
+]));
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => failer("Not found")

@@ -147,7 +147,7 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, compilerPath, sourceFile, in
   }
 };
 
-let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, compilerPath, refmtPath, includes, flags) => {
+let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations=false, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
@@ -157,16 +157,17 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       Ok((None, astFile))
     }
   };
+  let fullForCmt = (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.fullForCmt
+    | V406 => Process_406.fullForCmt
+  })(~moduleName, ~allLocations);
   switch (runBsc(~basePath, ~interface, ~reasonFormat, compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
-        let%try_wrap {file, extra} = (switch compilerVersion {
-          | BuildSystem.V402 => Process_402.fullForCmt
-          | V406 => Process_406.fullForCmt
-        })(cmtPath, uri, x => x);
+        let%try_wrap {file, extra} = fullForCmt(cmtPath, uri, x => x);
         let errorText = String.concat("\n", lines);
         switch (syntaxError) {
           | Some(s) =>
@@ -184,10 +185,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     }
     | Ok(lines) => {
       let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
-      let%try_wrap full = (switch compilerVersion {
-          | BuildSystem.V402 => Process_402.fullForCmt
-          | V406 => Process_406.fullForCmt
-      })(cmt, uri, x => x);
+      let%try_wrap full = fullForCmt(cmt, uri, x => x);
       Success(String.concat("\n", lines), full)
     }
   }
