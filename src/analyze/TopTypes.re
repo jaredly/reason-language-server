@@ -43,6 +43,7 @@ type settings = {
   clientNeedsPlainText: bool,
   crossFileAsYouType: bool,
   showModulePathOnHover: bool,
+  recordAllLocations: bool,
 };
 
 type state = {
@@ -86,6 +87,7 @@ let empty = () => {
     dependenciesCodelens: true,
     clientNeedsPlainText: false,
     showModulePathOnHover: true,
+    recordAllLocations: false,
   },
 };
 

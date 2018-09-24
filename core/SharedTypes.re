@@ -72,6 +72,12 @@ type paths =
 | Intf(filePath, option(filePath))
 | IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
 
+let getImpl = p => switch p {
+  | Impl(cmt, Some(s))
+  | IntfAndImpl(_, _, cmt, Some(s)) => Some((cmt, s))
+  | _ => None
+};
+
 let getSrc = p => switch p {
   | Intf(_, s)
   | Impl(_, s)

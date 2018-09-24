@@ -147,7 +147,7 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, compilerPath, sourceFile, in
   }
 };
 
-let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations=false, compilerPath, refmtPath, includes, flags) => {
+let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);

@@ -443,6 +443,24 @@ let findRoot = (uri, packagesByRoot) => {
   loop(Filename.dirname(path))
 };
 
+let newPackageForRoot = (state, root) => {
+  if (Files.exists(path /+ "bsconfig.json")) {
+    let%try package = newBsPackage(state, rootPath);
+    Files.mkdirp(package.tmpPath);
+    Hashtbl.replace(state.rootForUri, uri, package.basePath);
+    Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+    RResult.Ok(package)
+  } else if (Files.exists(path /+ "dune-project")) {
+    let%try package = newJbuilderPackage(state, path);
+    Files.mkdirp(package.tmpPath);
+    Hashtbl.replace(state.rootForUri, uri, package.basePath);
+    Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+    RResult.Ok(package)
+  } else {
+    RResult.Error("No bsconfig.json or dune-project found");
+  }
+};
+
 let getPackage = (uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {
     RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
@@ -666,6 +684,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
       ~compilerVersion=package.compilerVersion,
       ~uri,
       ~moduleName,
+      ~allLocations=state.settings.recordAllLocations,
       ~basePath=package.basePath,
       ~reasonFormat=switch (package.buildSystem) {
         | Bsb(_) | BsbNative(_, Js) => Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei")

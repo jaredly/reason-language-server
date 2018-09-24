@@ -1,79 +1,14 @@
 
 open Parsetree;
 
-let mapStr = (structure, strMapper) => {
-  let mapper = {
-    ...Ast_mapper.default_mapper,
-    structure_item: (mapper, str) => switch (strMapper(mapper, str)) {
-      | None => Ast_mapper.default_mapper.structure_item(mapper, str)
-      | Some(str) => str
-    },
-  };
-  mapper.structure(mapper, structure)
-};
+open Helpers;
 
-let mapExpr = (structure, exprMapper) => {
-  let mapper = {
-    ...Ast_mapper.default_mapper,
-    expr: (mapper, expr) => switch (exprMapper(mapper, expr)) {
-      | None => Ast_mapper.default_mapper.expr(mapper, expr)
-      | Some(expr) => expr
-    },
-  };
-  mapper.structure(mapper, structure)
-};
+/*
 
-let rec collectFnArgs = (expr) => switch (expr.pexp_desc) {
-  | Pexp_fun(label, defaultValue, pattern, body) =>
-    let (args, body) = collectFnArgs(body);
-    ([(label, defaultValue, pattern), ...args], body)
-  | _ => ([], expr)
-};
+Ok, so I'm finding that for this codemod, I want rather more information.
+Like, every expression (which I'm not currently doing).
 
-let rec makeFn = (args, body) => switch args {
-  | [] => body
-  | [(label, defaultValue, pattern), ...rest] => Ast_helper.Exp.fun_(label, defaultValue, pattern, makeFn(rest, body))
-};
-
-let mapFnExpr = (structure, fnMapper) => {
-  structure->mapExpr((mapper, expr) => switch (expr.pexp_desc) {
-    | Pexp_fun(_) =>
-      let (args, body) = collectFnArgs(expr);
-      switch (fnMapper(mapper, args, body)) {
-        | Some((args, body)) => Some(makeFn(args, body))
-        | None => None
-      }
-    | _ => None
-  })
-};
-
-let rec pathParts = path => switch path {
-  | Path.Pident({name}) => [name]
-  | Pdot(inner, name, _) => pathParts(inner) @ [name]
-  | Papply(one, two) => pathParts(one) @ pathParts(two)
-};
-
-let matchesType = (typ, stringPath, args) => {
-  let%opt_wrap typ = typ;
-  switch (typ.SharedTypes.getConstructorPath()) {
-    | Some((path, pargs)) when pathParts(path) == Utils.split_on_char('.', stringPath) => true
-    | _ => false
-  }
-};
-
-type ctx = {
-  full: SharedTypes.full,
-  state: Lib.TopTypes.state,
-  package: Lib.TopTypes.package,
-};
-
-let getExprType = (ctx, expr) => {
-  let loc = References.locForLocations(~extra=ctx.full.extra, expr.pexp_loc);
-};
-
-/* let matchesType = (typ, text) => {
-
-}; */
+ */
 
 /*
 
@@ -81,22 +16,75 @@ let getExprType = (ctx, expr) => {
 
  */
 
-let modify = (ctx, structure) => {
-  structure->mapFnExpr(
-    (mapper, args: list((Asttypes.arg_label, option(Parsetree.expression), Parsetree.pattern)), body: Parsetree.expression) => {
-
-      if (ctx->getExprType(body)->matchesType("Graphql.Schema.io_field")) {
-        Some((args, replaceErrors(body)))
-      } else {
-        None
-      };
-
-      switch (ctx->lookupExprType(body)) {
-        | Some(Pdot(Pdot(Pident({name: "Graphql"}), "Schema"), "io_field")) =>
-          Some((args, replaceErrors(body)))
-        | _ => None
+let replaceErrors = (ctx, expr) =>
+  expr
+  ->mapExpr((mapper, expr) =>
+      switch (expr.pexp_desc) {
+      | Pexp_construct({txt: Longident.Lident("Error")} as lid, Some(arg))
+          when ctx->getExprType(arg)->matchesType("string", []) =>
+        Some(
+          Ast_helper.Exp.construct(
+            lid,
+            Some(Ast_helper.Exp.construct(Location.mknoloc(Longident.Lident("Unspecified")), Some(arg))),
+          ),
+        )
+      | _ => None
       }
-    }
-  )
+    );
+
+let modify = (ctx, structure) =>
+  structure
+  ->strExpr((mapper, expr) =>
+      expr
+      ->mapFnExpr(
+          (
+            mapper,
+            args: list((Asttypes.arg_label, option(Parsetree.expression), Parsetree.pattern)),
+            body: Parsetree.expression,
+          ) =>
+          if (ctx->getExprType(body)->matchesType("Graphql.Schema.io_field", [])) {
+            Some((args, ctx->replaceErrors(body)));
+          } else {
+            None;
+          }
+        )
+      ->Some
+    );
+
+let runCodeMod = (root, pathChecker, modify) => {
+  let state = Lib.TopTypes.empty();
+  let state = {...state, settings: {...state.settings, recordAllLocations: true}};
+  let%try_force package = Lib.State.newPackageForRoot(state, root);
+
+  let fullForCmt = (switch (package.compilerVersion) {
+    | BuildSystem.V402 => Process_402.fullForCmt
+    | V406 => Process_406.fullForCmt
+  })(~moduleName, ~allLocations);
+
+  package.Lib.TopTypes.localModules->Belt.List.forEach(moduleName => {
+    let%opt_force paths = Utils.maybeHash(package.pathsForModule, moduleName);
+    let%opt_consume (cmt, src) = SharedTypes.getImpl(paths);
+    if (pathChecker(src, moduleName)) {
+      let full = fullForCmt(cmt, src, x => x);
+      let ctx = {state, package, full};
+      let%try_force structure = Process_406.parseTreeForCmt(cmt);
+      let structure = modify(ctx, structure);
+      Pprintast.structure(Format.str_formatter, structure);
+      Files.writeFileExn(src ++ ".transformed", Format.flush_str_formatter());
+    };
+  });
+
+};
+
+
+switch (Sys.argv) {
+  | [|_, root|] =>
+    let ctx = {package};
+    runCodeMod(
+      root,
+      (path, moduleName) => true,
+      modify
+    );
+  | _ => ()
 };
 

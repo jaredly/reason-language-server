@@ -20,4 +20,14 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   {file, extra}
 };
 
+let parsetreeForCmt = cmt => {
+  let%try infos = Shared.tryReadCmt(cmt);
+  switch (infos.cmt_annots) {
+  | Implementation(structure) => {
+    Ok(Untypeast.untype_structure(structure));
+  }
+  | _ => Error("Not a well-typed implementation")
+  }
+};
+
 module PrintType = PrintType
