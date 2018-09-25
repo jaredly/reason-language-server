@@ -6,7 +6,7 @@ It finds functions that have a return type of `Belt.Result.t(int, string)`, and 
 
 
 So, for the file:
-```
+```reason
 open Result;
 
 let changeMe = (a, b, c) => Error("hello");
@@ -21,7 +21,7 @@ let nonCollapsible = something =>
 
 
 It rewrites as:
-```
+```reason
 open Result;
 
 let changeMe = (a, b, c) => Error("hello");
@@ -35,4 +35,4 @@ let nonCollapsible = something =>
 ```
 
 
-Node that the first `Error()` was not wrapped, because we specified that the `'ok` type had to be `int`. We could have left the `ok` type argument blank, and it would have picked that one up too.
+Note that the first `Error()` was not wrapped, because we specified that the `'ok` type had to be `int`. We could have left the `ok` type argument blank, and it would have picked that one up too.
