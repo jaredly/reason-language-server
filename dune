@@ -1,1 +1,4 @@
-(ignored_subdirs (examples))
+(ignored_subdirs (
+  examples
+  node_modules
+))

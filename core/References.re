@@ -26,9 +26,24 @@ let locForPos = (~extra, pos) => {
   });
 };
 
-let locForLocations = (~extra, location) => {
-  extra.locations |> Utils.find(((loc, l)) => {
-    loc == location ? Some(l) : None
+let posMatch = ({Lexing.pos_cnum}, {Lexing.pos_cnum: c2}) => {
+  pos_cnum == c2
+};
+
+let locForLocations = (~extra, location: Location.t) => {
+  /* print_endline("looking for " ++ Utils.showLocation(location)); */
+  extra.locations |> Utils.find(((loc: Location.t, l)) => {
+    /* print_endline("  > checking " ++ Utils.showLocation(loc));
+    print_endline("    " ++ (switch l {
+      | Loc.Typed(_) => "typed"
+      | Constant(_) => "constant"
+      | Module(_) => "module"
+      | TopLevelModule(_) => "toplevelmodule"
+      | TypeDefinition(_) => "Typedefinition"
+      | Explanation(_) => "explanation"
+      | Open => "open"
+    })); */
+    posMatch(location.loc_start, loc.loc_start) && posMatch(location.loc_end, loc.loc_end) ? Some(l) : None
   });
 };
 
