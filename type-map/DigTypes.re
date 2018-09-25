@@ -5,6 +5,7 @@ type reference = {
   declared: SharedTypes.declared(SharedTypes.Type.t),
   modulePath: list(string),
   name: string,
+  env: Query.queryEnv,
 };
 
 type typeSource =

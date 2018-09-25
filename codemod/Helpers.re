@@ -103,3 +103,11 @@ let getExprType = (ctx, expr) => {
     | _ => failwith("Location for expression was not Typed. This is a bug.")
   }
 };
+
+let getTypeDefinition = (ctx, {TypeMap.DigTypes.uri, moduleName, modulePath, declared, name, env}) => {
+  let getModule = ctx.state->Lib.State.fileForModule(~package=ctx.package);
+  SharedTypes.SimpleType.declMapSource(
+    TypeMap.GetTypeMap.mapSource(~env, ~getModule),
+    declared.contents.typ.asSimpleDeclaration(declared.name.txt)
+  )
+};

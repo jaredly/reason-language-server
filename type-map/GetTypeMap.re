@@ -46,6 +46,7 @@ let mapSource = (~env, ~getModule, path) => {
         declared,
         modulePath: path,
         name: name.txt,
+        env,
       })
     };
 
@@ -61,6 +62,7 @@ let recursiveMapSource = (~env, ~getModule, loop, path) => {
       modulePath: path,
       declared,
       name,
+      env,
     }) =>
       loop(~env, (moduleName, path, name), declared)
     | _ => ()
