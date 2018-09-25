@@ -7,7 +7,7 @@ type reference = {
   name: string,
 };
 
-type typeSource('reference) =
+type typeSource =
   | Builtin(string)
-  | Public('reference)
+  | Public(reference)
   | NotFound;

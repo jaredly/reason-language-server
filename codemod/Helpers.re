@@ -85,28 +85,49 @@ let rec pathParts = path => switch path {
   | Papply(one, two) => pathParts(one) @ pathParts(two)
 };
 
-let matchesType = (typ, ~args=?, stringPath) => {
-  switch (typ) {
+let matchesType = (typ, needle) => {
+  SharedTypes.SimpleType.cmp(
+    (fullSource, partialSource) => switch (fullSource, partialSource) {
+      | (TypeMap.DigTypes.Builtin(a), `Builtin(b)) when a == b => true
+      | (Public({moduleName, modulePath}), `Public(path)) when path == [moduleName] @ modulePath => true
+      | _ => false
+    },
+    typ, needle
+  )
+  /* switch (typ) {
     | None => false
     | Some(typ) =>
       switch (typ.SharedTypes.getConstructorPath()) {
-        | Some((path, pargs)) when pathParts(path) == Utils.split_on_char('.', stringPath) => true
-        | Some((path, _)) =>
-          print_endline("StringPath: " ++ stringPath ++ " vs " ++ Path.name(path));
-          false
+        | Some((path, pargs)) when pathParts(path) == Utils.split_on_char('.', stringPath) =>
+          switch args {
+            | None => true
+            | Some(args) =>
+              if (List.length(args) != List.length(pargs)) {
+                failwith("Invalid query: wrong number of type arguments")
+              };
+              Belt.List.zip(args, pargs)->Belt.List.every(((arg, parg)) => {
+                switch (typ.SharedTypes.getConstructorPath()) {
+                  | None => false
+                  | Some(())
+                }
+              })
+          }
         | _ => false
       }
-  }
+  } */
 };
 
 let getExprType = (ctx, expr) => {
-  /* print_endline(expr.pexp_loc.loc_start.pos_fname); */
-  let%opt loc = References.locForLocations(~extra=ctx.full.extra, expr.pexp_loc);
+  let%try_force loc = References.locForLocations(~extra=ctx.full.extra, expr.pexp_loc) |> RResult.orError("Could not find type for expr. Probably the ast & compiled artifacts are out of sync.");
+  let env = Query.fileEnv(ctx.full.file);
+  let getModule = ctx.state->Lib.State.fileForModule(~package=ctx.package);
   switch loc {
     | Typed(typ, _) => {
-      print_endline("Found an expr type yall");
-      Some(typ)
+      SharedTypes.SimpleType.mapSource(
+        TypeMap.GetTypeMap.mapSource(~env, ~getModule),
+        typ.asSimpleType()
+      )
     }
-    | _ => None
+    | _ => failwith("Location for expression was not Typed. This is a bug.")
   }
 };

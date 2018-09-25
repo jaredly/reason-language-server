@@ -64,7 +64,7 @@ let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => failer("Not found")
-  | Public({modulePath, moduleName, name}) =>
+  | Public({DigTypes.modulePath, moduleName, name}) =>
     makeIdent(Lident(transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
     [%expr 

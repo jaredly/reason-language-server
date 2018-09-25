@@ -21,16 +21,15 @@ let replaceErrors = (ctx, expr) =>
   ->mapExpr((mapper, expr) => {
       switch (expr.pexp_desc) {
       | Pexp_construct({txt: Longident.Lident("Error")} as lid, Some({pexp_desc: Pexp_tuple([arg])})) =>
-        let typ = ctx->getExprType(arg);
-        if (typ->matchesType("string")) {
-          Some(
-            Ast_helper.Exp.construct(
-              lid,
-              Some(Ast_helper.Exp.construct(Location.mknoloc(Longident.Lident("Unspecified")), Some(arg))),
-            ),
-          );
-        } else {
-          None;
+        switch (ctx->getExprType(arg)) {
+          | Reference(TypeMap.DigTypes.Builtin("string"), []) =>
+            Some(
+              Ast_helper.Exp.construct(
+                lid,
+                Some(Ast_helper.Exp.construct(Location.mknoloc(Longident.Lident("Unspecified")), Some(arg))),
+              ),
+            );
+        | _ => None
         }
       | _ => None
       };
@@ -39,10 +38,10 @@ let replaceErrors = (ctx, expr) =>
 let modify = (ctx, structure) => {
   structure->strExpr((mapper, expr) =>
       expr->mapFnExpr((mapper, args, body) => {
-          if (ctx->getExprType(body)->matchesType("Belt.Result.t")) {
-            Some((args, ctx->replaceErrors(body)));
-          } else {
-            None;
+          switch (ctx->getExprType(body)) {
+          | Reference(Public({moduleName: "Belt", modulePath: ["Result", "t"]}), [_, _]) =>
+            Some((args, ctx->replaceErrors(body)))
+          | _ => None
           };
         })
       ->Some

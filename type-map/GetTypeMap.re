@@ -8,7 +8,7 @@ let getType = (~env: Query.queryEnv, name) => {
 };
 
 
-let mapSource = (~env, ~getModule, ~getModuleName, path) => {
+let mapSource = (~env, ~getModule, path) => {
     let resolved = Query.resolveFromCompilerPath(~env, ~getModule, path);
     open Infix;
     let declared =
@@ -40,9 +40,6 @@ let mapSource = (~env, ~getModule, ~getModuleName, path) => {
     }
     | Some(({contents, name, modulePath} as declared, env)) =>
       let%opt_force ((uri, moduleName), path) = SharedTypes.showVisibilityPath(modulePath);
-      /* let%opt_force moduleName = getModuleName(uri); */
-      /* let key = path @ [name.txt]; */
-      /* digType(~env, (moduleName, path, name.txt), declared); */
       Public({
         uri,
         moduleName,
@@ -55,12 +52,8 @@ let mapSource = (~env, ~getModule, ~getModuleName, path) => {
   };
 
 
-let stateMapSource = (~state, ~env, path) => {
-
-};
-
-let recursiveMapSource = (~env, ~getModule, ~getModuleName, loop, path) => {
-  let result = mapSource(~env, ~getModule, ~getModuleName, path);
+let recursiveMapSource = (~env, ~getModule, loop, path) => {
+  let result = mapSource(~env, ~getModule, path);
   switch result {
     | Public({
       uri,
@@ -76,13 +69,13 @@ let recursiveMapSource = (~env, ~getModule, ~getModuleName, loop, path) => {
   result
 };
 
-let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, ~getModuleName, key, t: SharedTypes.declared(SharedTypes.Type.t)) => {
+let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, key, t: SharedTypes.declared(SharedTypes.Type.t)) => {
   if (!Hashtbl.mem(set, key)) {
-    let loop = digType(~tbl, ~set, ~state, ~package, ~getModuleName, ~getModule);
+    let loop = digType(~tbl, ~set, ~state, ~package, ~getModule);
     Hashtbl.replace(set, key, ());
     Hashtbl.replace(tbl, key,
       SharedTypes.SimpleType.declMapSource(
-        recursiveMapSource(~env, ~getModule, ~getModuleName, loop),
+        recursiveMapSource(~env, ~getModule, loop),
         t.contents.typ.asSimpleDeclaration(t.name.txt)
       )
     )
@@ -110,7 +103,6 @@ let forInitialType = (~tbl, ~state, uri, name) => {
       ~package,
       ~env,
       ~getModule,
-      ~getModuleName,
       (moduleName, [], name),
       declared,
     ),

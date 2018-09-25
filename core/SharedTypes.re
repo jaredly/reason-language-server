@@ -24,6 +24,20 @@ module SimpleType = {
     body: body('source)
   };
 
+  let rec cmp: 'a 'b . (('a, 'b) => bool, expr('a), expr('b)) => bool = (compareSources, one, two) => switch (one, two) {
+    | (Variable(one), Variable(two)) => one == two
+    | (AnonVariable, AnonVariable) => true
+    | (Reference(sone, argsOne), Reference(stwo, argsTwo)) =>
+      compareSources(sone, stwo) && List.length(argsOne) == List.length(argsTwo)
+      && Belt.List.every2(argsOne, argsTwo, cmp(compareSources))
+    | (Tuple(one), Tuple(two)) => List.length(one) == List.length(two) && Belt.List.every2(one, two, cmp(compareSources))
+    | (Fn(args1, body1), Fn(args2, body2)) =>
+      cmp(compareSources, body1, body2) &&
+      List.length(args1) == List.length(args2) &&
+      Belt.List.every2(args1, args2, ((l1, t1), (l2, t2)) => l1 == l2 && cmp(compareSources, t1, t2))
+    | _ => false
+  };
+
   let rec mapSource = (fn, expr) => switch expr {
     | Variable(s) => Variable(s)
     | AnonVariable => AnonVariable
