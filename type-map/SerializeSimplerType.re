@@ -1,7 +1,6 @@
 
 open SharedTypes.SimpleType;
 open Lib.Rpc.J;
-open TypeMap;
 
 let sourceToJson = source => switch source {
   | DigTypes.NotFound => s("NotFound")
@@ -37,10 +36,8 @@ let rec toJson = (sourceToJson, t) => switch t {
   | Other => s("*other*")
 };
 
-let rec declToJson = (sourceToJson, {name, variables, body}) => o([
-  ("name", s(name)),
-  ("variables", l(variables->Belt.List.map(toJson(sourceToJson)))),
-  ("body", switch body {
+let rec exprToJson = (sourceToJson, body) => {
+switch body {
     | Open => s("Open")
     | Abstract => s("Abstract")
     | Expr(expr) => l([s("Expr"), toJson(sourceToJson, expr)])
@@ -57,7 +54,13 @@ let rec declToJson = (sourceToJson, {name, variables, body}) => o([
         })
       ]))
     )])
-  })
+  }
+};
+
+let rec declToJson = (sourceToJson, {name, variables, body}) => o([
+  ("name", s(name)),
+  ("variables", l(variables->Belt.List.map(toJson(sourceToJson)))),
+  ("body", exprToJson(sourceToJson, body))
 ]);
 
 

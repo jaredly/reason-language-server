@@ -1,8 +1,9 @@
 
 (library
   (name TypeMap)
-  (libraries Lib compiler-libs.common ocaml-migrate-parsetree)
-  (flags :standard -w -26-32-50-9-27-39-33-35-6-3)
+  (public_name ReasonLanguageServer.TypeMap)
+  (libraries Lib Util compiler-libs.common ocaml-migrate-parsetree)
+  (flags :standard -w -26-32-50-9-27-39-33-35-6-3 -open Util)
   (preprocess (pps Belt_ppx Ppx_monads ppx_tools_versioned.metaquot_406))
   )
 

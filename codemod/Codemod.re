@@ -1,61 +1,64 @@
 
-open Parsetree;
+module Helpers = Helpers;
 
-open Helpers;
+let run = (~rootPath, ~filterPath, modify) => {
+  let root = Utils.startsWith(rootPath, ".") ? Filename.concat(Sys.getcwd(), rootPath) : rootPath;
+  let state = Lib.TopTypes.empty();
+  let state = {...state, settings: {...state.settings,
+    recordAllLocations: true,
+    autoRebuild: false,
+  }};
+  print_endline("Setting up a package");
+  let%try_force package = Lib.State.newPackageForRoot(state, root);
+  let%opt_force (buildCommand, _) = package.buildCommand;
+  print_endline("Running build command (for freshness) " ++ buildCommand);
+  let (stdout, stderr, success) = Commands.execFull(~pwd=root, buildCommand);
+  if (!success) {
+    print_endline(Utils.joinLines(stdout));
+    print_endline(Utils.joinLines(stderr));
+    failwith("Build command " ++ buildCommand ++ " failed")
+  };
+  if (Utils.joinLines(stderr) |> String.trim != "") {
+    print_endline(Utils.joinLines(stderr));
+    failwith("Build command had stderror " ++ buildCommand)
+  };
 
-/*
+  let fullForCmt = (switch (package.compilerVersion) {
+    | Lib.BuildSystem.V402 => Process_402.fullForCmt
+    | V406 => Process_406.fullForCmt
+  })(~allLocations=true);
 
-Ok, so I'm finding that for this codemod, I want rather more information.
-Like, every expression (which I'm not currently doing).
+  let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_404, Migrate_parsetree.OCaml_406);
+  let module ConvertBack = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_404);
 
- */
+  package.Lib.TopTypes.localModules->Belt.List.forEach(moduleName => {
+    let%opt_force paths = Utils.maybeHash(package.pathsForModule, moduleName);
+    let%opt_consume (cmt, src) = SharedTypes.getImpl(paths);
+    print_endline(src);
 
-/*
+    if (filterPath(src, moduleName)) {
+      let%try_force full = fullForCmt(~moduleName, cmt, src, x => x);
+      let ctx = {Helpers.state, package, full};
 
-"Convert all Error(x) to Error(Unspecified(x)) if the function's return type is Graphql.Schema.io_field"
+      let file_chan = open_in(src);
+      seek_in(file_chan, 0);
+      let lexbuf = Lexing.from_channel(file_chan);
+      let (structure, comments) = Reason_toolchain.RE.implementation_with_comments(lexbuf);
+      close_in(file_chan);
+      let structure = Convert.copy_structure(structure);
 
- */
+      /* let%try_force structure = Process_406.parseTreeForCmt(cmt); */
+      let newStructure = modify(ctx, structure);
 
-let replaceErrors = (ctx, expr) =>
-  expr
-  ->mapExpr((mapper, expr) => {
-      switch (expr.pexp_desc) {
-      | Pexp_construct({txt: Longident.Lident("Error")} as lid, Some({pexp_desc: Pexp_tuple([arg])})) =>
-        switch (ctx->getExprType(arg)) {
-          | Reference(TypeMap.DigTypes.Builtin("string"), []) =>
-            Some(
-              Ast_helper.Exp.construct(
-                lid,
-                Some(Ast_helper.Exp.construct(Location.mknoloc(Longident.Lident("Unspecified")), Some(arg))),
-              ),
-            );
-        | _ => None
-        }
-      | _ => None
-      };
-    });
+      if (newStructure != structure) {
+        print_endline("Modified " ++ src);
+        let structure = ConvertBack.copy_structure(newStructure);
+        /* Pprintast.structure(Format.str_formatter, structure); */
+        Reason_toolchain.RE.print_implementation_with_comments(Format.str_formatter, (structure, comments));
 
-let modify = (ctx, structure) => {
-  structure->strExpr((mapper, expr) =>
-      expr->mapFnExpr((mapper, args, body) => {
-          switch (ctx->getExprType(body)) {
-          | Reference(Public({moduleName: "Belt", modulePath: ["Result", "t"]}), [_, _]) =>
-            Some((args, ctx->replaceErrors(body)))
-          | _ => None
-          };
-        })
-      ->Some
-    );
-};
-
-switch (Sys.argv) {
-  | [|_, root|] =>
-    print_endline("Running on project: " ++ root);
-    Runner.runCodeMod(
-      root,
-      (path, moduleName) => Filename.extension(path) == ".re",
-      modify
-    );
-  | _ => ()
+        Files.writeFileExn(src, Format.flush_str_formatter());
+      }
+    };
+  });
 };
 

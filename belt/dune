@@ -1,6 +1,7 @@
 (include_subdirs unqualified)
 
 (library
+  (public_name ReasonLanguageServer.Belt)
   (c_names stubs)
   (flags :standard -w -A)
   (name Belt))

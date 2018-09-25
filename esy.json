@@ -1,5 +1,5 @@
 {
-  "name": "reason-language-server",
+  "name": "ReasonLanguageServer",
   "version": "1.0.0",
   "esy": {
     "build": "dune build -p #{self.name}",

@@ -1,4 +1,5 @@
 
 (library
   (name Current)
+  (public_name ReasonLanguageServer.Current)
   (libraries compiler-libs.common))

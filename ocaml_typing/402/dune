@@ -1,6 +1,7 @@
 
 (library
   (name Compiler_libs_402)
+  (public_name ReasonLanguageServer.Compiler_libs_402)
   (modules_without_implementation annot outcometree asttypes parsetree runtimedef)
   (libraries Current)
   (flags :standard -w -A)

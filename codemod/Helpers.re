@@ -77,44 +77,16 @@ let mapFnExpr = (expr, fnMapper) => {
   })
 };
 
-/* let mapConstructor */
-
-let rec pathParts = path => switch path {
-  | Path.Pident({name}) => [name]
-  | Pdot(inner, name, _) => pathParts(inner) @ [name]
-  | Papply(one, two) => pathParts(one) @ pathParts(two)
-};
-
-let matchesType = (typ, needle) => {
-  SharedTypes.SimpleType.cmp(
-    (fullSource, partialSource) => switch (fullSource, partialSource) {
-      | (TypeMap.DigTypes.Builtin(a), `Builtin(b)) when a == b => true
-      | (Public({moduleName, modulePath}), `Public(path)) when path == [moduleName] @ modulePath => true
-      | _ => false
-    },
-    typ, needle
-  )
-  /* switch (typ) {
-    | None => false
-    | Some(typ) =>
-      switch (typ.SharedTypes.getConstructorPath()) {
-        | Some((path, pargs)) when pathParts(path) == Utils.split_on_char('.', stringPath) =>
-          switch args {
-            | None => true
-            | Some(args) =>
-              if (List.length(args) != List.length(pargs)) {
-                failwith("Invalid query: wrong number of type arguments")
-              };
-              Belt.List.zip(args, pargs)->Belt.List.every(((arg, parg)) => {
-                switch (typ.SharedTypes.getConstructorPath()) {
-                  | None => false
-                  | Some(())
-                }
-              })
-          }
-        | _ => false
+let mapConstructor = (expr, ~ident=?, constrMapper) => {
+  expr->mapExpr((mapper, expr) => switch (expr.pexp_desc) {
+    | Pexp_construct({txt} as lid, Some({pexp_desc: Pexp_tuple(args)})) =>
+      switch ident {
+        | None => constrMapper(lid, args, expr)
+        | Some(ident) when ident == txt => constrMapper(lid, args, expr)
+        | _ => None
       }
-  } */
+    | _ => None
+  })
 };
 
 let getExprType = (ctx, expr) => {

@@ -1,7 +1,7 @@
-(executable
+(library
   (name Codemod)
-  (public_name Codemod.exe)
-  (libraries Lib TypeMap compiler-libs.common ocaml-migrate-parsetree reason)
-  (flags :standard -w -26-32-50-9-27-39-33-35-6-3)
+  (public_name ReasonLanguageServer.Codemod)
+  (libraries Lib Util TypeMap compiler-libs.common ocaml-migrate-parsetree reason)
+  (flags :standard -open Util -w -26-32-50-9-27-39-33-35-6-3)
   (preprocess (pps Belt_ppx Ppx_monads ppx_tools_versioned.metaquot_406))
   )
