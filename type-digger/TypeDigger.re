@@ -2,7 +2,7 @@
 Printexc.record_backtrace(true);
 open Lib;
 module Json = Vendor.Json;
-open DigTypes;
+open TypeMap.DigTypes;
 /* Log.spamError := true; */
 
 /* let toJson = (base, src, name) => {
@@ -60,7 +60,7 @@ let getTypeMap = (base, state, types) => {
   types->Belt.List.forEach(typ => {
     switch (Utils.split_on_char(':', typ)) {
       | [path, name] =>
-        let%try_force () = GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(base, path)), name);
+        let%try_force () = TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(base, path)), name);
       | _ => failwith("Expected /some/path.re:typename")
     }
   });
@@ -110,8 +110,7 @@ let toSerializer = (base, src, name, dest) => {
   let uri = Utils.toUri(Filename.concat(base, src));
   let%try package = State.getPackage(uri, state);
   let tbl = Hashtbl.create(10);
-  let%try () = GetTypeMap.forInitialType(~tbl, ~state, uri, name);
-
+  let%try () = TypeMap.GetTypeMap.forInitialType(~tbl, ~state, uri, name); 
   Pprintast.structure(Format.str_formatter, [serializers(tbl)]);
   let ml = Format.flush_str_formatter();
   let%try text = switch (package.refmtPath) {

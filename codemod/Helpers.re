@@ -65,7 +65,7 @@ let rec mapFn = (mapper, expr) => switch (expr.pexp_desc) {
   | _ => mapper.expr(mapper, expr)
 };
 
-let mapFnExpr = (expr, ~returnType=?, fnMapper) => {
+let mapFnExpr = (expr, fnMapper) => {
   expr->mapExpr((mapper, expr) => switch (expr.pexp_desc) {
     | Pexp_fun(_) =>
       let (args, body) = collectFnArgs(expr);
@@ -85,7 +85,7 @@ let rec pathParts = path => switch path {
   | Papply(one, two) => pathParts(one) @ pathParts(two)
 };
 
-let matchesType = (typ, stringPath, args) => {
+let matchesType = (typ, ~args=?, stringPath) => {
   switch (typ) {
     | None => false
     | Some(typ) =>

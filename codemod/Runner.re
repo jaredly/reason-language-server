@@ -3,14 +3,27 @@ module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_404, Migrate_
 module ConvertBack = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_404);
 
 let runCodeMod = (root, pathChecker, modify) => {
+  let root = Utils.startsWith(root, ".") ? Filename.concat(Sys.getcwd(), root) : root;
   let state = Lib.TopTypes.empty();
   let state = {...state, settings: {...state.settings,
     recordAllLocations: true,
-    autoRebuild: true,
+    autoRebuild: false,
   }};
   print_endline("Setting up a package");
   let%try_force package = Lib.State.newPackageForRoot(state, root);
   print_endline("Got a package");
+  print_endline("Running build");
+  let%opt_force (buildCommand, _) = package.buildCommand;
+  let (stdout, stderr, success) = Commands.execFull(~pwd=root, buildCommand);
+  if (!success) {
+    print_endline(Utils.joinLines(stdout));
+    print_endline(Utils.joinLines(stderr));
+    failwith("Build command " ++ buildCommand ++ " failed")
+  };
+  if (Utils.joinLines(stderr) |> String.trim != "") {
+    print_endline(Utils.joinLines(stderr));
+    failwith("Build command had stderror " ++ buildCommand)
+  };
 
   let fullForCmt = (switch (package.compilerVersion) {
     | Lib.BuildSystem.V402 => Process_402.fullForCmt

@@ -19,11 +19,10 @@ Like, every expression (which I'm not currently doing).
 let replaceErrors = (ctx, expr) =>
   expr
   ->mapExpr((mapper, expr) => {
-      /* print_endline("Exp inside of the fn"); */
       switch (expr.pexp_desc) {
       | Pexp_construct({txt: Longident.Lident("Error")} as lid, Some({pexp_desc: Pexp_tuple([arg])})) =>
         let typ = ctx->getExprType(arg);
-        if (typ->matchesType("string", [])) {
+        if (typ->matchesType("string")) {
           Some(
             Ast_helper.Exp.construct(
               lid,
@@ -38,14 +37,9 @@ let replaceErrors = (ctx, expr) =>
     });
 
 let modify = (ctx, structure) => {
-  print_endline("Modifying");
-  structure
-  ->strExpr((mapper, expr) =>
-      expr
-      ->mapFnExpr((mapper, args, body) => {
-          print_endline("Found a fn exp");
-
-          if (ctx->getExprType(body)->matchesType("Belt.Result.t", [])) {
+  structure->strExpr((mapper, expr) =>
+      expr->mapFnExpr((mapper, args, body) => {
+          if (ctx->getExprType(body)->matchesType("Belt.Result.t")) {
             Some((args, ctx->replaceErrors(body)));
           } else {
             None;
@@ -57,11 +51,10 @@ let modify = (ctx, structure) => {
 
 switch (Sys.argv) {
   | [|_, root|] =>
-    print_endline("Running on this " ++ root);
+    print_endline("Running on project: " ++ root);
     Runner.runCodeMod(
       root,
       (path, moduleName) => Filename.extension(path) == ".re",
-      /* (ctx, str) => str */
       modify
     );
   | _ => ()

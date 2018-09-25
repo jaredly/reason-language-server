@@ -1,5 +1,6 @@
 
 open Longident;
+open TypeMap;
 
 let makeLident = (~moduleName, ~modulePath, ~name) => {
   let base = switch (Str.split(Str.regexp_string("-"), moduleName)) {

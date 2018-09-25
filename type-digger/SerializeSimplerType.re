@@ -1,6 +1,7 @@
 
 open SharedTypes.SimpleType;
 open Lib.Rpc.J;
+open TypeMap;
 
 let sourceToJson = source => switch source {
   | DigTypes.NotFound => s("NotFound")
