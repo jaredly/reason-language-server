@@ -15,14 +15,8 @@ let replaceErrors = (ctx, expr) =>
       switch (expr.pexp_desc) {
       | Pexp_construct({txt: Longident.Lident("Error")} as lid, Some({pexp_desc: Pexp_tuple([arg])})) =>
         switch (ctx->getExprType(arg)) {
-          | Reference(Builtin("string"), []) =>
-            Some(
-              Ast_helper.Exp.construct(
-                lid,
-                Some(Ast_helper.Exp.construct(Location.mknoloc(Longident.Lident("Unspecified")), Some(arg))),
-              ),
-            );
-        | _ => None
+          | Reference(Builtin("string"), []) => Some([%expr Error(Unspecified([%e arg]))])
+          | _ => None
         }
       | _ => None
       };

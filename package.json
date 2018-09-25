@@ -1,6 +1,6 @@
 {
   "name": "@jaredly/reason-language-server",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-alpha.1",
   "scripts": {
     "start": "bsb -make-world -backend native -w",
     "build": "bsb -make-world -backend native",
@@ -13,8 +13,7 @@
     "reprocess": "(cd process_ocaml; ./build.sh); esy",
     "zip": "./release.sh",
     "package:linux": "cp lib/bs/native/bin.native editor-extensions/vscode/bin.native.linux; cd editor-extensions/vscode; vsce package",
-    "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe editor-extensions/vscode & chdir editor-extensions/vscode & vsce package",
-    "postinstall": "bsb -make-world -backend native"
+    "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe editor-extensions/vscode & chdir editor-extensions/vscode & vsce package"
   },
   "keywords": [
     "Reason",
@@ -28,8 +27,21 @@
   "description": "A pure-reason implementation of a language server",
   "author": "Jared Forsyth",
   "license": "ISC",
+  "esy": {
+    "build": "dune build -p #{self.name}"
+  },
   "dependencies": {
-    "bs-platform": "bsansouci/bsb-native#3.2.0",
-    "rex-json": "1.4.0"
+    "@opam/dune": "*",
+    "@esy-ocaml/reason": "*",
+    "@opam/ocaml-migrate-parsetree": "*",
+    "@opam/ppx_tools_versioned": "*",
+    "rex-json": "*",
+    "ocaml": "~4.6.0"
+  },
+  "resolutions": {
+    "@esy-ocaml/esy-installer": "0.0.1"
+  },
+  "devDependencies": {
+    "ocaml": "~4.6.0"
   }
 }
