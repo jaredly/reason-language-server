@@ -1,6 +1,6 @@
 {
   "name": "@jaredly/reason-language-server",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "scripts": {
     "start": "bsb -make-world -backend native -w",
     "build": "bsb -make-world -backend native",
