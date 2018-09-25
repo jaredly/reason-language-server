@@ -12,6 +12,7 @@
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess": "(cd process_ocaml; ./build.sh); esy",
     "zip": "./release.sh",
+    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
     "package:linux": "cp lib/bs/native/bin.native editor-extensions/vscode/bin.native.linux; cd editor-extensions/vscode; vsce package",
     "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe editor-extensions/vscode & chdir editor-extensions/vscode & vsce package"
   },

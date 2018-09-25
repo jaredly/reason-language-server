@@ -26,7 +26,7 @@ let modify = (ctx, structure) => {
   structure->strExpr((mapper, expr) =>
       expr->mapFnExpr((mapper, args, body) => {
           switch (ctx->getExprType(body)) {
-          | Reference(Public({moduleName: "Belt_Result", modulePath: [], name: "t"}), [_, _]) =>
+          | Reference(Public({moduleName: "Belt_Result", modulePath: [], name: "t"}), [Reference(Builtin("int"), []), Reference(Builtin("string"), [])]) =>
             Some((args, ctx->replaceErrors(body)))
           | _ => 
             None
