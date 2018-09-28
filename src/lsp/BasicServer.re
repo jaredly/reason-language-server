@@ -117,6 +117,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
           exit(1)
         }
       | Notification(method, params) => loop(~isShuttingDown, handleNotification(log, notificationHandlers, method, params, state))
+      | Response(id, _) => loop(~isShuttingDown, state)
       };
     } else {
       loop(~isShuttingDown, state);

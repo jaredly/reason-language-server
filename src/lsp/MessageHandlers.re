@@ -545,5 +545,102 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       )),
       ("newText", s(newText))
     ])]))
-  })
+  }),
+
+  ("textDocument/codeAction", (state, params) => {
+    open InfixResult;
+    let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
+    let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
+    let pos = start;
+    let%try package = State.getPackage(uri, state);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+
+    open Infix;
+    {
+      let%opt () = Filename.check_suffix(uri, ".re") ? Some(()) : None;
+
+      let pos = Utils.cmtLocFromVscode(pos);
+      let%opt (location, loc) = References.locForPos(~extra, pos);
+      let%opt signatureText = switch loc {
+        | Typed(t, Definition(stamp, Value)) =>
+          let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, Value);
+          let%opt () = switch (declared.modulePath) {
+            | File(_, _) => Some(())
+            | _ => None
+          };
+          let text = "let " ++ declared.name.txt ++ ": " ++ t.toString();
+          Some(text)
+        | TypeDefinition(name, decl, _) => Some(decl.declToString(name))
+        | _ => None
+      };
+
+      open Rpc.J;
+      Some(Ok((state, l([
+        o([
+          ("title", s("Add to interface file")),
+          ("command", s("reason-language-server.add_to_interface_inner")),
+          ("arguments", l([s(uri), s(signatureText)])),
+        ])
+      ]))))
+    } |? Ok((state, Json.Null));
+  }),
+
+  ("workspace/executeCommand", (state, params) => {
+    open InfixResult;
+    let%try command = RJson.get("command", params) |?> RJson.string;
+    let%try arguments = RJson.get("arguments", params) |?> RJson.array;
+    switch command {
+      | "reason-language-server.add_to_interface_inner" =>
+        switch arguments {
+          | [uri, signatureText] =>
+              let%try uri = RJson.string(uri);
+              let%try signatureText = RJson.string(signatureText);
+              let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
+              let interfacePath = path ++ "i";
+              let interfaceUri = uri ++ "i";
+              switch (Query.hashFind(state.documentText, interfaceUri)) {
+                | None =>
+                  let text = switch (Files.readFileResult(interfacePath)) {
+                    | Ok(text) => text
+                    | Error(_) => ""
+                  };
+                  let%try () = Files.writeFileResult(interfacePath, text ++ "\n\n" ++ signatureText);
+                  Ok((state, Json.Null))
+                | Some((text, _, _)) =>
+                  open Rpc.J;
+                  let offset = String.length(text);
+                  let%try (line, col) = PartialParser.offsetToPosition(text, offset) |> RResult.orError("Invalid offset");
+                  Rpc.sendRequest(Log.log, Pervasives.stdout, "workspace/applyEdit", o([
+                    ("label", s("Add item to interface")),
+                    ("edit", o([
+                      ("changes", o([
+                        (interfaceUri, l([
+                          o([
+                            ("range", Protocol.rangeOfInts(line, col, line, col)),
+                            ("newText", s("\n\n" ++ signatureText))
+                          ])
+                        ]))
+                      ]))
+                    ]))
+                  ]));
+                  Ok((state, Json.Null))
+              }
+          | _ => Error("Invalid arguments")
+        }
+      | _ => Error("Unexpected command " ++ command)
+    }
+  }),
+
+  ("custom:reasonLanguageServer/createInterface", (state, params) => {
+    open InfixResult;
+    let%try uri = RJson.get("uri", params) |?> RJson.string;
+    let%try minimal = RJson.get("minimal", params) |?> RJson.bool;
+    let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
+    let%try package = State.getPackage(uri, state);
+    let interfacePath = path ++ "i";
+    let%try text = State.getInterfaceFile(uri, state, ~package);
+    let%try () = Files.writeFileResult(interfacePath, text)
+    /* let interfaceUri = uri ++ "i"; */
+    Ok((state, Json.Null))
+  }),
 ];

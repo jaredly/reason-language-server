@@ -13,15 +13,20 @@ module J = {
 
 open Infix;
 
-type jsonrpc = Message(Json.t, string, Json.t) | Notification(string, Json.t);
+type jsonrpc = Message(Json.t, string, Json.t) | Notification(string, Json.t) | Response(Json.t, Json.t);
 
 let messageFromJson = json => {
   let id = Json.get("id", json);
-  let method = Json.get("method", json) |?> Json.string |! "method required";
-  let params = Json.get("params", json) |! "params required";
+  let method = Json.get("method", json) |?> Json.string;
+  let result = Json.get("result", json);
+  let params = Json.get("params", json);
   switch id {
-  | None => Notification(method, params)
-  | Some(id) => Message(id, method, params)
+  | None => Notification(method |! "method required", params |! "params required for notification")
+  | Some(id) => switch (method, result) {
+    | (_, Some(result)) => Response(id, result)
+    | (Some(method), _) => Message(id, method, params |! "params required")
+    | (None, None) => failwith("Either method or result required")
+  }
   }
 };
 
@@ -86,5 +91,21 @@ let sendNotification = (log, output, method, params) => {
     ("params", params)
   ]));
   log("Sending notification " ++ content);
+  send(output, content);
+};
+
+let serverReqNum = ref(0);
+
+let sendRequest = (log, output, method, params) => {
+  open Json;
+  open J;
+  serverReqNum := serverReqNum^ + 1;
+  let content = Json.stringify(o([
+    ("id", s("server-" ++ string_of_int(serverReqNum^))),
+    ("jsonrpc", s("2.0")),
+    ("method", s(method)),
+    ("params", params)
+    ]));
+  log("Sending server request " ++ content);
   send(output, content);
 };

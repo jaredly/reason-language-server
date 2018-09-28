@@ -133,8 +133,37 @@ function activate(context) {
         }
     })
 
+    vscode.commands.registerCommand('reason-language-server.restart', restart);
+
+    const createInterface = (minimal) => {
+        if (!client) {
+            return vscode.window.showInformationMessage('Language server not running');
+        }
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return vscode.window.showInformationMessage('No active editor');
+        }
+        if (fs.existsSync(editor.document.uri.fsPath + 'i')) {
+            return vscode.window.showInformationMessage('Interface file already exists');
+        }
+        client.sendRequest("custom:reasonLanguageServer/createInterface", {
+            "uri": editor.document.uri.toString(),
+            "minimal": minimal
+        })
+    };
+
+    vscode.commands.registerCommand('reason-language-server.create_interface', () => {
+        createInterface(false)
+    });
+
+    // vscode.commands.registerCommand('reason-language-server.create_interface_minimal', () => {
+    //     createInterface(true)
+    // });
+
     restart();
 
-    vscode.commands.registerCommand('reason-language-server.restart', restart);
+    // vscode.commands.registerCommand('reason-language-server.expand_switch', () => {
+    // });
+
 }
 exports.activate = activate;

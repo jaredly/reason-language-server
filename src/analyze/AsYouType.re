@@ -124,11 +124,12 @@ let parseDependencyError = text => {
   }
 };
 
-let justBscCommand = (~interface, ~reasonFormat, compilerPath, sourceFile, includes, flags) => {
+let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
   /* TODO make sure that bsc supports -color */
   Printf.sprintf(
-    {|%s %s -bin-annot %s %s %s|},
+    {|%s %s %s -bin-annot %s %s %s|},
     compilerPath,
+    command,
     includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),
     flags ++ (reasonFormat ? " -bs-re-out" : ""),
     interface ? "-intf" : "-impl",
@@ -136,14 +137,40 @@ let justBscCommand = (~interface, ~reasonFormat, compilerPath, sourceFile, inclu
   )
 };
 
-let runBsc = (~basePath, ~interface, ~reasonFormat, compilerPath, sourceFile, includes, flags) => {
-  let cmd = justBscCommand(~interface, ~reasonFormat, compilerPath, sourceFile, includes, flags);
+let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
+  let cmd = justBscCommand(~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags);
   Log.log("running bsc " ++ cmd ++ " with pwd " ++ basePath);
   let (out, error, success) = Commands.execFull(~pwd=basePath, cmd);
   if (success) {
-    Ok(out @ error)
+    Ok((out, error))
   } else {
     Error(out @ error)
+  }
+};
+
+let getInterface = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
+  let interface = false;
+  let%try (syntaxError, astFile) = switch (refmtPath) {
+    | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
+    | None => {
+      let astFile = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
+      let%try () = Files.writeFileResult(astFile, text);
+      Ok((None, astFile))
+    }
+  };
+  switch (runBsc(~basePath, ~interface, ~reasonFormat, ~command="-i", compilerPath, astFile, includes, flags)) {
+    | Error(lines) => {
+      Error("Failed to generate interface file\n\n" ++ String.concat("\n", lines))
+    }
+    | Ok((lines, errlines)) =>
+    let text = String.concat("\n", lines);
+    Log.log("GOT ITNERFACE");
+    Log.log(text);
+    switch (reasonFormat, refmtPath) {
+      | (false, Some(refmt)) =>
+        convertToRe(~formatWidth=None, ~interface=true, text, refmt)
+      | _ => Ok(text)
+    }
   }
 };
 
@@ -161,7 +188,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     | BuildSystem.V402 => Process_402.fullForCmt
     | V406 => Process_406.fullForCmt
   })(~moduleName, ~allLocations);
-  switch (runBsc(~basePath, ~interface, ~reasonFormat, compilerPath, astFile, includes, flags)) {
+  switch (runBsc(~basePath, ~interface, ~reasonFormat, ~command="-c", compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
       let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       if (!Files.isFile(cmtPath)) {
@@ -183,10 +210,10 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
         }
       }
     }
-    | Ok(lines) => {
+    | Ok((lines, error)) => {
       let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       let%try_wrap full = fullForCmt(cmt, uri, x => x);
-      Success(String.concat("\n", lines), full)
+      Success(String.concat("\n", lines @ error), full)
     }
   }
 };

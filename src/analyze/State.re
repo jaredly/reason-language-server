@@ -667,6 +667,46 @@ let refmtForUri = (uri, package) =>
   };
 
 open Infix;
+
+let getInterfaceFile = (uri, state, ~package: TopTypes.package) => {
+  let%try path = Utils.parseUri(uri) |> RResult.orError("Not a uri");
+  let text = Hashtbl.mem(state.documentText, uri) ? {
+    let (text, _, _) = Hashtbl.find(state.documentText, uri);
+    text
+  } : {
+    let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
+    Files.readFileExn(path)
+  };
+  let%try moduleName = switch (Utils.maybeHash(package.nameForPath, path)) {
+    | None =>
+      Hashtbl.iter((k, v) => Log.log("Path: " ++ k ++ "  " ++ v), package.nameForPath);
+      Log.log("Can't find " ++ path);
+      Error("Can't find module name for path " ++ path)
+    | Some(x) => Ok(x)
+  };
+  let includes = state.settings.crossFileAsYouType
+  ? [package.tmpPath, ...package.includeDirectories]
+  : package.includeDirectories;
+  let%try refmtPath = refmtForUri(uri, package);
+  AsYouType.getInterface(
+    ~compilerVersion=package.compilerVersion,
+    ~uri,
+    ~moduleName,
+    ~allLocations=state.settings.recordAllLocations,
+    ~basePath=package.basePath,
+    ~reasonFormat=switch (package.buildSystem) {
+      | Bsb(_) | BsbNative(_, Js) => Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei")
+      | _ => false
+    },
+    text,
+    ~cacheLocation=package.tmpPath,
+    package.compilerPath,
+    refmtPath,
+    includes,
+    package.compilationFlags,
+  );
+};
+
 let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
   if (Hashtbl.mem(state.compiledDocuments, uri)) {
     Belt.Result.Ok(Hashtbl.find(state.compiledDocuments, uri))
@@ -682,6 +722,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
     let%try moduleName = switch (Utils.maybeHash(package.nameForPath, path)) {
       | None =>
         Hashtbl.iter((k, v) => Log.log("Path: " ++ k ++ "  " ++ v), package.nameForPath);
+        Log.log("Can't find " ++ path);
         Error("Can't find module name for path " ++ path)
       | Some(x) => Ok(x)
     };

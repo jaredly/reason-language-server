@@ -20,21 +20,24 @@ let capabilities =
       ("typeDefinitionProvider", t),
       ("referencesProvider", t),
       ("documentSymbolProvider", t),
-      /* ("codeActionProvider", t), */
+      /*
+       * Found how to do the showReferences thing
+       * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts
+       * but it seems I need to instantiate the object from javascript
+       */
+      ("codeActionProvider", t),
+      ("executeCommandProvider", o([
+        ("commands", l([
+          s("reason-language-server.add_to_interface_inner")
+        ]))
+      ])),
+
       ("codeLensProvider", o([
         ("resolveProvider", t)
       ])),
       ("documentHighlightProvider", t),
       ("documentRangeFormattingProvider", t),
       ("documentFormattingProvider", t),
-      /*
-       * Found how to do the showReferences thing
-       * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts
-       * but it seems I need to instantiate the object from javascript
-       */
-      /* ("executeCommandProvider", o([
-      ])) */
-      /* ("executeCommandOptions", t), */
       ("documentFormattingProvider", t),
       ("renameProvider", t)
     ])

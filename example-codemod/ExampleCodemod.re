@@ -48,4 +48,3 @@ switch (Sys.argv) {
     );
   | _ => ()
 };
-

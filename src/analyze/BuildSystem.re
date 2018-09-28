@@ -126,13 +126,13 @@ let getCompiler = (rootPath, buildSystem) => {
       bsPlatformDir /+ "lib" /+ "bsc.exe"
     | BsbNative(_, Native) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt -c"
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt"
     | BsbNative(_, Bytecode) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt -c"
+      bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
     | Dune => {
       let%try_wrap ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
-      ocamlopt ++ " -c"
+      ocamlopt
     }
   };
 };
