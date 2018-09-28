@@ -40,9 +40,18 @@ let getBsPlatformDir = rootPath => {
   | Some(path) =>
     RResult.Ok(path);
   | None =>
-    let message = "bs-platform could not be found";
-    Log.log(message);
-    RResult.Error(message);
+    let resultSecondary =
+      ModuleResolution.resolveNodeModulePath(
+        ~startPath=rootPath,
+        "bsb-native",
+      );
+    switch (resultSecondary) {
+    | Some(path) => RResult.Ok(path)
+    | None => 
+      let message = "bs-platform could not be found";
+      Log.log(message);
+      RResult.Error(message);
+    }
   };
 };
 
