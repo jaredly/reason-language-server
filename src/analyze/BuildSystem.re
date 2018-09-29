@@ -40,9 +40,18 @@ let getBsPlatformDir = rootPath => {
   | Some(path) =>
     RResult.Ok(path);
   | None =>
-    let message = "bs-platform could not be found";
-    Log.log(message);
-    RResult.Error(message);
+    let resultSecondary =
+      ModuleResolution.resolveNodeModulePath(
+        ~startPath=rootPath,
+        "bsb-native",
+      );
+    switch (resultSecondary) {
+    | Some(path) => RResult.Ok(path)
+    | None => 
+      let message = "bs-platform could not be found";
+      Log.log(message);
+      RResult.Error(message);
+    }
   };
 };
 
@@ -143,6 +152,9 @@ let getRefmt = (rootPath, buildSystem) => {
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt.exe"
     | Bsb(version) when version > "2.2.0" =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "lib" /+ "refmt.exe"
+    | BsbNative(version, _) when version >= "4.0.6" =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt.exe"
     | Bsb(_) | BsbNative(_, _) =>
