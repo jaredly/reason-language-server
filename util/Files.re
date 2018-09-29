@@ -248,3 +248,30 @@ let rec collect = (~checkDir=x => true, path, test) =>
     }
   | _ => test(path) ? [path] : []
   };
+
+let readMerlinFile = (path) => {
+  switch (maybeStat(path)) {
+  | Some({Unix.st_kind: Unix.S_REG}) =>
+    let ic = open_in(path);
+    let rec loop = () =>
+      switch (input_line(ic)) {
+      | exception End_of_file => 
+        close_in(ic);
+        RResult.Ok("js")
+      | s => 
+        if (s == "####{BSB GENERATED: NO EDIT") {
+          switch(input_line(ic)) {
+            | exception End_of_file => RResult.Error("Bsb merlin comment not ended correctly");
+            | backendLine => 
+            let len = String.length("# -backend ");
+            let totalLen = String.length(backendLine);
+            RResult.Ok(String.sub(backendLine, len, totalLen - len))
+          }
+        } else {
+          loop()
+        }
+      };
+    loop()
+  | _ => RResult.Ok("js")
+  }
+}
