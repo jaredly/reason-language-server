@@ -276,7 +276,7 @@ let newJbuilderPackage = (state, rootPath) => {
       findJbuilderProjectRoot(Filename.dirname(path))
     }
   };
-  print_endline("Finding project root");
+  /* print_endline("Finding project root"); */
   let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
   let buildDir = projectRoot /+ "_build";
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
@@ -291,7 +291,7 @@ let newJbuilderPackage = (state, rootPath) => {
   };
   let packageName = JbuildFile.findName(jbuildConfig);
 
-  print_endline("Get ocamllib");
+  /* print_endline("Get ocamllib"); */
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
 
   /* TODO support binaries, and other directories */
@@ -308,7 +308,7 @@ let newJbuilderPackage = (state, rootPath) => {
     | _ => None
   };
 
-print_endline("locals");
+  /* print_endline("locals"); */
   /* Log.log("Got a compiled base " ++ compiledBase); */
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename);
@@ -330,7 +330,7 @@ print_endline("locals");
     );
   });
 
-  print_endline("Getting things");
+  /* print_endline("Getting things"); */
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
@@ -397,7 +397,7 @@ print_endline("locals");
     };
     Some(("esy " ++ cmd ++ " build @install", projectRoot))
   };
-  print_endline("Build command?");
+  /* print_endline("Build command?"); */
   if (state.settings.autoRebuild) {
     runBuildCommand(state, rootPath, buildCommand);
   };
