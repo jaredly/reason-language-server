@@ -93,8 +93,6 @@ let detect = (rootPath, bsconfig) => {
   let%try_wrap backend = switch (backendString) {
   | "js" => Ok(Js)
   | "bytecode" => Ok(Bytecode)
-  
-  
   | "native" => Ok(Native)
   | s => Error("Found unsupported backend: " ++ s);
   };
