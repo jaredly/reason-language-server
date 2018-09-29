@@ -154,6 +154,9 @@ let getRefmt = (rootPath, buildSystem) => {
     | Bsb(version) when version > "2.2.0" =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt.exe"
+    | BsbNative(version, _) when version >= "4.0.6" =>
+      let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
+      bsPlatformDir /+ "lib" /+ "refmt.exe"
     | Bsb(_) | BsbNative(_, _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt3.exe"
