@@ -23,7 +23,7 @@ build_script:
     - _build\install\default\bin\Bin.exe --help
 
 artifacts:
-    - path: _build/default/src/Bin.exe
+    - path: _build/default/bin/Bin.exe
       name: Windows Build
       type: File
 
