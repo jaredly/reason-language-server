@@ -33,12 +33,19 @@ let makePathsForModule = (localModules: list((string, SharedTypes.paths)), depen
 
   dependencyModules |> List.iter(((modName, paths)) => {
     add(modName, paths);
+    /* switch (paths) {
+      | Impl(_, Some(src)) => Log.log("> Dep " ++ modName ++ " at " ++ src)
+      | _ => ()
+    }; */
     Hashtbl.replace(pathsForModule, modName, paths)
   });
 
   localModules |> List.iter(((modName, paths)) => {
     add(modName, paths);
-    /* Log.log("> Local " ++ modName ++ " at " ++ cmt ++ " - " ++ source); */
+    /* switch (paths) {
+      | Impl(_, Some(src)) => Log.log("> Local " ++ modName ++ " at " ++ src)
+      | _ => ()
+    }; */
     Hashtbl.replace(pathsForModule, modName, paths)
   });
 
@@ -291,12 +298,16 @@ let newJbuilderPackage = (state, rootPath) => {
   };
   let packageName = JbuildFile.findName(jbuildConfig);
 
-  /* print_endline("Get ocamllib"); */
+  Log.log("Get ocamllib");
   let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
 
   /* TODO support binaries, and other directories */
+  let includeSubdirs = JbuildFile.hasIncludeSubdirs(jbuildConfig);
+  Log.log("Include subdirs? " ++ (includeSubdirs ? "YES" : "no :/"));
 
-  let sourceFiles = Files.readDirectory(rootPath) |> List.filter(FindFiles.isSourceFile);
+  let sourceFiles = includeSubdirs
+    ? Files.collect(rootPath, FindFiles.isSourceFile)->Belt.List.map(path => Files.relpath(rootPath, path))
+    : Files.readDirectory(rootPath) |> List.filter(FindFiles.isSourceFile);
   let rel = Files.relpath(projectRoot, rootPath);
   let compiledBase = switch packageName {
     | `NoName => buildDir /+ "default" /+ rel
@@ -309,13 +320,14 @@ let newJbuilderPackage = (state, rootPath) => {
   };
 
   /* print_endline("locals"); */
-  /* Log.log("Got a compiled base " ++ compiledBase); */
+  Log.log("Got a compiled base " ++ compiledBase);
   let localModules = sourceFiles |> List.map(filename => {
     let name = FindFiles.getName(filename);
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
       | `Library(libraryName) => libraryName ++ "__" ++ name
     };
+    Log.log("Local file: " ++ (rootPath /+ filename));
     (
       namespaced,
       SharedTypes.Impl(
@@ -491,6 +503,7 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       RResult.Ok(package)
     | `Jbuilder(path) =>
+      Log.log("]] Making a new jbuilder package at " ++ path);
       let%try package = newJbuilderPackage(state, path);
       Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
@@ -722,7 +735,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
     let%try moduleName = switch (Utils.maybeHash(package.nameForPath, path)) {
       | None =>
         Hashtbl.iter((k, v) => Log.log("Path: " ++ k ++ "  " ++ v), package.nameForPath);
-        Log.log("Can't find " ++ path);
+        Log.log("Can't find " ++ path ++ " in package " ++ package.basePath);
         Error("Can't find module name for path " ++ path)
       | Some(x) => Ok(x)
     };

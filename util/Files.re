@@ -237,14 +237,14 @@ let rec collectDirs = (path) => {
   }
 };
 
-let rec collect = (~checkDir=x => true, path, test) => {
+let rec collect = (~checkDir=x => true, path, test) =>
   switch (maybeStat(path)) {
   | None => []
-  | Some({Unix.st_kind: Unix.S_DIR}) => if (checkDir(path)) {
-    readDirectory(path) |> List.map((name) => collect(~checkDir, Filename.concat(path, name), test)) |> List.concat;
-  } else {
-    []
-  }
+  | Some({Unix.st_kind: Unix.S_DIR}) =>
+    if (checkDir(path)) {
+      readDirectory(path) |> List.map(name => collect(~checkDir, Filename.concat(path, name), test)) |> List.concat;
+    } else {
+      [];
+    }
   | _ => test(path) ? [path] : []
-  }
-};
+  };

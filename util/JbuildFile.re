@@ -32,6 +32,16 @@ let findLibraryName = jbuildConfig => {
   loop(jbuildConfig)
 };
 
+let hasIncludeSubdirs = jbuildConfig => {
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("include_subdirs"), `Ident("unqualified")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(jbuildConfig)
+};
+/* (include_subdirs unqualified) */
+
 let findExecutableName = jbuildConfig => {
   let rec loop = items => switch items {
     | [] => None

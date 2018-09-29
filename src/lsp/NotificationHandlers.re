@@ -58,7 +58,9 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         /* Log.log(path); */
         /* package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name)); */
         Log.log("Reloading because you created a new file: " ++ path);
-        Ok(reloadAllState(state))
+        Ok(state)
+        /* Ok(reloadAllState(state)) */
+
         /* Hashtbl.add(package.nameForPath, path, name);
         Hashtbl.add(package.pathsForModule, name, Impl(path, Some(path)));
         Hashtbl.replace(state.packagesByRoot, package.basePath, {
