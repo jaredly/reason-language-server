@@ -79,43 +79,54 @@ let rec getAffectedFiles = (root, lines) => switch lines {
 
 let runBuildCommand = (state, root, buildCommand) => {
   /** TODO check for a bsb.lock file & bail if it's there */
-  let%opt_consume (buildCommand, commandDirectory) = buildCommand;
-  let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
-  Log.log(">> Build system: " ++ buildCommand);
-  Log.log(Utils.joinLines(stdout));
-  Log.log(">> Error");
-  Log.log(Utils.joinLines(stderr));
-  let files = getAffectedFiles(commandDirectory, stdout @ stderr);
-  Log.log("Affected files " ++ String.concat(" ", files));
-  let bsconfigJson = root /+ "bsconfig.json" |> Utils.toUri;
-  let bsconfigClean = ref(true);
-  files |. Belt.List.forEach(uri => {
-    if (Utils.endsWith(uri, "bsconfig.json")) {
-      bsconfigClean := false;
-      open Rpc.J;
-      Log.log("Bsconfig.json sending");
-      Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
-        ("uri", s(uri)),
-        ("diagnostics", l([
-          o([
-            ("range", Protocol.rangeOfInts(0, 0, 5, 0)),
-            ("message", s(Utils.stripAnsii(String.concat("\n", stdout @ stderr)))),
-            ("severity", i(1)),
-          ])
-        ]))]))
-    };
-    Hashtbl.remove(state.compiledDocuments, uri);
-    Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() -. 0.01)
-  });
-  if (bsconfigClean^) {
-    Log.log("Cleaning bsconfig.json");
-      open Rpc.J;
-    Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
-      ("uri", s(bsconfigJson)),
-      ("diagnostics", l([]))
-    ]))
-  }
-  /* TODO report notifications here */
+  switch (buildCommand) {
+    | None => Ok()
+    | Some((buildCommand, commandDirectory)) => 
+      let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
+      Log.log(">> Build system: " ++ buildCommand);
+      Log.log(Utils.joinLines(stdout));
+      Log.log(">> Error");
+      let errors = Utils.joinLines(stderr);
+      Log.log(errors);
+      let%try _ = if (Utils.startsWith(errors, "Error: Could not find an item in the entries field to compile to ")) {
+        Error("Bsb-native " ++ errors ++ "\nHint: check your bsconfig's \"entries\".")
+      } else { 
+        Ok();
+      };
+      let files = getAffectedFiles(commandDirectory, stdout @ stderr);
+      Log.log("Affected files " ++ String.concat(" ", files));
+      let bsconfigJson = root /+ "bsconfig.json" |> Utils.toUri;
+      let bsconfigClean = ref(true);
+      files |. Belt.List.forEach(uri => {
+        if (Utils.endsWith(uri, "bsconfig.json")) {
+          bsconfigClean := false;
+          open Rpc.J;
+          Log.log("Bsconfig.json sending");
+          Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
+            ("uri", s(uri)),
+            ("diagnostics", l([
+              o([
+                ("range", Protocol.rangeOfInts(0, 0, 5, 0)),
+                ("message", s(Utils.stripAnsii(String.concat("\n", stdout @ stderr)))),
+                ("severity", i(1)),
+              ])
+            ]))]))
+        };
+        Hashtbl.remove(state.compiledDocuments, uri);
+        Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() -. 0.01)
+      });
+      if (bsconfigClean^) {
+        Log.log("Cleaning bsconfig.json");
+          open Rpc.J;
+        Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
+          ("uri", s(bsconfigJson)),
+          ("diagnostics", l([]))
+        ]))
+      };
+      /* TODO report notifications here */
+      Ok()
+  };
+  
 };
 
 let newBsPackage = (state, rootPath) => {
@@ -130,8 +141,10 @@ let newBsPackage = (state, rootPath) => {
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune => assert(false)
   };
-  if (state.settings.autoRebuild) {
+  let%try _ = if (state.settings.autoRebuild) {
     runBuildCommand(state, rootPath, Some((buildCommand, rootPath)));
+  } else {
+    Ok()
   };
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
@@ -410,8 +423,10 @@ let newJbuilderPackage = (state, rootPath) => {
     Some(("esy " ++ cmd ++ " build @install", projectRoot))
   };
   /* print_endline("Build command?"); */
-  if (state.settings.autoRebuild) {
+  let%try _ = if (state.settings.autoRebuild) {
     runBuildCommand(state, rootPath, buildCommand);
+  } else {
+    Ok()
   };
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
