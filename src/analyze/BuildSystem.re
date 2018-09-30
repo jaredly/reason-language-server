@@ -89,7 +89,7 @@ let detect = (rootPath, bsconfig) => {
     } : Error("Could not run bsb (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
   };
 
-  let%try backendString = Files.readMerlinFile(rootPath);
+  let%try backendString = MerlinFile.getBackend(rootPath);
   let%try_wrap backend = switch (backendString) {
   | "js" => Ok(Js)
   | "bytecode" => Ok(Bytecode)
