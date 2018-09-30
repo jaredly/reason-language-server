@@ -1,16 +1,4 @@
 
-module J = {
-  open Json;
-  let o = o => Object(o);
-  let s = s => String(s);
-  let n = n => Number(n);
-  let i = i => Number(float_of_int(i));
-  let l = l => Array(l);
-  let t = True;
-  let f = False;
-  let null = Null;
-};
-
 open Infix;
 
 type jsonrpc = Message(Json.t, string, Json.t) | Notification(string, Json.t) | Response(Json.t, Json.t);
@@ -63,7 +51,7 @@ let send = (output, content) => {
 
 let sendMessage = (log, output, id, result) => {
   open Json;
-  open J;
+  open Util.JsonShort;
   let content = Json.stringify(o([
     ("id", id),
     ("jsonrpc", s("2.0")),
@@ -74,7 +62,7 @@ let sendMessage = (log, output, id, result) => {
 
 let sendError = (log, output, id, error) => {
   open Json;
-  open J;
+  open Util.JsonShort;
   let content = Json.stringify(o([
     ("id", id),
     ("jsonrpc", s("2.0")),
@@ -84,7 +72,7 @@ let sendError = (log, output, id, error) => {
 };
 
 let sendNotification = (log, output, method, params) => {
-  open J;
+  open Util.JsonShort;
   let content = Json.stringify(o([
     ("jsonrpc", s("2.0")),
     ("method", s(method)),
@@ -98,7 +86,7 @@ let serverReqNum = ref(0);
 
 let sendRequest = (log, output, method, params) => {
   open Json;
-  open J;
+  open Util.JsonShort;
   serverReqNum := serverReqNum^ + 1;
   let content = Json.stringify(o([
     ("id", s("server-" ++ string_of_int(serverReqNum^))),

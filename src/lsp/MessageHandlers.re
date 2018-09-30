@@ -12,12 +12,14 @@ let (-?>) = (a,b) => b;
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
 
+let getPackage = State.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
+
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try position = RJson.get("position", params) |?> Protocol.rgetPosition;
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try data = State.getDefinitionData(uri, state, ~package);
 
     let position = Utils.cmtLocFromVscode(position);
@@ -43,7 +45,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/signatureHelp", (state, params) => {
     let%try (uri, position) = Protocol.rPositionParams(params);
     let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
     let%try full = State.getDefinitionData(uri, state, ~package);
     let {SharedTypes.file, extra} = full;
@@ -95,7 +97,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let (args, rest) = typ.getArguments();
       let%opt args = args == [] ? None : Some(args);
       let printedType = typ.toString();
-      open Rpc.J;
+      open Util.JsonShort;
       Some(Ok((state, o([
         ("activeParameter", i(commas)),
         ("signatures", l([
@@ -121,11 +123,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/completion", (state, params) => {
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, pos) |> orError("invalid offset");
     /* TODO get last non-syntax-erroring definitions */
     /* let%try (file, extra) = State.fileForUri(state, ~package, uri) |> orError("No definitions"); */
-    open Rpc.J;
+    open Util.JsonShort;
     let%try completions = switch (PartialParser.findCompletable(text, offset)) {
     | Nothing => {
       Log.log("Nothing completable found :/");
@@ -183,7 +185,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       |?>> name => {
         let (detail, docs) = Completions.getModuleResults(name, state, cmt, Some(src));
 
-        open Rpc.J;
+        open Util.JsonShort;
         extend(params, [
           ("detail", detail |?>> s |? null),
           ("documentation", docs |?>> Protocol.contentKind(!state.settings.clientNeedsPlainText) |? null),
@@ -195,14 +197,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/documentHighlight", (state, params) => {
     let%try (uri, pos) = Protocol.rPositionParams(params);
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
 
     let res = {
       let pos = Utils.cmtLocFromVscode(pos);
       let%opt (file, extra) = State.fileForUri(state, ~package, uri) |> R.toOptionAndLog;
 
       let%opt_wrap refs = References.forPos(~file, ~extra, pos);
-      open Rpc.J;
+      open Util.JsonShort;
       (state, l(List.map(refs, (loc) => o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("kind", i(2))
@@ -215,7 +217,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/references", (state, params) => {
     open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try_wrap (file, extra) = State.fileForUri(state, ~package, uri);
 
     open Infix;
@@ -233,7 +235,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         loc
       ) |> toOptionAndLog;
 
-      open Rpc.J;
+      open Util.JsonShort;
       Some((
         state,
         List.map(
@@ -256,7 +258,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/rename", (state, params) => {
     open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
     let%try newName = RJson.get("newName", params);
 
@@ -274,7 +276,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         loc
       ) |> toOptionAndLog;
 
-      open Rpc.J;
+      open Util.JsonShort;
       Some(Ok((
         state,
         o([
@@ -298,15 +300,15 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/codeLens", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
-    /* let%try package = State.getPackage(uri, state); */
-    switch (State.getPackage(uri, state)) {
+    /* let%try package = getPackage(uri, state); */
+    switch (getPackage(uri, state)) {
     | Error(message) => {
       let items = [("Unable to load compilation data: " ++ message, {
         Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         Location.loc_end: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
         loc_ghost: false,
       })];
-      open Rpc.J;
+      open Util.JsonShort;
       Ok((state, l(List.map(items, ((text, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("command", o([
@@ -362,7 +364,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | Ok(Some(full)) => getLensItems(full)
         };
       };
-      open Rpc.J;
+      open Util.JsonShort;
       Ok((state, l(List.map(items, ((text, loc)) => o([
         ("range", Protocol.rangeOfLoc(loc)),
         ("command", o([
@@ -375,7 +377,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/hover", (state, params) => {
     let%try (uri, pos) = Protocol.rPositionParams(params);
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
 
     {
@@ -391,7 +393,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         loc
       );
 
-      open Rpc.J;
+      open Util.JsonShort;
       Some(Ok((state, o([
         ("range", Protocol.rangeOfLoc(location)),
         ("contents", text |> Protocol.contentKind(!state.settings.clientNeedsPlainText))
@@ -402,7 +404,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/rangeFormatting", fun (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
     let%try refmtPath = State.refmtForUri(uri, package);
     let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
@@ -415,7 +417,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       /** TODO: instead of bailing, it should extend the selection to encompass the whole line, and then go for it. */
       if (fst(start) == fst(end_) && text.[endPos] != '\n') {
-        Belt.Result.Ok((state, Rpc.J.null));
+        Belt.Result.Ok((state, Util.JsonShort.null));
       } else {
         let substring = String.sub(text, startPos, endPos - startPos);
 
@@ -469,7 +471,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           };
         };
         let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), substring, refmtPath);
-        Rpc.J.(
+        Util.JsonShort.(
           state,
           l([
             o([
@@ -497,7 +499,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/documentSymbol", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
 
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
 
@@ -519,7 +521,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     };
 
     (getItems(file.contents) |> items => {
-      open Rpc.J;
+      open Util.JsonShort;
       Ok((state, l(List.map(items, ((name, loc, typ)) => o([
         ("name", s(name)),
         ("kind", i(Protocol.symbolKind(typ))),
@@ -532,12 +534,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/formatting", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let text = State.getContents(uri, state);
     let%try refmtPath = State.refmtForUri(uri, package);
     let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
     let%try_wrap newText = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), text, refmtPath);
-    open Rpc.J;
+    open Util.JsonShort;
     (state, text == newText ? Json.Null : l([o([
       ("range", Protocol.rangeOfInts(
         0, 0,
@@ -552,7 +554,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
     let pos = start;
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
 
     open Infix;
@@ -574,7 +576,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | _ => None
       };
 
-      open Rpc.J;
+      open Util.JsonShort;
       Some(Ok((state, l([
         o([
           ("title", s("Add to interface file")),
@@ -607,7 +609,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
                   let%try () = Files.writeFileResult(interfacePath, text ++ "\n\n" ++ signatureText);
                   Ok((state, Json.Null))
                 | Some((text, _, _)) =>
-                  open Rpc.J;
+                  open Util.JsonShort;
                   let offset = String.length(text);
                   let%try (line, col) = PartialParser.offsetToPosition(text, offset) |> RResult.orError("Invalid offset");
                   Rpc.sendRequest(Log.log, Pervasives.stdout, "workspace/applyEdit", o([
@@ -636,7 +638,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = RJson.get("uri", params) |?> RJson.string;
     let%try minimal = RJson.get("minimal", params) |?> RJson.bool;
     let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
-    let%try package = State.getPackage(uri, state);
+    let%try package = getPackage(uri, state);
     let interfacePath = path ++ "i";
     let%try text = State.getInterfaceFile(uri, state, ~package);
     let%try () = Files.writeFileResult(interfacePath, text)

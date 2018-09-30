@@ -1,6 +1,6 @@
 
 Printexc.record_backtrace(true);
-open Lib;
+open Analyze;
 module Json = Vendor.Json;
 open TypeMap.DigTypes;
 /* Log.spamError := true; */
@@ -10,7 +10,7 @@ open TypeMap.DigTypes;
   let uri = Utils.toUri(Filename.concat(base, src));
   let%try tbl = GetTypeMap.forInitialType(~state, uri, name);
 
-  let json = Rpc.J.o(Hashtbl.fold(((moduleName, path, name), v, items) => {
+  let json = Util.JsonShort.o(Hashtbl.fold(((moduleName, path, name), v, items) => {
     [(moduleName ++ ":" ++ String.concat(".", path) ++ ":" ++ name, 
     SerializeSimplerType.declToJson(SerializeSimplerType.sourceToJson, v)
     ), ...items]
@@ -86,7 +86,7 @@ let toBoth = (base, dest, types) => {
 let toDeSerializer = (base, src, name, dest) => {
   let state = TopTypes.forRootPath(base);
   let uri = Utils.toUri(Filename.concat(base, src));
-  let%try package = State.getPackage(uri, state);
+  let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
   let tbl = getTypeMap(base, state, [src ++ ":" ++ name]);
 
   Pprintast.structure(Format.str_formatter, [deserializers(tbl)]);
@@ -95,7 +95,7 @@ let toDeSerializer = (base, src, name, dest) => {
     | None => Ok(ml)
     | Some(refmt) =>
     Ok(ml)
-    /* Lib.AsYouType.convertToRe(~formatWidth=Some(100),
+    /* Analyze.AsYouType.convertToRe(~formatWidth=Some(100),
       ~interface=false,
       ml,
       refmt
@@ -108,7 +108,7 @@ let toDeSerializer = (base, src, name, dest) => {
 let toSerializer = (base, src, name, dest) => {
   let state = TopTypes.forRootPath(base);
   let uri = Utils.toUri(Filename.concat(base, src));
-  let%try package = State.getPackage(uri, state);
+  let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
   let tbl = Hashtbl.create(10);
   let%try () = TypeMap.GetTypeMap.forInitialType(~tbl, ~state, uri, name); 
   Pprintast.structure(Format.str_formatter, [serializers(tbl)]);
@@ -116,7 +116,7 @@ let toSerializer = (base, src, name, dest) => {
   let%try text = switch (package.refmtPath) {
     | None => Ok(ml)
     | Some(refmt) =>
-    Lib.AsYouType.convertToRe(~formatWidth=Some(100),
+    AsYouType.convertToRe(~formatWidth=Some(100),
       ~interface=false,
       ml,
       refmt

@@ -13,11 +13,31 @@ let getTextDocument = doc => {
   Some((uri, version, text))
 };
 
+let reportDiagnostics = (uri, result) => {
+  open Util.JsonShort;
+  let body = switch result {
+    | `BuildFailed(lines) => o([
+      ("uri", s(uri)),
+      ("diagnostics", l([
+        o([
+          ("range", Protocol.rangeOfInts(0, 0, 5, 0)),
+          ("message", s(Utils.stripAnsii(String.concat("\n", lines)))),
+          ("severity", i(1)),
+        ])
+      ]))])
+    | `BuildSucceeded => o([
+      ("uri", s(uri)),
+      ("diagnostics", l([]))
+    ])
+  };
+  Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", body)
+};
+
 let checkPackageTimers = state => {
   Hashtbl.iter((_, package) => {
     if (package.rebuildTimer != 0. && package.rebuildTimer < Unix.gettimeofday()) {
       package.rebuildTimer = 0.;
-      State.runBuildCommand(state, package.basePath, package.buildCommand);
+      State.runBuildCommand(~reportDiagnostics, state, package.basePath, package.buildCommand);
     }
   }, state.packagesByRoot)
 };
@@ -52,10 +72,10 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     
     let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
     if (FindFiles.isSourceFile(path)) {
-      let%try package = State.getPackage(uri, state);
+      let%try package = State.getPackage(~reportDiagnostics, uri, state);
       /* let name = FindFiles.getName(path); */
       if (!Hashtbl.mem(package.nameForPath, path)) {
-        /* Log.log(path); */
+        /* TODO: figure out what the name should be, and process it. */
         /* package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name)); */
         Log.log("Reloading because you created a new file: " ++ path);
         Ok(state)
@@ -106,7 +126,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("textDocument/didSave", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> doc => RJson.get("uri", doc) |?> RJson.string;
-    let%try package = State.getPackage(uri, state);
+    let%try package = State.getPackage(~reportDiagnostics, uri, state);
     setPackageTimer(package);
     let moduleName = FindFiles.getName(uri);
 

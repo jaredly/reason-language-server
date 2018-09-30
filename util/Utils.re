@@ -233,3 +233,11 @@ let dedup = items => {
     }
   })
 };
+
+let tupleOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => (pos_lnum - 1, pos_cnum - pos_bol);
+
+/** Check if pos is within the location, but be fuzzy about when the location ends.
+If it's within 5 lines, go with it.
+ */
+let locationContainsFuzzy = ({Location.loc_start, loc_end}, (l, c)) =>
+  tupleOfLexing(loc_start) <= (l, c) && tupleOfLexing(loc_end) >= (l - 5, c);

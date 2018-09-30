@@ -2,8 +2,8 @@ open Parsetree;
 
 type ctx = {
   full: SharedTypes.full,
-  state: Lib.TopTypes.state,
-  package: Lib.TopTypes.package,
+  state: Analyze.TopTypes.state,
+  package: Analyze.TopTypes.package,
 };
 
 let mapStr = (structure, strMapper) => {
@@ -92,7 +92,7 @@ let mapConstructor = (expr, ~ident=?, constrMapper) => {
 let getExprType = (ctx, expr) => {
   let%try_force loc = References.locForLocations(~extra=ctx.full.extra, expr.pexp_loc) |> RResult.orError("Could not find type for expr. Probably the ast & compiled artifacts are out of sync.");
   let env = Query.fileEnv(ctx.full.file);
-  let getModule = ctx.state->Lib.State.fileForModule(~package=ctx.package);
+  let getModule = ctx.state->Analyze.State.fileForModule(~package=ctx.package);
   switch loc {
     | Typed(typ, _) => {
       SharedTypes.SimpleType.mapSource(
@@ -105,7 +105,7 @@ let getExprType = (ctx, expr) => {
 };
 
 let getTypeDefinition = (ctx, {TypeMap.DigTypes.uri, moduleName, modulePath, declared, name, env}) => {
-  let getModule = ctx.state->Lib.State.fileForModule(~package=ctx.package);
+  let getModule = ctx.state->Analyze.State.fileForModule(~package=ctx.package);
   SharedTypes.SimpleType.declMapSource(
     TypeMap.GetTypeMap.mapSource(~env, ~getModule),
     declared.contents.typ.asSimpleDeclaration(declared.name.txt)

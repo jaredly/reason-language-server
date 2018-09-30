@@ -1,4 +1,4 @@
-open Lib;
+open Analyze;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
@@ -18,7 +18,7 @@ let getPackage = (localModules) => {
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
-    compilerVersion: Lib.BuildSystem.V406,
+    compilerVersion: BuildSystem.V406,
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,

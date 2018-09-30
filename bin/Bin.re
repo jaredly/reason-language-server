@@ -1,3 +1,3 @@
 Printexc.record_backtrace(true);
 
-let () = Lib.Main.main();
+let () = Lsp.Main.main();

@@ -1,5 +1,5 @@
 
-open Lib;
+open Analyze;
 open DigTypes;
 
 let getType = (~env: Query.queryEnv, name) => {
@@ -85,7 +85,7 @@ let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, key, t: Share
 };
 
 let forInitialType = (~tbl, ~state, uri, name) => {
-  let%try package = State.getPackage(uri, state);
+  let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
   print_endline("Got package...");
   let%try (file, _) = State.fileForUri(state, ~package, uri);
   let env = Query.fileEnv(file);

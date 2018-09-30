@@ -4,7 +4,7 @@ open RResult;
 open Log;
 
 let makeDiagnostic = (documentText, ((line, c1, c2), message)) => {
-  open Rpc.J;
+  open Util.JsonShort;
   let text = String.concat("\n", message);
   let (l2, c22) =
     {
@@ -42,7 +42,7 @@ let runDiagnostics = (uri, state, ~package) => {
   let%try_consume documentText = getText(state, uri);
   let%try_consume result = State.getCompilationResult(uri, state, ~package);
 
-  open Rpc.J;
+  open Util.JsonShort;
   Rpc.sendNotification(log, stdout, "textDocument/publishDiagnostics", o([
     ("uri", s(uri)),
     ("diagnostics", switch result {
@@ -77,7 +77,7 @@ let checkDocumentTimers = state => {
   let now = Unix.gettimeofday();
   let removed = Hashtbl.fold((uri, timer, removed) => {
     if (now > timer) {
-      switch (State.getPackage(uri, state)) {
+      switch (State.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics, uri, state)) {
         | Ok(package) => runDiagnostics(uri, state, ~package);
         | Error(_) => () /* ignore... TODO should I do something */
       };

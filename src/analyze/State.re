@@ -77,7 +77,7 @@ let rec getAffectedFiles = (root, lines) => switch lines {
   }
 };
 
-let runBuildCommand = (state, root, buildCommand) => {
+let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   /** TODO check for a bsb.lock file & bail if it's there */
   let%opt_consume (buildCommand, commandDirectory) = buildCommand;
   let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
@@ -92,33 +92,24 @@ let runBuildCommand = (state, root, buildCommand) => {
   files |. Belt.List.forEach(uri => {
     if (Utils.endsWith(uri, "bsconfig.json")) {
       bsconfigClean := false;
-      open Rpc.J;
+      open Util.JsonShort;
       Log.log("Bsconfig.json sending");
-      Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
-        ("uri", s(uri)),
-        ("diagnostics", l([
-          o([
-            ("range", Protocol.rangeOfInts(0, 0, 5, 0)),
-            ("message", s(Utils.stripAnsii(String.concat("\n", stdout @ stderr)))),
-            ("severity", i(1)),
-          ])
-        ]))]))
+      reportDiagnostics(
+        uri, `BuildFailed(stdout @ stderr)
+        )
     };
     Hashtbl.remove(state.compiledDocuments, uri);
     Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() -. 0.01)
   });
   if (bsconfigClean^) {
     Log.log("Cleaning bsconfig.json");
-      open Rpc.J;
-    Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", o([
-      ("uri", s(bsconfigJson)),
-      ("diagnostics", l([]))
-    ]))
+      open Util.JsonShort;
+    reportDiagnostics(bsconfigJson, `BuildSucceeded)
   }
   /* TODO report notifications here */
 };
 
-let newBsPackage = (state, rootPath) => {
+let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
@@ -131,7 +122,7 @@ let newBsPackage = (state, rootPath) => {
     | Dune => assert(false)
   };
   if (state.settings.autoRebuild) {
-    runBuildCommand(state, rootPath, Some((buildCommand, rootPath)));
+    runBuildCommand(~reportDiagnostics, state, rootPath, Some((buildCommand, rootPath)));
   };
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
@@ -273,7 +264,7 @@ let newBsPackage = (state, rootPath) => {
   };
 };
 
-let newJbuilderPackage = (state, rootPath) => {
+let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let rec findJbuilderProjectRoot = path => {
     if (path == "/") {
       RResult.Error("Unable to find _build directory")
@@ -411,7 +402,7 @@ let newJbuilderPackage = (state, rootPath) => {
   };
   /* print_endline("Build command?"); */
   if (state.settings.autoRebuild) {
-    runBuildCommand(state, rootPath, buildCommand);
+    runBuildCommand(~reportDiagnostics, state, rootPath, buildCommand);
   };
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
@@ -464,15 +455,15 @@ let findRoot = (uri, packagesByRoot) => {
   loop(Filename.dirname(path))
 };
 
-let newPackageForRoot = (state, root) => {
+let newPackageForRoot = (~reportDiagnostics, state, root) => {
   if (Files.exists(root /+ "bsconfig.json")) {
-    let%try package = newBsPackage(state, root);
+    let%try package = newBsPackage(~reportDiagnostics, state, root);
     Files.mkdirp(package.tmpPath);
     /* Hashtbl.replace(state.rootForUri, uri, package.basePath); */
     Hashtbl.replace(state.packagesByRoot, package.basePath, package);
     RResult.Ok(package)
   } else if (Files.exists(root /+ "dune-project")) {
-    let%try package = newJbuilderPackage(state, root);
+    let%try package = newJbuilderPackage(~reportDiagnostics, state, root);
     Files.mkdirp(package.tmpPath);
     /* Hashtbl.replace(state.rootForUri, uri, package.basePath); */
     Hashtbl.replace(state.packagesByRoot, package.basePath, package);
@@ -482,7 +473,7 @@ let newPackageForRoot = (state, root) => {
   }
 };
 
-let getPackage = (uri, state) => {
+let getPackage = (~reportDiagnostics, uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {
     RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
   } else {
@@ -492,7 +483,7 @@ let getPackage = (uri, state) => {
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
     | `Bs(rootPath) =>
-      let%try package = newBsPackage(state, rootPath);
+      let%try package = newBsPackage(~reportDiagnostics, state, rootPath);
       Files.mkdirp(package.tmpPath);
       let package = {
         ...package,
@@ -504,7 +495,7 @@ let getPackage = (uri, state) => {
       RResult.Ok(package)
     | `Jbuilder(path) =>
       Log.log("]] Making a new jbuilder package at " ++ path);
-      let%try package = newJbuilderPackage(state, path);
+      let%try package = newJbuilderPackage(~reportDiagnostics, state, path);
       Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);

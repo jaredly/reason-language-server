@@ -19,7 +19,7 @@ let showMessage = (log, typ, message) =>
     log,
     stdout,
     "window/showMessage",
-    Rpc.J.(o([("type", i(severity(typ))), ("message", s(message))])),
+    Util.JsonShort.(o([("type", i(severity(typ))), ("message", s(message))])),
   );
 
 let handleMessage = (log, messageHandlers, id, method, params, state) => {
@@ -31,7 +31,7 @@ let handleMessage = (log, messageHandlers, id, method, params, state) => {
       log,
       stdout,
       id,
-      Rpc.J.(
+      Util.JsonShort.(
         o([
           ("code", i(-32601)), /* MethodNotFoundError */
           ("message", s("Unexpected method: " ++ method)),
@@ -51,7 +51,7 @@ let handleMessage = (log, messageHandlers, id, method, params, state) => {
         log,
         stdout,
         id,
-        Rpc.J.(
+        Util.JsonShort.(
           o([
             ("code", i(-32603)), /* InternalError */
             ("message", s(string)),
@@ -64,7 +64,7 @@ let handleMessage = (log, messageHandlers, id, method, params, state) => {
         log,
         stdout,
         id,
-        Rpc.J.(
+        Util.JsonShort.(
           o([
             ("code", i(-32603)), /* InternalError */
             ("message", s(Printexc.to_string(e) ++ Printexc.get_backtrace())),
@@ -138,7 +138,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
           log,
           stdout,
           id,
-          Rpc.J.(
+          Util.JsonShort.(
             o([
               ("code", i(-32603)), /* InternalError */
               ("message", s(Printexc.to_string(e) ++ Printexc.get_backtrace())),

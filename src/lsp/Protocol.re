@@ -1,4 +1,4 @@
-open Rpc.J;
+open Util.JsonShort;
 
 let pos = (~line, ~character) => o([("line", i(line)), ("character", i(character))]);
 
@@ -43,8 +43,6 @@ let rPositionParams = (params) => {
 let posOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) =>
   o([("line", i(pos_lnum - 1)), ("character", i(pos_cnum - pos_bol))]);
 
-let tupleOfLexing = ({Lexing.pos_lnum, pos_cnum, pos_bol}) => (pos_lnum - 1, pos_cnum - pos_bol);
-
 let contentKind = (useMarkdown, text) =>
   Json.Object([("kind", Json.String(useMarkdown ? "markdown" : "text")), ("value", Json.String(text))]);
 
@@ -69,13 +67,7 @@ let rangeOfInts = (l0, c0, l1, c1) =>
   o([("start", pos(~line=l0, ~character=c0)), ("end", pos(~line=l1, ~character=c1))]);
 
 let locationContains = ({Location.loc_start, loc_end}, pos) =>
-  tupleOfLexing(loc_start) <= pos && tupleOfLexing(loc_end) >= pos;
-
-/** Check if pos is within the location, but be fuzzy about when the location ends.
-If it's within 5 lines, go with it.
- */
-let locationContainsFuzzy = ({Location.loc_start, loc_end}, (l, c)) =>
-  tupleOfLexing(loc_start) <= (l, c) && tupleOfLexing(loc_end) >= (l - 5, c);
+  Utils.tupleOfLexing(loc_start) <= pos && Utils.tupleOfLexing(loc_end) >= pos;
 
 let symbolKind = (kind) =>
   switch kind {

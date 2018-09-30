@@ -4,7 +4,7 @@ open RResult;
 open Log;
 
 let capabilities =
-  Rpc.J.(
+  Util.JsonShort.(
     o([
       ("textDocumentSync", i(1)),
       ("hoverProvider", t),
@@ -56,7 +56,7 @@ let getInitialState = (params) => {
     Log.log,
     stdout,
     "client/registerCapability",
-    Rpc.J.(
+    Util.JsonShort.(
       o([
         (
           "registrations",

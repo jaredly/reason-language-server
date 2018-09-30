@@ -3,13 +3,13 @@ module Helpers = Helpers;
 
 let run = (~rootPath, ~filterPath, modify) => {
   let root = Utils.startsWith(rootPath, ".") ? Filename.concat(Sys.getcwd(), rootPath) : rootPath;
-  let state = Lib.TopTypes.empty();
+  let state = Analyze.TopTypes.empty();
   let state = {...state, settings: {...state.settings,
     recordAllLocations: true,
     autoRebuild: false,
   }};
   print_endline("Setting up a package");
-  let%try_force package = Lib.State.newPackageForRoot(state, root);
+  let%try_force package = Analyze.State.newPackageForRoot(~reportDiagnostics=(_, _) => (), state, root);
   let%opt_force (buildCommand, _) = package.buildCommand;
   print_endline("Running build command (for freshness) " ++ buildCommand);
   let (stdout, stderr, success) = Commands.execFull(~pwd=root, buildCommand);
@@ -24,14 +24,14 @@ let run = (~rootPath, ~filterPath, modify) => {
   };
 
   let fullForCmt = (switch (package.compilerVersion) {
-    | Lib.BuildSystem.V402 => Process_402.fullForCmt
+    | Analyze.BuildSystem.V402 => Process_402.fullForCmt
     | V406 => Process_406.fullForCmt
   })(~allLocations=true);
 
   let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_404, Migrate_parsetree.OCaml_406);
   let module ConvertBack = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_404);
 
-  package.Lib.TopTypes.localModules->Belt.List.forEach(moduleName => {
+  package.Analyze.TopTypes.localModules->Belt.List.forEach(moduleName => {
     let%opt_force paths = Utils.maybeHash(package.pathsForModule, moduleName);
     let%opt_consume (cmt, src) = SharedTypes.getImpl(paths);
     print_endline(src);

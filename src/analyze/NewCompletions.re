@@ -72,7 +72,7 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) =>
   Hashtbl.fold(
     (_stamp, declared, results) =>
       if (Utils.startsWith(declared.name.txt, prefix)
-          && Protocol.locationContainsFuzzy(declared.scopeLoc, pos)) {
+          && Utils.locationContainsFuzzy(declared.scopeLoc, pos)) {
         [
           {...declared, contents: transformContents(declared.contents)},
           ...results,
