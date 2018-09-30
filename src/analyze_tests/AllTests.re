@@ -33,6 +33,8 @@ if (debug) {
   Log.spamError := true;
 };
 
+ExamplesTests.main(Sys.getcwd())
+
 print_endline("Test dir: " ++ TestUtils.tmp);
 tests |. Belt.List.forEach(m => {
   Files.removeDeep(TestUtils.tmp);
@@ -40,8 +42,9 @@ tests |. Belt.List.forEach(m => {
   module M = (val m);
   if (suite == None || suite == Some(M.name)) {
     print_endline("## " ++ M.name);
-    let fileName = "./tests/" ++ M.name ++ ".txt";
+    let fileName = "./src/analyze_tests/" ++ M.name ++ ".txt";
     let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput) |> String.concat("\n");
     Files.writeFileExn(fileName, output);
   }
 });
+
