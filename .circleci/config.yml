@@ -29,10 +29,17 @@ jobs:
           paths:
             - node_modules
             - ~/.esy
+            - examples/bs-3.1.5/node_modules/
+            - examples/example-project/node_modules/
+            - examples/example-es6-imports/node_modules/
+            - examples/example-react/node_modules/
+            - examples/example-esy-dune-project/node_modules/
           key: v2-dependencies-{{ checksum "esy.json" }}
 
       # run tests!
-      - run: esy b
+      - run:
+          - esy b
+          - esy dune exec ExamplesTests
 
       - store_artifacts:
           path: ./_build/default/bin/Bin.exe

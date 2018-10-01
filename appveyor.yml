@@ -9,6 +9,11 @@ environment:
 
 cache:
     - C:\Users\appveyor\.esy
+    - examples/bs-3.1.5/node_modules/
+    - examples/example-project/node_modules/
+    - examples/example-es6-imports/node_modules/
+    - examples/example-react/node_modules/
+    - examples/example-esy-dune-project/node_modules/
 
 install:
     # The x64 is required as a workaround for esy/esy#412
@@ -27,7 +32,8 @@ artifacts:
       name: Windows Build
       type: File
 
-test: off
+test:
+    - esy dune exec ExamplesTests
 
 deploy:
     - provider: GitHub
