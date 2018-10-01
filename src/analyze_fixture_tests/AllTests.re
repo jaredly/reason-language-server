@@ -33,8 +33,6 @@ if (debug) {
   Log.spamError := true;
 };
 
-ExamplesTests.main(Sys.getcwd())
-
 print_endline("Test dir: " ++ TestUtils.tmp);
 tests |. Belt.List.forEach(m => {
   Files.removeDeep(TestUtils.tmp);
