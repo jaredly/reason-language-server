@@ -99,7 +99,14 @@ let isSourceFile = name =>
   || Filename.check_suffix(name, ".ml")
   || Filename.check_suffix(name, ".mli");
 
-let compiledNameSpace = name => Str.split(Str.regexp_string("-"), name) |> List.map(String.capitalize) |> String.concat("");
+let compiledNameSpace = name =>
+  Str.split(Str.regexp_string("-"), name)
+  |> List.map(String.capitalize)
+  |> String.concat("")
+  /* Remove underscores??? Whyyy bucklescript, whyyyy */
+  |> Str.split(Str.regexp_string("_"))
+  |> String.concat("")
+  ;
 
 let compiledBaseName = (~namespace, name) =>
   Filename.chop_extension(name)
@@ -220,6 +227,7 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
               /* Log.log("Just intf cmi " ++ cmi); */
             Some((mname, Intf(cmi, Some(intf))))
           } else {
+            Log.log("Bad source file (no cmt/cmti/cmi) " ++ compiledBase /+ base);
             None
           }
         | None =>
@@ -230,10 +238,12 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
           } else if (Files.exists(cmi)) {
             Some((mname, Impl(cmi, Some(path))))
           } else {
+            Log.log("Bad source file (no cmt/cmi) " ++ compiledBase /+ base);
             None
           }
       }
     } else {
+      Log.log("Bad source file (extension) " ++ path);
       None
     }
   });
