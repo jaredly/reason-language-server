@@ -60,7 +60,7 @@ let main = (baseDir, verbose, args) => {
   })
 };
 
-let (verbose, args) = Belt.List.reduce(Belt.List.fromArray(Sys.argv), (false, []), ((verbose, args), arg) => switch arg {
+let (verbose, args) = Belt.List.reduce(Belt.List.fromArray(Sys.argv)->List.tl, (false, []), ((verbose, args), arg) => switch arg {
   | "-v" | "--verbose" => (true, args)
   | _ => (verbose, [arg, ...args])
 });
