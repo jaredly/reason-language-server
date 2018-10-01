@@ -23,7 +23,12 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v2-dependencies-
 
+      # build
       - run: esy install
+
+      # run tests!
+      - run: esy b
+      - run: esy dune exec ExamplesTests
 
       - save_cache:
           paths:
@@ -35,11 +40,6 @@ jobs:
             - examples/example-react/node_modules/
             - examples/example-esy-dune-project/node_modules/
           key: v2-dependencies-{{ checksum "esy.json" }}
-
-      # run tests!
-      - run:
-          - esy b
-          - esy dune exec ExamplesTests
 
       - store_artifacts:
           path: ./_build/default/bin/Bin.exe

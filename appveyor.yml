@@ -26,14 +26,12 @@ build_script:
     - esy build
     # Validate binary
     - _build\install\default\bin\Bin.exe --help
+    - esy dune exec ExamplesTests
 
 artifacts:
     - path: _build/default/bin/Bin.exe
       name: Windows Build
       type: File
-
-test:
-    - esy dune exec ExamplesTests
 
 deploy:
     - provider: GitHub
