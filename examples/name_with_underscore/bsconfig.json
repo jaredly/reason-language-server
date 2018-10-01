@@ -1,0 +1,17 @@
+{
+  "name": "name_with_underscore",
+  "version": "0.1.0",
+  "sources": [
+    "src"
+  ],
+  "package-specs": {
+    "module": "commonjs",
+    "in-source": true
+  },
+  "suffix": ".bs.js",
+  "bs-dependencies": [
+    "@aantron/repromise"
+  ],
+  "namespace": true,
+  "refmt": 3
+}

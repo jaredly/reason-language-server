@@ -35,7 +35,7 @@ let projects = [
   ("example-project", ["src"], "npm install"),
   ("example-es6-imports", ["src"], "npm install"),
   ("example-react", ["src", "__tests__"], "npm install"),
-  ("reason-language-server-error-132", ["src"], "npm install"),
+  ("name_with_underscore", ["src"], "npm install"),
   ("bs-3.1.5", ["src"], "npm install"),
   ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
@@ -50,7 +50,7 @@ let main = (baseDir, verbose, args) => {
       print_endline("Running \027[32m" ++ prepareCommand ++ "\027[0m in " ++ root);
       let (stdout, stderr, success) = Util.Commands.execFull(~pwd=root, prepareCommand);
       if (!success) {
-        [`Project(root, prepareCommand), ...failures]
+        [`Project(root, prepareCommand, stdout @ stderr), ...failures]
       } else {
         let sourcePaths = sourcePaths->Belt.List.map(Filename.concat(root));
         checkExampleProject(root, sourcePaths) @ failures
@@ -76,7 +76,9 @@ if (failures == []) {
 } else {
   print_endline("\n\027[41;30m## Tests failed! ##\027[0m");
   failures->Belt.List.forEach(failure => switch failure {
-    | `Project(root, prepareCommand) => print_endline("- Project prepare failed: " ++ root ++ " : " ++ prepareCommand)
+    | `Project(root, prepareCommand, output) =>
+      print_endline("- Project prepare failed: " ++ root ++ " : " ++ prepareCommand);
+      print_endline("    " ++ String.concat("\n    ", output));
     | `PackageFail(uri, message) => print_endline("- Failed to get package for " ++ uri ++ " : " ++ message)
     | `FileFail(uri, message) => print_endline("- Failed to get compilation info for " ++ uri ++ " : " ++ message)
   });

@@ -1,0 +1,20 @@
+{
+  "name": "name_with_underscore",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "bsb -make-world",
+    "start": "bsb -make-world -w",
+    "clean": "bsb -clean-world"
+  },
+  "keywords": [
+    "BuckleScript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "bs-platform": "^4.0.5"
+  },
+  "dependencies": {
+    "@aantron/repromise": "^0.6.0"
+  }
+}
