@@ -37,7 +37,7 @@ let projects = [
   ("example-react", ["src", "__tests__"], "npm install"),
   ("name_with_underscore", ["src"], "npm install"),
   ("bs-3.1.5", ["src"], "npm install"),
-  ("example-esy-dune-project", ["lib", "bin"], "esy"),
+  /* ("example-esy-dune-project", ["lib", "bin"], "esy"), */
 ];
 
 
