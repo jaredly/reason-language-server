@@ -366,7 +366,6 @@ module F = (Collector: {
           Some((Shared.makeFlexible(ctyp_type), Type)),
           path,
           txt, loc);
-        /* addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type) */
       }
       | _ => ()
     }

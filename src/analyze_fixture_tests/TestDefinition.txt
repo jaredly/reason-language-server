@@ -52,10 +52,10 @@ let x = (~<t1>a, ~<t2>b: int) => <c1>a + <c2>b
 === Module
 module <t1><t2>X = {
   let num = 10;
-  type t = int;
+  type <t7>t = int;
 };
 let m = <c1>X.num;
-type r = <c2>X.t;
+type r = <c2>X.<c7>t;
 module <t5>A = {
   module <t3><t6>B = (C: {let m: int}) => {
     let <t4>r = C.m;
