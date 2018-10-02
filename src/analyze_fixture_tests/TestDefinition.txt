@@ -65,7 +65,7 @@ module C = <c5>A.<c6>B({let m = 20});
 let z = <c3>C.<c4>r;
 -->
 1: PASS
-2: Couldn't find a definition for 6, 9 file:///path/to/Test.re
+2: PASS
 3: PASS
 4: PASS
 5: Couldn't find a definition for 12, 11 file:///path/to/Test.re
