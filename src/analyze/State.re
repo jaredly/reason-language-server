@@ -140,10 +140,10 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   let localCompiledDirs = namespace == None ? localCompiledDirs : [compiledBase, ...localCompiledDirs];
 
   let localModules =
-    FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase)
-    |> List.map(((name, paths)) => (switch (namespace) {
+    FindFiles.findProjectFiles(~debug=true, namespace, rootPath, localSourceDirs, compiledBase);
+    /* |> List.map(((name, paths)) => (switch (namespace) {
       | None => name
-      | Some(n) => name ++ "-" ++ n }, paths));
+      | Some(n) => name ++ "-" ++ n }, paths)); */
   Log.log("-- All local modules found: " ++ string_of_int(List.length(localModules)));
   localModules |> List.iter(((name, paths)) => {
     Log.log(name);
@@ -160,7 +160,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
     | None => []
     | Some(namespace) => {
       let cmt = compiledBase /+ namespace ++ ".cmt";
-      /* Log.log("Namespaced as " ++ namespace ++ " at " ++ cmt); */
+      Log.log("############ Namespaced as " ++ namespace ++ " at " ++ cmt);
       Hashtbl.add(pathsForModule, namespace, Impl(cmt, None));
       [FindFiles.nameSpaceToName(namespace)]
     }

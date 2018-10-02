@@ -248,7 +248,7 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
     }
   });
 
-  normals |. Belt.List.concat(Hashtbl.fold((mname, intf, res) =>  {
+  let result = normals->Belt.List.concat(Hashtbl.fold((mname, intf, res) =>  {
     let base = compiledBaseName(~namespace, Files.relpath(root, intf));
     Log.log("Extra intf " ++ intf);
     let cmti = compiledBase /+ base ++ ".cmti";
@@ -260,7 +260,20 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
     } else {
       res
     }
-  }, interfaces, []))
+  }, interfaces, []))->Belt.List.map(((name, paths)) => switch namespace {
+    | None => (name, paths)
+    | Some(namespace) => (name ++ "-" ++ namespace, paths)
+  });
+
+  switch namespace {
+    | None => result
+    | Some(namespace) => {
+      let mname = nameSpaceToName(namespace);
+      let cmt = compiledBase /+ namespace ++ ".cmt";
+      Log.log("adding namespace " ++ namespace ++ " : " ++ mname ++ " : " ++ cmt);
+      [(mname, Impl(cmt, None)), ...result]
+    }
+  }
 };
 
 /* let loadStdlib = stdlib => {
@@ -317,7 +330,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
                      directories,
                      compiledBase,
                    );
-                 let files =
+                 /* let files =
                    switch (namespace) {
                    | None =>
                       files
@@ -326,7 +339,7 @@ let findDependencyFiles = (~debug, ~buildSystem, base, config) => {
                      |> List.map(((name, paths)) =>
                           (namespace ++ "-" ++ name, paths)
                         )
-                   };
+                   }; */
                  Some((compiledDirectories, files));
                | None => None
                };
