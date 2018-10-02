@@ -298,6 +298,8 @@ module F = (Collector: {
   | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
     handle_module_expr(expr.mod_desc)
   }
+  | Tstr_module({mb_name, mb_expr}) =>
+    handle_module_expr(mb_expr.mod_desc)
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
     /* Log.log("Have an open here"); */
     maybeAddUse(open_path, txt, loc, Module);

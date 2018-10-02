@@ -59,7 +59,7 @@ type r = <c2>X.<c3>t;
 -->
 1: PASS
 2: PASS
-3: Couldn't find a definition for 6, 11 file:///path/to/Test.re
+3: Couldn't find a definition for the loc at 6, 11 file:///path/to/Test.re
 
 === Functor
 module <t1>A = {
@@ -70,8 +70,8 @@ module <t1>A = {
 module C = <c1>A.<c2>B({let m = 20});
 let z = <c3>C.<c4>r;
 -->
-1: Couldn't find a definition for 6, 11 file:///path/to/Test.re
-2: Couldn't find a definition for 6, 13 file:///path/to/Test.re
+1: PASS
+2: PASS
 3: PASS
 4: PASS
 5: PASS

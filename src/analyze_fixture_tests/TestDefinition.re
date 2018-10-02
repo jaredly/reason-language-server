@@ -45,17 +45,18 @@ let getOutput = (files, mainFile) => {
       let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints);
       /* let%opt_force (_, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult; */
       let%try_force {SharedTypes.file, extra} = State.getCompilationResult(curi, state, ~package) |> State.tryExtra;
-      string_of_int(i) ++ ": " ++ switch (
-        References.definitionForPos(
+      string_of_int(i) ++ ": " ++ switch (References.locForPos(~extra, cpos)) {
+        | None => "No loc recorded at " ++ showPos(cpos)
+        | Some((_, loc)) => switch (
+        References.definitionForLoc(
           ~pathsForModule=package.pathsForModule,
           ~file=file,
-          ~extra=extra,
           ~getUri=State.fileForUri(state, ~package),
           ~getModule=State.fileForModule(state, ~package),
-          cpos,
+          loc,
         )
       ) {
-        | None => "Couldn't find a definition for " ++ showPos(cpos) ++ " " ++ curi
+        | None => "Couldn't find a definition for the loc at " ++ showPos(cpos) ++ " " ++ curi
         | Some((uri, {loc_start: {pos_cnum}, loc_end: {pos_cnum: cend}})) => {
           if (uri != turi) {
             "FAIL wrong uri " ++ uri ++ " expected " ++ turi
@@ -65,7 +66,7 @@ let getOutput = (files, mainFile) => {
             "PASS"
           }
         }
-      }
+      }}
   };
   let rec loop = i => i > num ? [] : {
     let res = process(i);
