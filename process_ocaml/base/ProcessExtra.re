@@ -280,9 +280,14 @@ module F = (Collector: {
   let rec handle_module_expr = expr => switch expr {
     | Tmod_constraint(expr, _, _, _) => handle_module_expr(expr.mod_desc)
     | Tmod_ident(path, {txt, loc}) =>
-      Log.log("Include!! " ++ String.concat(".", Longident.flatten(txt)));
+      Log.log("Ident!! " ++ String.concat(".", Longident.flatten(txt)));
       maybeAddUse(path, txt, loc, Module);
       addForLongident(None, path, txt, loc);
+    | Tmod_functor({stamp}, argName, maybeType, resultExpr) =>
+      handle_module_expr(resultExpr.mod_desc)
+    | Tmod_apply(obj, arg, _) =>
+      handle_module_expr(obj.mod_desc);
+      handle_module_expr(arg.mod_desc);
     | _ => ()
   };
 
@@ -370,7 +375,11 @@ module F = (Collector: {
   let enter_core_type = ({ctyp_loc, ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
       | Ttyp_constr(path, {txt, loc}, args) => {
-        addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type)
+        /* addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type) */
+        addForLongident(
+          Some((Shared.makeFlexible(ctyp_type), Type)),
+          path,
+          txt, loc);
       }
       | _ => ()
     }

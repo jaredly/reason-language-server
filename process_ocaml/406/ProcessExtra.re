@@ -367,11 +367,11 @@ module F = (Collector: {
   let enter_core_type = ({ctyp_loc, ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
       | Ttyp_constr(path, {txt, loc}, args) => {
+        /* addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type) */
         addForLongident(
           Some((Shared.makeFlexible(ctyp_type), Type)),
           path,
           txt, loc);
-        /* addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type) */
       }
       | _ => ()
     }
