@@ -514,7 +514,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | Module(Ident(_)) => (`Module, [])
           | ModuleType(_) => (`ModuleType, [])
         };
-        [(txt, extentLoc, item), ...siblings]
+        if (extentLoc.loc_ghost) {
+          siblings
+        } else {
+          [(txt, extentLoc, item), ...siblings]
+        }
       };
       let x = topLevel |. List.map(fn) |. List.toArray |. List.concatMany;
       x
