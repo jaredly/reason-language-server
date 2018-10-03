@@ -18,7 +18,7 @@ type pathType = PModule | PModuleType | PValue | PType;
 module T = {
   type stringifier = {
     path: (stringifier, Path.t, pathType) => Pretty.doc,
-    expr: (stringifier, Types.type_expr) => Pretty.doc,
+    expr: (~depth:int=?, stringifier, Types.type_expr) => Pretty.doc,
     ident: (stringifier, Ident.t) => Pretty.doc,
     decl: (stringifier, string, string, Types.type_declaration) => Pretty.doc,
     value: (stringifier, string, string, Types.type_expr) => Pretty.doc,
@@ -59,8 +59,13 @@ let tuple_list = (items, loop) => {
 let replace = (one, two, text) => Str.global_replace(Str.regexp_string(one), two, text);
 let htmlEscape = text => replace("<", "&lt;", text) |> replace(">", "&gt;");
 
-let print_expr = (stringifier, typ) => {
-  let loop = stringifier.expr(stringifier);
+let print_expr = (~depth=0, stringifier, typ) => {
+  /* Log.log("print_expr"); */
+  let loop = stringifier.expr(~depth=depth + 1, stringifier);
+  if (depth > 20) {
+    str("Too deep")
+  } else {
+
   open Types;
   switch (typ.desc) {
   | Tvar(None) => str("'a")
@@ -127,6 +132,7 @@ let print_expr = (stringifier, typ) => {
       Format.flush_str_formatter()
     };
     str(txt)
+  }
   }
   }
 };
