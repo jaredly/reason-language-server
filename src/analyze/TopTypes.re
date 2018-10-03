@@ -18,6 +18,7 @@ type package = {
   dependencyModules: list(moduleName),
   pathsForModule: Hashtbl.t(moduleName, SharedTypes.paths),
   nameForPath: Hashtbl.t(filePath, moduleName),
+  namespace: option(string),
 
   opens: list(string),
 

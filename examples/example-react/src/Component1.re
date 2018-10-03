@@ -22,3 +22,5 @@ let make = (~message, _children) => {
       (ReasonReact.string(message))
     </div>,
 };
+
+let two = Component2.make;

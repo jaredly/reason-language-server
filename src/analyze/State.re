@@ -248,6 +248,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
     buildCommand: Some((buildCommand, rootPath)),
     opens,
     tmpPath,
+    namespace,
     /* Bucklescript is always 4.02.3 */
     compilerVersion: BuildSystem.V402,
     compilationFlags: flags |> String.concat(" "),
@@ -307,6 +308,11 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   };
   let libraryName = switch packageName {
     | `Library(n) => Some(n)
+    | _ => None
+  };
+
+  let namespace = switch packageName {
+    | `Library(name) => Some(name)
     | _ => None
   };
 
@@ -415,6 +421,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     interModuleDependencies,
     dependencyModules: dependencyModules |. Belt.List.map(fst),
     pathsForModule,
+    namespace,
     nameForPath,
     buildSystem,
     buildCommand,
@@ -723,13 +730,14 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
       let path = Utils.parseUri(uri) |! "not a uri: " ++ uri;
       Files.readFileExn(path)
     };
-    let%try moduleName = switch (Utils.maybeHash(package.nameForPath, path)) {
+    let moduleName = BuildSystem.namespacedName(package.buildSystem, package.namespace, FindFiles.getName(path));
+    /* let%try moduleName = switch (Utils.maybeHash(package.nameForPath, path)) {
       | None =>
         Hashtbl.iter((k, v) => Log.log("Path: " ++ k ++ "  " ++ v), package.nameForPath);
         Log.log("Can't find " ++ path ++ " in package " ++ package.basePath);
         Error("Can't find module name for path " ++ path)
       | Some(x) => Ok(x)
-    };
+    }; */
     let includes = state.settings.crossFileAsYouType
     ? [package.tmpPath, ...package.includeDirectories]
     : package.includeDirectories;

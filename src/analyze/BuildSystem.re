@@ -28,6 +28,21 @@ let getLine = (cmd, ~pwd) => {
   }
 };
 
+let bucklescriptNamespacedName = (namespace, name) => switch namespace {
+  | None => name
+  | Some(namespace) => name ++ "-" ++ namespace
+};
+
+let duneNamespacedName = (namespace, name) => switch namespace {
+  | None => name
+  | Some(namespace) => namespace ++ "__" ++ name
+};
+
+let namespacedName = (buildSystem, namespace, name) => switch buildSystem {
+  | Dune => duneNamespacedName(namespace, name)
+  | _ => bucklescriptNamespacedName(namespace, name)
+};
+
 open Infix;
 
 let getBsPlatformDir = rootPath => {

@@ -1,7 +1,7 @@
 ReactDOMRe.renderToElementWithId(<Component1 message="Hello!" />, "index1");
 
 module Awesome = {
-  let make = _ => ReasonReact.statelessComponent("hi")
+  let make = _ => ReasonReact.statelessComponent("hi", "broked")
 };
 
 let x = 12 |. string_of_int;
