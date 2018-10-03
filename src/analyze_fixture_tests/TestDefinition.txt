@@ -94,3 +94,18 @@ include One;
 let m = Two.<c1>num;
 -->
 1: PASS
+
+=== * Cross-file functor include
+--- One__ns.re
+module F = (Config: {let x: int}) => {
+  let <t1>num = Config.x + 10;
+};
+--- Ns.re
+module One = One__ns
+--- Two.re
+open Ns;
+include One.F({let x = 20;});
+---
+let m = Two.<c1>num;
+-->
+1: PASS

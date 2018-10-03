@@ -197,6 +197,15 @@ and forSignatureType = (env, signature) => {
   | Mty_functor(argIdent, argType, resultType) => forModuleType(env, resultType)
 };
 
+let rec getModuleTypePath = (mod_desc) => switch mod_desc {
+  | Tmty_ident(path, _)
+  | Tmty_alias(path, _) => Some(path)
+  | Tmty_signature(_)
+  | Tmty_functor(_)
+  | Tmty_with(_)
+  | Tmty_typeof(_) => None
+};
+
 let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id: {stamp}, typ_loc, typ_params, typ_name: name, typ_attributes, typ_type, typ_kind, typ_manifest}) => {
   let declared = addItem(~extent=typ_loc, ~contents={
     Type.params: typ_params |> List.map(((t, _)) => (Shared.makeFlexible(t.ctyp_type), t.ctyp_loc)),
@@ -258,6 +267,10 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
     [{...declared, contents: Module.Module(declared.contents)}]
   }
   | Tsig_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
+    let env = switch (getModuleTypePath(incl_mod.mty_desc)) {
+      | None => env
+      | Some(path) => {...env, modulePath: IncludedModule(path, env.modulePath)}
+    };
     let topLevel = List.fold_right((item, items) => {
       forSignatureTypeItem(env, exported, item) @ items
     }, incl_type, []) |> List.rev;
@@ -293,7 +306,6 @@ let rec getModulePath = (mod_desc) => switch mod_desc {
   | Tmod_constraint(expr, typ, constraint_, coersion) => getModulePath(expr.mod_desc)
 };
 
-
 let rec forItem = (
   ~env,
   ~exported: Module.exported,
@@ -319,12 +331,10 @@ let rec forItem = (
   [{...declared, contents: Module.Module(declared.contents)}]
 }
 | Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
-  /* let contents = forModule(env, incl_mod, "INCLUDE"); TODO FIX */
   let env = switch (getModulePath(incl_mod.mod_desc)) {
     | None => env
     | Some(path) => {...env, modulePath: IncludedModule(path, env.modulePath)}
   };
-
   let topLevel = List.fold_right((item, items) => {
     forSignatureTypeItem(env, exported, item) @ items
   }, incl_type, []) |> List.rev;
