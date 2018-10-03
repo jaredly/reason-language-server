@@ -318,7 +318,8 @@ let rec definition = (~file, ~getModule, stamp, tip) => {
     | _ =>
       let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
       let loc = validateLoc(declared.name.loc, declared.extentLoc);
-      let%opt ((uri, mname), visibility) = SharedTypes.showVisibilityPath(declared.modulePath);
+      let env = Query.fileEnv(file);
+      let uri = Query.getSourceUri(~env, ~getModule, declared.modulePath);
       Log.log("Inner uri " ++ uri);
       Some((uri, loc))
   };

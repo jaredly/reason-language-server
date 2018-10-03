@@ -284,6 +284,16 @@ let rec forTreeModuleType = (~env, {mty_desc, mty_loc, mty_attributes}) => switc
   | _ => None
 };
 
+let rec getModulePath = (mod_desc) => switch mod_desc {
+  | Tmod_ident(path, lident) => Some(path)
+  | Tmod_structure(structure) => None
+  | Tmod_functor({stamp}, argName, maybeType, resultExpr) => None
+  | Tmod_apply(functor_, arg, coersion) => getModulePath(functor_.mod_desc)
+  | Tmod_unpack(expr, moduleType) => None
+  | Tmod_constraint(expr, typ, constraint_, coersion) => getModulePath(expr.mod_desc)
+};
+
+
 let rec forItem = (
   ~env,
   ~exported: Module.exported,
@@ -309,6 +319,12 @@ let rec forItem = (
   [{...declared, contents: Module.Module(declared.contents)}]
 }
 | Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
+  /* let contents = forModule(env, incl_mod, "INCLUDE"); TODO FIX */
+  let env = switch (getModulePath(incl_mod.mod_desc)) {
+    | None => env
+    | Some(path) => {...env, modulePath: IncludedModule(path, env.modulePath)}
+  };
+
   let topLevel = List.fold_right((item, items) => {
     forSignatureTypeItem(env, exported, item) @ items
   }, incl_type, []) |> List.rev;

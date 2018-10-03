@@ -154,6 +154,31 @@ let fromCompilerPath = (~env, path) => {
   };
 };
 
+let resolveModuleFromCompilerPath = (~env, ~getModule, path) => {
+  switch (fromCompilerPath(~env, path)) {
+    | `Global(moduleName, path) => {
+      let%opt file = getModule(moduleName);
+      let env = fileEnv(file);
+      let%opt (env, name) = resolvePath(~env, ~getModule, ~path);
+      let%opt stamp = hashFind(env.exported.modules, name);
+      let%opt declared = hashFind(env.file.stamps.modules, stamp);
+      Some((env, Some(declared)))
+    }
+    | `Stamp(stamp) =>
+      let%opt declared = hashFind(env.file.stamps.modules, stamp);
+      Some((env, Some(declared)))
+    | `GlobalMod(moduleName) =>
+      let%opt file = getModule(moduleName);
+      let env = fileEnv(file);
+      Some((env, None))
+    | `Not_found => None
+    | `Exported(env, name) =>
+      let%opt stamp = hashFind(env.exported.modules, name);
+      let%opt declared = hashFind(env.file.stamps.modules, stamp);
+      Some((env, Some(declared)))
+  }
+};
+
 let resolveFromCompilerPath = (~env, ~getModule, path) => {
   switch (fromCompilerPath(~env, path)) {
     | `Global(moduleName, path) => {
@@ -216,4 +241,42 @@ let exportedForTip = (~env, name, tip) => switch tip {
   | Type => hashFind(env.exported.types, name)
   | Module => hashFind(env.exported.modules, name)
   | ModuleType => hashFind(env.exported.moduleTypes, name)
+};
+
+let rec showVisibilityPath = (~env, ~getModule, path) => switch path {
+  | File(uri, moduleName) => Some(((uri, moduleName), []))
+  | NotVisible => None
+  | IncludedModule(path, inner) =>
+  Log.log("INCLUDED MODULE");
+  switch (resolveModuleFromCompilerPath(~env, ~getModule, path)) {
+    | None =>
+      Log.log("NOT FOUND");
+      showVisibilityPath(~env, ~getModule, inner)
+    | Some((env, _declared)) =>
+      Log.log("Got an included module path " ++ env.file.uri);
+      showVisibilityPath(~env, ~getModule, inner)
+  }
+  | ExportedModule(name, inner) => switch (showVisibilityPath(~env, ~getModule, inner)) {
+    | None => None
+    | Some((file, path)) => Some((file, path @ [name]))
+  }
+  | HiddenModule(_) => None
+  | Expression(inner) => None
+};
+
+let rec getSourceUri = (~env, ~getModule, path) => switch path {
+  | File(uri, moduleName) => uri
+  | NotVisible => env.file.uri
+  | IncludedModule(path, inner) =>
+  Log.log("INCLUDED MODULE");
+  switch (resolveModuleFromCompilerPath(~env, ~getModule, path)) {
+    | None =>
+      Log.log("NOT FOUND");
+      getSourceUri(~env, ~getModule, inner)
+    | Some((env, _declared)) =>
+      env.file.uri
+  }
+  | ExportedModule(_, inner)
+  | HiddenModule(_, inner)
+  | Expression(inner) => getSourceUri(~env, ~getModule, inner)
 };

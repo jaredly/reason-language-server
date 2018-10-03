@@ -39,7 +39,7 @@ let mapSource = (~env, ~getModule, path) => {
       }
     }
     | Some(({contents, name, modulePath} as declared, env)) =>
-      let%opt_force ((uri, moduleName), path) = SharedTypes.showVisibilityPath(modulePath);
+      let%opt_force ((uri, moduleName), path) = Query.showVisibilityPath(~env, ~getModule, modulePath);
       Public({
         uri,
         moduleName,

@@ -107,20 +107,10 @@ let getCmt = p => switch p {
 type visibilityPath =
 | File(string, string)
 | NotVisible
+| IncludedModule(Path.t, visibilityPath)
 | ExportedModule(string, visibilityPath)
 | HiddenModule(string, visibilityPath)
 | Expression(visibilityPath);
-
-let rec showVisibilityPath = path => switch path {
-  | File(uri, moduleName) => Some(((uri, moduleName), []))
-  | NotVisible => None
-  | ExportedModule(name, inner) => switch (showVisibilityPath(inner)) {
-    | None => None
-    | Some((file, path)) => Some((file, path @ [name]))
-  }
-  | HiddenModule(_) => None
-  | Expression(inner) => None
-};
 
 type declared('t) = {
   name: Location.loc(string),
@@ -202,6 +192,7 @@ let isVisible = declared =>
     let rec loop = v => switch v {
       | File(_) => true
       | NotVisible => false
+      | IncludedModule(_, inner) => loop(inner)
       | ExportedModule(_, inner) => loop(inner)
       | HiddenModule(_, _) => false
       | Expression(_) => false
@@ -306,6 +297,7 @@ let rec pathToString = path => switch path {
 
 let rec pathFromVisibility = (visibilityPath, current) => switch visibilityPath {
   | File(_) => Some(current)
+  | IncludedModule(_, inner) => pathFromVisibility(inner, current)
   | ExportedModule(name, inner) => pathFromVisibility(inner, Nested(name, current))
   | NotVisible
   | HiddenModule(_, _)

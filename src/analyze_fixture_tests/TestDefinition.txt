@@ -85,7 +85,7 @@ let y = <c1>num;
 -->
 1: PASS
 
-=== * Cross-file include
+=== Cross-file include
 --- One.re
 let <t1>num = 10;
 --- Two.re
@@ -93,4 +93,4 @@ include One;
 ---
 let m = Two.<c1>num;
 -->
-1: FAIL wrong uri file:///path/to/Two.re expected file:///path/to/One.re
+1: PASS
