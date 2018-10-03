@@ -112,8 +112,14 @@ let parseString = (text, pos) => {
   (Buffer.contents(buffer), final)
 };
 
+let rec skipComment = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
+  | '\n' => i + 1
+  | _ => skipComment(raw, ln, i + 1)
+};
+
 let rec skipWhite = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
   | ' ' | '\n' | '\t' => skipWhite(raw, ln, i + 1)
+  | ';' => skipWhite(raw, ln, skipComment(raw, ln, i + 1))
   | _ => i
 };
 
@@ -160,7 +166,7 @@ let rec parseAtom = (raw, ln, i) => switch (raw.[i]) {
   | '0'..'9' =>
     let last = parseNumber(raw, ln, i + 1);
     (`Number(float_of_string(String.sub(raw, i, last - i))), last)
-  | _ => failwith("Unexpected char")
+  | _ => failwith("Unexpected char: " ++ String.sub(raw, i, 1) ++ " at " ++ string_of_int(i))
 }
 and parseList = (raw, ln, i) => {
   let i = skipWhite(raw, ln, i);

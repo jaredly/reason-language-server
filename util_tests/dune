@@ -1,0 +1,5 @@
+(executable
+  (name UtilTests)
+  (public_name UtilTests.exe)
+  (libraries Util)
+  )
