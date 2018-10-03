@@ -75,3 +75,22 @@ let z = <c3>C.<c4>r;
 3: PASS
 4: PASS
 5: PASS
+
+=== Trace include
+module X = {
+  let <t1>num = 10;
+};
+include X;
+let y = <c1>num;
+-->
+1: PASS
+
+=== * Cross-file include
+--- One.re
+let <t1>num = 10;
+--- Two.re
+include One;
+---
+let m = Two.<c1>num;
+-->
+1: FAIL wrong uri file:///path/to/Two.re expected file:///path/to/One.re

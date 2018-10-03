@@ -122,7 +122,6 @@ let rec showVisibilityPath = path => switch path {
   | Expression(inner) => None
 };
 
-/* TODO maybe keep track of the "current module path" */
 type declared('t) = {
   name: Location.loc(string),
   extentLoc: Location.t,

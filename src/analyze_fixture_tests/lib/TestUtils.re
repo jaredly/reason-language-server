@@ -12,6 +12,7 @@ let getPackage = (localModules) => {
     dependencyModules: [],
     pathsForModule,
     nameForPath,
+    namespace: None,
     buildSystem: BuildSystem.Dune,
     buildCommand: None,
     interModuleDependencies: Hashtbl.create(0),

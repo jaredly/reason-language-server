@@ -2,7 +2,7 @@
 open SharedTypes;
 
 let maybeLog = m => {
-  /* Log.log(m); */
+  Log.log(m);
   ()
 };
 
@@ -97,7 +97,6 @@ let definedForLoc = (~file, ~getModule, loc) => {
       }
     };
   };
-
 
   switch (loc) {
   | Loc.Explanation(_)
@@ -319,7 +318,9 @@ let rec definition = (~file, ~getModule, stamp, tip) => {
     | _ =>
       let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
       let loc = validateLoc(declared.name.loc, declared.extentLoc);
-      Some((file.uri, loc))
+      let%opt ((uri, mname), visibility) = SharedTypes.showVisibilityPath(declared.modulePath);
+      Log.log("Inner uri " ++ uri);
+      Some((uri, loc))
   };
 };
 
