@@ -70,10 +70,10 @@ let print_expr = (~depth=0, stringifier, typ) => {
     let (args, result) = collectArgs([(label, arg)], result);
     let args = List.rev(args);
     switch args {
-    | [(Nolabel, typ)] => {
-      loop(typ)
-    }
-    | _ => {
+    | [(Nolabel, {desc: Ttuple(_)})]
+    | [(Labelled(_) | Optional(_), _)]
+    | []
+    | [_, _, ..._] => {
 
     str("(") @!
     indentGroup(
@@ -87,6 +87,9 @@ let print_expr = (~depth=0, stringifier, typ) => {
     }, args)
     @! dedent
     ) @! str(")")
+    }
+    | [(Nolabel, typ)] => {
+      loop(typ)
     }
     }
      @! str(" => ") @!

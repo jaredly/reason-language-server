@@ -9,6 +9,7 @@ let tests: list((module Test)) = [
   (module TestCompletions),
   (module TestDefinition),
   (module TestReferences),
+  (module TestHover),
 ];
 
 let args = Array.to_list(Sys.argv);

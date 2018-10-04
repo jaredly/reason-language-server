@@ -1,0 +1,10 @@
+=== Basics
+let <c1>f1 = (a, b) => a + b;
+let <c2>f2 = ((a, b)) => a + b;
+let <c3>f3 = (a, b) => (a, b);
+let <c4>f4 = (a, b) => [a, b];
+-->
+1: (int, int) => int
+2: ((int, int)) => int
+3: ('a, 'b) => ('a, 'b)
+4: ('a, 'a) => list('a)
