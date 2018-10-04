@@ -43,7 +43,7 @@ jobs:
 
       - store_artifacts:
           path: ./_build/default/bin/Bin.exe
-          destination: bin.linux.exe
+          destination: bin.native.linux
 
   publish-github-release:
     docker:
