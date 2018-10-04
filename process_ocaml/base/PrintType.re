@@ -6,6 +6,14 @@ open Compiler_libs_402;
 #endif
 open Outcometree;
 
+let rec dig = (typ) =>
+  switch typ.Types.desc {
+  | Types.Tlink(inner) => dig(inner)
+  | Types.Tsubst(inner) => dig(inner)
+  | Types.Tpoly(inner, _) => dig(inner)
+  | _ => typ
+  };
+
 let rec collectArgs = (coll, typ) => switch typ.Types.desc {
 | Types.Tarrow(label, arg, result, _) => collectArgs([(label, arg), ...coll], result)
 | Tlink(inner) => collectArgs(coll, inner)
@@ -59,6 +67,27 @@ let tuple_list = (items, loop) => {
 let replace = (one, two, text) => Str.global_replace(Str.regexp_string(one), two, text);
 let htmlEscape = text => replace("<", "&lt;", text) |> replace(">", "&gt;");
 
+let showArgs = (loop, args) => {
+    str("(") @!
+    indentGroup(
+      break @!
+    commad_list(((label, typ)) => {
+#if 402
+      if (label == "") {
+        loop(typ)
+      } else {
+#else
+      switch label {
+        | Asttypes.Nolabel => loop(typ)
+        | Labelled(label) | Optional(label) =>
+#endif
+        str("~" ++ label ++ ": ") @! loop(typ)
+      }
+    }, args)
+    @! dedent
+    ) @! str(")")
+};
+
 let print_expr = (~depth=0, stringifier, typ) => {
   /* Log.log("print_expr"); */
   let loop = stringifier.expr(~depth=depth + 1, stringifier);
@@ -79,29 +108,14 @@ let print_expr = (~depth=0, stringifier, typ) => {
 #else
     | [(Nolabel, typ)] => {
 #endif
-      loop(typ)
+      switch (dig(typ)) {
+        | {desc: Ttuple(_)} => showArgs(loop, args)
+        | _ => loop(typ)
+      }
     }
     | _ => {
+      showArgs(loop, args)
 
-    str("(") @!
-    indentGroup(
-      break @!
-    commad_list(((label, typ)) => {
-#if 402
-      if (label == "") {
-        loop(typ)
-      } else {
-#else
-      switch label {
-        | Asttypes.Nolabel => loop(typ)
-        | Labelled(label) | Optional(label) =>
-#endif
-        str("~" ++ label ++ ": ") @! loop(typ)
-      }
-    }, args)
-    @! dedent
-    ) @! str(")")
-    }
     }
      @! str(" => ") @!
     loop(result);

@@ -84,7 +84,7 @@ let getState = () => {
 
   TopTypes.{
     rootPath: tmp,
-    rootUri: "file://" ++ tmp,
+    rootUri: "file:///path/to",
     documentText: Hashtbl.create(5),
     documentTimers: Hashtbl.create(10),
     packagesByRoot,

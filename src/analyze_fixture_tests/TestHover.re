@@ -4,7 +4,9 @@ open SharedTypes;
 
 let name = "TestHover";
 
-let getOutput = (files, text) => {
+let showPos = ((l, c)) => string_of_int(l) ++ ", " ++ string_of_int(c);
+
+let getOutput = (files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
   let (state, package, _, _) = TestUtils.setUp(files, text);
   let num = List.length(waypoints);
@@ -52,11 +54,11 @@ let getOutput = (files, text) => {
         | None => "No loc recorded at " ++ showPos(cpos)
         | Some((_, loc)) => switch (
           Hover.newHover(
-            ~rootUri,
+            ~rootUri=state.rootUri,
             ~file,
             ~extra,
-            ~getModule,
-            ~markdown=true,
+            ~getModule=State.fileForModule(state, ~package),
+            ~markdown=false,
             ~showPath=true,
             loc
           )
@@ -69,14 +71,8 @@ let getOutput = (files, text) => {
         ) */
       ) {
         | None => "Couldn't find a hover for the loc at " ++ showPos(cpos) ++ " " ++ curi
-        | Some((uri, {loc_start: {pos_cnum}, loc_end: {pos_cnum: cend}})) => {
-          if (uri != turi) {
-            "FAIL wrong uri " ++ uri ++ " expected " ++ turi
-          } else if (pos_cnum != target) {
-            Printf.sprintf("FAIL wrong position %d-%d expected %d", pos_cnum, cend, target)
-          } else {
-            "PASS"
-          }
+        | Some(string) => {
+          Str.global_replace(Str.regexp_string("\n"), "\n   ", string)
         }
       }}
   };

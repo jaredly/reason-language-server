@@ -3,8 +3,20 @@ let <c1>f1 = (a, b) => a + b;
 let <c2>f2 = ((a, b)) => a + b;
 let <c3>f3 = (a, b) => (a, b);
 let <c4>f4 = (a, b) => [a, b];
+let <c5>f5 = a => a + 1;
 -->
 1: (int, int) => int
+   
+   <root>/Test.re
 2: ((int, int)) => int
-3: ('a, 'b) => ('a, 'b)
+   
+   <root>/Test.re
+3: ('a, 'a) => ('a, 'a)
+   
+   <root>/Test.re
 4: ('a, 'a) => list('a)
+   
+   <root>/Test.re
+5: <single>int => int
+   
+   <root>/Test.re
