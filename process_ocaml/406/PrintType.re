@@ -42,7 +42,9 @@ let sepd_list = (sep, items, loop) => {
   let rec recur = items => switch items {
     | [] => Pretty.empty
     | [one] => loop(one)
-    | [one, ...more] => loop(one) @! sep @! recur(more)
+    | [one, ...more] =>
+      let l = loop(one);
+      l @! sep @! recur(more)
   };
   recur(items)
 };
@@ -78,6 +80,34 @@ let showArgs = (loop, args) => {
     ) @! str(")")
 };
 
+type namer = {reset: unit => unit, get: Types.type_expr => string};
+let makeNamer = () => {
+  let alphabet = "abcdefghijklmnopqrstuvwxyz";
+  let latest = ref(0);
+  let names = Hashtbl.create(10);
+  let newName = () => {
+    let i = latest^;
+    latest := i + 1;
+    let num = i > 25 ? "t" ++ string_of_int(i) : String.sub(alphabet, i, 1);
+    "'" ++ num;
+  };
+  let get = t => 
+    try (Hashtbl.find(names, t)) {
+      | Not_found => {
+        let name = newName();
+        Hashtbl.replace(names, t, name);
+        name;
+      }
+    };
+  let reset = () => {
+    latest := 0;
+    Hashtbl.clear(names);
+  };
+  {get, reset};
+};
+
+let namer = makeNamer();
+
 let print_expr = (~depth=0, stringifier, typ) => {
   /* Log.log("print_expr"); */
   let loop = stringifier.expr(~depth=depth + 1, stringifier);
@@ -87,7 +117,7 @@ let print_expr = (~depth=0, stringifier, typ) => {
 
   open Types;
   switch (typ.desc) {
-  | Tvar(None) => str("'a")
+  | Tvar(None) => str(namer.get(typ))
   | Tvar(Some(s)) => str("'" ++ s)
   | Tarrow(label, arg, result, _) => {
     let (args, result) = collectArgs([(label, arg)], result);
@@ -213,6 +243,7 @@ let default = {
 };
 
 let prettyString = (~width=60, doc) => {
+  namer.reset();
   let buffer = Buffer.create(100);
   Pretty.print(~width, ~output=(text => Buffer.add_string(buffer, text)), ~indent=(num => {
     Buffer.add_string(buffer, "\n");
