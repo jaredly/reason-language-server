@@ -17,6 +17,6 @@ let <c5>f5 = a => a + 1;
 4: ('a, 'a) => list('a)
    
    <root>/Test.re
-5: <single>int => int
+5: int => int
    
    <root>/Test.re

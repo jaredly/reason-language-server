@@ -113,9 +113,7 @@ let print_expr = (~depth=0, stringifier, typ) => {
         | _ => loop(typ)
       }
     }
-    | _ => {
-      showArgs(loop, args)
-
+    | _ => showArgs(loop, args)
     }
      @! str(" => ") @!
     loop(result);

@@ -2,7 +2,6 @@
 open Compiler_libs_406;
 open Outcometree;
 
-/** TODO move to the Process_ stuff */
 let rec dig = (typ) =>
   switch typ.Types.desc {
   | Types.Tlink(inner) => dig(inner)
@@ -94,11 +93,12 @@ let print_expr = (~depth=0, stringifier, typ) => {
     let (args, result) = collectArgs([(label, arg)], result);
     let args = List.rev(args);
     switch args {
-    | [(Nolabel, typ)] =>
+    | [(Nolabel, typ)] => {
       switch (dig(typ)) {
         | {desc: Ttuple(_)} => showArgs(loop, args)
         | _ => loop(typ)
       }
+    }
     | _ => showArgs(loop, args)
     }
      @! str(" => ") @!
