@@ -104,19 +104,20 @@ let detect = (rootPath, bsconfig) => {
     } : Error("Could not run bsb (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
   };
 
-  let backend = switch {
-    let%try backendString = MerlinFile.getBackend(rootPath);
-    switch (backendString) {
-    | "js" => Ok(Js)
-    | "bytecode" => Ok(Bytecode)
-    | "native" => Ok(Native)
-    | s => Error("Found unsupported backend: " ++ s);
+  isNative(bsconfig) ? BsbNative(bsbVersion, {
+    switch {
+      let%try backendString = MerlinFile.getBackend(rootPath);
+      switch (backendString) {
+      | "js" => Ok(Js)
+      | "bytecode" => Ok(Bytecode)
+      | "native" => Ok(Native)
+      | s => Error("Found unsupported backend: " ++ s);
+      };
+    } {
+      | Ok(backend) => backend
+      | _ => Native
     };
-  } {
-    | Ok(backend) => backend
-    | _ => Native
-  };
-  isNative(bsconfig) ? BsbNative(bsbVersion, backend) : Bsb(bsbVersion);
+  }) : Bsb(bsbVersion);
 };
 
 let getCompiledBase = (root, buildSystem) =>

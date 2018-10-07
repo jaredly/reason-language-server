@@ -104,7 +104,9 @@ let getBackend = (rootPath) => {
             | backendLine => 
             let len = String.length("# -backend ");
             let totalLen = String.length(backendLine);
-            RResult.Ok(String.sub(backendLine, len, totalLen - len))
+            try (RResult.Ok(String.sub(backendLine, len, totalLen - len))) {
+              | _ => RResult.Ok("native")
+            }
           }
         } else {
           loop()
