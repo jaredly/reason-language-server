@@ -2,7 +2,7 @@
 (library
   (name Serde)
   (public_name ReasonLanguageServer.Serde)
-  (libraries Analyze Util compiler-libs.common ocaml-migrate-parsetree)
+  (libraries Analyze Util TypeMap compiler-libs.common ocaml-migrate-parsetree)
   (flags :standard -w -26-32-50-9-27-39-33-35-6-3 -open Util)
   (preprocess (pps Belt_ppx Ppx_monads ppx_tools_versioned.metaquot_406))
   )
