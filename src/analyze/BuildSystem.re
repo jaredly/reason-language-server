@@ -95,7 +95,7 @@ let getCompilerVersion = executable => {
 
 let detect = (rootPath, bsconfig) => {
   let%try bsbExecutable = getBsbExecutable(rootPath);
-  let%try_wrap bsbVersion = {
+  let%try bsbVersion = {
     let cmd = bsbExecutable ++ " -version";
     let (output, success) = Commands.execSync(cmd);
     success ? switch output {
@@ -104,8 +104,14 @@ let detect = (rootPath, bsconfig) => {
     } : Error("Could not run bsb (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
   };
 
-  /* TODO add a config option to specify native vs bytecode vs js backend */
-  isNative(bsconfig) ? BsbNative(bsbVersion, Native) : Bsb(bsbVersion);
+  let%try backendString = MerlinFile.getBackend(rootPath);
+  let%try_wrap backend = switch (backendString) {
+  | "js" => Ok(Js)
+  | "bytecode" => Ok(Bytecode)
+  | "native" => Ok(Native)
+  | s => Error("Found unsupported backend: " ++ s);
+  };
+  isNative(bsconfig) ? BsbNative(bsbVersion, backend) : Bsb(bsbVersion);
 };
 
 let getCompiledBase = (root, buildSystem) =>
