@@ -165,6 +165,27 @@ let jsonArray = items => makeJson(
   )
 );
 
+let list = (transformer, list) => {
+    let loc = Location.none;
+    [%expr 
+      switch (Js.Json.classify([%e list])) {
+        | JSONArray(items) =>
+          let transformer = [%e transformer];
+          let rec loop = items => switch items {
+            | [] => Ok([])
+            | [one, ...rest] => switch (transformer(one)) {
+              | Belt.Result.Error(error) => Belt.Result.Error(error)
+              | Ok(value) => switch (loop(rest)) {
+                | Belt.Result.Error(error) => Belt.Result.Error(error)
+                | Ok(rest) => Ok([value, ...rest])
+              }
+            }
+          };
+          loop(items)
+        | _ => Belt.Result.Error("expected an array")
+      }
+    ];
+};
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => failer("Not found")
@@ -172,7 +193,7 @@ let sourceTransformer = source => switch source {
     makeIdent(Lident(MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
     let loc = Location.none;
-    [%expr
+    [%expr 
       (transformer, array) => switch (Js.Json.classify(array)) {
         | JSONArray(items) =>
           let rec loop = items => switch items {
@@ -193,24 +214,7 @@ let sourceTransformer = source => switch source {
       }
     ];
   | Builtin("list") =>
-    let loc = Location.none;
-    [%expr
-      (transformer, list) => switch (Js.Json.classify(list)) {
-        | JSONArray(items) =>
-          let rec loop = items => switch items {
-            | [] => Ok([])
-            | [one, ...rest] => switch (transformer(one)) {
-              | Belt.Result.Error(error) => Belt.Result.Error(error)
-              | Ok(value) => switch (loop(rest)) {
-                | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Ok(rest) => Ok([value, ...rest])
-              }
-            }
-          };
-          loop(items)
-        | _ => Belt.Result.Error("expected an array")
-      }
-    ];
+    [%expr (transformer, list) => [%e list([%expr transformer], [%expr list])]]
   | Builtin("string") =>
     let loc = Location.none;
     [%expr string => switch (Js.Json.classify(string)) {
@@ -254,6 +258,7 @@ let jsonT = Typ.constr(Location.mknoloc(Ldot(jsJson, "t")), []);
 let transformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
+  list,
   record: (items) =>  {
     let body =
       MakeDeserializer.ok(

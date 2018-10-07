@@ -220,7 +220,7 @@ let transformer = {
       );
     let body = items->Belt.List.reduce(body, (body, (label, inner)) => {
       /* let inner = forExpr(expr); */
-      [%expr switch (Belt.List.getAssoc(items, [%e MakeDeserializer.expString(label)]), (==)) {
+      [%expr switch (Belt.List.getAssoc(items, [%e MakeDeserializer.expString(label)], (==))) {
         | None => Belt.Result.Error("No attribute " ++ [%e MakeDeserializer.expString(label)])
         | Some(json) => switch ([%e inner](json)) {
           | Belt.Result.Error(error) => Belt.Result.Error(error)

@@ -3,7 +3,7 @@ let rec (deserialize_SharedTypes__Module__contents :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "topLevel"), (=)) with
+        (match Belt.List.getAssoc items "topLevel" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -45,7 +45,7 @@ let rec (deserialize_SharedTypes__Module__contents :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_topLevel))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "exported"), (=)) with
+                  (match Belt.List.getAssoc items "exported" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -167,7 +167,7 @@ and (deserialize_SharedTypes____flexibleDeclaration :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "asSimpleDeclaration"), (=)) with
+        (match Belt.List.getAssoc items "asSimpleDeclaration" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -178,8 +178,7 @@ and (deserialize_SharedTypes____flexibleDeclaration :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_asSimpleDeclaration))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "declarationKind"), (=))
-                   with
+                  (match Belt.List.getAssoc items "declarationKind" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -191,8 +190,8 @@ and (deserialize_SharedTypes____flexibleDeclaration :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_declarationKind))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "declToString"),
-                                     (=))
+                            (match Belt.List.getAssoc items "declToString"
+                                     (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -797,7 +796,7 @@ and (deserialize_SharedTypes__Value__t :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "recursive"), (=)) with
+        (match Belt.List.getAssoc items "recursive" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -819,7 +818,7 @@ and (deserialize_SharedTypes__Value__t :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_recursive))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "typ"), (=)) with
+                  (match Belt.List.getAssoc items "typ" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -843,7 +842,7 @@ and (deserialize_Lexing____position :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "pos_cnum"), (=)) with
+        (match Belt.List.getAssoc items "pos_cnum" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -864,7 +863,7 @@ and (deserialize_Lexing____position :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_pos_cnum))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "pos_bol"), (=)) with
+                  (match Belt.List.getAssoc items "pos_bol" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -888,8 +887,7 @@ and (deserialize_Lexing____position :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_pos_bol))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "pos_lnum"),
-                                     (=))
+                            (match Belt.List.getAssoc items "pos_lnum" (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -920,8 +918,8 @@ and (deserialize_Lexing____position :
                                       [@explicit_arity ])
                                   | ((Ok (attr_pos_lnum))[@explicit_arity ])
                                       ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "pos_fname"), (=))
+                                      (match Belt.List.getAssoc items
+                                               "pos_fname" (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -975,7 +973,7 @@ and (deserialize_SharedTypes__Type__Constructor__t :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "res"), (=)) with
+        (match Belt.List.getAssoc items "res" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -1001,7 +999,7 @@ and (deserialize_SharedTypes__Type__Constructor__t :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_res))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "args"), (=)) with
+                  (match Belt.List.getAssoc items "args" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -1074,8 +1072,7 @@ and (deserialize_SharedTypes__Type__Constructor__t :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_args))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "name"), (=))
-                             with
+                            (match Belt.List.getAssoc items "name" (=) with
                              | None ->
                                  ((Belt.Result.Error
                                      (((("No attribute ")
@@ -1104,8 +1101,8 @@ and (deserialize_SharedTypes__Type__Constructor__t :
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
                                   | ((Ok (attr_name))[@explicit_arity ]) ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "stamp"), (=))
+                                      (match Belt.List.getAssoc items "stamp"
+                                               (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -1159,7 +1156,7 @@ and (deserialize_SharedTypes____stamps :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "constructors"), (=)) with
+        (match Belt.List.getAssoc items "constructors" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -1174,7 +1171,7 @@ and (deserialize_SharedTypes____stamps :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_constructors))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "moduleTypes"), (=)) with
+                  (match Belt.List.getAssoc items "moduleTypes" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -1190,8 +1187,7 @@ and (deserialize_SharedTypes____stamps :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_moduleTypes))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "modules"),
-                                     (=))
+                            (match Belt.List.getAssoc items "modules" (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -1212,8 +1208,8 @@ and (deserialize_SharedTypes____stamps :
                                       [@explicit_arity ])
                                   | ((Ok (attr_modules))[@explicit_arity ])
                                       ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "values"), (=))
+                                      (match Belt.List.getAssoc items
+                                               "values" (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -1237,9 +1233,8 @@ and (deserialize_SharedTypes____stamps :
                                                 (attr_values))[@explicit_arity
                                                                 ])
                                                 ->
-                                                (match ((Belt.List.getAssoc
-                                                           items "types"),
-                                                         (=))
+                                                (match Belt.List.getAssoc
+                                                         items "types" (=)
                                                  with
                                                  | None ->
                                                      ((Belt.Result.Error
@@ -1306,7 +1301,7 @@ and (deserialize_Query____queryEnv :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "exported"), (=)) with
+        (match Belt.List.getAssoc items "exported" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -1317,7 +1312,7 @@ and (deserialize_Query____queryEnv :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_exported))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "file"), (=)) with
+                  (match Belt.List.getAssoc items "file" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -1345,7 +1340,7 @@ and deserialize_SharedTypes____declared :
     fun record ->
       match record with
       | ((Json.Object (items))[@explicit_arity ]) ->
-          (match ((Belt.List.getAssoc items "contents"), (=)) with
+          (match Belt.List.getAssoc items "contents" (=) with
            | None ->
                ((Belt.Result.Error
                    (((("No attribute ")[@reason.raw_literal "No attribute "])
@@ -1356,7 +1351,7 @@ and deserialize_SharedTypes____declared :
                 | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                     ((Belt.Result.Error (error))[@explicit_arity ])
                 | ((Ok (attr_contents))[@explicit_arity ]) ->
-                    (match ((Belt.List.getAssoc items "docstring"), (=)) with
+                    (match Belt.List.getAssoc items "docstring" (=) with
                      | None ->
                          ((Belt.Result.Error
                              (((("No attribute ")
@@ -1398,8 +1393,7 @@ and deserialize_SharedTypes____declared :
                               -> ((Belt.Result.Error (error))
                               [@explicit_arity ])
                           | ((Ok (attr_docstring))[@explicit_arity ]) ->
-                              (match ((Belt.List.getAssoc items "exported"),
-                                       (=))
+                              (match Belt.List.getAssoc items "exported" (=)
                                with
                                | None ->
                                    ((Belt.Result.Error
@@ -1431,8 +1425,8 @@ and deserialize_SharedTypes____declared :
                                     | ((Ok
                                         (attr_exported))[@explicit_arity ])
                                         ->
-                                        (match ((Belt.List.getAssoc items
-                                                   "modulePath"), (=))
+                                        (match Belt.List.getAssoc items
+                                                 "modulePath" (=)
                                          with
                                          | None ->
                                              ((Belt.Result.Error
@@ -1455,10 +1449,9 @@ and deserialize_SharedTypes____declared :
                                                   (attr_modulePath))[@explicit_arity
                                                                     ])
                                                   ->
-                                                  (match ((Belt.List.getAssoc
-                                                             items
-                                                             "deprecated"),
-                                                           (=))
+                                                  (match Belt.List.getAssoc
+                                                           items "deprecated"
+                                                           (=)
                                                    with
                                                    | None ->
                                                        ((Belt.Result.Error
@@ -1548,10 +1541,10 @@ and deserialize_SharedTypes____declared :
                                                             [@explicit_arity
                                                               ])
                                                             ->
-                                                            (match ((Belt.List.getAssoc
+                                                            (match Belt.List.getAssoc
                                                                     items
-                                                                    "stamp"),
-                                                                    (=))
+                                                                    "stamp"
+                                                                    (=)
                                                              with
                                                              | None ->
                                                                  ((Belt.Result.Error
@@ -1603,10 +1596,10 @@ and deserialize_SharedTypes____declared :
                                                                     [@explicit_arity
                                                                     ]) ->
                                                                     (match 
-                                                                    ((Belt.List.getAssoc
+                                                                    Belt.List.getAssoc
                                                                     items
-                                                                    "scopeLoc"),
-                                                                    (=))
+                                                                    "scopeLoc"
+                                                                    (=)
                                                                     with
                                                                     | 
                                                                     None ->
@@ -1642,10 +1635,10 @@ and deserialize_SharedTypes____declared :
                                                                     [@explicit_arity
                                                                     ]) ->
                                                                     (match 
-                                                                    ((Belt.List.getAssoc
+                                                                    Belt.List.getAssoc
                                                                     items
-                                                                    "extentLoc"),
-                                                                    (=))
+                                                                    "extentLoc"
+                                                                    (=)
                                                                     with
                                                                     | 
                                                                     None ->
@@ -1681,10 +1674,10 @@ and deserialize_SharedTypes____declared :
                                                                     [@explicit_arity
                                                                     ]) ->
                                                                     (match 
-                                                                    ((Belt.List.getAssoc
+                                                                    Belt.List.getAssoc
                                                                     items
-                                                                    "name"),
-                                                                    (=))
+                                                                    "name"
+                                                                    (=)
                                                                     with
                                                                     | 
                                                                     None ->
@@ -1776,7 +1769,7 @@ and (deserialize_SharedTypes____file :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "contents"), (=)) with
+        (match Belt.List.getAssoc items "contents" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -1787,7 +1780,7 @@ and (deserialize_SharedTypes____file :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_contents))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "moduleName"), (=)) with
+                  (match Belt.List.getAssoc items "moduleName" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -1810,8 +1803,7 @@ and (deserialize_SharedTypes____file :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_moduleName))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "stamps"), (=))
-                             with
+                            (match Belt.List.getAssoc items "stamps" (=) with
                              | None ->
                                  ((Belt.Result.Error
                                      (((("No attribute ")
@@ -1828,8 +1820,8 @@ and (deserialize_SharedTypes____file :
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
                                   | ((Ok (attr_stamps))[@explicit_arity ]) ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "docstring"), (=))
+                                      (match Belt.List.getAssoc items
+                                               "docstring" (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -1901,8 +1893,8 @@ and (deserialize_SharedTypes____file :
                                                 (attr_docstring))[@explicit_arity
                                                                    ])
                                                 ->
-                                                (match ((Belt.List.getAssoc
-                                                           items "uri"), (=))
+                                                (match Belt.List.getAssoc
+                                                         items "uri" (=)
                                                  with
                                                  | None ->
                                                      ((Belt.Result.Error
@@ -1970,7 +1962,7 @@ and (deserialize_SharedTypes__Module__exported :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "moduleTypes"), (=)) with
+        (match Belt.List.getAssoc items "moduleTypes" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -1981,7 +1973,7 @@ and (deserialize_SharedTypes__Module__exported :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_moduleTypes))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "modules"), (=)) with
+                  (match Belt.List.getAssoc items "modules" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -1994,8 +1986,7 @@ and (deserialize_SharedTypes__Module__exported :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_modules))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "values"), (=))
-                             with
+                            (match Belt.List.getAssoc items "values" (=) with
                              | None ->
                                  ((Belt.Result.Error
                                      (((("No attribute ")
@@ -2012,8 +2003,8 @@ and (deserialize_SharedTypes__Module__exported :
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
                                   | ((Ok (attr_values))[@explicit_arity ]) ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "types"), (=))
+                                      (match Belt.List.getAssoc items "types"
+                                               (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -2099,7 +2090,7 @@ and (deserialize_SharedTypes__Type__t :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "typ"), (=)) with
+        (match Belt.List.getAssoc items "typ" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -2110,7 +2101,7 @@ and (deserialize_SharedTypes__Type__t :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_typ))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "params"), (=)) with
+                  (match Belt.List.getAssoc items "params" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -2183,8 +2174,7 @@ and (deserialize_SharedTypes__Type__t :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_params))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "kind"), (=))
-                             with
+                            (match Belt.List.getAssoc items "kind" (=) with
                              | None ->
                                  ((Belt.Result.Error
                                      (((("No attribute ")
@@ -2217,7 +2207,7 @@ and (deserialize_SharedTypes____flexibleType :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "asSimpleType"), (=)) with
+        (match Belt.List.getAssoc items "asSimpleType" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -2228,8 +2218,7 @@ and (deserialize_SharedTypes____flexibleType :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_asSimpleType))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "getArguments"), (=))
-                   with
+                  (match Belt.List.getAssoc items "getArguments" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -2241,8 +2230,8 @@ and (deserialize_SharedTypes____flexibleType :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_getArguments))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items
-                                       "getConstructorPath"), (=))
+                            (match Belt.List.getAssoc items
+                                     "getConstructorPath" (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -2261,8 +2250,8 @@ and (deserialize_SharedTypes____flexibleType :
                                       (attr_getConstructorPath))[@explicit_arity
                                                                   ])
                                       ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "variableKind"), (=))
+                                      (match Belt.List.getAssoc items
+                                               "variableKind" (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -2284,9 +2273,8 @@ and (deserialize_SharedTypes____flexibleType :
                                                 (attr_variableKind))[@explicit_arity
                                                                     ])
                                                 ->
-                                                (match ((Belt.List.getAssoc
-                                                           items "toString"),
-                                                         (=))
+                                                (match Belt.List.getAssoc
+                                                         items "toString" (=)
                                                  with
                                                  | None ->
                                                      ((Belt.Result.Error
@@ -2338,7 +2326,7 @@ and (deserialize_Location____t :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "loc_ghost"), (=)) with
+        (match Belt.List.getAssoc items "loc_ghost" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -2360,7 +2348,7 @@ and (deserialize_Location____t :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_loc_ghost))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "loc_end"), (=)) with
+                  (match Belt.List.getAssoc items "loc_end" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -2372,8 +2360,7 @@ and (deserialize_Location____t :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_loc_end))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "loc_start"),
-                                     (=))
+                            (match Belt.List.getAssoc items "loc_start" (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -2416,7 +2403,7 @@ and (deserialize_TypeMap__DigTypes____reference :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "env"), (=)) with
+        (match Belt.List.getAssoc items "env" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -2427,7 +2414,7 @@ and (deserialize_TypeMap__DigTypes____reference :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_env))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "name"), (=)) with
+                  (match Belt.List.getAssoc items "name" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -2450,8 +2437,7 @@ and (deserialize_TypeMap__DigTypes____reference :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_name))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "modulePath"),
-                                     (=))
+                            (match Belt.List.getAssoc items "modulePath" (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -2536,8 +2522,8 @@ and (deserialize_TypeMap__DigTypes____reference :
                                   | ((Ok
                                       (attr_modulePath))[@explicit_arity ])
                                       ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "declared"), (=))
+                                      (match Belt.List.getAssoc items
+                                               "declared" (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -2560,9 +2546,9 @@ and (deserialize_TypeMap__DigTypes____reference :
                                                 (attr_declared))[@explicit_arity
                                                                   ])
                                                 ->
-                                                (match ((Belt.List.getAssoc
-                                                           items "moduleName"),
-                                                         (=))
+                                                (match Belt.List.getAssoc
+                                                         items "moduleName"
+                                                         (=)
                                                  with
                                                  | None ->
                                                      ((Belt.Result.Error
@@ -2608,10 +2594,9 @@ and (deserialize_TypeMap__DigTypes____reference :
                                                           (attr_moduleName))
                                                           [@explicit_arity ])
                                                           ->
-                                                          (match ((Belt.List.getAssoc
-                                                                    items
-                                                                    "uri"),
-                                                                   (=))
+                                                          (match Belt.List.getAssoc
+                                                                   items
+                                                                   "uri" (=)
                                                            with
                                                            | None ->
                                                                ((Belt.Result.Error
@@ -2714,7 +2699,7 @@ and (deserialize_SharedTypes__Type__Attribute__t :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "typLoc"), (=)) with
+        (match Belt.List.getAssoc items "typLoc" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -2725,7 +2710,7 @@ and (deserialize_SharedTypes__Type__Attribute__t :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_typLoc))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "typ"), (=)) with
+                  (match Belt.List.getAssoc items "typ" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -2737,8 +2722,7 @@ and (deserialize_SharedTypes__Type__Attribute__t :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_typ))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "name"), (=))
-                             with
+                            (match Belt.List.getAssoc items "name" (=) with
                              | None ->
                                  ((Belt.Result.Error
                                      (((("No attribute ")
@@ -2767,8 +2751,8 @@ and (deserialize_SharedTypes__Type__Attribute__t :
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
                                   | ((Ok (attr_name))[@explicit_arity ]) ->
-                                      (match ((Belt.List.getAssoc items
-                                                 "stamp"), (=))
+                                      (match Belt.List.getAssoc items "stamp"
+                                               (=)
                                        with
                                        | None ->
                                            ((Belt.Result.Error
@@ -3088,7 +3072,7 @@ and (deserialize_TypeMap__DigTypes____lockfile :
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "current"), (=)) with
+        (match Belt.List.getAssoc items "current" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -3148,8 +3132,7 @@ and (deserialize_TypeMap__DigTypes____lockfile :
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_current))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "pastVersions"), (=))
-                   with
+                  (match Belt.List.getAssoc items "pastVersions" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -3229,8 +3212,7 @@ and (deserialize_TypeMap__DigTypes____lockfile :
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_pastVersions))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "version"),
-                                     (=))
+                            (match Belt.List.getAssoc items "version" (=)
                              with
                              | None ->
                                  ((Belt.Result.Error
@@ -3276,7 +3258,7 @@ and (deserialize_Ident____t : Json.t -> (Ident.t, string) Belt.Result.t) =
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
-        (match ((Belt.List.getAssoc items "flags"), (=)) with
+        (match Belt.List.getAssoc items "flags" (=) with
          | None ->
              ((Belt.Result.Error
                  (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
@@ -3297,7 +3279,7 @@ and (deserialize_Ident____t : Json.t -> (Ident.t, string) Belt.Result.t) =
               | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                   ((Belt.Result.Error (error))[@explicit_arity ])
               | ((Ok (attr_flags))[@explicit_arity ]) ->
-                  (match ((Belt.List.getAssoc items "name"), (=)) with
+                  (match Belt.List.getAssoc items "name" (=) with
                    | None ->
                        ((Belt.Result.Error
                            (((("No attribute ")
@@ -3320,8 +3302,7 @@ and (deserialize_Ident____t : Json.t -> (Ident.t, string) Belt.Result.t) =
                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                             ((Belt.Result.Error (error))[@explicit_arity ])
                         | ((Ok (attr_name))[@explicit_arity ]) ->
-                            (match ((Belt.List.getAssoc items "stamp"), (=))
-                             with
+                            (match Belt.List.getAssoc items "stamp" (=) with
                              | None ->
                                  ((Belt.Result.Error
                                      (((("No attribute ")
@@ -3371,7 +3352,7 @@ and deserialize_SharedTypes__SimpleType__declaration :
     fun record ->
       match record with
       | ((Json.Object (items))[@explicit_arity ]) ->
-          (match ((Belt.List.getAssoc items "body"), (=)) with
+          (match Belt.List.getAssoc items "body" (=) with
            | None ->
                ((Belt.Result.Error
                    (((("No attribute ")[@reason.raw_literal "No attribute "])
@@ -3384,7 +3365,7 @@ and deserialize_SharedTypes__SimpleType__declaration :
                 | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                     ((Belt.Result.Error (error))[@explicit_arity ])
                 | ((Ok (attr_body))[@explicit_arity ]) ->
-                    (match ((Belt.List.getAssoc items "variables"), (=)) with
+                    (match Belt.List.getAssoc items "variables" (=) with
                      | None ->
                          ((Belt.Result.Error
                              (((("No attribute ")
@@ -3439,8 +3420,7 @@ and deserialize_SharedTypes__SimpleType__declaration :
                               -> ((Belt.Result.Error (error))
                               [@explicit_arity ])
                           | ((Ok (attr_variables))[@explicit_arity ]) ->
-                              (match ((Belt.List.getAssoc items "name"), (=))
-                               with
+                              (match Belt.List.getAssoc items "name" (=) with
                                | None ->
                                    ((Belt.Result.Error
                                        (((("No attribute ")
@@ -3500,7 +3480,7 @@ and deserialize_Location____loc :
     fun record ->
       match record with
       | ((Json.Object (items))[@explicit_arity ]) ->
-          (match ((Belt.List.getAssoc items "loc"), (=)) with
+          (match Belt.List.getAssoc items "loc" (=) with
            | None ->
                ((Belt.Result.Error
                    (((("No attribute ")[@reason.raw_literal "No attribute "])
@@ -3511,7 +3491,7 @@ and deserialize_Location____loc :
                 | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                     ((Belt.Result.Error (error))[@explicit_arity ])
                 | ((Ok (attr_loc))[@explicit_arity ]) ->
-                    (match ((Belt.List.getAssoc items "txt"), (=)) with
+                    (match Belt.List.getAssoc items "txt" (=) with
                      | None ->
                          ((Belt.Result.Error
                              (((("No attribute ")
