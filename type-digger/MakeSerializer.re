@@ -26,112 +26,20 @@ open Asttypes;
 open SharedTypes.SimpleType;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
-let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(Ldot(Lident("Js"), "Json"), kind)), [
-  (Nolabel, contents)
-]);
 
-let jsonObject = items => makeJson("object_", Exp.apply(
-  makeIdent(Ldot(Ldot(Lident("Js"), "Dict"), "fromArray")),
-  [(Nolabel, Exp.array(items))]
-));
 
-let jsonArray = items => makeJson(
-  "array",
-  Exp.apply(
-    makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "toArray")),
-    [(Nolabel, items)]
-  )
-);
+type transformer('source) = {
+  source: ('source) => Parsetree.expression,
+  list: (Parsetree.expression) => Parsetree.expression,
+  tuple: (list(Parsetree.expression)) => Parsetree.expression,
+  record: (list((string, Parsetree.expression))) => Parsetree.expression,
+  constructor: (string, list(Parsetree.expression)) => Parsetree.expression,
+};
 
 let failer = message => Exp.fun_(Nolabel, None, Pat.any(), 
 Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
   (Nolabel, Exp.constant(Pconst_string(message, None)))
 ]));
-
-let sourceTransformer = source => switch source {
-  | DigTypes.NotFound => failer("Not found")
-  | Public({DigTypes.modulePath, moduleName, name}) =>
-    makeIdent(Lident(transformerName(~moduleName, ~modulePath, ~name)))
-  | Builtin("array") =>
-        
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("array")),
-        makeJson("array",
-            Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "Array"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("array"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            )
-        )
-      )
-    )
-  | Builtin("list") =>
-        
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("list")),
-        jsonArray(
-            Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("list"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            )
-        )
-      )
-    )
-  | Builtin("string") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "string"))
-  | Builtin("bool") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "boolean"))
-  | Builtin("int") =>
-    Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc("int")),
-      Exp.apply(
-        makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "number")),
-        [(Nolabel, Exp.apply(
-          makeIdent(Lident("float_of_int")),
-          [(Nolabel, makeIdent(Lident("int")))]
-        ))]
-      )
-    )
-  | Builtin("float") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "number"))
-  | Builtin("option") => 
-  Exp.fun_(
-    Nolabel,
-    None,
-    Pat.var(Location.mknoloc("transformer")),
-  Exp.function_(
-    [
-      Exp.case(Pat.construct(
-        Location.mknoloc(Lident("None")),
-        None
-      ), Exp.construct(Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "null")), None)),
-      Exp.case(Pat.construct(
-        Location.mknoloc(Lident("Some")),
-        Some(Pat.var(Location.mknoloc("value")))
-      ), 
-        Exp.apply(makeIdent(Lident("transformer")), [
-          (Nolabel, makeIdent(Lident("value")))
-        ])
-      )
-    ]
-  )
-
-  )
-  | Builtin(name) => failer("Builtin: " ++ name)
-};
 
 let rec makeList = items => switch items {
   | [] => Exp.construct(Location.mknoloc(Lident("[]")), None)
@@ -140,7 +48,7 @@ let rec makeList = items => switch items {
   ])))
 }
 
-let rec forExpr = (sourceTransformer, t) => switch t {
+let rec forExpr = (transformer, t) => switch t {
   | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
   | AnonVariable => failer("Non variable")
   | Reference(source, args) =>
@@ -150,12 +58,12 @@ let rec forExpr = (sourceTransformer, t) => switch t {
           Nolabel,
           None,
           Pat.var(Location.mknoloc("list")),
-          jsonArray(
+          transformer.list(
               Exp.apply(
                 makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
                 [
                   (Nolabel, makeIdent(Lident("list"))),
-                  (Nolabel, forExpr(sourceTransformer, arg)),
+                  (Nolabel, forExpr(transformer, arg)),
                 ]
               )
           )
@@ -163,10 +71,10 @@ let rec forExpr = (sourceTransformer, t) => switch t {
 
       | _ =>
         switch args {
-          | [] => sourceTransformer(source)
+          | [] => transformer.source(source)
           | args => Exp.apply(
-            sourceTransformer(source),
-            args->Belt.List.map(arg => (Nolabel, forExpr(sourceTransformer, arg)))
+            transformer.source(source),
+            args->Belt.List.map(arg => (Nolabel, forExpr(transformer, arg)))
           )
         }
     }
@@ -180,7 +88,7 @@ let rec forExpr = (sourceTransformer, t) => switch t {
           Pat.var(Location.mknoloc(name)),
           ...pats
         ], [
-          Exp.apply(forExpr(sourceTransformer, arg), [
+          Exp.apply(forExpr(transformer, arg), [
             (Nolabel, Exp.ident(Location.mknoloc(Lident(name))))
           ]),
           ...exps
@@ -188,12 +96,12 @@ let rec forExpr = (sourceTransformer, t) => switch t {
     };
     let (pats, exps) = loop(0, items);
     Exp.fun_(Nolabel, None, Pat.tuple(pats),
-      makeJson("array", Exp.array(exps))
+      transformer.tuple(exps)
     )
   | _ => failer("not impl expr")
 };
 
-let forBody = (sourceTransformer, coreType, body, fullName, variables) => switch body {
+let forBody = (transformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
     let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
@@ -212,7 +120,7 @@ let forBody = (sourceTransformer, coreType, body, fullName, variables) => switch
       Nolabel,
       None,
       Pat.var(Location.mknoloc("value")),
-      Exp.apply(forExpr(sourceTransformer, e), [
+      Exp.apply(forExpr(transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) => 
@@ -223,17 +131,17 @@ let forBody = (sourceTransformer, coreType, body, fullName, variables) => switch
         Pat.var(Location.mknoloc("record")),
         /* coreType */
       /* ), */
-      jsonObject(items->Belt.List.map(((label, expr)) => {
-        Exp.tuple([
-          Exp.constant(Pconst_string(label, None)),
+      transformer.record( items->Belt.List.map(((label, expr)) => {
+        (label,
           Exp.apply(
-            forExpr(sourceTransformer, expr),
+            forExpr(transformer, expr),
             [(Nolabel, Exp.field(makeIdent(Lident("record")),
             Location.mknoloc(Lident(label))
             ))]
           )
-        ])
-      }))
+        )
+      })
+      )
     )
   | Variant(constructors) =>
     Exp.fun_(
@@ -259,15 +167,13 @@ let forBody = (sourceTransformer, coreType, body, fullName, variables) => switch
                 ))
               }
             ),
-            makeJson("array", Exp.array([
-                makeJson("string", Exp.constant(Pconst_string(name, None))),
-              ] @ (
-                args->Belt.List.mapWithIndex((index, arg) => {
-                  Exp.apply(forExpr(sourceTransformer, arg),
-                  [(Nolabel, makeIdent(Lident("arg" ++ string_of_int(index))))])
-                })
-              )
-            ))
+            transformer.constructor(
+              name,
+              args->Belt.List.mapWithIndex((index, arg) => {
+                Exp.apply(forExpr(transformer, arg),
+                [(Nolabel, makeIdent(Lident("arg" ++ string_of_int(index))))])
+              })
+            )
           )
           
         })
@@ -280,9 +186,9 @@ let makeTypArgs = variables =>
         "arg" ++ string_of_int(index)
       });
 
-let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => {
+let declInner = (transformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(sourceTransformer,
+    | [] => forBody(transformer,
     Typ.constr(
       Location.mknoloc(
         typeLident,
@@ -303,7 +209,7 @@ let declInner = (sourceTransformer, typeLident, {variables, body}, fullName) => 
     loop(variables)
 };
 
-let decl = (sourceTransformer, ~moduleName, ~modulePath, ~name, decl) => {
+let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let typ = Typ.arrow(
         Nolabel,
@@ -341,7 +247,7 @@ let decl = (sourceTransformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(sourceTransformer, 
+    declInner(transformer, 
         lident
     , decl, fullName)
   )
