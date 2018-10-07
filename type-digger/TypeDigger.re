@@ -8,7 +8,7 @@ let deserializers = tbl => {
   let decls =
     Hashtbl.fold(
       ((moduleName, modulePath, name), decl, bindings) => [
-        BsJson.declDeserializer(~moduleName, ~modulePath, ~name, decl),
+        Serde.BsJson.declDeserializer(~moduleName, ~modulePath, ~name, decl),
         ...bindings,
       ],
       tbl,
@@ -22,7 +22,7 @@ let serializers = tbl => {
   let decls =
     Hashtbl.fold(
       ((moduleName, modulePath, name), decl, bindings) => [
-        BsJson.declSerializer(~moduleName, ~modulePath, ~name, decl),
+        Serde.BsJson.declSerializer(~moduleName, ~modulePath, ~name, decl),
         ...bindings,
       ],
       tbl,
