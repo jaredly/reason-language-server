@@ -3,25 +3,11 @@ Printexc.record_backtrace(true);
 open Analyze;
 module Json = Vendor.Json;
 
-let deserializers = tbl => {
+let makeFns = (maker, tbl) => {
   let decls =
     Hashtbl.fold(
       ((moduleName, modulePath, name), decl, bindings) => [
-        Serde.BsJson.declDeserializer(~moduleName, ~modulePath, ~name, decl),
-        ...bindings,
-      ],
-      tbl,
-      [],
-    );
-
-  Ast_helper.Str.value(Recursive, decls);
-};
-
-let serializers = tbl => {
-  let decls =
-    Hashtbl.fold(
-      ((moduleName, modulePath, name), decl, bindings) => [
-        Serde.BsJson.declSerializer(~moduleName, ~modulePath, ~name, decl),
+        maker(~moduleName, ~modulePath, ~name, decl),
         ...bindings,
       ],
       tbl,
@@ -49,7 +35,18 @@ let toBoth = (base, dest, types) => {
   let state = TopTypes.forRootPath(base);
   let tbl = getTypeMap(base, state, types);
 
-  Pprintast.structure(Format.str_formatter, [deserializers(tbl), serializers(tbl)]);
+  Pprintast.structure(Format.str_formatter, [makeFns(Serde.BsJson.declDeserializer, tbl), makeFns(Serde.BsJson.declSerializer, tbl)]);
+
+  let ml = Format.flush_str_formatter();
+  Files.writeFile(dest, ml) |> ignore;
+  Ok();
+};
+
+let toJson = (base, dest, types) => {
+  let state = TopTypes.forRootPath(base);
+  let tbl = getTypeMap(base, state, types);
+
+  Pprintast.structure(Format.str_formatter, [makeFns(Serde.Json.declDeserializer, tbl), makeFns(Serde.Json.declSerializer, tbl)]);
 
   let ml = Format.flush_str_formatter();
   Files.writeFile(dest, ml) |> ignore;
@@ -57,7 +54,12 @@ let toBoth = (base, dest, types) => {
 };
 
 switch (Sys.argv->Belt.List.fromArray) {
-  | [_, "main"] => ()
+  | [_, "json", dest, ...items] => {
+    switch (toJson(Sys.getcwd(), dest, items)) {
+      | RResult.Ok(()) => print_endline("Success")
+      | RResult.Error(message) => print_endline("Failed: " ++ message)
+    }
+  }
   | [_, dest, ...items] => {
     switch (toBoth(Sys.getcwd(), dest, items)) {
       | RResult.Ok(()) => print_endline("Success")
