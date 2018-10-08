@@ -96,7 +96,7 @@ let getBackend = (rootPath) => {
       switch (input_line(ic)) {
       | exception End_of_file => 
         close_in(ic);
-        RResult.Ok("js")
+        RResult.Ok("native")
       | s => 
         if (s == "####{BSB GENERATED: NO EDIT") {
           switch(input_line(ic)) {
@@ -104,8 +104,9 @@ let getBackend = (rootPath) => {
             | backendLine => 
             let len = String.length("# -backend ");
             let totalLen = String.length(backendLine);
-            try (RResult.Ok(String.sub(backendLine, len, totalLen - len))) {
-              | _ => RResult.Ok("native")
+            switch (RResult.Ok(String.sub(backendLine, len, totalLen - len))) {
+              | exception Invalid_argument(_) => RResult.Ok("native")
+              | backend => backend
             }
           }
         } else {
@@ -113,6 +114,6 @@ let getBackend = (rootPath) => {
         }
       };
     loop()
-  | _ => RResult.Ok("js")
+  | _ => RResult.Ok("native")
   }
 }
