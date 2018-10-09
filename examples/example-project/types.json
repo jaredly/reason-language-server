@@ -1,6 +1,6 @@
 {
   "output": "src/Serde.ml",
-  "engine": "bs-json",
+  "engine": "rex-json",
   "entries": [
     {
       "file": "src/Hello.re",

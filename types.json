@@ -1,5 +1,6 @@
 {
   "output": "type-digger/type-map/Serde.ml",
+  "engine": "rex-json",
   "entries": [
     {
       "file": "type-digger/type-map/DigTypes.re",
@@ -7,6 +8,6 @@
     }
   ],
   "custom": [
-    {"module": "Belt", "path": ["HashMap", "Int"], "name": "t"}
+    {"module": "Belt_HashMapInt", "path": [], "name": "t", "args": 1}
   ]
 }
