@@ -183,16 +183,16 @@ let list = (transformer, list) => {
         | JSONArray(items) =>
           let transformer = [%e transformer];
           let rec loop = items => switch items {
-            | [] => Ok([])
+            | [] => Belt.Result.Ok([])
             | [one, ...rest] => switch (transformer(one)) {
               | Belt.Result.Error(error) => Belt.Result.Error(error)
-              | Ok(value) => switch (loop(rest)) {
+              | Belt.Result.Ok(value) => switch (loop(rest)) {
                 | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Ok(rest) => Ok([value, ...rest])
+                | Belt.Result.Ok(rest) => Belt.Result.Ok([value, ...rest])
               }
             }
           };
-          loop(items)
+          loop(Belt.List.fromArray(items))
         | _ => Belt.Result.Error("expected an array")
       }
     ];

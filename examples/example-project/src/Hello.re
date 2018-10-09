@@ -157,3 +157,32 @@ switch (y) {
 /* let x = [%raw " hello"]; */
 
 let awesome = "hello";
+
+
+type shortReference = (string, list(string), string);
+
+type reference = {
+  uri: string,
+  moduleName: string,
+  modulePath: list(string),
+  name: string,
+};
+
+type typeSource =
+  | Builtin(string)
+  | Public(reference)
+  | NotFound;
+
+type lockfile = {
+  version: int,
+  pastVersions: Belt.HashMap.Int.t(
+    list((
+      shortReference,
+      int
+    ))
+  ),
+  current: list((
+    shortReference,
+    int
+  ))
+};

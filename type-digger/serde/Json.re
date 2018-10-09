@@ -205,6 +205,13 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
+let rec makePatList = items => switch items {
+  | [] => Pat.construct(Location.mknoloc(Lident("[]")), None)
+  | [one, ...rest] => Pat.construct(Location.mknoloc(Lident("::")), Some(Pat.tuple([
+    one, makePatList(rest)
+  ])))
+};
+
 
 let jsonT = [%type: Json.t];
 
@@ -212,7 +219,7 @@ let transformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
   tuple: (value, patArgs, body) => [%expr json => switch ([%e value]) {
-    | Json.Array([%p Pat.array(patArgs)]) => [%e body]
+    | Json.Array([%p makePatList(patArgs)]) => [%e body]
     | _ => Belt.Result.Error("Expected array")
   }],
   list: (transformer, list) => {
@@ -264,14 +271,12 @@ let transformer = {
     let cases = constructors->Belt.List.map(((name, argCount, argTransformer)) => {
           Exp.case(
             Pat.construct(Location.mknoloc(Ldot(Lident("Json"), "Array")), Some(
-              Pat.array(
-                [
-                  Pat.var(Location.mknoloc("tag")),
-                  ...MakeDeserializer.range(argCount, index => {
-                    Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
-                  })
-                ]
-              ),
+              makePatList([
+                Pat.var(Location.mknoloc("tag")),
+                ...MakeDeserializer.range(argCount, index => {
+                  Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
+                })
+              ])
             )),
             ~guard=Exp.apply(makeIdent(Lident("=")), [
               (Nolabel, Exp.construct(Location.mknoloc(Ldot(Lident("Json"), "String")), Some(Exp.constant(Pconst_string(name, None))))),
