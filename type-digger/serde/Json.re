@@ -82,6 +82,7 @@ let sourceTransformer = source => switch source {
 };
 
 let transformer = MakeSerializer.{
+  outputType: Typ.constr(Location.mknoloc(Ldot(Lident("Json"), "t")), []),
   source: sourceTransformer,
   list: jsonArray,
   tuple: exps => makeJson("Array", Some(Exp.array(exps))),
@@ -210,6 +211,31 @@ let jsonT = [%type: Json.t];
 let transformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
+  tuple: (value, patArgs, body) => [%expr json => switch ([%e value]) {
+    | Json.Array([%p Pat.array(patArgs)]) => [%e body]
+    | _ => Belt.Result.Error("Expected array")
+  }],
+  list: (transformer, list) => {
+    [%expr 
+      switch ([%e list]) {
+        | Json.Array(items) =>
+          let transformer = [%e transformer];
+          let rec loop = items => switch items {
+            | [] => Ok([])
+            | [one, ...rest] => switch (transformer(one)) {
+              | Belt.Result.Error(error) => Belt.Result.Error(error)
+              | Ok(value) => switch (loop(rest)) {
+                | Belt.Result.Error(error) => Belt.Result.Error(error)
+                | Ok(rest) => Ok([value, ...rest])
+              }
+            }
+          };
+          loop(items)
+        | _ => Belt.Result.Error("expected an array")
+      }
+    ];
+
+  },
   record: (items) =>  {
     let body =
       MakeDeserializer.ok(

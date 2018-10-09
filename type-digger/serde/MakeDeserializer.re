@@ -40,6 +40,7 @@ open SharedTypes.SimpleType;
 
 type transformer('source) = {
   inputType: Parsetree.core_type,
+  tuple: (Parsetree.expression, list(Parsetree.pattern), Parsetree.expression) => Parsetree.expression,
   record: (list((string, Parsetree.expression))) => Parsetree.expression,
   source: ('source) => Parsetree.expression,
   variant: list((string, int, Parsetree.expression)) => Parsetree.expression,
@@ -85,7 +86,7 @@ let rec forArgs = (transformer, args, body) => {
       | (DigTypes.Builtin("list"), [arg]) =>
         let loc = Location.none;
         [%expr
-          (list) => [%e transformer.list([%e forExpr(transformer, arg)], [%e list])]
+          (list) => [%e transformer.list(forExpr(transformer, arg), [%expr list])]
         ]
 
           /* switch (Js.Json.classify(list)) {
@@ -119,11 +120,12 @@ let rec forArgs = (transformer, args, body) => {
     let body = ok(Exp.tuple(makeTypArgs(items)->Belt.List.map(name => makeIdent(Lident(name)))));
     let body = forArgs(transformer, items, body);
     let loc = Location.none;
+    transformer.tuple([%expr json], patArgs, body)
     /* TODO TODO remove the JSONArray & classify here */
-    [%expr json => switch (Js.Json.classify(json)) {
+    /* [%expr json => switch (Js.Json.classify(json)) {
       | JSONArray([%p Pat.array(patArgs)]) => [%e body]
       | _ => Belt.Result.Error("Expected array")
-    }]
+    }] */
   | _ => failer("not impl expr")
 };
 

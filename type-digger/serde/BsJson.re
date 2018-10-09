@@ -116,6 +116,10 @@ let sourceTransformer = source => switch source {
 };
 
 let transformer = MakeSerializer.{
+  outputType: Typ.constr(
+          Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")),
+          []
+          ),
   source: sourceTransformer,
   list: jsonArray,
   tuple: exps => makeJson("array", Exp.array(exps)),
@@ -164,6 +168,13 @@ let jsonArray = items => makeJson(
     [(Nolabel, items)]
   )
 );
+
+let tuple = (value, patArgs, body) => {
+  [%expr json => switch (Js.Json.classify([%e value])) {
+    | JSONArray([%p Pat.array(patArgs)]) => [%e body]
+    | _ => Belt.Result.Error("Expected array")
+  }]
+};
 
 let list = (transformer, list) => {
     let loc = Location.none;
@@ -259,6 +270,7 @@ let transformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
   list,
+  tuple,
   record: (items) =>  {
     let body =
       MakeDeserializer.ok(

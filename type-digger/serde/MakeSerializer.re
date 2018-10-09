@@ -29,6 +29,7 @@ let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
 
 
 type transformer('source) = {
+  outputType: Parsetree.core_type,
   source: ('source) => Parsetree.expression,
   list: (Parsetree.expression) => Parsetree.expression,
   tuple: (list(Parsetree.expression)) => Parsetree.expression,
@@ -217,18 +218,13 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
           Location.mknoloc(lident),
           decl.variables->makeTypArgs->Belt.List.map(Typ.var)
         ),
-        Typ.constr(
-          Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")),
-          []
-          )
+        transformer.outputType
       );
   let rec loop = (i, vbls) => switch vbls {
     | [] => typ
     | [_, ...rest] => Typ.arrow(
       Nolabel,
-      Typ.arrow(Nolabel, Typ.var("arg" ++ string_of_int(i)), Typ.constr(
-        Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")), []
-      )),
+      Typ.arrow(Nolabel, Typ.var("arg" ++ string_of_int(i)), transformer.outputType),
       loop(i + 1, rest)
     )
   };
