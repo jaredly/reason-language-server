@@ -1,0 +1,12 @@
+{
+  "output": "type-digger/type-map/Serde.ml",
+  "entries": [
+    {
+      "file": "type-digger/type-map/DigTypes.re",
+      "type": "lockfile"
+    }
+  ],
+  "custom": [
+    {"module": "Belt", "path": ["HashMap", "Int"], "name": "t"}
+  ]
+}

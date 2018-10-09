@@ -304,11 +304,6 @@ and deserialize_Belt_HashMapInt____t :
   =
   fun bTransformer ->
     TransformHelpers.deserialize_Belt_HashMapInt____t bTransformer
-(* and deserialize_Belt__HashMap__Int__t :
-  'arg0 .
-    (Js.Json.t -> ('arg0, string) Belt.Result.t) ->
-      Js.Json.t -> ('arg0 Belt.HashMap.Int.t, string) Belt.Result.t
-  = fun aNON -> TransformHelpers.deserialize_Belt__HashMap__Int__t aNON *)
 let rec (serialize_Hello__Tryit____lockfile :
   Tryit.Hello.lockfile -> Js.Json.t) =
   fun record ->
@@ -357,6 +352,3 @@ and serialize_Belt_HashMapInt____t :
   'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 Belt_HashMapInt.t -> Js.Json.t =
   fun bTransformer ->
     TransformHelpers.serialize_Belt_HashMapInt____t bTransformer
-(* and serialize_Belt__HashMap__Int__t :
-  'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 Belt.HashMap.Int.t -> Js.Json.t =
-  fun ANON -> TransformHelpers.serialize_Belt__HashMap__Int__t ANON *)

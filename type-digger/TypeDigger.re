@@ -89,7 +89,7 @@ switch (Sys.argv->Belt.List.fromArray) {
       }), name), SharedTypes.SimpleType.{
         name,
         variables: {
-          let rec loop = n => n <= 0 ? [] : [SharedTypes.SimpleType.AnonVariable, ...loop(n - 1)];
+          let rec loop = n => n <= 0 ? [] : [SharedTypes.SimpleType.Variable("arg" ++ string_of_int(args - n)), ...loop(n - 1)];
           loop(args)
         },
         body: Abstract
