@@ -1,6 +1,7 @@
+
 # Reason Language Server
 
-This project implements the [Language Server Protocol][1] for Reason.
+This project implements the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/specification#initialize) for Reason.
 
 It is written in Reason, and compiled via bsb-native. The goal is for it to work equally well on Windows, MacOS, and Linux.
 
@@ -10,7 +11,7 @@ It is written in Reason, and compiled via bsb-native. The goal is for it to work
 
 Install through VS Code extensions. Search for `reason-vscode`:
 
-[Visual Studio Code Marketplace: reason-vscode][2]
+[Visual Studio Code Marketplace: reason-vscode](https://marketplace.visualstudio.com/items?itemName=jaredly.reason-vscode)
 
 Can also be installed with VS Code Quick Open: press `Cmd/Ctrl + P`, paste the following command, and press enter.
 
@@ -22,7 +23,7 @@ ext install jaredly.reason-vscode
 
 Oni has support for Reason baked in, and it only needs a little bit of configuration to integrate this langauge server.
 
-1. Download the `your-platform.zip` file from the [latest release][3], unzip it, and put the `reason-language-server.exe` file somewhere.
+1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
 2. Open the Oni config file (` Ctrl/Cmd + ,`), and add the following to the `export const configuration = {` block at the end:
 ```json
     "language.reason.languageServer.command": "/abs/path/to/your/reason-language-server.exe",
@@ -33,9 +34,9 @@ And you're done!
 
 ### Sublime Text
 
-1. Install the [sublime reason][4] plugin for syntax highlighting, etc. (has to be done manually)
-2. Install the [LSP Plugin][5] via the Sublime Text Package Manager
-3. Download the `your-platform.zip` file from the [latest release][3], unzip it, and put the `reason-language-server.exe` file somewhere.
+1. Install the [sublime reason](https://github.com/reasonml-editor/sublime-reason) plugin for syntax highlighting, etc. (has to be done manually)
+2. Install the [LSP Plugin](https://github.com/tomv564/LSP) via the Sublime Text Package Manager
+3. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
 4. `Ctrl/Cmd + Shift + P` and type "Preferences: LSP Settings" to bring up the settings file, and put in:
 ```json
 {
@@ -54,8 +55,8 @@ And you're done!
 
 ### Vim
 
-1. Download the `your-platform.zip` file from the [latest release][3], unzip it, and put the `reason-language-server.exe` file somewhere.
-2. Install [the vim-reason-plus plugin][6], following the README. Add the following to your `.vimrc` file:
+1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
+2. Install [the vim-reason-plus plugin](https://github.com/reasonml-editor/vim-reason-plus), following the README. Add the following to your `.vimrc` file:
 ```vim
 let g:LanguageClient_serverCommands = {
     \ 'reason': ['/absolute/path/to/reason-language-server.exe']
@@ -66,9 +67,9 @@ let g:LanguageClient_serverCommands = {
 
 _TODO_ people have gotten it to work with emacs, but I don't know the steps.
 
-## What about the [ocaml-language-server][7]?
+## What about the [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
-That project uses [merlin][8] under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
+That project uses [merlin](https://github.com/ocaml/merlin) under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
 I had a couple of reasons for starting a new one. The biggest is that I wanted something with minimal dependencies, so that windows support would be relatively easy, and so that I might be able to ship it with bucklescript at some future point. (it also makes targetting JS easier). I also wanted a server that was written entirely in Reason (not part typescript, part reason), and something that was written from the ground up with the Langauge Server Protocol in mind, instead of taking a different IDE-support-tool and mapping the LSP onto it.
 
 ## Contributing
@@ -88,11 +89,3 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 
 You can then develop on the language server! When you change something, the server will automatically reload.
 
-[1]: https://microsoft.github.io/language-server-protocol/specification#initialize
-[2]: https://marketplace.visualstudio.com/items?itemName=jaredly.reason-vscode
-[3]: https://github.com/jaredly/reason-language-server/releases
-[4]: https://github.com/reasonml-editor/sublime-reason
-[5]: https://github.com/tomv564/LSP
-[6]: https://github.com/reasonml-editor/vim-reason-plus
-[7]: https://github.com/freebroccolo/ocaml-language-server/
-[8]: https://github.com/ocaml/merlin
