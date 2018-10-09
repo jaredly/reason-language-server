@@ -221,7 +221,8 @@
           ]
         },
         { "include": "#jsx-attributes" },
-        { "include": "#jsx-body" }
+        { "include": "#jsx-body" },
+        { "include": "#comment" }
       ]
     },
     "jsx-tail": {
