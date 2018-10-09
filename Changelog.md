@@ -1,12 +1,13 @@
 
+## [pending]
+
+- Enable comment syntax highlighting in jsx attributes #155
+
+## 1.2.3
+TODO update
+
 ## 1.0.4
 
 - better support for interface files
 - improved hover text
 
-## [pending release]
-
-- signature help!
-- much better support for bucklescript namespaced projects
-- lots of "jump to definition" improvements
-- several crashes fixed
