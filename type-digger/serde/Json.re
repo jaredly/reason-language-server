@@ -85,7 +85,7 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
-let transformer = MakeSerializer.{
+let serializeTransformer = MakeSerializer.{
   outputType: Typ.constr(Location.mknoloc(Ldot(Lident("Json"), "t")), []),
   source: sourceTransformer,
   list: jsonArray,
@@ -103,7 +103,7 @@ let transformer = MakeSerializer.{
             )))
 };
 
-let declSerializer = MakeSerializer.decl(transformer);
+let declSerializer = MakeSerializer.decl(serializeTransformer);
 
 
 
@@ -112,28 +112,6 @@ let declSerializer = MakeSerializer.decl(transformer);
 
 
 
-
-
-
-/* let jsJson = Ldot(Lident("Js"), "Json"); */
-
-/* let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(jsJson, kind)), [
-  (Nolabel, contents)
-]); */
-
-
-/* let jsonObject = items => makeJson("object_", Exp.apply(
-  makeIdent(Ldot(Ldot(Lident("Js"), "Dict"), "fromArray")),
-  [(Nolabel, Exp.array(items))]
-)); */
-
-/* let jsonArray = items => makeJson(
-  "array",
-  Exp.apply(
-    makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "toArray")),
-    [(Nolabel, items)]
-  )
-); */
 
 
 let sourceTransformer = source => switch source {
@@ -219,7 +197,7 @@ let rec makePatList = items => switch items {
 
 let jsonT = [%type: Json.t];
 
-let transformer = {
+let deserializeTransformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
   tuple: (value, patArgs, body) => [%expr json => switch ([%e value]) {
@@ -305,4 +283,4 @@ let transformer = {
 };
 
 
-let declDeserializer = MakeDeserializer.decl(transformer);
+let declDeserializer = MakeDeserializer.decl(deserializeTransformer);
