@@ -192,9 +192,14 @@ let parse = raw => {
 };
 
 let readFromDir = (dirPath) => {
-  let jbuildRaw = switch (Files.readFileResult(dirPath /+ "dune")) {
-  | Ok(x) => Ok(x)
-  | Error(_) => Files.readFileResult(dirPath /+ "jbuild")
+  let filePath = dirPath /+ "dune";
+  switch (Files.readFileResult(filePath)) {
+  | Ok(x) => Ok((filePath, x))
+  | Error(_) =>
+    let filePath = dirPath /+ "jbuild";
+    switch (Files.readFileResult(filePath)) {
+    | Ok(x) => Ok((filePath, x))
+    | Error(x) => Error(x)
+    }
   };
-  jbuildRaw
 };
