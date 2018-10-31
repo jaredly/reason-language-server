@@ -100,10 +100,12 @@ let forInitialType = (~tbl, ~state, uri, name) => {
     package.nameForPath->Query.hashFind(path);
   };
   let%opt_force moduleName = getModuleName(uri);
+  let set = Hashtbl.create(10);
+  Hashtbl.iter((k, _) => Hashtbl.replace(set, k, ()), tbl);
   ignore(
     digType(
       ~tbl,
-      ~set=Hashtbl.create(10),
+      ~set,
       ~state,
       ~package,
       ~env,

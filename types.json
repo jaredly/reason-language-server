@@ -1,13 +1,13 @@
 {
-  "output": "type-digger/type-map/Serde.ml",
+  "output": "type-digger/type-map-serde/Serde.ml",
   "engine": "rex-json",
   "entries": [
     {
       "file": "type-digger/type-map/DigTypes.re",
-      "type": "lockfile"
+      "type": "serializableLockfile"
     }
   ],
   "custom": [
-    {"module": "Belt_HashMapInt", "path": [], "name": "t", "args": 1}
+    {"module": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1}
   ]
 }

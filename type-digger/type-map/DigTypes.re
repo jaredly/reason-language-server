@@ -10,21 +10,23 @@ type reference = {
   env: Query.queryEnv,
 };
 
-type typeSource =
+type typeSource('reference) =
   | Builtin(string)
-  | Public(reference)
+  | Public('reference)
   | NotFound;
 
-type lockfile = {
+type lockfile('reference) = {
   version: int,
   pastVersions: Belt.HashMap.Int.t(
     list((
       shortReference,
-      SharedTypes.SimpleType.declaration(typeSource)
+      SharedTypes.SimpleType.declaration(typeSource('reference))
     ))
   ),
   current: list((
     shortReference,
-    SharedTypes.SimpleType.declaration(typeSource)
+    SharedTypes.SimpleType.declaration(typeSource('reference))
   ))
 };
+
+type serializableLockfile = lockfile(shortReference);
