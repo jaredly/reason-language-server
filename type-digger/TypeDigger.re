@@ -99,6 +99,8 @@ switch (Sys.argv->Belt.List.fromArray) {
       })
     });
 
+    /* Digest.string */
+
     entries->Belt.List.forEach(typ => {
       let%opt_force file = Json.get("file", typ) |?> Json.string;
       let%opt_force typeName = Json.get("type", typ) |?> Json.string;
