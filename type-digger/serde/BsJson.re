@@ -8,18 +8,19 @@ open TypeMap;
 
 let makeIdent = MakeSerializer.makeIdent;
 
-let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
-Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
-  (Nolabel, Exp.constant(Pconst_string(message, None)))
-]));
+let loc = Location.none;
 
-let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(Ldot(Lident("Js"), "Json"), kind)), [
+let failer = message => {
+  [%expr (_) => failwith([%e Ast_helper.Exp.constant(Pconst_string(message, None))])];
+};
+
+let makeJson = (kind, contents) => Ast_helper.Exp.apply(makeIdent(Ldot(Ldot(Lident("Js"), "Json"), kind)), [
   (Nolabel, contents)
 ]);
 
-let jsonObject = items => makeJson("object_", Exp.apply(
+let jsonObject = items => makeJson("object_", Ast_helper.Exp.apply(
   makeIdent(Ldot(Ldot(Lident("Js"), "Dict"), "fromArray")),
-  [(Nolabel, Exp.array(items))]
+  [(Nolabel, Ast_helper.Exp.array(items))]
 ));
 
 let jsonArray = items => makeJson(
@@ -35,83 +36,19 @@ let sourceTransformer = source => switch source {
   | Public({DigTypes.modulePath, moduleName, name}) =>
     makeIdent(Lident(MakeSerializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
-
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("array")),
-        makeJson("array",
-            Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "Array"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("array"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            )
-        )
-      )
-    )
+    [%expr (transformer, array) => Js.Json.array(array->Belt.Array.map(transformer))]
   | Builtin("list") =>
-
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("list")),
-        jsonArray(
-            Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("list"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            )
-        )
-      )
-    )
-  | Builtin("string") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "string"))
-  | Builtin("bool") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "boolean"))
-  | Builtin("int") =>
-    Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc("int")),
-      Exp.apply(
-        makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "number")),
-        [(Nolabel, Exp.apply(
-          makeIdent(Lident("float_of_int")),
-          [(Nolabel, makeIdent(Lident("int")))]
-        ))]
-      )
-    )
-  | Builtin("float") => makeIdent(Ldot(Ldot(Lident("Js"), "Json"), "number"))
-  | Builtin("option") =>
-  Exp.fun_(
-    Nolabel,
-    None,
-    Pat.var(Location.mknoloc("transformer")),
-  Exp.function_(
-    [
-      Exp.case(Pat.construct(
-        Location.mknoloc(Lident("None")),
-        None
-      ), Exp.construct(Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "null")), None)),
-      Exp.case(Pat.construct(
-        Location.mknoloc(Lident("Some")),
-        Some(Pat.var(Location.mknoloc("value")))
-      ),
-        Exp.apply(makeIdent(Lident("transformer")), [
-          (Nolabel, makeIdent(Lident("value")))
-        ])
-      )
+    [%expr (transformer, list) => Js.Json.array(
+      list->Belt.List.map(transformer)->Belt.List.toArray
+    )]
+  | Builtin("string") => [%expr Js.Json.string]
+  | Builtin("bool") => [%expr Js.Json.boolean]
+  | Builtin("int") => [%expr int => Js.Json.number(float_of_int(int))]
+  | Builtin("float") => [%expr Js.Json.number]
+  | Builtin("option") => [%expr (transformer) => fun
+    | Some(inner) => transformer(inner)
+    | None => Js.Json.null
     ]
-  )
-
-  )
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
@@ -122,16 +59,16 @@ let transformer = MakeSerializer.{
           ),
   source: sourceTransformer,
   list: jsonArray,
-  tuple: exps => makeJson("array", Exp.array(exps)),
+  tuple: exps => makeJson("array", Ast_helper.Exp.array(exps)),
   record: items => jsonObject(items->Belt.List.map(((label, expr)) =>
-        Exp.tuple([
-          Exp.constant(Pconst_string(label, None)),
+        Ast_helper.Exp.tuple([
+          Ast_helper.Exp.constant(Pconst_string(label, None)),
           expr
         ])
        )),
-  constructor: (name, args) =>
-            makeJson("array", Exp.array([
-                makeJson("string", Exp.constant(Pconst_string(name, None))),
+  constructor: (name, args) => 
+            makeJson("array", Ast_helper.Exp.array([
+                makeJson("string", Ast_helper.Exp.constant(Pconst_string(name, None))),
               ] @ args
             ))
 };

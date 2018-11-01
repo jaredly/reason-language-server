@@ -3,7 +3,14 @@ Printexc.record_backtrace(true);
 open Analyze;
 module Json = Vendor.Json;
 
-let makeFns = (maker, tbl) => {
+let makeModule = (moduleName, contents) =>
+  Ast_helper.Str.module_(
+    Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
+  );
+
+let lockTypes = ()
+
+let makeFns = (moduleName, maker, tbl) => {
   let decls =
     Hashtbl.fold(
       ((moduleName, modulePath, name), decl, bindings) => [
@@ -14,7 +21,7 @@ let makeFns = (maker, tbl) => {
       [],
     );
 
-  Ast_helper.Str.value(Recursive, decls);
+    makeModule(moduleName, [Ast_helper.Str.value(Recursive, decls)])
 };
 
 let getTypeMap = (base, state, types) => {
@@ -31,7 +38,7 @@ let getTypeMap = (base, state, types) => {
 };
 
 
-let toBoth = (base, dest, types) => {
+/* let toBoth = (base, dest, types) => {
   let state = TopTypes.forRootPath(base);
   let tbl = getTypeMap(base, state, types);
 
@@ -40,9 +47,9 @@ let toBoth = (base, dest, types) => {
   let ml = Format.flush_str_formatter();
   Files.writeFile(dest, ml) |> ignore;
   Ok();
-};
+}; */
 
-let toJson = (base, dest, types) => {
+/* let toJson = (base, dest, types) => {
   let state = TopTypes.forRootPath(base);
   let tbl = getTypeMap(base, state, types);
 
@@ -51,10 +58,10 @@ let toJson = (base, dest, types) => {
   let ml = Format.flush_str_formatter();
   Files.writeFile(dest, ml) |> ignore;
   Ok();
-};
+}; */
 
 switch (Sys.argv->Belt.List.fromArray) {
-  | [_, "json", dest, ...items] => {
+  /* | [_, "json", dest, ...items] => {
     switch (toJson(Sys.getcwd(), dest, items)) {
       | RResult.Ok(()) => print_endline("Success")
       | RResult.Error(message) => print_endline("Failed: " ++ message)
@@ -65,7 +72,7 @@ switch (Sys.argv->Belt.List.fromArray) {
       | RResult.Ok(()) => print_endline("Success")
       | RResult.Error(message) => print_endline("Failed: " ++ message)
     }
-  }
+  } */
   | [_, config] => {
     let config = Json.parse(Util.Files.readFileExn(config));
     open Util.RResult.InfixResult;
@@ -92,7 +99,8 @@ switch (Sys.argv->Belt.List.fromArray) {
       }), name), SharedTypes.SimpleType.{
         name,
         variables: {
-          let rec loop = n => n <= 0 ? [] : [SharedTypes.SimpleType.Variable("arg" ++ string_of_int(args - n)), ...loop(n - 1)];
+          let rec loop = n =>
+            n <= 0 ? [] : [SharedTypes.SimpleType.Variable("arg" ++ string_of_int(args - n)), ...loop(n - 1)];
           loop(args)
         },
         body: Abstract
@@ -109,12 +117,12 @@ switch (Sys.argv->Belt.List.fromArray) {
 
     /* tbl */
     let body = switch engine {
-      | "bs-json" => [makeFns(Serde.BsJson.declDeserializer, tbl), makeFns(Serde.BsJson.declSerializer, tbl)]
-      | "rex-json" => [makeFns(Serde.Json.declDeserializer, tbl), makeFns(Serde.Json.declSerializer, tbl)]
+      | "bs-json" => [makeFns("DeserializeRaw", Serde.BsJson.declDeserializer, tbl), makeFns("SerializeRaw", Serde.BsJson.declSerializer, tbl)]
+      | "rex-json" => [makeFns("DeserializeRaw", Serde.Json.declDeserializer, tbl), makeFns("SerializeRaw", Serde.Json.declSerializer, tbl)]
       | _ => assert(false)
     };
 
-    Pprintast.structure(Format.str_formatter, body);
+    Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
 
     let ml = Format.flush_str_formatter();
     Files.writeFile(output, ml) |> ignore;

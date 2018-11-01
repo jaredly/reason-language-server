@@ -88,24 +88,6 @@ let rec forArgs = (transformer, args, body) => {
         [%expr
           (list) => [%e transformer.list(forExpr(transformer, arg), [%expr list])]
         ]
-
-          /* switch (Js.Json.classify(list)) {
-            | JSONArray(items) =>
-              let transformer = [%e forExpr(transformer, arg)];
-              let rec loop = items => switch items {
-                | [] => Belt.Result.Ok([])
-                | [one, ...rest] => switch (transformer(one)) {
-                  | Belt.Result.Error(error) => Belt.Result.Error(error)
-                  | Ok(value) => switch (loop(rest)) {
-                    | Belt.Result.Error(error) => Belt.Result.Error(error)
-                    | Ok(rest) => Ok([value, ...rest])
-                  }
-                }
-              };
-              loop(Belt.List.fromArray(items))
-            | _ => Belt.Result.Error("expected an array")
-          } */
-
       | _ =>
         switch args {
           | [] => transformer.source(source)
@@ -121,11 +103,6 @@ let rec forArgs = (transformer, args, body) => {
     let body = forArgs(transformer, items, body);
     let loc = Location.none;
     transformer.tuple([%expr json], patArgs, body)
-    /* TODO TODO remove the JSONArray & classify here */
-    /* [%expr json => switch (Js.Json.classify(json)) {
-      | JSONArray([%p Pat.array(patArgs)]) => [%e body]
-      | _ => Belt.Result.Error("Expected array")
-    }] */
   | _ => failer("not impl expr")
 };
 
