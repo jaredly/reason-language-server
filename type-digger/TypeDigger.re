@@ -2,7 +2,6 @@
 Printexc.record_backtrace(true);
 open Analyze;
 module Json = Vendor.Json;
-open TypeMap.DigTypes;
 
 let deserializers = tbl => {
   let decls =
@@ -44,6 +43,7 @@ let getTypeMap = (base, state, types) => {
   });
   tbl
 };
+
 
 let toBoth = (base, dest, types) => {
   let state = TopTypes.forRootPath(base);

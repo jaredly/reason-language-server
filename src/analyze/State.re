@@ -339,8 +339,9 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     );
   });
 
+
   /* print_endline("Getting things"); */
-  let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
+  let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] != '/') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
       let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(otherPath);
@@ -372,7 +373,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     }
   }) |> List.split;
 
-  let dependencyDirectories = (source |> List.filter(s => s != "" && s.[0] != '.')) @ [ocamllib];
+  let dependencyDirectories = (source |> List.filter(s => s != "" && s != "." && s.[0] == '/')) @ [ocamllib];
 
   let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
@@ -400,11 +401,11 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   /** TODO support non-esy as well */
   let buildCommand = {
-    let%opt cmd = switch (Commands.execOption("esy which dune")) {
+    /* let%opt cmd = switch (Commands.execOption("esy which dune")) {
       | None => Commands.execOption("esy which jbuilder")
       | Some(x) => Some(x)
-    };
-    Some(("esy " ++ cmd ++ " build @install", projectRoot))
+    }; */
+    Some(("esy", projectRoot))
   };
   /* print_endline("Build command?"); */
   if (state.settings.autoRebuild) {
