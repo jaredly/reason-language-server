@@ -68,10 +68,11 @@ switch (Sys.argv->Belt.List.fromArray) {
   }
   | [_, config] => {
     let config = Json.parse(Util.Files.readFileExn(config));
+    open Util.RResult.InfixResult;
+    let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
+    let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
+    let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array;
     open Util.Infix;
-    let%opt_force output = Json.get("output", config) |?> Json.string;
-    let%opt_force engine = Json.get("engine", config) |?> Json.string;
-    let%opt_force entries = Json.get("entries", config) |?> Json.array;
     let custom = Json.get("custom", config) |?> Json.array |? [];
 
     let state = TopTypes.forRootPath(Sys.getcwd());
@@ -79,9 +80,11 @@ switch (Sys.argv->Belt.List.fromArray) {
     let tbl = Hashtbl.create(10);
 
     custom->Belt.List.forEach(custom => {
-      let%opt_force modname = Json.get("module", custom) |?> Json.string;
-      let%opt_force path = Json.get("path", custom) |?> Json.array;
-      let%opt_force name = Json.get("name", custom) |?> Json.string;
+      open Util.RResult.InfixResult;
+      let%try_force modname = Util.RJson.get("module", custom) |?> Util.RJson.string;
+      let%try_force path = Util.RJson.get("path", custom) |?> Util.RJson.array;
+      let%try_force name = Util.RJson.get("name", custom) |?> Util.RJson.string;
+      open Util.Infix;
       let args = Json.get("args", custom) |?> Json.number |?>> int_of_float |? 0;
       Hashtbl.replace(tbl, (modname, path |> List.map(item => {
         let%opt_force item = Json.string(item);

@@ -10,6 +10,22 @@ let getType = (~env: Query.queryEnv, name) => {
 let isBuiltin = fun 
   | "list" | "string" | "option" | "int" | "float" | "bool" | "array" => true
   | _ => false;
+let rec getFullType_ = (env, path, name) => switch path {
+  | [] => getType(~env, name)
+  | [one, ...more] => 
+    let%opt modStamp = Query.hashFind(env.exported.modules, one);
+    let%opt declared = Query.hashFind(env.file.stamps.modules, modStamp);
+    switch (declared.contents) {
+      | Ident(_) => None
+      | Structure(contents) =>
+        getFullType_({...env, exported: contents.exported}, more, name)
+    }
+};
+
+let getFullType = (~env: Query.queryEnv, path, name) => {
+  getFullType_(env, path, name)
+};
+
 
 let mapSource = (~env, ~getModule, path) => {
     let resolved = Query.resolveFromCompilerPath(~env, ~getModule, path);
@@ -87,12 +103,25 @@ let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, key, t: Share
   };
 };
 
-let forInitialType = (~tbl, ~state, uri, name) => {
+let rec splitFull = fullName => {
+  let parts = Util.Utils.split_on_char('.', fullName);
+  let rec loop = parts => switch parts {
+    | [] => assert(false)
+    | [one] => ([], one)
+    | [one, ...more] =>
+      let (path, last) = loop(more);
+      ([one, ...path], last)
+  };
+  loop(parts)
+};
+
+let forInitialType = (~tbl, ~state, uri, fullName) => {
   let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
   print_endline("Got package...");
   let%try (file, _) = State.fileForUri(state, ~package, uri);
   let env = Query.fileEnv(file);
-  let%try declared = getType(~env, name) |> RResult.orError("No declared type named " ++ name);
+  let (path, name) = splitFull(fullName);
+  let%try declared = getFullType(~env, path, name) |> RResult.orError("No declared type named " ++ fullName);
   /* let tbl = Hashtbl.create(10); */
   let getModule = State.fileForModule(state, ~package);
   let getModuleName = uri => {
@@ -110,7 +139,7 @@ let forInitialType = (~tbl, ~state, uri, name) => {
       ~package,
       ~env,
       ~getModule,
-      (moduleName, [], name),
+      (moduleName, path, name),
       declared,
     ),
   );
