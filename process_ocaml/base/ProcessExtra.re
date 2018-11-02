@@ -1,5 +1,7 @@
 
-#if 406
+#if 407
+open Compiler_libs_407;
+#elif 406
 open Compiler_libs_406;
 #elif 402
 open Compiler_libs_402;
@@ -12,7 +14,7 @@ let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
     | Path.Pdot(path, typename, _) => typename
-    | Pident({Ident.name}) => name
+    | Pident(ident) => Ident.name(ident)
     | _ => assert false
     };
   Longident.(
@@ -41,7 +43,12 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
 
   let matching = Hashtbl.fold((l, op, res) => {
-    if (Utils.locWithinLoc(loc, op.extent) && Path.same(op.path, openNeedle)) {
+    if (Utils.locWithinLoc(loc, op.extent) && 
+#if 407
+        Path.same(op.path, openNeedle)) {
+#else 
+        Current.samePath(op.path, Shared.mapOldPath(openNeedle))) {
+#endif
       [op, ...res]
     } else {
       res
@@ -90,11 +97,14 @@ module F = (Collector: {
 
   let maybeAddUse = (path, ident, loc, tip) => {
     let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
+#if 407
     let%opt_consume relpath = Query.makeRelativePath(tracker.path, path);
+#else
+    let%opt_consume relpath = Query.makeRelativePath(tracker.path, Shared.mapOldPath(path));
+#endif
 
     tracker.used = [(relpath, tip, loc), ...tracker.used];
   };
-
 
   let addLocation = (loc, ident) => extra.locations = [(loc, ident), ...extra.locations];
   let addReference = (stamp, loc) => Hashtbl.replace(extra.internalReferences, stamp, [loc, ...Hashtbl.mem(extra.internalReferences, stamp) ? Hashtbl.find(extra.internalReferences, stamp) : []]);
@@ -110,6 +120,10 @@ module F = (Collector: {
     maybeAddUse(path, lident, loc, tip);
     let identName = Longident.last(lident);
     let identLoc = Utils.endOfLocation(loc, String.length(identName));
+#if 407
+#else
+    let path = Shared.mapOldPath(path);
+#endif
     let locType = switch (Query.fromCompilerPath(~env, path)) {
       | `Stamp(stamp) => {
         addReference(stamp, identLoc);
@@ -162,7 +176,11 @@ module F = (Collector: {
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
     switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
+#if 407
         let t = getTypeAtPath(path);
+#else
+        let t = getTypeAtPath(Shared.mapOldPath(path));
+#endif
         let {Types.lbl_loc, lbl_res} = item;
         let name = Longident.last(txt);
 
@@ -192,7 +210,11 @@ module F = (Collector: {
   let addForRecord = (recordType, items) => {
     switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
+#if 407
         let t = getTypeAtPath(path);
+#else
+        let t = getTypeAtPath(Shared.mapOldPath(path));
+#endif
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
           /* let name = Longident.last(txt); */
 
@@ -229,7 +251,12 @@ module F = (Collector: {
         maybeAddUse(path, typeLident, loc, Constructor(name));
 
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
-        let locType = switch (getTypeAtPath(path)) {
+#if 407
+        let t = getTypeAtPath(path);
+#else
+        let t = getTypeAtPath(Shared.mapOldPath(path));
+#endif
+        let locType = switch (t) {
           | `Local({stamp, contents: {kind: Variant(constructos)}}) => {
             {
               let%opt_wrap {stamp: cstamp} = Belt.List.getBy(constructos, a => a.name.txt == cstr_name);
@@ -265,7 +292,11 @@ module F = (Collector: {
       let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
       switch (top) {
         | Some((t, tip)) => addForPath(path, txt, l, t, tip)
+#if 407
         | None => addForPathParent(path, txt, l)
+#else
+        | None => addForPathParent(Shared.mapOldPath(path), txt, l)
+#endif
       };
       switch (path, txt) {
         | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
@@ -283,7 +314,7 @@ module F = (Collector: {
       Log.log("Ident!! " ++ String.concat(".", Longident.flatten(txt)));
       maybeAddUse(path, txt, loc, Module);
       addForLongident(None, path, txt, loc);
-    | Tmod_functor({stamp}, argName, maybeType, resultExpr) =>
+    | Tmod_functor(ident, argName, maybeType, resultExpr) =>
       handle_module_expr(resultExpr.mod_desc)
     | Tmod_apply(obj, arg, _) =>
       handle_module_expr(obj.mod_desc);
@@ -312,7 +343,11 @@ module F = (Collector: {
     /* Log.log("Have an open here"); */
     maybeAddUse(open_path, txt, loc, Module);
     let tracker = {
+#if 407
       path: open_path,
+#else
+      path: Shared.mapOldPath(open_path),
+#endif
       loc,
       ident: l,
       used: [],
@@ -349,7 +384,8 @@ module F = (Collector: {
   };
 
   let enter_signature_item = item => switch (item.sig_desc) {
-  | Tsig_value({val_id: {stamp}, val_loc, val_name: name, val_desc, val_attributes}) => {
+  | Tsig_value({val_id, val_loc, val_name: name, val_desc, val_attributes}) => {
+    let stamp = Ident.binding_time(val_id);
     if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
       let declared = ProcessAttributes.newDeclared(
         ~name,
@@ -419,11 +455,13 @@ module F = (Collector: {
       | Tpat_construct(lident, constructor, _) => {
         addForConstructor(pat_type, lident, constructor)
       }
-      | Tpat_alias(inner, {stamp}, name) => {
+      | Tpat_alias(inner, ident, name) => {
+        let stamp = Ident.binding_time(ident);
         addForPattern(stamp, name);
       }
-      | Tpat_var({stamp}, name) => {
+      | Tpat_var(ident, name) => {
         /* Log.log("Pattern " ++ name.txt); */
+        let stamp = Ident.binding_time(ident);
         addForPattern(stamp, name);
       }
       | _ => ()
@@ -437,7 +475,11 @@ module F = (Collector: {
     expression.exp_extra |. Belt.List.forEach(((e, eloc, _)) => switch e {
       | Texp_open(_, path, ident, _) => {
         extra.opens |. Hashtbl.add(eloc, {
+#if 407
           path,
+#else
+          path: Shared.mapOldPath(path),
+#endif
           ident,
           loc: eloc,
           extent: expression.exp_loc,
@@ -545,7 +587,19 @@ let forFile = (~file) => {
       });
       | Variant(constructos) => constructos |> List.iter(({Type.Constructor.stamp, name}) => {
         addReference(stamp, name.loc);
-        let t = {Types.id: 0, level: 0, desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))};
+        let t = {
+          Types.id: 0,
+          level: 0, 
+#if 407
+          desc: Tconstr(Path.Pident(
+            /* makeIdent(d.name.txt, stamp, 0) */
+            Ident.create(d.name.txt)
+            ), [], ref(Types.Mnil)),
+          scope: None
+#else
+          desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))
+#endif
+         };
         addLocation(name.loc, Loc.Typed(Shared.makeFlexible(t), Loc.Definition(d.stamp, Constructor(name.txt))))
       });
       | _ => ()

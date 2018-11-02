@@ -554,6 +554,7 @@ let newDocsForCmt = (~compilerVersion, ~moduleName, cmtCache, changed, cmt, src,
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmt
     | V406 => Process_406.fileForCmt
+    | V407 => Process_407.fileForCmt
   })(~moduleName, cmt, uri, converter(src, clientNeedsPlainText)) |> RResult.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
@@ -563,6 +564,7 @@ let newDocsForCmi = (~compilerVersion, ~moduleName, cmiCache, changed, cmi, src,
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmi
     | V406 => Process_406.fileForCmi
+    | V407 => Process_407.fileForCmi
   })(~moduleName, cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
   Hashtbl.replace(cmiCache, cmi, (changed, file));
   Some(file);

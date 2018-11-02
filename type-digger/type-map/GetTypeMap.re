@@ -7,6 +7,9 @@ let getType = (~env: Query.queryEnv, name) => {
   Query.hashFind(env.exported.types, name) |?> stamp => Query.hashFind(env.file.stamps.types, stamp)
 };
 
+let isBuiltin = fun 
+  | "list" | "string" | "option" | "int" | "float" | "bool" | "array" => true
+  | _ => false;
 
 let mapSource = (~env, ~getModule, path) => {
     let resolved = Query.resolveFromCompilerPath(~env, ~getModule, path);
@@ -32,7 +35,7 @@ let mapSource = (~env, ~getModule, path) => {
       };
     switch (declared) {
     | None => switch path {
-      | Path.Pident({name: ("list" | "string" | "option" | "int" | "float" | "bool" | "array") as name}) => Builtin(name)
+      | Path.Pident(ident) when isBuiltin(Ident.name(ident)) => Builtin(Ident.name(ident))
       | _ => {
         print_endline("!!! Not found " ++ Path.name(path));
         NotFound

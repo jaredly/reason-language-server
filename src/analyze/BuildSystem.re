@@ -11,6 +11,7 @@ let targetName = t => switch t {
 };
 
 type compilerVersion =
+  | V407
   | V406
   | V402;
 
@@ -91,6 +92,7 @@ let getCompilerVersion = executable => {
   | [line] => switch (Utils.split_on_char('.', String.trim(line))) {
     | ["4", "02", _] => Ok(V402)
     | ["4", "06", _] => Ok(V406)
+    | ["4", "07", _] => Ok(V407)
     | version => Error("Unsupported OCaml version: " ++ line)
   }
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))

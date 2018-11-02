@@ -26,7 +26,7 @@ let makeTypArgs = variables =>
       });
 
 let transformerName = (~moduleName, ~modulePath, ~name) =>
-  "deserialize_" ++ 
+  "deserialize_" ++
   Str.global_replace(
     Str.regexp_string("-"),
     "__",
@@ -82,6 +82,7 @@ let rec forArgs = (transformer, args, body) => {
   | Reference(source, args) =>
     switch (source, args) {
       | (DigTypes.Builtin("list"), [arg]) =>
+        let loc = Location.none;
         [%expr
           (list) => switch (Js.Json.classify(list)) {
             | JSONArray(items) =>
@@ -114,6 +115,7 @@ let rec forArgs = (transformer, args, body) => {
     let patArgs = makeTypArgs(items)->Belt.List.map(name => Pat.var(mknoloc(name)));
     let body = ok(Exp.tuple(makeTypArgs(items)->Belt.List.map(name => makeIdent(Lident(name)))));
     let body = forArgs(transformer, items, body);
+    let loc = Location.none;
     [%expr json => switch (Js.Json.classify(json)) {
       | JSONArray([%p Pat.array(patArgs)]) => [%e body]
       | _ => Belt.Result.Error("Expected array")
@@ -143,7 +145,7 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
       Exp.apply(forExpr(transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
-  | Record(items) => 
+  | Record(items) =>
     transformer.record(items->Belt.List.map(((label, expr)) => (label, forExpr(transformer, expr))))
   | Variant(constructors) =>
 
@@ -228,7 +230,7 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(transformer, 
+    declInner(transformer,
         lident
     , decl, fullName)
   )
@@ -265,7 +267,8 @@ let sourceTransformer = source => switch source {
   | Public({DigTypes.modulePath, moduleName, name}) =>
     makeIdent(Lident(transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
-    [%expr 
+    let loc = Location.none;
+    [%expr
       (transformer, array) => switch (Js.Json.classify(array)) {
         | JSONArray(items) =>
           let rec loop = items => switch items {
@@ -286,7 +289,8 @@ let sourceTransformer = source => switch source {
       }
     ];
   | Builtin("list") =>
-    [%expr 
+    let loc = Location.none;
+    [%expr
       (transformer, list) => switch (Js.Json.classify(list)) {
         | JSONArray(items) =>
           let rec loop = items => switch items {
@@ -304,25 +308,32 @@ let sourceTransformer = source => switch source {
       }
     ];
   | Builtin("string") =>
+    let loc = Location.none;
     [%expr string => switch (Js.Json.classify(string)) {
       | JSONString(string) => Belt.Result.Ok(string)
       | _ => Error("epected a string")
     }]
-  | Builtin("bool") => [%expr bool => switch (Js.Json.classify(bool)) {
+  | Builtin("bool") =>
+    let loc = Location.none;
+    [%expr bool => switch (Js.Json.classify(bool)) {
     | JSONTrue => Belt.Result.Ok(true)
     | JSONFalse => Belt.Result.Ok(false)
     | _ => Belt.Result.Error("Expected a bool")
   }]
   | Builtin("int") =>
+    let loc = Location.none;
     [%expr number => switch (Js.Json.classify(number)) {
       | JSONNumber(number) => Belt.Result.Ok(int_of_float(number))
       | _ => Error("Expected a float")
     }]
-  | Builtin("float") => [%expr number => switch (Js.Json.classify(number)) {
-    | JSONNumber(number) => Belt.Result.Ok(number)
-    | _ => Error("Expected a float")
-  }]
-  | Builtin("option") => 
+  | Builtin("float") =>
+    let loc = Location.none;
+    [%expr number => switch (Js.Json.classify(number)) {
+      | JSONNumber(number) => Belt.Result.Ok(number)
+      | _ => Error("Expected a float")
+    }]
+  | Builtin("option") =>
+    let loc = Location.none;
     [%expr (transformer, option) => switch (Js.Json.classify(option)) {
       | JSONNull => Belt.Result.Ok(None)
       | _ => switch (transformer(option)) {
@@ -349,6 +360,7 @@ let transformer = {
       );
     let body = items->Belt.List.reduce(body, (body, (label, inner)) => {
       /* let inner = forExpr(expr); */
+      let loc = Location.none;
       [%expr switch (Js.Dict.get(dict, [%e expString(label)])) {
         | None => Belt.Result.Error("No attribute " ++ [%e expString(label)])
         | Some(json) => switch ([%e inner](json)) {
@@ -357,6 +369,7 @@ let transformer = {
         }
       }]
     });
+    let loc = Location.none;
     [%expr record => switch (Js.Json.classify(record)) {
       | JSONObject(dict) => [%e body]
       | _ => Belt.Result.Error("Expected an object")

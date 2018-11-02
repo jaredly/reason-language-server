@@ -10,13 +10,12 @@
     "@esy-ocaml/reason": "*",
     "@opam/ocaml-migrate-parsetree": "*",
     "@opam/ppx_tools_versioned": "*",
+    "@opam/ppx_tools": "*",
+    "@opam/ppxlib": "*",
     "rex-json": "*",
-    "ocaml": "~4.6.0"
-  },
-  "resolutions": {
-    "@esy-ocaml/esy-installer": "0.0.1"
+    "ocaml": "~4.7.2"
   },
   "devDependencies": {
-    "ocaml": "~4.6.0"
+    "ocaml": "~4.7.2"
   }
 }

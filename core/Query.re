@@ -47,7 +47,7 @@ let findInScope = (pos, name, stamps) => {
 
 let rec joinPaths = (modulePath, path) => {
   switch modulePath {
-    | Path.Pident({stamp, name}) => (stamp, name, path)
+    | Path.Pident(ident) => (Ident.binding_time(ident), Ident.name(ident), path)
     | Path.Papply(fnPath, _argPath) => joinPaths(fnPath, path)
     | Path.Pdot(inner, name, _) => joinPaths(inner, Nested(name, path))
   }
@@ -55,8 +55,8 @@ let rec joinPaths = (modulePath, path) => {
 
 let rec makePath = (modulePath) => {
   switch modulePath {
-    | Path.Pident({stamp: 0, name}) => `GlobalMod(name)
-    | Path.Pident({stamp, name}) => `Stamp(stamp)
+    | Path.Pident(ident) when Ident.binding_time(ident) === 0 => `GlobalMod(Ident.name(ident))
+    | Path.Pident(ident) => `Stamp(Ident.binding_time(ident))
     | Path.Papply(fnPath, _argPath) => makePath(fnPath)
     | Path.Pdot(inner, name, _) => `Path(joinPaths(inner, Tip(name)))
   }

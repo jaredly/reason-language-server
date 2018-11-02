@@ -15,6 +15,7 @@ let replaceErrors = (ctx, expr) =>
       switch (expr.pexp_desc) {
         /* We should be more flexible here, e.g. to accept Result.Error() in addition to Error() */
       | Pexp_construct({txt: Longident.Lident("Error")} as lid, Some({pexp_desc: Pexp_tuple([arg])})) =>
+        let loc = Location.none
         switch (ctx->getExprType(arg)) {
           | Reference(Builtin("string"), []) => Some([%expr Error(Unspecified([%e arg]))])
           | _ => None
@@ -30,7 +31,7 @@ let modify = (ctx, structure) => {
             /* The type Belt.Result.t is just an alias for Belt_Result.t, and we have to specify the "original declaration" path */
           | Reference(Public({moduleName: "Belt_Result", modulePath: [], name: "t"}), [Reference(Builtin("int"), []), Reference(Builtin("string"), [])]) =>
             Some((args, ctx->replaceErrors(body)))
-          | _ => 
+          | _ =>
             None
           };
         })

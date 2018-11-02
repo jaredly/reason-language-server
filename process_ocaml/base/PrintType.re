@@ -1,5 +1,7 @@
 
-#if 406
+#if 407
+open Compiler_libs_407;
+#elif 406
 open Compiler_libs_406;
 #elif 402
 open Compiler_libs_402;
@@ -101,7 +103,7 @@ let makeNamer = () => {
     let num = i > 25 ? "t" ++ string_of_int(i) : String.sub(alphabet, i, 1);
     "'" ++ num;
   };
-  let get = t => 
+  let get = t =>
     try (Hashtbl.find(names, t)) {
       | Not_found => {
         let name = newName();
@@ -168,7 +170,7 @@ let print_expr = (~depth=0, stringifier, typ) => {
     let txt = {
       try {
         Printtyp.type_expr(Format.str_formatter, typ);
-      } { 
+      } {
         | _ => Format.fprintf(Format.str_formatter, "Unable to print type")
       };
       Format.flush_str_formatter()
@@ -179,7 +181,8 @@ let print_expr = (~depth=0, stringifier, typ) => {
   }
 };
 
-let print_constructor = (loop, {Types.cd_id: {name}, cd_args, cd_res}) => {
+let print_constructor = (loop, {Types.cd_id, cd_args, cd_res}) => {
+  let name = Ident.name(cd_id);
   str(name) @!
   (switch cd_args {
 #if 402
@@ -249,7 +252,7 @@ let print_decl = (stringifier, realName, name, decl) => {
 };
 
 let default = {
-  ident: (_, {Ident.name}) => str(name),
+  ident: (_, ident) => str(Ident.name(ident)),
   path: (stringifier, path, pathType) => switch path {
     | Path.Pident(ident) => stringifier.ident(stringifier, ident)
     | Pdot(path, name, _) => {stringifier.path(stringifier, path, pathType) @! str("." ++ name)}

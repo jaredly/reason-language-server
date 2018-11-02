@@ -8,11 +8,9 @@
     "test": "./_build/install/default/bin/AllTests",
     "watch": "bsb -make-world -backend native -w",
     "watch:byte": "bsb -make-world -backend bytecode -w",
-
     "package": "esy build && cp _build/default/bin/Bin.exe editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "vsce": "cd editor-extensions/vscode && vsce package",
-
     "reprocess": "(cd process_ocaml; ./build.sh); esy",
     "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod"
   },

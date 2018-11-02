@@ -3,5 +3,4 @@
   (public_name ExampleCodemod.exe)
   (libraries Codemod Util TypeMap compiler-libs.common ocaml-migrate-parsetree reason)
   (flags :standard -open Util -w -26-32-50-9-27-39-33-35-6-3)
-  (preprocess (pps Belt_ppx Ppx_monads ppx_tools_versioned.metaquot_406))
-  )
+  (preprocess (pps Belt_ppx Ppx_monads ppxlib.metaquot)))

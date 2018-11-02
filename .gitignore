@@ -7,6 +7,7 @@ examples/**/lib
 node_modules
 log_types.txt
 *.install
+_esy
 _build
 _esy
 static/codemirror-5.36.0
