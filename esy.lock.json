@@ -1,23 +1,7 @@
 {
-  "hash": "66d48e5e247da5a4bd10ba45545abc8d",
-  "root": "root@path:./esy.json",
+  "hash": "e89b1921bb1e1a0721e086b73cea7e57",
+  "root": "reason-language-server@path:.",
   "node": {
-    "root@path:./esy.json": {
-      "record": {
-        "name": "root",
-        "version": "path:./esy.json",
-        "source": "path:./esy.json",
-        "files": [],
-        "opam": null
-      },
-      "dependencies": [
-        "@esy-ocaml/reason@3.3.7", "@opam/dune@opam:1.5.0",
-        "@opam/ocaml-migrate-parsetree@opam:1.1.0",
-        "@opam/ppx_tools@opam:5.1+4.06.0",
-        "@opam/ppx_tools_versioned@opam:5.2.1", "@opam/ppxlib@opam:0.3.1",
-        "ocaml@4.7.1000", "rex-json@1.4.0"
-      ]
-    },
     "rex-json@1.4.0": {
       "record": {
         "name": "rex-json",
@@ -28,6 +12,22 @@
         "opam": null
       },
       "dependencies": []
+    },
+    "reason-language-server@path:.": {
+      "record": {
+        "name": "reason-language-server",
+        "version": "path:.",
+        "source": "path:.",
+        "files": [],
+        "opam": null
+      },
+      "dependencies": [
+        "@esy-ocaml/reason@3.3.7", "@opam/dune@opam:1.5.0",
+        "@opam/ocaml-migrate-parsetree@opam:1.1.0",
+        "@opam/ppx_tools@opam:5.1+4.06.0",
+        "@opam/ppx_tools_versioned@opam:5.2.1", "@opam/ppxlib@opam:0.3.1",
+        "ocaml@4.7.1000", "rex-json@1.4.0"
+      ]
     },
     "ocaml@4.7.1000": {
       "record": {
@@ -240,8 +240,7 @@
             "exportedEnv": {
               "OCAML_TOPLEVEL_PATH": {
                 "val": "#{self.toplevel}",
-                "scope": "global",
-                "exclusive": false
+                "scope": "global"
               }
             }
           }
