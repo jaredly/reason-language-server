@@ -11,7 +11,7 @@ module Show = {
       Printf.sprintf("%s (%s : %s)", name, SharedTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "(no src!)")
     }) |> String.concat("\n"))
     ++
-    "\nDeps\n" ++ 
+    "\nDeps\n" ++
     (Belt.List.map(dependencyModules, (modname) => {
       let paths = Hashtbl.find(pathsForModule, modname);
       Printf.sprintf("%s (%s : %s)", modname, SharedTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "")
@@ -153,7 +153,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
       | _ => Log.log("Both")
     }
   });
-  
+
   let (pathsForModule, nameForPath) = makePathsForModule(localModules, dependencyModules);
 
   let opens = switch (namespace) {
@@ -253,7 +253,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
     compilerVersion: BuildSystem.V402,
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
-    includeDirectories: 
+    includeDirectories:
       localCompiledDirs @
       dependencyDirectories @
       stdLibDirectories
@@ -283,7 +283,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   let buildSystem = BuildSystem.Dune;
 
-  let%try jbuildRaw = JbuildFile.readFromDir(rootPath);
+  let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
     | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
     | x => Ok(x)
@@ -343,7 +343,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] == '.') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
-      let%try jbuildRaw = JbuildFile.readFromDir(otherPath);
+      let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(otherPath);
       let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
         | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
         | x => Ok(x)
@@ -818,7 +818,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
 
 let getLastDefinitions = (uri, state) => switch (Hashtbl.find(state.lastDefinitions, uri)) {
 | exception Not_found => None
-| data => 
+| data =>
   Some(data)
 };
 
