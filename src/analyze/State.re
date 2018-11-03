@@ -285,7 +285,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
-    | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
+    | exception Failure(message) => Error("Unable to parse build file " ++ jbuildPath ++ " " ++ message)
     | x => Ok(x)
   };
   let packageName = JbuildFile.findName(jbuildConfig);
@@ -345,7 +345,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     let res = {
       let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(otherPath);
       let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
-        | exception Failure(message) => Error("Unable to parse build file " ++ rootPath /+ "jbuild " ++ message)
+        | exception Failure(message) => Error("Unable to parse build file " ++ jbuildPath ++ " " ++ message)
         | x => Ok(x)
       };
       let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
