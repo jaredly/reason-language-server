@@ -32,6 +32,12 @@
 				"title": "Reason: Create an interface file for this implementation file."
 			}
 		],
+		"snippets": [
+			{
+				"language": "reason",
+				"path": "./snippets/snippets.json"
+			}
+		],
 		"configuration": {
 			"type": "object",
 			"title": "Reason Language Server",

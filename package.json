@@ -44,13 +44,5 @@
   },
   "devDependencies": {
     "ocaml": "~4.6.0"
-  },
-  "contributes": {
-    "snippets": [
-      {
-        "language": "reason",
-        "path": "./snippets/snippets.json"
-      }
-    ]
   }
 }
