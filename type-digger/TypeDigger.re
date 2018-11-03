@@ -8,7 +8,19 @@ let makeModule = (moduleName, contents) =>
     Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
   );
 
-let lockTypes = ()
+let lockTypes = (tbl) => {
+  let decls = Hashtbl.fold(((moduleName, modulePath, name), decl, bindings) => [
+    Serde.OutputType.outputDeclaration((source, args) =>  switch args {
+      | [] => ""
+      | _ => String.concat(" ", args) ++ " "
+    } ++ switch source {
+      | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
+      | Builtin(name) => name
+      | Public(reference) => TypeMap.DigTypes.showReference(reference)
+    }, decl),
+    ...bindings
+  ], tbl, [])
+};
 
 let makeFns = (moduleName, maker, tbl) => {
   let decls =

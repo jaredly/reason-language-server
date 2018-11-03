@@ -10,6 +10,10 @@ type reference = {
   env: Query.queryEnv,
 };
 
+let showReference = ({moduleName, modulePath, name}) => {
+  String.concat(".", [moduleName] @ modulePath @ [name])
+};
+
 type typeSource('reference) =
   | Builtin(string)
   | Public('reference)
