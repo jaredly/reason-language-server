@@ -8,13 +8,13 @@
     "test": "./_build/install/default/bin/AllTests",
     "watch": "bsb -make-world -backend native -w",
     "watch:byte": "bsb -make-world -backend bytecode -w",
+
     "package": "esy build && cp _build/default/bin/Bin.exe editor-extensions/vscode/bin.native",
-    "vsce": "cd editor-extensions/vscode && vsce package",
-    "reprocess": "(cd process_ocaml; ./build.sh); esy",
     "zip": "./release.sh",
-    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
-    "package:linux": "cp lib/bs/native/bin.native editor-extensions/vscode/bin.native.linux; cd editor-extensions/vscode; vsce package",
-    "package:win": "xcopy /y .\\lib\\bs\\native\\bin.native.exe editor-extensions/vscode & chdir editor-extensions/vscode & vsce package"
+    "vsce": "cd editor-extensions/vscode && vsce package",
+
+    "reprocess": "(cd process_ocaml; ./build.sh); esy",
+    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod"
   },
   "keywords": [
     "Reason",
