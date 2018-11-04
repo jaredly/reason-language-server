@@ -68,7 +68,7 @@ let rec getFnArgs = t => {
 */
 let convertIdent = (oldIdent) => {(Obj.magic(oldIdent): Current.ident)};
 
-let rec mapOldPath = oldPath=> {
+let rec mapOldPath = oldPath => {
   switch (oldPath) {
     | Path.Pident(oldIdent) => Current.Pident(convertIdent(oldIdent))
     | Path.Pdot(inner, name, int) => Current.Pdot(mapOldPath(inner),name,int)
@@ -96,7 +96,6 @@ let rec asSimpleType = t => {
     | Ttuple(items) =>
       SimpleType.Tuple(items->Belt.List.map(asSimpleType))
     | Tconstr(path, args, _) =>
-      /* let newPath = mapOldPath(path); */
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
     | _ => SimpleType.Other
   }
@@ -142,7 +141,7 @@ let makeDeclaration = t => {
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
- |> SharedTypes.SimpleType.declMapSource(mapOldPath)
+  |> SharedTypes.SimpleType.declMapSource(mapOldPath)
 }
 
 let labelToString = label => switch label {

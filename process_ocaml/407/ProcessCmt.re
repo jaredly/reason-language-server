@@ -119,7 +119,7 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
         | Type_abstract =>
         switch (type_manifest) {
           | Some({desc: Tconstr(path, args, _)}) => Abstract(Some((
-              path,
+              Shared.mapOldPath(path),
             args |> List.map(Shared.makeFlexible)
           )))
           | Some({desc: Ttuple(items)}) => Tuple(items |> List.map(Shared.makeFlexible))
@@ -180,10 +180,10 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
     let declared = addItem(
       ~extent=md_loc,
       ~contents=forModuleType(env, md_type),
-      ~name=Location.mknoloc(Ident.name(ident)), 
+      ~name=Location.mknoloc(Ident.name(ident)),
       ~stamp=Ident.binding_time(ident),
       ~env,
-      md_attributes, 
+      md_attributes,
       exported.modules,
       env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}]
@@ -202,7 +202,7 @@ and forSignatureType = (env, signature) => {
 } and forModuleType = (env, moduleType) => switch moduleType {
   | Types.Mty_ident(path) => Module.Ident(Shared.mapOldPath(path))
   | Mty_alias(_ /* 402*/, path) =>
-      Module.Ident(path)
+    Module.Ident(Shared.mapOldPath(path))
   | Mty_signature(signature) => {
     Module.Structure(forSignatureType(env, signature))
   }
@@ -227,7 +227,7 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id, typ_loc, ty
       | Ttype_abstract =>
         switch (typ_manifest) {
           | Some({ctyp_desc: Ttyp_constr(path, lident, args)}) => Abstract(Some((
-            path,
+            Shared.mapOldPath(path),
             args |> List.map(t => Shared.makeFlexible(t.ctyp_type))
           )))
           | Some({ctyp_desc: Ttyp_tuple(items)}) => Tuple(items |> List.map(t => Shared.makeFlexible(t.ctyp_type)))
@@ -286,7 +286,7 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
       | None => env
       | Some(path) => {
         ...env,
-        modulePath: IncludedModule(path, env.modulePath)
+        modulePath: IncludedModule(Shared.mapOldPath(path), env.modulePath)
       }
     };
     let topLevel = List.fold_right((item, items) => {
@@ -352,8 +352,8 @@ let rec forItem = (
   let env = switch (getModulePath(incl_mod.mod_desc)) {
     | None => env
     | Some(path) => {
-      ...env, 
-      modulePath: IncludedModule(path, env.modulePath)
+      ...env,
+      modulePath: IncludedModule(Shared.mapOldPath(path), env.modulePath)
      }
   };
   let topLevel = List.fold_right((item, items) => {
@@ -372,8 +372,7 @@ let rec forItem = (
 }
 
 and forModule = (env, mod_desc, moduleName) => switch mod_desc {
-  | Tmod_ident(path, lident) => 
-    Module.Ident(path)
+  | Tmod_ident(path, lident) => Module.Ident(Shared.mapOldPath(path))
   | Tmod_structure(structure) => {
     let env = {...env, scope: itemsExtent(structure.str_items), modulePath: ExportedModule(moduleName, env.modulePath)};
     let (doc, contents) = forStructure(~env, structure.str_items);

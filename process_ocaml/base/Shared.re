@@ -74,13 +74,17 @@ let rec getFnArgs = t => {
 */
 let convertIdent = (oldIdent) => {(Obj.magic(oldIdent): Current.ident)};
 
-let rec mapOldPath = oldPath=> {
+#if 407
+let mapOldPath = oldPath => oldPath
+#else
+let rec mapOldPath = oldPath => {
   switch (oldPath) {
     | Path.Pident(oldIdent) => Current.Pident(convertIdent(oldIdent))
     | Path.Pdot(inner, name, int) => Current.Pdot(mapOldPath(inner),name,int)
     | Path.Papply(one, two) => Current.Papply(mapOldPath(one), mapOldPath(two))
   }
 };
+#endif
 
 let rec asSimpleType = t => {
   open SharedTypes;
@@ -106,7 +110,6 @@ let rec asSimpleType = t => {
     | Ttuple(items) =>
       SimpleType.Tuple(items->Belt.List.map(asSimpleType))
     | Tconstr(path, args, _) =>
-      /* let newPath = mapOldPath(path); */
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
     | _ => SimpleType.Other
   }
@@ -156,11 +159,7 @@ let makeDeclaration = t => {
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
-#if 402
- |> SharedTypes.SimpleType.declMapSource(mapOldPath)
-#elif 406
- |> SharedTypes.SimpleType.declMapSource(mapOldPath)
-#endif
+  |> SharedTypes.SimpleType.declMapSource(mapOldPath)
 }
 
 #if 402
@@ -188,11 +187,7 @@ let rec makeFlexible = t => {
       loop(t)
   },
   asSimpleType: () => asSimpleType(t)
-#if 402
  |> SharedTypes.SimpleType.mapSource(mapOldPath)
-#elif 406
- |> SharedTypes.SimpleType.mapSource(mapOldPath)
-#endif
 }
 
 and loop = t => switch (t.Types.desc) {

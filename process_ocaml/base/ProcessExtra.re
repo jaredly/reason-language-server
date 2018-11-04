@@ -43,12 +43,7 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
 
   let matching = Hashtbl.fold((l, op, res) => {
-    if (Utils.locWithinLoc(loc, op.extent) && 
-#if 407
-        Path.same(op.path, openNeedle)) {
-#else 
-        Current.samePath(op.path, Shared.mapOldPath(openNeedle))) {
-#endif
+    if (Utils.locWithinLoc(loc, op.extent) && Current.samePath(op.path, Shared.mapOldPath(openNeedle))) {
       [op, ...res]
     } else {
       res
@@ -97,11 +92,7 @@ module F = (Collector: {
 
   let maybeAddUse = (path, ident, loc, tip) => {
     let%opt_consume tracker = findClosestMatchingOpen(extra.opens, path, ident, loc);
-#if 407
-    let%opt_consume relpath = Query.makeRelativePath(tracker.path, path);
-#else
     let%opt_consume relpath = Query.makeRelativePath(tracker.path, Shared.mapOldPath(path));
-#endif
 
     tracker.used = [(relpath, tip, loc), ...tracker.used];
   };
@@ -120,10 +111,7 @@ module F = (Collector: {
     maybeAddUse(path, lident, loc, tip);
     let identName = Longident.last(lident);
     let identLoc = Utils.endOfLocation(loc, String.length(identName));
-#if 407
-#else
     let path = Shared.mapOldPath(path);
-#endif
     let locType = switch (Query.fromCompilerPath(~env, path)) {
       | `Stamp(stamp) => {
         addReference(stamp, identLoc);
@@ -176,11 +164,7 @@ module F = (Collector: {
   let addForField = (recordType, item, {Asttypes.txt, loc}) => {
     switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
-#if 407
-        let t = getTypeAtPath(path);
-#else
         let t = getTypeAtPath(Shared.mapOldPath(path));
-#endif
         let {Types.lbl_loc, lbl_res} = item;
         let name = Longident.last(txt);
 
@@ -210,11 +194,7 @@ module F = (Collector: {
   let addForRecord = (recordType, items) => {
     switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
-#if 407
-        let t = getTypeAtPath(path);
-#else
         let t = getTypeAtPath(Shared.mapOldPath(path));
-#endif
         items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
           /* let name = Longident.last(txt); */
 
@@ -251,11 +231,7 @@ module F = (Collector: {
         maybeAddUse(path, typeLident, loc, Constructor(name));
 
         let nameLoc = Utils.endOfLocation(loc, String.length(name));
-#if 407
-        let t = getTypeAtPath(path);
-#else
         let t = getTypeAtPath(Shared.mapOldPath(path));
-#endif
         let locType = switch (t) {
           | `Local({stamp, contents: {kind: Variant(constructos)}}) => {
             {
@@ -292,11 +268,7 @@ module F = (Collector: {
       let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
       switch (top) {
         | Some((t, tip)) => addForPath(path, txt, l, t, tip)
-#if 407
-        | None => addForPathParent(path, txt, l)
-#else
         | None => addForPathParent(Shared.mapOldPath(path), txt, l)
-#endif
       };
       switch (path, txt) {
         | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
@@ -343,11 +315,7 @@ module F = (Collector: {
     /* Log.log("Have an open here"); */
     maybeAddUse(open_path, txt, loc, Module);
     let tracker = {
-#if 407
-      path: open_path,
-#else
       path: Shared.mapOldPath(open_path),
-#endif
       loc,
       ident: l,
       used: [],
@@ -475,11 +443,7 @@ module F = (Collector: {
     expression.exp_extra |. Belt.List.forEach(((e, eloc, _)) => switch e {
       | Texp_open(_, path, ident, _) => {
         extra.opens |. Hashtbl.add(eloc, {
-#if 407
-          path,
-#else
           path: Shared.mapOldPath(path),
-#endif
           ident,
           loc: eloc,
           extent: expression.exp_loc,
@@ -589,12 +553,9 @@ let forFile = (~file) => {
         addReference(stamp, name.loc);
         let t = {
           Types.id: 0,
-          level: 0, 
+          level: 0,
 #if 407
-          desc: Tconstr(Path.Pident(
-            /* makeIdent(d.name.txt, stamp, 0) */
-            Ident.create(d.name.txt)
-            ), [], ref(Types.Mnil)),
+          desc: Tconstr(Path.Pident(makeIdent(d.name.txt, stamp, 0)), [], ref(Types.Mnil)),
           scope: None
 #else
           desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))

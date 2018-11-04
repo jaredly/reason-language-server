@@ -37,8 +37,7 @@ let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
 
   let matching = Hashtbl.fold((l, op, res) => {
-    if (Utils.locWithinLoc(loc, op.extent) && 
-        Current.samePath(op.path, Shared.mapOldPath(openNeedle))) {
+    if (Utils.locWithinLoc(loc, op.extent) && Current.samePath(op.path, Shared.mapOldPath(openNeedle))) {
       [op, ...res]
     } else {
       res
@@ -531,7 +530,7 @@ let forFile = (~file) => {
         addReference(stamp, name.loc);
         let t = {
           Types.id: 0,
-          level: 0, 
+          level: 0,
           desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))
          };
         addLocation(name.loc, Loc.Typed(Shared.makeFlexible(t), Loc.Definition(d.stamp, Constructor(name.txt))))
