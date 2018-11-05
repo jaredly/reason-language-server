@@ -3,8 +3,9 @@ let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
-  let%try refmtPath = BuildSystem.getRefmt(".", BuildSystem.Dune);
-  let%try_wrap compilerPath = BuildSystem.getCompiler(".", BuildSystem.Dune);
+  let buildSystem = BuildSystem.Dune(Esy("0.3.4"));
+  let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
+  let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
   let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
@@ -13,7 +14,7 @@ let getPackage = (localModules) => {
     pathsForModule,
     nameForPath,
     namespace: None,
-    buildSystem: BuildSystem.Dune,
+    buildSystem,
     buildCommand: None,
     interModuleDependencies: Hashtbl.create(0),
     opens: [],
