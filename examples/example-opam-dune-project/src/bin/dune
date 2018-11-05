@@ -1,0 +1,6 @@
+(executable
+  (name Hello)
+  (public_name Hello.exe)
+  (libraries lib)
+  (flags (:standard -w -27-32-33))
+  )

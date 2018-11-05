@@ -3,8 +3,11 @@
 .bsb.lock
 npm-debug.log
 /lib/
-examples/**/lib
-node_modules/
+examples/*/lib
+examples/*/_build
+examples/*/_opam
+examples/*/node_modules
+node_modules
 log_types.txt
 *.install
 _build
@@ -16,3 +19,4 @@ tmp
 examples/markdown-reason-react/
 editor-extensions/vscode/*.zip
 bsb_modules
+_esy/
