@@ -40,13 +40,13 @@ And you're done!
 4. `Ctrl/Cmd + Shift + P` and type "Preferences: LSP Settings" to bring up the settings file, and put in:
 ```json
 {
-  "auto_show_diagnostics_panel": false,
+  "auto_show_diagnostics_panel": false,	
   "clients": {
     "reason": {
       "enabled": true,
       "command": ["/absolute/path/to/reason-language-server.exe"],
       "scopes": ["source.reason"],
-      "syntaxes": ["Packages/sublime-reason/Reason.tmLanguage"],
+      "syntaxes": ["Packages/Reason/Reason.tmLanguage"],
       "languageId": "reason"
     }
   }
