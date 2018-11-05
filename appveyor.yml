@@ -25,11 +25,11 @@ install:
 build_script:
     - esy build
     # Validate binary
-    - _build\install\default\bin\Bin.exe --help
+    - _esy\default\build\default\bin\Bin.exe --help
     - esy dune exec ExamplesTests
 
 artifacts:
-    - path: _build/default/bin/Bin.exe
+    - path: _esy\default\build\default\bin\Bin.exe
       name: Windows Build
       type: File
 

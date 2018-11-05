@@ -42,7 +42,7 @@ jobs:
           key: v2-dependencies-{{ checksum "esy.json" }}
 
       - store_artifacts:
-          path: ./_build/default/bin/Bin.exe
+          path: ./_esy/default/build/default/bin/Bin.exe
           destination: bin.native.linux
 
   publish-github-release:
@@ -53,7 +53,7 @@ jobs:
       - run:
           name: "Publish Release on GitHub"
           command: |
-            FILE=./_build/default/bin/Bin.exe
+            FILE=./_esy/default/build/default/bin/Bin.exe
             VERSION=$(my-binary --version)
             curl -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: $(file -b --mime-type $FILE)" --data-binary @$FILE "https://uploads.github.com/repos/jaredly/reason-language-server/releases/${CIRCLE_TAG}/assets?name=bin.linux.exe"
 
