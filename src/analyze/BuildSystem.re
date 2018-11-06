@@ -14,8 +14,12 @@ type compilerVersion =
   | V406
   | V402;
 
+type packageManager =
+  /* TODO: this could have another constructor Opam */
+  | Esy(string);
+
 type t =
-  | Dune
+  | Dune(packageManager)
   | Bsb(string)
   | BsbNative(string, target);
 
@@ -39,7 +43,7 @@ let duneNamespacedName = (namespace, name) => switch namespace {
 };
 
 let namespacedName = (buildSystem, namespace, name) => switch buildSystem {
-  | Dune => duneNamespacedName(namespace, name)
+  | Dune(_) => duneNamespacedName(namespace, name)
   | _ => bucklescriptNamespacedName(namespace, name)
 };
 
@@ -62,7 +66,7 @@ let getBsPlatformDir = rootPath => {
       );
     switch (resultSecondary) {
     | Some(path) => RResult.Ok(path)
-    | None => 
+    | None =>
       let message = "bs-platform could not be found";
       Log.log(message);
       RResult.Error(message);
@@ -120,6 +124,17 @@ let detect = (rootPath, bsconfig) => {
   }) : Bsb(bsbVersion);
 };
 
+let getEsyCompiledBase = esyVersion =>
+  switch (String.split_on_char('.', esyVersion)) {
+  | [_, minor, ..._] =>
+    if(int_of_string(minor) >= 3) {
+      "_esy" /+ "default" /+ "build"
+    } else {
+      "_build" /* TODO */
+    }
+  | _ => assert(false)
+  }
+
 let getCompiledBase = (root, buildSystem) =>
   Files.ifExists(
     switch (buildSystem) {
@@ -129,7 +144,7 @@ let getCompiledBase = (root, buildSystem) =>
     | BsbNative(_, Js) => root /+ "lib" /+ "bs" /+ "js"
     | BsbNative(_, Native) => root /+ "lib" /+ "bs" /+ "native"
     | BsbNative(_, Bytecode) => root /+ "lib" /+ "bs" /+ "bytecode"
-    | Dune => root /+ "_build" /* TODO */
+    | Dune(Esy(esyVersion)) => root /+ getEsyCompiledBase(esyVersion)
     },
   );
 
@@ -150,7 +165,7 @@ let getStdlib = (base, buildSystem) => {
     /+ "ocaml"
     /+ "lib"
     /+ "ocaml"]
-  | Dune => failwith("Don't know how to find the dune stdlib")
+  | Dune(_) => failwith("Don't know how to find the dune stdlib")
   };
 };
 
@@ -166,7 +181,7 @@ let getCompiler = (rootPath, buildSystem) => {
     | BsbNative(_, Bytecode) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
-    | Dune => {
+    | Dune(_) => {
       let%try_wrap ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
       ocamlopt
     }
@@ -175,7 +190,7 @@ let getCompiler = (rootPath, buildSystem) => {
 
 let getRefmt = (rootPath, buildSystem) => {
   switch (buildSystem) {
-    | BsbNative("3.2.0", _) => 
+    | BsbNative("3.2.0", _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt.exe"
     | Bsb(version) when version > "2.2.0" =>
@@ -187,7 +202,7 @@ let getRefmt = (rootPath, buildSystem) => {
     | Bsb(_) | BsbNative(_, _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt3.exe"
-    | Dune => {
+    | Dune(_) => {
       let%try_wrap refmt = getLine("esy which refmt", ~pwd=rootPath);
       refmt
     }
@@ -198,6 +213,6 @@ let hiddenLocation = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | Bsb(_)
     | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
-    | Dune => rootPath /+ "_build" /+ ".lsp"
+    | Dune(Esy(esyVersion)) => rootPath /+ getEsyCompiledBase(esyVersion) /+ ".lsp"
   };
 };

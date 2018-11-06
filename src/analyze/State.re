@@ -119,7 +119,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   let buildCommand = switch buildSystem {
     | Bsb(_) => bsb ++ " -make-world"
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
-    | Dune => assert(false)
+    | Dune(_) => assert(false)
   };
   if (state.settings.autoRebuild) {
     runBuildCommand(~reportDiagnostics, state, rootPath, Some((buildCommand, rootPath)));
@@ -266,22 +266,24 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
 };
 
 let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
-  let rec findJbuilderProjectRoot = path => {
+  let rec findJbuilderProjectRoot = (path, buildDir) => {
     if (path == "/") {
-      RResult.Error("Unable to find _build directory")
-    } else if (Files.exists(path /+ "_build")) {
+      RResult.Error("Unable to find " ++ buildDir ++ " directory")
+    } else if (Files.exists(path /+ buildDir)) {
       Ok(path)
     } else {
-      findJbuilderProjectRoot(Filename.dirname(path))
+      findJbuilderProjectRoot(Filename.dirname(path), buildDir)
     }
   };
   /* print_endline("Finding project root"); */
-  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
-  let buildDir = projectRoot /+ "_build";
+  let%try esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
+  let esyBuildDir = BuildSystem.getEsyCompiledBase(esyVersion);
+  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath), esyBuildDir);
+  let buildDir = projectRoot /+ esyBuildDir;
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
   let (source, build, flags) = MerlinFile.parseMerlin("", merlinRaw);
 
-  let buildSystem = BuildSystem.Dune;
+  let buildSystem = BuildSystem.Dune(Esy(esyVersion));
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
