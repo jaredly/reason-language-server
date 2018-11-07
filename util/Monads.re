@@ -203,6 +203,7 @@ module Result = {
     | Ok(x) => Ok(use(x))
     | Error(e) => Error(e)
     };
+
   let bind: (result('a, 'b), ~f: 'a => result('c, 'b)) => result('c, 'b) =
     (value, ~f as use) =>
       switch value {
