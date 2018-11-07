@@ -329,14 +329,23 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
 
       let getLensItems = ({SharedTypes.file, extra}) => {
+        /* getLensTopLevel gives the list */
+        let rec getTypeLensTopLevel = (topLevel) => {
+          switch (topLevel) {
+              | [] => []
+              | [{SharedTypes.name: {loc}, contents}, ... tlp] => {
+                let currentCl =
+                  switch (contents) {
+                  | SharedTypes.Module.Value({typ}) => [(typ.toString(), loc)]
+                  | Module(Structure({topLevel})) => getTypeLensTopLevel(topLevel)
+                  | _ => []
+                  };
+                List.concat(currentCl, getTypeLensTopLevel(tlp))
+              }
+            } 
+        }
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
-        let lenses = showToplevelTypes ? file.contents.topLevel |. List.keepMap(({name: {loc}, contents}) => {
-          switch contents {
-          | Value({typ}) => Some((typ.toString(), loc))
-          | _ => None
-          }
-        }) : [];
-
+        let lenses = showToplevelTypes ? file.contents.topLevel |. getTypeLensTopLevel : [];
         let showOpens = state.settings.opensCodelens;
         let lenses = showOpens ? lenses @ {
           CodeLens.forOpens(extra)
