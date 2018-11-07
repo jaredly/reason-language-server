@@ -3,7 +3,7 @@
 let shellEscape = path => Filename.quote(path);
 
 let execFull = (~input=?, ~pwd=?, ~env=Unix.environment(), cmd) => {
-  let cmd = 
+  let cmd =
     if (Sys.os_type == "Win32") {
       Printf.sprintf("\"%s\"", cmd)
     } else {
@@ -107,9 +107,9 @@ let execOption = cmd => {
 let execResult = cmd => {
   let (lines, success) = execSync(cmd);
   if (success) {
-    RResult.Ok(lines)
+    RResult.Ok(String.concat("\n", lines))
   } else {
-    RResult.Error(lines)
+    RResult.Error(String.concat("\n", lines))
   }
 };
 
