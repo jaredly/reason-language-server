@@ -146,5 +146,17 @@
 			"stopOnEntry": false,
 			"sourceMaps": false,
 		},
+		{
+			"name": "Launch Opam Dune Project",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/examples/example-opam-dune-project"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
 	]
 }

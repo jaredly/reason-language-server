@@ -79,14 +79,16 @@ let rec getAffectedFiles = (root, lines) => switch lines {
 
 let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   /** TODO check for a bsb.lock file & bail if it's there */
+  /** TODO refactor so Dune projects don't get bsconfig.json handling below */
   let%opt_consume (buildCommand, commandDirectory) = buildCommand;
+  Log.log(">> Build system running: " ++ buildCommand);
   let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
-  Log.log(">> Build system: " ++ buildCommand);
+  Log.log(">>> stdout");
   Log.log(Utils.joinLines(stdout));
-  Log.log(">> Error");
+  Log.log(">>> stderr");
   Log.log(Utils.joinLines(stderr));
   let files = getAffectedFiles(commandDirectory, stdout @ stderr);
-  Log.log("Affected files " ++ String.concat(" ", files));
+  Log.log("Affected files: " ++ String.concat(" ", files));
   let bsconfigJson = root /+ "bsconfig.json" |> Utils.toUri;
   let bsconfigClean = ref(true);
   files |. Belt.List.forEach(uri => {
@@ -266,24 +268,53 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
 };
 
 let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
-  let rec findJbuilderProjectRoot = (path, buildDir) => {
+  let rec findJbuilderProjectRoot = (path) => {
     if (path == "/") {
-      RResult.Error("Unable to find " ++ buildDir ++ " directory")
-    } else if (Files.exists(path /+ buildDir)) {
+      RResult.Error("Unable to find project root dir")
+    } else if (Files.exists(path /+ "dune-project")) {
+      Ok(path)
+    } else if (Files.exists(path /+ "_build")) {
+      Ok(path)
+    } else if (Files.exists(path /+ "_esy")) {
+      Ok(path)
+    } else if (Files.exists(path /+ "_opam")) {
       Ok(path)
     } else {
-      findJbuilderProjectRoot(Filename.dirname(path), buildDir)
+      findJbuilderProjectRoot(Filename.dirname(path))
     }
   };
-  /* print_endline("Finding project root"); */
-  let%try esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
-  let%try esyBuildDir = BuildSystem.getEsyCompiledBase(rootPath, esyVersion);
-  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath), esyBuildDir);
-  let buildDir = projectRoot /+ esyBuildDir;
+
+  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
+  Log.log("=== Project root: " ++ projectRoot);
+
+  let has_esyDir = Files.exists(projectRoot /+ "_esy");
+  let has_opamSwitchDir = Files.exists(projectRoot /+ "_opam");
+
+  let%try pkgMgr = switch ((has_esyDir, has_opamSwitchDir)) {
+    | (false, true) => 
+      Log.log("Detected `opam` dependency manager for local use");
+      Ok(BuildSystem.Opam)
+    | (true, false) => 
+      Log.log("Detected `esy` dependency manager for local use");
+      let%try_wrap esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
+      BuildSystem.Esy(esyVersion)
+    | (_, _) => 
+      Log.log("Defaulting to `esy` for project dependency manager");
+      let%try_wrap esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
+      BuildSystem.Esy(esyVersion)
+  };
+
+  let buildSystem = BuildSystem.Dune(pkgMgr);
+
+  let%try buildDir = 
+    BuildSystem.getCompiledBase(projectRoot, buildSystem)
+    |> RResult.resultOfOption(
+      "Could not find local build dir",
+    );
+  Log.log("=== Build dir:    " ++ buildDir);
+
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
   let (source, build, flags) = MerlinFile.parseMerlin("", merlinRaw);
-
-  let buildSystem = BuildSystem.Dune(Esy(esyVersion));
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
@@ -292,8 +323,8 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   };
   let packageName = JbuildFile.findName(jbuildConfig);
 
-  Log.log("Get ocamllib");
-  let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
+  Log.log("Get ocaml stdlib dirs");
+  let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
 
   /* TODO support binaries, and other directories */
   let includeSubdirs = JbuildFile.hasIncludeSubdirs(jbuildConfig);
@@ -324,20 +355,21 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     let name = FindFiles.getName(filename);
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
-      | `Library(libraryName) => libraryName ++ "__" ++ name
+      | `Library(libraryName) => 
+        String.capitalize(libraryName) ++ "__" ++ String.capitalize(name)
     };
     Log.log("Local file: " ++ (rootPath /+ filename));
-    (
-      namespaced,
-      SharedTypes.Impl(
-        compiledBase
+    let implCmtPath = 
+      compiledBase
         /+ (
           fold(libraryName, "", l => l ++ "__")
-          ++ Filename.chop_extension(filename)
+          ++ String.capitalize(Filename.chop_extension(filename))
           ++ ".cmt"
-        ),
-        Some(rootPath /+ filename),
-      ),
+        );
+    Log.log("Local .cmt file: " ++ implCmtPath);
+    (
+      namespaced,
+      SharedTypes.Impl(implCmtPath, Some(rootPath /+ filename)),
     );
   });
 
@@ -375,7 +407,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     }
   }) |> List.split;
 
-  let dependencyDirectories = (source |> List.filter(s => s != "" && s != "." && s.[0] == '/')) @ [ocamllib];
+  let dependencyDirectories = (source |> List.filter(s => s != "" && s != "." && s.[0] == '/')) @ stdlibs;
 
   let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
@@ -384,7 +416,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   |> List.map(path => {
     Log.log(">> Collecting deps for " ++ path);
     Files.readDirectory(Infix.maybeConcat(rootPath, path))
-    |> List.filter(FindFiles.isSourceFile)
+    |> List.filter(FindFiles.isCompiledFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
       (Filename.chop_extension(name) |> String.capitalize, SharedTypes.Impl(compiled, Some(path /+ name)));
@@ -397,19 +429,27 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let (pathsForModule, nameForPath) = makePathsForModule(localModules, dependencyModules);
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
-  libraryName |?< libraryName => Hashtbl.replace(pathsForModule, libraryName ++ "__", Impl(compiledBase /+ libraryName ++ "__.cmt", None));
+  libraryName |?< libraryName => Hashtbl.replace(
+    pathsForModule, 
+    String.capitalize(libraryName), 
+    Impl(compiledBase /+ libraryName ++ ".cmt", None)
+  );
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
-  /** TODO support non-esy as well */
-  let buildCommand = {
-    /* let%opt cmd = switch (Commands.execOption("esy which dune")) {
-      | None => Commands.execOption("esy which jbuilder")
-      | Some(x) => Some(x)
-    }; */
-    Some(("esy", projectRoot))
+  let buildCommand = switch (pkgMgr) {
+    | Esy(_) =>
+      Some(("esy", projectRoot))
+    | Opam =>
+      if (Files.exists(projectRoot /+ "_opam" /+ "bin" /+ "dune")) {
+        Some(("opam exec -- dune build @install --root .", projectRoot))
+      } else if (Files.exists(projectRoot /+ "_opam" /+ "bin" /+ "jbuild")) {
+        Some(("opam exec -- jbuild build @install --root .", projectRoot))
+      } else {
+        None
+      }
   };
-  /* print_endline("Build command?"); */
+
   if (state.settings.autoRebuild) {
     runBuildCommand(~reportDiagnostics, state, rootPath, buildCommand);
   };
@@ -429,7 +469,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     buildSystem,
     buildCommand,
     /* TODO check if there's a module called that */
-    opens: fold(libraryName, [], libraryName => [libraryName ++ "__"]),
+    opens: fold(libraryName, [], libraryName => [String.capitalize(libraryName)]),
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
@@ -454,9 +494,11 @@ let findRoot = (uri, packagesByRoot) => {
       Some(`Root(path))
     } else if (Files.exists(path /+ "bsconfig.json")) {
       Some(`Bs(path))
-      /* jbuilder */
+    } else if (Files.exists(path /+ "dune")) {
+      Log.log("Found a `dune` file at " ++ path);
+      Some(`Jbuilder(path))
     } else if (Files.exists(path /+ ".merlin")) {
-      Log.log("Found a .merlin at " ++ path);
+      Log.log("Found a `.merlin` file at " ++ path);
       Some(`Jbuilder(path))
     } else {
       loop(Filename.dirname(path))
