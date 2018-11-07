@@ -158,20 +158,24 @@ let getEsyCompiledBase = (root, esyVersion) =>
   | _ => Error("Couldn't find Esy target directory")
   }
 
-let getCompiledBase = (root, buildSystem) =>
-  Files.ifExists(
-    switch (buildSystem) {
-    | Bsb("3.2.0") => Ok(root /+ "lib" /+ "bs" /+ "js")
-    | Bsb("3.1.1") => Ok(root /+ "lib" /+ "ocaml")
-    | Bsb(_) => Ok(root /+ "lib" /+ "bs")
-    | BsbNative(_, Js) => Ok(root /+ "lib" /+ "bs" /+ "js")
-    | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
-    | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
-    | Dune(Esy(esyVersion)) =>
-      let%try_wrap esyTargetDir = getEsyCompiledBase(root, esyVersion);
-      root /+ esyTargetDir
-    },
-  );
+let getCompiledBase = (root, buildSystem) => {
+  let compiledBase = switch (buildSystem) {
+  | Bsb("3.2.0") => Ok(root /+ "lib" /+ "bs" /+ "js")
+  | Bsb("3.1.1") => Ok(root /+ "lib" /+ "ocaml")
+  | Bsb(_) => Ok(root /+ "lib" /+ "bs")
+  | BsbNative(_, Js) => Ok(root /+ "lib" /+ "bs" /+ "js")
+  | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
+  | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
+  | Dune(Esy(esyVersion)) =>
+    let%try_wrap esyTargetDir = getEsyCompiledBase(root, esyVersion);
+    root /+ esyTargetDir
+  };
+
+  switch compiledBase {
+  | Ok(compiledBase) => Files.ifExists(compiledBase);
+  | err => None
+  };
+};
 
 let getStdlib = (base, buildSystem) => {
   let%try_wrap bsPlatformDir = getBsPlatformDir(base);

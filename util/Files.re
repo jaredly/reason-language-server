@@ -157,9 +157,7 @@ let exists = (path) =>
   | Some(_) => true
   };
 
-let ifExists = fun
-  | Ok(path) => exists(path) ? Some(path) : None
-  | Error(_) => None
+let ifExists = path => exists(path) ? Some(path) : None;
 
 let isFile = path => switch (maybeStat(path)) {
 | Some({Unix.st_kind: Unix.S_REG}) => true
