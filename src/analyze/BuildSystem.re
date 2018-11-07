@@ -124,27 +124,52 @@ let detect = (rootPath, bsconfig) => {
   }) : Bsb(bsbVersion);
 };
 
-let getEsyCompiledBase = esyVersion =>
+let getEsyCompiledBase = (root, esyVersion) =>
   switch (String.split_on_char('.', esyVersion)) {
   | [_, minor, ..._] =>
-    if(int_of_string(minor) >= 3) {
-      "_esy" /+ "default" /+ "build"
-    } else {
-      "_build" /* TODO */
+    let env = Unix.environment () |. Array.to_list;
+    try {
+      let root = List.find(var => Utils.startsWith(var, "cur__original_root="), env);
+      let var = List.find(var => Utils.startsWith(var, "cur__target_dir="), env);
+      let splitOnEquals = Utils.split_on_char('=');
+      switch((splitOnEquals(root), splitOnEquals(var))) {
+        | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
+        | _ => assert(false)
+      }
+    } {
+    | _ =>
+      switch(Commands.execResult("esy command-env --json")) {
+      | Ok(commandEnv) =>
+        try {
+          open Json.Infix;
+          let json = Json.parse(commandEnv);
+          switch(Json.get("cur__original_root", json) |?> Json.string,
+                Json.get("cur__target_dir", json) |?> Json.string) {
+            | (Some(projectRoot), Some(targetDir)) =>
+              Ok(Files.relpath(projectRoot, targetDir))
+            | _ => Error("Couldn't find Esy target directory")
+          }
+        } {
+          | _ => Error("Couldn't find Esy target directory")
+        }
+      | err => err
+      }
     }
-  | _ => assert(false)
+  | _ => Error("Couldn't find Esy target directory")
   }
 
 let getCompiledBase = (root, buildSystem) =>
   Files.ifExists(
     switch (buildSystem) {
-    | Bsb("3.2.0") => root /+ "lib" /+ "bs" /+ "js"
-    | Bsb("3.1.1") => root /+ "lib" /+ "ocaml"
-    | Bsb(_) => root /+ "lib" /+ "bs"
-    | BsbNative(_, Js) => root /+ "lib" /+ "bs" /+ "js"
-    | BsbNative(_, Native) => root /+ "lib" /+ "bs" /+ "native"
-    | BsbNative(_, Bytecode) => root /+ "lib" /+ "bs" /+ "bytecode"
-    | Dune(Esy(esyVersion)) => root /+ getEsyCompiledBase(esyVersion)
+    | Bsb("3.2.0") => Ok(root /+ "lib" /+ "bs" /+ "js")
+    | Bsb("3.1.1") => Ok(root /+ "lib" /+ "ocaml")
+    | Bsb(_) => Ok(root /+ "lib" /+ "bs")
+    | BsbNative(_, Js) => Ok(root /+ "lib" /+ "bs" /+ "js")
+    | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
+    | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
+    | Dune(Esy(esyVersion)) =>
+      let%try_wrap esyTargetDir = getEsyCompiledBase(root, esyVersion);
+      root /+ esyTargetDir
     },
   );
 
@@ -212,7 +237,9 @@ let getRefmt = (rootPath, buildSystem) => {
 let hiddenLocation = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | Bsb(_)
-    | BsbNative(_, _) => rootPath /+ "node_modules" /+ ".lsp"
-    | Dune(Esy(esyVersion)) => rootPath /+ getEsyCompiledBase(esyVersion) /+ ".lsp"
+    | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
+    | Dune(Esy(esyVersion)) =>
+      let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath, esyVersion);
+      rootPath /+ esyTargetDir /+ ".lsp"
   };
 };

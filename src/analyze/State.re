@@ -129,7 +129,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
   let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
   let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
-  let tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
+  let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
   let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let%try_wrap compiledBase = compiledBase |> RResult.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
@@ -277,7 +277,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   };
   /* print_endline("Finding project root"); */
   let%try esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
-  let esyBuildDir = BuildSystem.getEsyCompiledBase(esyVersion);
+  let%try esyBuildDir = BuildSystem.getEsyCompiledBase(rootPath, esyVersion);
   let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath), esyBuildDir);
   let buildDir = projectRoot /+ esyBuildDir;
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
@@ -377,7 +377,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   let dependencyDirectories = (source |> List.filter(s => s != "" && s != "." && s.[0] == '/')) @ [ocamllib];
 
-  let hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
   let dependencyModules = dependencyDirectories
