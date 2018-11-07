@@ -329,7 +329,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
 
       let getLensItems = ({SharedTypes.file, extra}) => {
-        /* getLensTopLevel gives the list */
+        /* getTypeLensTopLevel gives the list of per-value type codeLens
+           for every value in a module topLevel */
         let rec getTypeLensTopLevel = (topLevel) => {
           switch (topLevel) {
               | [] => []
