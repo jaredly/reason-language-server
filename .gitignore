@@ -4,7 +4,7 @@
 npm-debug.log
 /lib/
 examples/**/lib
-node_modules/
+node_modules
 log_types.txt
 *.install
 _build
