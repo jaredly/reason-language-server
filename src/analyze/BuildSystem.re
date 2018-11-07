@@ -134,7 +134,7 @@ let getEsyCompiledBase = (root, esyVersion) =>
       let splitOnEquals = Utils.split_on_char('=');
       switch((splitOnEquals(root), splitOnEquals(var))) {
         | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
-        | _ => assert(false)
+        | _ => Error("Couldn't find Esy target directory")
       }
     } {
     | _ =>
