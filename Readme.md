@@ -5,6 +5,12 @@ This project implements the [Language Server Protocol](https://microsoft.github.
 
 It is written in Reason, and compiled via bsb-native. The goal is for it to work equally well on Windows, MacOS, and Linux.
 
+## Platform support
+
+- Macos ✅
+- Linux ✅
+- Windows ✅ (but **not under WSL**, make sure you install bs-platform etc. from the windows side)
+
 ## Installation
 
 ### VS Code
