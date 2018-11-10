@@ -16,7 +16,8 @@ type compilerVersion =
   | V402;
 
 type packageManager =
-  | Opam
+  /* Absolute path to the Opam switch prefix */
+  | Opam(string)
   | Esy(string);
 
 type t =
@@ -173,7 +174,7 @@ let getCompiledBase = (root, buildSystem) => {
   | BsbNative(_, Js) => Ok(root /+ "lib" /+ "bs" /+ "js")
   | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
   | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
-  | Dune(Opam) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
+  | Dune(Opam(_)) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
   | Dune(Esy(esyVersion)) =>
     let%try_wrap esyTargetDir = getEsyCompiledBase(root, esyVersion);
     root /+ esyTargetDir
@@ -185,10 +186,24 @@ let getCompiledBase = (root, buildSystem) => {
   };
 };
 
+let getOpamLibOrBinPath = (root, opamSwitchPrefix, path) => {
+  let maybeLibOrBinPath = opamSwitchPrefix /+ path;
+  if (Files.exists(maybeLibOrBinPath)) {
+    Ok(maybeLibOrBinPath);
+  } else {
+    /* in local switches that share the sys-ocaml-version, the ocaml library and
+     * binaries are apparently in the global (system) switch ¯\_(ツ)_/¯.
+     */
+    let%try sysOCamlVersion = getLine("opam config var sys-ocaml-version", ~pwd=root);
+    let%try opamRoot = getLine("opam config var root", ~pwd=root);
+    Ok(opamRoot /+ sysOCamlVersion /+ path);
+  };
+};
+
 let getStdlib = (base, buildSystem) => {
   switch (buildSystem) {
   | BsbNative(_, Js)
-  | Bsb(_) => 
+  | Bsb(_) =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml"]
   | BsbNative("3.2.0", Native) =>
@@ -206,10 +221,12 @@ let getStdlib = (base, buildSystem) => {
     /+ "ocaml"
     /+ "lib"
     /+ "ocaml"]
-  | Dune(Esy(_)) => 
+  | Dune(Esy(_)) =>
     let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
     [esy_ocamllib]
-  | Dune(Opam) => Ok([base /+ "_opam" /+ "lib" /+ "ocaml"])
+  | Dune(Opam(switchPrefix)) =>
+    let%try libPath = getOpamLibOrBinPath(base, switchPrefix, "lib" /+ "ocaml")
+    Ok([libPath])
   };
 };
 
@@ -228,8 +245,9 @@ let getCompiler = (rootPath, buildSystem) => {
     | Dune(Esy(_)) =>
       let%try_wrap ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
       ocamlopt
-    | Dune(Opam) => 
-      Ok(rootPath /+ "_opam" /+ "bin" /+ "ocamlopt.opt")
+    | Dune(Opam(switchPrefix)) =>
+      let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt")
+      binPath
   };
 };
 
@@ -250,8 +268,8 @@ let getRefmt = (rootPath, buildSystem) => {
     | Dune(Esy(_)) =>
       let%try_wrap refmt = getLine("esy which refmt", ~pwd=rootPath);
       refmt
-    | Dune(Opam) =>
-      Ok(rootPath /+ "_opam" /+ "bin" /+ "refmt")
+    | Dune(Opam(switchPrefix)) =>
+      Ok(switchPrefix /+ "bin" /+ "refmt")
   };
 };
 
@@ -259,9 +277,23 @@ let hiddenLocation = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | Bsb(_)
     | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
-    | Dune(Opam) => Ok(rootPath /+ "_build" /+ ".lsp")
+    | Dune(Opam(_)) => Ok(rootPath /+ "_build" /+ ".lsp")
     | Dune(Esy(esyVersion)) =>
       let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath, esyVersion);
       rootPath /+ esyTargetDir /+ ".lsp"
+  };
+};
+
+let inferPackageManager = (projectRoot) => {
+  let hasEsyDir = Files.exists(projectRoot /+ "_esy");
+
+  switch(getLine("opam config var prefix", ~pwd=projectRoot)) {
+    | Ok(prefix) when !hasEsyDir =>
+      Log.log("Detected `opam` dependency manager for local use");
+      Ok(Opam(prefix))
+    | _ =>
+      Log.log("Detected `esy` dependency manager for local use");
+      let%try_wrap esyVersion = getLine("esy --version", ~pwd=projectRoot);
+      Esy(esyVersion)
   };
 };

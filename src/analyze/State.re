@@ -274,6 +274,8 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
       RResult.Error("Unable to find project root dir")
     } else if (Files.exists(path /+ "dune-project")) {
       Ok(path)
+    } else if (Files.exists(path /+ "dune-workspace")) {
+      Ok(path)
     } else if (Files.exists(path /+ "_build")) {
       Ok(path)
     } else if (Files.exists(path /+ "_esy")) {
@@ -288,22 +290,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
   Log.log("=== Project root: " ++ projectRoot);
 
-  let has_esyDir = Files.exists(projectRoot /+ "_esy");
-  let has_opamSwitchDir = Files.exists(projectRoot /+ "_opam");
-
-  let%try pkgMgr = switch ((has_esyDir, has_opamSwitchDir)) {
-    | (false, true) =>
-      Log.log("Detected `opam` dependency manager for local use");
-      Ok(BuildSystem.Opam)
-    | (true, false) =>
-      Log.log("Detected `esy` dependency manager for local use");
-      let%try_wrap esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
-      BuildSystem.Esy(esyVersion)
-    | (_, _) =>
-      Log.log("Defaulting to `esy` for project dependency manager");
-      let%try_wrap esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
-      BuildSystem.Esy(esyVersion)
-  };
+  let%try pkgMgr = BuildSystem.inferPackageManager(projectRoot);
 
   let buildSystem = BuildSystem.Dune(pkgMgr);
 
@@ -441,8 +428,8 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let buildCommand = switch (pkgMgr) {
     | Esy(_) =>
       Some(("esy", projectRoot))
-    | Opam =>
-      if (Files.exists(projectRoot /+ "_opam" /+ "bin" /+ "dune")) {
+    | Opam(switchPrefix) =>
+      if (Files.exists(switchPrefix /+ "bin" /+ "dune")) {
         Some(("opam exec -- dune build @install --root .", projectRoot))
       } else if (Files.exists(projectRoot /+ "_opam" /+ "bin" /+ "jbuild")) {
         Some(("opam exec -- jbuild build @install --root .", projectRoot))
