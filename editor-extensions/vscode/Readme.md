@@ -31,6 +31,7 @@ all configuration is prefixed with `reason_language_server.`
 - `.per_value_codelens` - show the type of each toplevel value in a lens
 - `.dependencies_codelens` - list a files dependencies at the top
 - `.opens_codelens` - show what values are used from an `open`
+- `.autoRebuild` — rebuild project on save (turned on by default)
 
 ## Debugging configuration
 most useful if your developing the language server
