@@ -8,6 +8,7 @@ examples/*/_build
 examples/*/_opam
 examples/*/node_modules
 node_modules
+node_modules/
 log_types.txt
 *.install
 _esy
