@@ -40,3 +40,9 @@ most useful if your developing the language server
 - `.lispRefmt` - provide a custom location for reason-lisp's refmt
 - `.reloadOnChange` - reload the server when the binary is updated
 - `.show_debug_errors` - pipe the server's stderr into vscode's output pane
+
+## Copyright & License
+
+Copyright © 2018 Jared Forsyth and contributors.
+
+Distributed under the MIT License (see [LICENSE](./LICENSE)).

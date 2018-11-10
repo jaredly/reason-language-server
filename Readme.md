@@ -5,6 +5,12 @@ This project implements the [Language Server Protocol](https://microsoft.github.
 
 It is written in Reason, and compiled via bsb-native. The goal is for it to work equally well on Windows, MacOS, and Linux.
 
+## Platform support
+
+- Macos ✅
+- Linux ✅
+- Windows ✅ (but **not under WSL**, make sure you install bs-platform etc. from the windows side)
+
 ## Installation
 
 ### VS Code
@@ -40,7 +46,7 @@ And you're done!
 4. `Ctrl/Cmd + Shift + P` and type "Preferences: LSP Settings" to bring up the settings file, and put in:
 ```json
 {
-  "auto_show_diagnostics_panel": false,	
+  "auto_show_diagnostics_panel": false,
   "clients": {
     "reason": {
       "enabled": true,
@@ -89,3 +95,8 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 
 You can then develop on the language server! When you change something, the server will automatically reload.
 
+## Copyright & License
+
+Copyright © 2018 Jared Forsyth and contributors.
+
+Distributed under the MIT License (see [LICENSE](./LICENSE)).
