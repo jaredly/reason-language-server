@@ -1,0 +1,8 @@
+(library 
+  (name lib)
+  (public_name example-opam-dune)
+  (modules_without_implementation awesome)
+  (inline_tests)
+  (preprocess 
+   (pps ppx_expect ppx_inline_test))
+  (flags (:standard -w -27-32-33)))
