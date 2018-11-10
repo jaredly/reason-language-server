@@ -14,6 +14,13 @@ let showReference = ({moduleName, modulePath, name}) => {
   String.concat(".", [moduleName] @ modulePath @ [name])
 };
 
+let referenceToLident = ({moduleName, modulePath, name}) => {
+  switch (Longident.unflatten([moduleName] @ modulePath @ [name])) {
+    | None => assert(false)
+    | Some(lident) => lident
+  }
+};
+
 type typeSource('reference) =
   | Builtin(string)
   | Public('reference)

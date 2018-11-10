@@ -11,14 +11,14 @@ let makeModule = (moduleName, contents) =>
 
 let lockTypes = (tbl) => {
   let decls = Hashtbl.fold(((moduleName, modulePath, name), decl, bindings) => [
-    Serde.OutputType.outputDeclaration((source, args) =>  switch args {
-      | [] => ""
-      | _ => String.concat(" ", args) ++ " "
-    } ++ switch source {
-      | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
-      | Builtin(name) => name
-      | Public(reference) => TypeMap.DigTypes.showReference(reference)
-    }, decl),
+    Serde.OutputType.outputDeclaration((source, args) =>  {
+      Ast_helper.Typ.constr(Location.mknoloc(switch source {
+        | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
+        | Builtin(name) => Longident.Lident(name)
+        | Public(reference) => TypeMap.DigTypes.referenceToLident(reference)
+      }), args)
+    }
+    , decl),
     ...bindings
   ], tbl, [])
 };
