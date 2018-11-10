@@ -3,7 +3,7 @@
 .bsb.lock
 npm-debug.log
 /lib/
-examples/*/lib
+examples/**/lib
 examples/*/_build
 examples/*/_opam
 examples/*/node_modules

@@ -205,7 +205,7 @@ let getStdlib = (base, buildSystem) => {
     /+ "lib"
     /+ "ocaml"]
   | Dune(Esy(_)) => 
-    let%try_wrap esy_ocamllib = getLine("esy sh -c 'echo $OCAMLLIB'", ~pwd=base);
+    let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
     [esy_ocamllib]
   | Dune(Opam) => Ok([base /+ "_opam" /+ "lib" /+ "ocaml"])
   };
