@@ -89,6 +89,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Show errors in the console"
+				},
+				"reason_language_server.autoRebuild": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enables autorun of bsb"
 				}
 			}
 		},
@@ -120,7 +125,8 @@
 					".rei"
 				],
 				"configuration": "./reason.configuration.json"
-			}, {
+			},
+			{
 				"id": "ocaml",
 				"aliases": [
 					"OCaml"
@@ -130,7 +136,8 @@
 					".mli"
 				],
 				"configuration": "./ocaml.configuration.json"
-			}, {
+			},
+			{
 				"id": "reason_lisp",
 				"aliases": [
 					"Reason Lisp"

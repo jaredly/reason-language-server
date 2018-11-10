@@ -69,7 +69,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let%try (uri, version, text) = Json.get("textDocument", params) |?> getTextDocument |> RResult.orError("Invalid params");
     Hashtbl.replace(state.documentText, uri, (text, int_of_float(version), true));
     Hashtbl.replace(state.documentTimers, uri, Unix.gettimeofday() +. recompileDebounceTime);
-    
+
     let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
     if (FindFiles.isSourceFile(path)) {
       let%try package = State.getPackage(~reportDiagnostics, uri, state);
@@ -108,6 +108,8 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     /* Disabling this -- too finnicky :/ */
     let crossFileAsYouType = false;
     let showModulePathOnHover = (settings |?> Json.get("show_module_path_on_hover") |?> Json.bool) |? true;
+    let autoRebuild = settings |?> Json.get("autoRebuild") |?> Json.bool |? true;
+
     Ok({
       ...state,
       settings: {
@@ -120,6 +122,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         dependenciesCodelens,
         crossFileAsYouType,
         showModulePathOnHover,
+        autoRebuild,
       },
     });
   }),
@@ -129,7 +132,6 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let%try package = State.getPackage(~reportDiagnostics, uri, state);
     setPackageTimer(package);
     let moduleName = FindFiles.getName(uri);
-
     package.localModules |. Belt.List.forEach((mname) => {
       let%opt_consume paths = Utils.maybeHash(package.pathsForModule, mname);
       let%opt_consume src = SharedTypes.getSrc(paths);
