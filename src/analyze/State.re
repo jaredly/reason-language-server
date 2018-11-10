@@ -123,6 +123,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune(_) => assert(false)
   };
+
   if (state.settings.autoRebuild) {
     runBuildCommand(~reportDiagnostics, state, rootPath, Some((buildCommand, rootPath)));
   };
@@ -247,7 +248,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
     pathsForModule,
     nameForPath,
     buildSystem,
-    buildCommand: Some((buildCommand, rootPath)),
+    buildCommand: state.settings.autoRebuild ? Some((buildCommand, rootPath)) : None,
     opens,
     tmpPath,
     namespace,
@@ -291,14 +292,14 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let has_opamSwitchDir = Files.exists(projectRoot /+ "_opam");
 
   let%try pkgMgr = switch ((has_esyDir, has_opamSwitchDir)) {
-    | (false, true) => 
+    | (false, true) =>
       Log.log("Detected `opam` dependency manager for local use");
       Ok(BuildSystem.Opam)
-    | (true, false) => 
+    | (true, false) =>
       Log.log("Detected `esy` dependency manager for local use");
       let%try_wrap esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
       BuildSystem.Esy(esyVersion)
-    | (_, _) => 
+    | (_, _) =>
       Log.log("Defaulting to `esy` for project dependency manager");
       let%try_wrap esyVersion = BuildSystem.getLine("esy --version", ~pwd=rootPath);
       BuildSystem.Esy(esyVersion)
@@ -306,7 +307,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   let buildSystem = BuildSystem.Dune(pkgMgr);
 
-  let%try buildDir = 
+  let%try buildDir =
     BuildSystem.getCompiledBase(projectRoot, buildSystem)
     |> RResult.resultOfOption(
       "Could not find local build dir",
@@ -355,11 +356,11 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     let name = FindFiles.getName(filename);
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
-      | `Library(libraryName) => 
+      | `Library(libraryName) =>
         String.capitalize(libraryName) ++ "__" ++ String.capitalize(name)
     };
     Log.log("Local file: " ++ (rootPath /+ filename));
-    let implCmtPath = 
+    let implCmtPath =
       compiledBase
         /+ (
           fold(libraryName, "", l => l ++ "__")
@@ -430,8 +431,8 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
 
   libraryName |?< libraryName => Hashtbl.replace(
-    pathsForModule, 
-    String.capitalize(libraryName), 
+    pathsForModule,
+    String.capitalize(libraryName),
     Impl(compiledBase /+ libraryName ++ ".cmt", None)
   );
 
