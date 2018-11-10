@@ -6,6 +6,8 @@ open Asttypes;
 open SharedTypes.SimpleType;
 open TypeMap;
 
+let loc = Location.none;
+
 let makeIdent = MakeSerializer.makeIdent;
 
 let failer = message => Exp.fun_(Nolabel, None, Pat.any(), 

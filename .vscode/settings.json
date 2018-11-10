@@ -13,7 +13,6 @@
   // "reason_language_server.location": "./lib/bs/native/bin.native.exe",
   // "reason_language_server.reloadOnChange": true,
   "editor.tabSize": 2,
-  "editor.parameterHints": false,
   "editor.formatOnPaste": true,
   "workbench.settings.editor": "json"
 }
