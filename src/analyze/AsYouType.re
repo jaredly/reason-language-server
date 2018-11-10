@@ -188,6 +188,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
   let fullForCmt = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fullForCmt
     | V406 => Process_406.fullForCmt
+    | V407 => Process_407.fullForCmt
   })(~moduleName, ~allLocations);
   switch (runBsc(~basePath, ~interface, ~reasonFormat, ~command="-c", compilerPath, astFile, includes, flags)) {
     | Error(lines) => {

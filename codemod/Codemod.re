@@ -26,10 +26,11 @@ let run = (~rootPath, ~filterPath, modify) => {
   let fullForCmt = (switch (package.compilerVersion) {
     | Analyze.BuildSystem.V402 => Process_402.fullForCmt
     | V406 => Process_406.fullForCmt
+    | V407 => Process_407.fullForCmt
   })(~allLocations=true);
 
-  let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_404, Migrate_parsetree.OCaml_406);
-  let module ConvertBack = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_404);
+  let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_404, Migrate_parsetree.OCaml_407);
+  let module ConvertBack = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_404);
 
   package.Analyze.TopTypes.localModules->Belt.List.forEach(moduleName => {
     let%opt_force paths = Utils.maybeHash(package.pathsForModule, moduleName);

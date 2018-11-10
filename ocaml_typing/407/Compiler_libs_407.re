@@ -9,6 +9,14 @@ module Asttypes = Asttypes;
 module Cmi_format = Cmi_format;
 module Cmt_format = Cmt_format;
 
+/* Unfortunately we need to depend on Compiler_libs_406, otherwise we can't
+ * construct an ident with a custom stamp.
+ */
+let makeIdent = (name, stamp, flags) => {
+  let ident_406 = Compiler_libs_406.{ Ident.name, stamp, flags };
+  (Obj.magic(ident_406) : Ident.t)
+};
+
 /*
 
 Things I had to change

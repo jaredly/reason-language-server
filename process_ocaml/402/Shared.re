@@ -63,6 +63,19 @@ let rec getFnArgs = t => {
   }
 };
 
+/* HACK(jared): They removed all way for me to produce an "Ident.t" with the correct stamp.
+   They forced my hand.
+*/
+let convertIdent = (oldIdent) => {(Obj.magic(oldIdent): Current.ident)};
+
+let rec mapOldPath = oldPath => {
+  switch (oldPath) {
+    | Path.Pident(oldIdent) => Current.Pident(convertIdent(oldIdent))
+    | Path.Pdot(inner, name, int) => Current.Pdot(mapOldPath(inner),name,int)
+    | Path.Papply(one, two) => Current.Papply(mapOldPath(one), mapOldPath(two))
+  }
+};
+
 let rec asSimpleType = t => {
   open SharedTypes;
   switch (dig(t).desc) {
@@ -76,7 +89,7 @@ let rec asSimpleType = t => {
         label == "" ? None : Some(label)
         , asSimpleType(arg)));
       SimpleType.Fn(args, asSimpleType(res))
-    | Ttuple(items) => 
+    | Ttuple(items) =>
       SimpleType.Tuple(items->Belt.List.map(asSimpleType))
     | Tconstr(path, args, _) =>
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
@@ -97,13 +110,13 @@ let rec asSimpleDeclaration = (name, t) => {
       | (Type_abstract, Some(expr)) => Expr(asSimpleType(expr))
       | (Type_record(labels, _), _) => Record(
         labels->Belt.List.map(({ld_id, ld_type}) => (
-          ld_id.name,
+          Ident.name(ld_id),
           asSimpleType(ld_type)
         ))
       )
       | (Type_variant(constructors), _) => Variant(
         constructors->Belt.List.map(({cd_id, cd_args, cd_res}) => (
-          cd_id.name,
+          Ident.name(cd_id),
           cd_args->Belt.List.map(asSimpleType),
           switch (cd_res) {
           | None => None
@@ -120,6 +133,7 @@ let makeDeclaration = t => {
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
+  |> SharedTypes.SimpleType.declMapSource(mapOldPath)
 }
 
 let labelToString = label => label;
@@ -132,12 +146,15 @@ let rec makeFlexible = t => {
   variableKind: variableKind(t),
   getConstructorPath: () => switch (digConstructor(t)) {
     | None => None
-    | Some((path, args)) => Some((path, args |> List.map(makeFlexible)))
+    | Some((path, args)) =>
+      let newPath = mapOldPath(path);
+      Some((newPath, args |> List.map(makeFlexible)))
   },
   getArguments: () => {
       loop(t)
   },
   asSimpleType: () => asSimpleType(t)
+ |> SharedTypes.SimpleType.mapSource(mapOldPath)
 }
 
 and loop = t => switch (t.Types.desc) {

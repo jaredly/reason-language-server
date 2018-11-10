@@ -16,7 +16,7 @@ let absname = ref false
     (* This reference should be in Clflags, but it would create an additional
        dependency and make bootstrapping Camlp4 more difficult. *)
 
-type t = Current.location ={ loc_start: position; loc_end: position; loc_ghost: bool };;
+type t = Current.location = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
   let loc = {
@@ -104,24 +104,24 @@ let highlight_terminfo ppf num_lines lb locs =
   (* If too many lines, give up *)
   if !lines >= num_lines - 2 then raise Exit;
   (* Move cursor up that number of lines *)
-  flush stdout; Terminfo.backup !lines;
+  flush stdout; Terminfo.backup stdout !lines;
   (* Print the input, switching to standout for the location *)
   let bol = ref false in
   print_string "# ";
   for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
     if !bol then (print_string "  "; bol := false);
     if List.exists (fun loc -> pos = loc.loc_start.pos_cnum) locs then
-      Terminfo.standout true;
+      Terminfo.standout stdout true;
     if List.exists (fun loc -> pos = loc.loc_end.pos_cnum) locs then
-      Terminfo.standout false;
+      Terminfo.standout stdout false;
     let c = Bytes.get lb.lex_buffer (pos + pos0) in
     print_char c;
     bol := (c = '\n')
   done;
   (* Make sure standout mode is over *)
-  Terminfo.standout false;
+  Terminfo.standout stdout false;
   (* Position cursor back to original location *)
-  Terminfo.resume !num_loc_lines;
+  Terminfo.resume stdout !num_loc_lines;
   flush stdout
 
 (* Highlight the location by printing it again. *)
@@ -297,7 +297,7 @@ let echo_eof () =
   print_newline ();
   incr num_loc_lines
 
-type 'a loc = 'a Current.loc = {
+type 'a loc = 'a Current.loc =  {
   txt : 'a;
   loc : t;
 }

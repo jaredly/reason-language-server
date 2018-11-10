@@ -13,7 +13,7 @@ let makeLident = (~moduleName, ~modulePath, ~name) => {
 };
 
 let transformerName = (~moduleName, ~modulePath, ~name) =>
-  "serialize_" ++ 
+  "serialize_" ++
   Str.global_replace(
     Str.regexp_string("-"),
     "__",
@@ -36,7 +36,7 @@ type transformer('source) = {
   constructor: (string, list(Parsetree.expression)) => Parsetree.expression,
 };
 
-let failer = message => Exp.fun_(Nolabel, None, Pat.any(), 
+let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
 Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
   (Nolabel, Exp.constant(Pconst_string(message, None)))
 ]));
@@ -123,7 +123,7 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
       Exp.apply(forExpr(transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
-  | Record(items) => 
+  | Record(items) =>
     Exp.fun_(
       Nolabel,
       None,
@@ -175,7 +175,7 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
               })
             )
           )
-          
+
         })
       )
     )
@@ -247,7 +247,7 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(transformer, 
+    declInner(transformer,
         lident
     , decl, fullName)
   )
