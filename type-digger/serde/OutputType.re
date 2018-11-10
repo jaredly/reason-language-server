@@ -2,30 +2,38 @@ open Belt;
 
 open SharedTypes.SimpleType;
 
-let outputDeclaration = (a, b) => failwith("a");
+let outputDeclaration = (showSource, declaration) => {
+
+}
 
 /* TODO TODO TODO */
-/* let rec outputDeclaration = (showSource, declaration) =>
+let rec outputDeclaration = (showSource, declaration) => {
+  let name: Ast_helper.str = Location.mknoloc(declaration.name)
+  let mk = Ast_helper.Type.mk;
   switch (declaration.body) {
-  | Open => Parsetree.Ptype_open
-  | Abstract => Parsetree.Ptype_abstract
-  | Expr(expr) => outputExpr(showSource, expr)
+  | Open => mk(~kind=Parsetree.Ptype_open, name)
+  | Abstract => mk(~kind=Parsetree.Ptype_abstract, name)
+  | Expr(expr) => mk(~manifest=outputExpr(showSource, expr), name)
   | Record(items) =>
-    Parsetree.Ptype_record(
+    mk(~kind=Parsetree.Ptype_record(
       items->List.map(((name, v)) =>
         {
           Parsetree.pld_name: Location.mknoloc(name),
           pld_mutable: Asttypes.Immutable,
           pld_type: outputExpr(showSource, v),
+          pld_loc: Location.none,
+          pld_attributes: [],
         }
       ),
-    )
+    ), name);
   | Variant(items) =>
-    " = "
-    ++ String.concat(
-         "|\n",
+    mk(~kind=Parsetree.Ptype_variant(
          items->List.map(((name, contents, result)) =>
-           name
+          Ast_helper.Type.constructor(
+            ~args=Parsetree.Pcstr_tuple(contents->List.map(outputExpr(showSource))),
+            Location.mknoloc(name)
+          )
+           /* name
            ++ (
              switch (contents) {
              | [] => ""
@@ -39,30 +47,25 @@ let outputDeclaration = (a, b) => failwith("a");
                  }
                )
              }
-           )
-         ),
-       )
-  }
-and outputExpr = (showSource, expr) =>
+           ) */
+         )
+    ), name)
+  };
+}
+
+and outputExpr = (showSource, expr) => {
+  open Ast_helper.Typ;
   switch (expr) {
-  | Variable(name) => name
-  | AnonVariable => failwith("anon variable")
+  | Variable(name) => var(name)
+  | AnonVariable => any()
   | Reference(source, args) => showSource(source, args->List.map(outputExpr(showSource)))
-  | Tuple(items) => "(" ++ String.concat(" * ", items->List.map(outputExpr(showSource))) ++ ")"
+  | Tuple(items) => tuple(items->List.map(outputExpr(showSource)))
   | Fn(args, result) =>
-    String.concat(
-      " -> ",
-      args->List.map(((label, arg)) =>
-        (
-          switch (label) {
-          | None => ""
-          | Some(label) => "~" ++ label
-          }
-        )
-        ++ outputExpr(showSource, arg)
-      ),
-    )
-    ++ "->"
-    ++ outputExpr(showSource, result)
+    let rec loop = (args) => switch args {
+      | [] => outputExpr(showSource, result)
+      | [(label, arg), ...rest] => arrow(Nolabel, outputExpr(showSource, arg), loop(rest))
+    };
+    loop(args)
   | Other => failwith("unhandled expr type")
-  }; */
+  };
+};
