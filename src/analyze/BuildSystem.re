@@ -134,28 +134,33 @@ let getEsyCompiledBase = (root, esyVersion) =>
       let splitOnEquals = Utils.split_on_char('=');
       switch((splitOnEquals(root), splitOnEquals(var))) {
         | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
-        | _ => Error("Couldn't find Esy target directory")
+        | _ => Error("Couldn't find Esy target directory (env missing)")
       }
     } {
     | _ =>
       switch(Commands.execResult("esy command-env --json")) {
       | Ok(commandEnv) =>
-        try {
-          open Json.Infix;
-          let json = Json.parse(commandEnv);
-          switch(Json.get("cur__original_root", json) |?> Json.string,
-                Json.get("cur__target_dir", json) |?> Json.string) {
-            | (Some(projectRoot), Some(targetDir)) =>
-              Ok(Files.relpath(projectRoot, targetDir))
-            | _ => Error("Couldn't find Esy target directory")
-          }
-        } {
-          | _ => Error("Couldn't find Esy target directory")
+        switch (Json.parse(commandEnv)) {
+          | exception Failure(message) =>
+            Log.log("Json response");
+            Log.log(commandEnv);
+            Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message)
+          | exception exn =>
+            Log.log(commandEnv);
+            Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn))
+          | json =>
+            open Json.Infix;
+            switch(Json.get("cur__original_root", json) |?> Json.string,
+                  Json.get("cur__target_dir", json) |?> Json.string) {
+              | (Some(projectRoot), Some(targetDir)) =>
+                Ok(Files.relpath(projectRoot, targetDir))
+              | _ => Error("Couldn't find Esy target directory (missing json entries)")
+            }
         }
       | err => err
       }
     }
-  | _ => Error("Couldn't find Esy target directory")
+  | _ => Error("Couldn't find Esy target directory (bad esy version)")
   }
 
 let getCompiledBase = (root, buildSystem) => {

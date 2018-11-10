@@ -293,7 +293,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let packageName = JbuildFile.findName(jbuildConfig);
 
   Log.log("Get ocamllib");
-  let%try ocamllib = BuildSystem.getLine("esy sh -c 'echo $OCAMLLIB'", buildDir);
+  let%try ocamllib = BuildSystem.getLine("esy -q sh -- -c 'echo $OCAMLLIB'", buildDir);
 
   /* TODO support binaries, and other directories */
   let includeSubdirs = JbuildFile.hasIncludeSubdirs(jbuildConfig);

@@ -277,6 +277,27 @@ module Parser = {
     } else {
       pos
     };
+
+  /* from https://stackoverflow.com/a/42431362 */
+  let utf8encode = (s) => {
+    let prefs = [|0, 192, 224|];
+    let s1 = (n) => String.make(1, Char.chr(n));
+    let rec ienc = (k, sofar, resid) => {
+      let bct =
+        if (k == 0) {
+          7;
+        } else {
+          6 - k;
+        };
+      if (resid < 1 lsl bct) {
+        s1(prefs[k] + resid) ++ sofar;
+      } else {
+        ienc(k + 1, s1(128 + resid mod 64) ++ sofar, resid / 64);
+      };
+    };
+    ienc(0, "", int_of_string("0x" ++ s));
+  };
+
   let parseString = (text, pos) => {
     /* let i = ref(pos); */
     let buffer = Buffer.create(String.length(text));
@@ -298,6 +319,9 @@ module Parser = {
                 | 'f' =>
                   Buffer.add_char(buffer, '\012');
                   loop(i + 2)
+                | 'u' when i + 6 < ln =>
+                  Buffer.add_string(buffer, utf8encode(String.sub(text, i + 2, 4)));
+                  loop(i + 7)
                 | _ =>
                   Buffer.add_string(buffer, Scanf.unescaped(String.sub(text, i, 2)));
                   loop(i + 2)
