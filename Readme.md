@@ -80,7 +80,7 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 
 ## Contributing
 
-- Install `esy` if you don't have it (`npm install -g esy@next`)
+- Install `esy` if you don't have it (`npm install -g esy`)
 - Clone this repo
 - `cd` to the cloned dir
 - Run `esy` from the main project dir
