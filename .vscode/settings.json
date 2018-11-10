@@ -1,5 +1,8 @@
 {
   "editor.formatOnSave": false,
+  "[reason]": {
+    "editor.formatOnSave": true
+  },
   "git.ignoreLimitWarning": true,
   "git.enabled": true,
   "editor.codeLens": true,
