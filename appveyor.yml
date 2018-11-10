@@ -14,6 +14,7 @@ cache:
     - examples/example-es6-imports/node_modules/
     - examples/example-react/node_modules/
     - examples/example-esy-dune-project/node_modules/
+    - _esy
 
 install:
     # The x64 is required as a workaround for esy/esy#412
