@@ -9,18 +9,15 @@ let makeModule = (moduleName, contents) =>
     Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
   );
 
-let makeLockedTypeName = (version, moduleName, modulePath, name) => {
-  String.concat("__", ["v" ++ string_of_int(version), moduleName] @ modulePath @ [name]);
-};
-
 let lockTypes = (version, tbl) => {
   let decls = Hashtbl.fold(((moduleName, modulePath, name), decl, bindings) => [
-    Serde.OutputType.outputDeclaration(makeLockedTypeName(version, moduleName, modulePath, name), (source, args) =>  {
+    Serde.OutputType.outputDeclaration(moduleName, modulePath, name, (source, args) =>  {
       Ast_helper.Typ.constr(Location.mknoloc(switch source {
         | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
         | Builtin(name) => Longident.Lident(name)
-        | Public(reference) =>
-          TypeMap.DigTypes.referenceToLident(reference)
+        | Public(reference: TypeMap.DigTypes.reference) =>
+          Longident.Lident(Serde.OutputType.makeLockedTypeName(reference.moduleName, reference.modulePath, reference.name))
+          /* TypeMap.DigTypes.referenceToLident(reference) */
       }), args)
     }
     , decl),

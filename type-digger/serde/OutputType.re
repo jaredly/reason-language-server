@@ -2,23 +2,33 @@ open Belt;
 
 open SharedTypes.SimpleType;
 
-let outputDeclaration = (showSource, declaration) => {
+let makeLockedTypeName = (moduleName, modulePath, name) => {
+  String.concat("__", ["_" ++ moduleName] @ modulePath @ [name]);
+};
 
-}
+let unflatten = (items) => switch (Longident.unflatten(items)) {
+  | None => assert(false)
+  | Some(lident) => lident
+};
 
-/* TODO TODO TODO */
-let rec outputDeclaration = (name, showSource, declaration) => {
-  let name: Ast_helper.str = Location.mknoloc(name)
+let rec outputDeclaration = (moduleName, modulePath, name, showSource, declaration) => {
+  let declarationName: Ast_helper.str = Location.mknoloc(makeLockedTypeName(moduleName, modulePath, name))
+  let reference = unflatten([moduleName] @ modulePath @ [name]);
   let mk = Ast_helper.Type.mk(~params=declaration.variables->Belt.List.map(expr => (
     outputExpr(showSource, expr),
     Asttypes.Invariant
   )));
+  let fullReference = Ast_helper.Typ.constr(Location.mknoloc(reference), declaration.variables->Belt.List.map(outputExpr(showSource)))
   switch (declaration.body) {
-  | Open => mk(~kind=Parsetree.Ptype_open, name)
-  | Abstract => mk(~kind=Parsetree.Ptype_abstract, name)
-  | Expr(expr) => mk(~manifest=outputExpr(showSource, expr), name)
+  | Open
+    /* mk(~kind=Parsetree.Ptype_open, declarationName) */
+  | Abstract
+    /* mk(~kind=Parsetree.Ptype_abstract, declarationName) */
+    => mk(~manifest=fullReference, declarationName)
+  | Expr(expr)
+    => mk(~manifest=outputExpr(showSource, expr), declarationName)
   | Record(items) =>
-    mk(~kind=Parsetree.Ptype_record(
+    mk(~manifest=fullReference, ~kind=Parsetree.Ptype_record(
       items->List.map(((name, v)) =>
         {
           Parsetree.pld_name: Location.mknoloc(name),
@@ -28,31 +38,16 @@ let rec outputDeclaration = (name, showSource, declaration) => {
           pld_attributes: [],
         }
       ),
-    ), name);
+    ), declarationName);
   | Variant(items) =>
-    mk(~kind=Parsetree.Ptype_variant(
+    mk(~manifest=fullReference, ~kind=Parsetree.Ptype_variant(
          items->List.map(((name, contents, result)) =>
           Ast_helper.Type.constructor(
             ~args=Parsetree.Pcstr_tuple(contents->List.map(outputExpr(showSource))),
             Location.mknoloc(name)
           )
-           /* name
-           ++ (
-             switch (contents) {
-             | [] => ""
-             | _ =>
-               " "
-               ++ String.concat(" * ", contents->List.map(outputExpr(showSource)))
-               ++ (
-                 switch (result) {
-                 | None => ""
-                 | Some(contents) => ": " ++ outputExpr(showSource, contents)
-                 }
-               )
-             }
-           ) */
          )
-    ), name)
+    ), declarationName)
   };
 }
 
