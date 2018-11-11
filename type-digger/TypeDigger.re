@@ -52,32 +52,30 @@ let getTypeMap = (base, state, types) => {
   tbl
 };
 
+open TypeMapSerde.Config;
+
 let loadTypeMap = config => {
   open Util.RResult.InfixResult;
-  let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array;
+  /* let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array; */
   open Util.Infix;
-  let custom = Json.get("custom", config) |?> Json.array |? [];
+  /* let custom = Json.get("custom", config) |?> Json.array |? []; */
 
   let state = TopTypes.forRootPath(Sys.getcwd());
 
   let tbl = Hashtbl.create(10);
 
-  custom->Belt.List.forEach(custom => {
+  config.custom->Belt.List.forEach(({path, name, module_, args}) => {
     open Util.RResult.InfixResult;
-    let%try_force modname = Util.RJson.get("module", custom) |?> Util.RJson.string;
+    /* let%try_force modname = Util.RJson.get("module", custom) |?> Util.RJson.string;
     let%try_force path = Util.RJson.get("path", custom) |?> Util.RJson.array;
-    let%try_force name = Util.RJson.get("name", custom) |?> Util.RJson.string;
+    let%try_force name = Util.RJson.get("name", custom) |?> Util.RJson.string; */
     open Util.Infix;
-    let args = Json.get("args", custom) |?> Json.number |?>> int_of_float |? 0;
+    /* let args = Json.get("args", custom) |?> Json.number |?>> int_of_float |? 0; */
     Hashtbl.replace(
       tbl,
       (
-        modname,
-        path
-        |> List.map(item => {
-             let%opt_force item = Json.string(item);
-             item;
-           }),
+        module_,
+        path,
         name,
       ),
       SharedTypes.SimpleType.{
@@ -94,11 +92,11 @@ let loadTypeMap = config => {
 
   /* Digest.string */
 
-  entries->Belt.List.forEach(typ => {
-    let%opt_force file = Json.get("file", typ) |?> Json.string;
-    let%opt_force typeName = Json.get("type", typ) |?> Json.string;
+  config.entries->Belt.List.forEach(({file, type_}) => {
+    /* let%opt_force file = Json.get("file", typ) |?> Json.string;
+    let%opt_force typeName = Json.get("type", typ) |?> Json.string; */
     let%try_force () =
-      TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), typeName);
+      TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), type_);
     ();
   });
 
@@ -116,35 +114,36 @@ let compareHashtbls = (one, two) => {
 };
 
 let main = configPath => {
-  let config = Json.parse(Util.Files.readFileExn(configPath));
+  let json = Json.parse(Util.Files.readFileExn(configPath));
+  let%try_force config = TypeMapSerde.configFromJson(json);
   open Util.RResult.InfixResult;
-  let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
+  /* let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
   let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
-  let%try_force version = Util.RJson.get("version", config) |?> Util.RJson.number |?>> int_of_float;
+  let%try_force version = Util.RJson.get("version", config) |?> Util.RJson.number |?>> int_of_float; */
   let tbl = loadTypeMap(config);
 
   let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
 
   let lockfile = switch (Files.readFileResult(lockFilePath)) {
     | Error(_) => {
-      TypeMap.DigTypes.version,
+      TypeMap.DigTypes.version: config.version,
       pastVersions: Hashtbl.create(1),
       current: tbl
     }
     | Ok(contents) => {
       let json = Json.parse(contents);
       let%try_force lockfile = TypeMapSerde.lockfileFromJson(json)
-      if (lockfile.version == version) {
+      if (lockfile.version == config.version) {
         /* TODO allow addative type changes */
         if (!compareHashtbls(lockfile.current, tbl)) {
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
           lockfile
         }
-      } else if (lockfile.version + 1 == version) {
+      } else if (lockfile.version + 1 == config.version) {
         lockfile.pastVersions->Hashtbl.replace(lockfile.version, lockfile.current);
         {
-          version,
+          version: config.version,
           pastVersions: lockfile.pastVersions,
           current: tbl
         }
@@ -159,23 +158,22 @@ let main = configPath => {
 
   /* tbl */
   let body =
-    switch (engine) {
-    | "bs-json" => [
+    switch (config.engine) {
+    | Bs_json => [
         makeFns("DeserializeRaw", Serde.BsJson.declDeserializer, tbl),
         makeFns("SerializeRaw", Serde.BsJson.declSerializer, tbl),
       ]
-    | "rex-json" => [
+    | Rex_json => [
         makeFns("DeserializeRaw", Serde.Json.declDeserializer, tbl),
         makeFns("SerializeRaw", Serde.Json.declSerializer, tbl),
       ]
-    | _ => assert(false)
     };
   let body = [lockTypes(1, tbl), ...body];
 
   Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
 
   let ml = Format.flush_str_formatter();
-  Files.writeFile(output, ml) |> ignore;
+  Files.writeFile(config.output, ml) |> ignore;
 };
 
 switch (Sys.argv->Belt.List.fromArray) {

@@ -1,18 +1,18 @@
 {
   "version": 1,
   "output": "type-digger/type-map-serde/Serde.ml",
-  "engine": "rex-json",
+  "engine": ["Rex_json"],
   "entries": [
     {
       "file": "type-digger/type-map/DigTypes.re",
-      "type": "serializableLockfile"
+      "type_": "serializableLockfile"
     },
     {
       "file": "type-digger/type-map-serde/Config.re",
-      "type": "t"
+      "type_": "t"
     }
   ],
   "custom": [
-    {"module": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1}
+    {"module_": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1}
   ]
 }
