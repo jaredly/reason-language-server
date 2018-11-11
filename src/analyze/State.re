@@ -426,7 +426,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
   let buildCommand = switch (pkgMgr) {
-    | Esy(_) =>
+    | Esy =>
       Some(("esy", projectRoot))
     | Opam(switchPrefix) =>
       if (Files.exists(switchPrefix /+ "bin" /+ "dune")) {

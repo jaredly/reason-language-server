@@ -18,7 +18,7 @@ type compilerVersion =
 type packageManager =
   /* Absolute path to the Opam switch prefix */
   | Opam(string)
-  | Esy(string);
+  | Esy;
 
 type t =
   | Dune(packageManager)
@@ -127,44 +127,45 @@ let detect = (rootPath, bsconfig) => {
   }) : Bsb(bsbVersion);
 };
 
-let getEsyCompiledBase = (root, esyVersion) =>
-  switch (String.split_on_char('.', esyVersion)) {
-  | [_, minor, ..._] =>
-    let env = Unix.environment () |. Array.to_list;
-    try {
+let getEsyCompiledBase = (root) => {
+  let env = Unix.environment()->Array.to_list;
+  try (
+    {
       let root = List.find(var => Utils.startsWith(var, "cur__original_root="), env);
       let var = List.find(var => Utils.startsWith(var, "cur__target_dir="), env);
       let splitOnEquals = Utils.split_on_char('=');
-      switch((splitOnEquals(root), splitOnEquals(var))) {
-        | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
-        | _ => Error("Couldn't find Esy target directory (env missing)")
-      }
-    } {
-    | _ =>
-      switch(Commands.execResult("esy command-env --json")) {
-      | Ok(commandEnv) =>
-        switch (Json.parse(commandEnv)) {
-          | exception Failure(message) =>
-            Log.log("Json response");
-            Log.log(commandEnv);
-            Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message)
-          | exception exn =>
-            Log.log(commandEnv);
-            Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn))
-          | json =>
-            open Json.Infix;
-            switch(Json.get("cur__original_root", json) |?> Json.string,
-                  Json.get("cur__target_dir", json) |?> Json.string) {
-              | (Some(projectRoot), Some(targetDir)) =>
-                Ok(Files.relpath(projectRoot, targetDir))
-              | _ => Error("Couldn't find Esy target directory (missing json entries)")
-            }
-        }
-      | err => err
-      }
+      switch (splitOnEquals(root), splitOnEquals(var)) {
+      | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
+      | _ => Error("Couldn't find Esy target directory (env missing)")
+      };
     }
-  | _ => Error("Couldn't find Esy target directory (bad esy version)")
-  }
+  ) {
+  | _ =>
+    switch (Commands.execResult("esy command-env --json")) {
+    | Ok(commandEnv) =>
+      switch (Json.parse(commandEnv)) {
+      | exception (Failure(message)) =>
+        Log.log("Json response");
+        Log.log(commandEnv);
+        Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message);
+      | exception exn =>
+        Log.log(commandEnv);
+        Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn));
+      | json =>
+        Json.Infix.(
+          switch (
+            Json.get("cur__original_root", json) |?> Json.string,
+            Json.get("cur__target_dir", json) |?> Json.string,
+          ) {
+          | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(projectRoot, targetDir))
+          | _ => Error("Couldn't find Esy target directory (missing json entries)")
+          }
+        )
+      }
+    | err => err
+    }
+  };
+};
 
 let getCompiledBase = (root, buildSystem) => {
   let compiledBase = switch (buildSystem) {
@@ -175,8 +176,8 @@ let getCompiledBase = (root, buildSystem) => {
   | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
   | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
   | Dune(Opam(_)) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
-  | Dune(Esy(esyVersion)) =>
-    let%try_wrap esyTargetDir = getEsyCompiledBase(root, esyVersion);
+  | Dune(Esy) =>
+    let%try_wrap esyTargetDir = getEsyCompiledBase(root);
     root /+ esyTargetDir
   };
 
@@ -221,7 +222,7 @@ let getStdlib = (base, buildSystem) => {
     /+ "ocaml"
     /+ "lib"
     /+ "ocaml"]
-  | Dune(Esy(_)) =>
+  | Dune(Esy) =>
     let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
     [esy_ocamllib]
   | Dune(Opam(switchPrefix)) =>
@@ -242,7 +243,7 @@ let getCompiler = (rootPath, buildSystem) => {
     | BsbNative(_, Bytecode) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
-    | Dune(Esy(_)) =>
+    | Dune(Esy) =>
       let%try_wrap ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
       ocamlopt
     | Dune(Opam(switchPrefix)) =>
@@ -265,7 +266,7 @@ let getRefmt = (rootPath, buildSystem) => {
     | Bsb(_) | BsbNative(_, _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt3.exe"
-    | Dune(Esy(_)) =>
+    | Dune(Esy) =>
       let%try_wrap refmt = getLine("esy which refmt", ~pwd=rootPath);
       refmt
     | Dune(Opam(switchPrefix)) =>
@@ -278,8 +279,8 @@ let hiddenLocation = (rootPath, buildSystem) => {
     | Bsb(_)
     | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
     | Dune(Opam(_)) => Ok(rootPath /+ "_build" /+ ".lsp")
-    | Dune(Esy(esyVersion)) =>
-      let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath, esyVersion);
+    | Dune(Esy) =>
+      let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath);
       rootPath /+ esyTargetDir /+ ".lsp"
   };
 };
@@ -293,7 +294,6 @@ let inferPackageManager = (projectRoot) => {
       Ok(Opam(prefix))
     | _ =>
       Log.log("Detected `esy` dependency manager for local use");
-      let%try_wrap esyVersion = getLine("esy --version", ~pwd=projectRoot);
-      Esy(esyVersion)
+      Ok(Esy)
   };
 };
