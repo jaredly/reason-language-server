@@ -82,7 +82,7 @@ let sourceTransformer = source => switch source {
   | Builtin("int") => [%expr i => Json.Number(float_of_int(i))]
   | Builtin("float") => [%expr f => Json.Number(f)]
   | Builtin("option") =>  [%expr (transformer) => fun
-    | None => Js.Null
+    | None => Json.Null
     | Some(v) => transformer(v)]
   | Builtin(name) => failer("Builtin: " ++ name)
 };

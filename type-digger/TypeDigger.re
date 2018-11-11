@@ -22,7 +22,6 @@ let lockTypes = (version, tbl) => {
         | Builtin(name) => Longident.Lident(name)
         | Public((moduleName, modulePath, name)) =>
           Longident.Lident(Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name))
-          /* TypeMap.DigTypes.referenceToLident(reference) */
       }), args)
     }, decl)
   });
