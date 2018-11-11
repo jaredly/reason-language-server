@@ -33,7 +33,7 @@ let jsonArray = items => makeJson(
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => MakeSerializer.failer("Not found")
-  | Public({DigTypes.modulePath, moduleName, name}) =>
+  | Public((moduleName, modulePath, name)) =>
     makeIdent(Lident(MakeSerializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
     [%expr (transformer, array) => Js.Json.array(array->Belt.Array.map(transformer))]
@@ -137,7 +137,7 @@ let list = (transformer, list) => {
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => failer("Not found")
-  | Public({DigTypes.modulePath, moduleName, name}) =>
+  | Public((moduleName, modulePath, name)) =>
     makeIdent(Lident(MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
     let loc = Location.none;

@@ -67,16 +67,6 @@ module DeserializeRaw =
       fun arg0Transformer ->
         TransformHelpers.deserialize_Belt__Belt_HashMapInt____t
           arg0Transformer
-    and deserialize_Hashtbl____t :
-      'arg0 'arg1 .
-        (Json.t -> ('arg0, string) Belt.Result.t) ->
-          (Json.t -> ('arg1, string) Belt.Result.t) ->
-            Json.t -> (('arg0, 'arg1) Hashtbl.t, string) Belt.Result.t
-      =
-      fun arg0Transformer ->
-        fun arg1Transformer ->
-          TransformHelpers.deserialize_Hashtbl____t arg0Transformer
-            arg1Transformer
     and deserialize_SharedTypes__SimpleType__body :
       type arg0 .
         (Json.t -> (arg0, string) Belt.Result.t) ->
@@ -856,15 +846,6 @@ module SerializeRaw =
       'arg0 . ('arg0 -> Json.t) -> 'arg0 Belt__Belt_HashMapInt.t -> Json.t =
       fun arg0Transformer ->
         TransformHelpers.serialize_Belt__Belt_HashMapInt____t arg0Transformer
-    and serialize_Hashtbl____t :
-      'arg0 'arg1 .
-        ('arg0 -> Json.t) ->
-          ('arg1 -> Json.t) -> ('arg0, 'arg1) Hashtbl.t -> Json.t
-      =
-      fun arg0Transformer ->
-        fun arg1Transformer ->
-          TransformHelpers.serialize_Hashtbl____t arg0Transformer
-            arg1Transformer
     and serialize_SharedTypes__SimpleType__body :
       'arg0 .
         ('arg0 -> Json.t) -> 'arg0 SharedTypes.SimpleType.body -> Json.t

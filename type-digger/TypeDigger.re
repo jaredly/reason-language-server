@@ -52,11 +52,8 @@ let getTypeMap = (base, state, types) => {
   tbl
 };
 
-let main = configPath => {
-  let config = Json.parse(Util.Files.readFileExn(configPath));
+let loadTypeMap = config => {
   open Util.RResult.InfixResult;
-  let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
-  let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
   let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array;
   open Util.Infix;
   let custom = Json.get("custom", config) |?> Json.array |? [];
@@ -105,7 +102,24 @@ let main = configPath => {
     ();
   });
 
-  let simpleTbl = TypeMap.GetTypeMap.toSimpleMap(tbl);
+  TypeMap.GetTypeMap.toSimpleMap(tbl);
+};
+
+let main = configPath => {
+  let config = Json.parse(Util.Files.readFileExn(configPath));
+  open Util.RResult.InfixResult;
+  let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
+  let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
+  let tbl = loadTypeMap(config);
+
+  let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
+
+  let lockfileJson = TypeMapSerde.lockfileToJson({
+    version: 1,
+    pastVersions: Belt.HashMap.Int.make(~hintSize=10),
+    current: tbl
+  });
+  Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
 
   /* tbl */
   let body =
@@ -120,7 +134,7 @@ let main = configPath => {
       ]
     | _ => assert(false)
     };
-  let body = [lockTypes(1, simpleTbl), ...body];
+  let body = [lockTypes(1, tbl), ...body];
 
   Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
 

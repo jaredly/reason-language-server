@@ -1,0 +1,3 @@
+
+let lockfileToJson = Serde.serialize_TypeMap__DigTypes____serializableLockfile;
+let lockfileFromJson = Serde.deserialize_TypeMap__DigTypes____serializableLockfile;
