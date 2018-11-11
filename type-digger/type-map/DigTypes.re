@@ -10,6 +10,8 @@ type reference = {
   env: Query.queryEnv,
 };
 
+let toShortReference = ({moduleName, modulePath, name}) => (moduleName, modulePath, name);
+
 let showReference = ({moduleName, modulePath, name}) => {
   String.concat(".", [moduleName] @ modulePath @ [name])
 };
@@ -25,6 +27,12 @@ type typeSource('reference) =
   | Builtin(string)
   | Public('reference)
   | NotFound;
+
+let toShortSource = source => switch source {
+  | Builtin(s) => Builtin(s)
+  | NotFound => NotFound
+  | Public(r) => Public(toShortReference(r))
+};
 
 type lockfile('reference) = {
   version: int,

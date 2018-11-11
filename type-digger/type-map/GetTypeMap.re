@@ -146,3 +146,11 @@ let forInitialType = (~tbl, ~state, uri, fullName) => {
 
   Ok();
 };
+
+let toSimpleMap = (tbl) => {
+  let ntbl = Hashtbl.create(10);
+  Hashtbl.iter((key, value) => {
+    Hashtbl.replace(ntbl, key, SharedTypes.SimpleType.declMapSource(DigTypes.toShortSource, value))
+  }, tbl);
+  ntbl
+};

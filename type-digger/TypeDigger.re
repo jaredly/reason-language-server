@@ -9,32 +9,32 @@ let makeModule = (moduleName, contents) =>
     Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
   );
 
+let hashList = tbl => Hashtbl.fold((key, value, result) => [(key, value), ...result], tbl, []);
+
 let lockTypes = (version, tbl) => {
-  let decls = Hashtbl.fold(((moduleName, modulePath, name), decl, bindings) => [
+  let decls =
+  hashList(tbl)
+  ->Belt.List.sort(compare)
+  ->Belt.List.map((((moduleName, modulePath, name), decl)) => {
     Serde.OutputType.outputDeclaration(moduleName, modulePath, name, (source, args) =>  {
       Ast_helper.Typ.constr(Location.mknoloc(switch source {
         | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
         | Builtin(name) => Longident.Lident(name)
-        | Public(reference: TypeMap.DigTypes.reference) =>
-          Longident.Lident(Serde.OutputType.makeLockedTypeName(reference.moduleName, reference.modulePath, reference.name))
+        | Public((moduleName, modulePath, name)) =>
+          Longident.Lident(Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name))
           /* TypeMap.DigTypes.referenceToLident(reference) */
       }), args)
-    }
-    , decl),
-    ...bindings
-  ], tbl, []);
+    }, decl)
+  });
   makeModule("V" ++ string_of_int(version) ++ "_Locked", [Ast_helper.Str.type_(Recursive, decls)])
 };
 
 let makeFns = (moduleName, maker, tbl) => {
   let decls =
-    Hashtbl.fold(
-      ((moduleName, modulePath, name), decl, bindings) => [
-        maker(~moduleName, ~modulePath, ~name, decl),
-        ...bindings,
-      ],
-      tbl,
-      [],
+    hashList(tbl)
+    ->Belt.List.sort(compare)
+    ->Belt.List.map((((moduleName, modulePath, name), decl)) => 
+        maker(~moduleName, ~modulePath, ~name, decl)
     );
 
     makeModule(moduleName, [Ast_helper.Str.value(Recursive, decls)])
@@ -106,6 +106,8 @@ let main = configPath => {
     ();
   });
 
+  let simpleTbl = TypeMap.GetTypeMap.toSimpleMap(tbl);
+
   /* tbl */
   let body =
     switch (engine) {
@@ -119,7 +121,7 @@ let main = configPath => {
       ]
     | _ => assert(false)
     };
-  let body = [lockTypes(1, tbl), ...body];
+  let body = [lockTypes(1, simpleTbl), ...body];
 
   Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
 
