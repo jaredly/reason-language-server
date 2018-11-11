@@ -94,7 +94,7 @@ let getCompilerVersion = executable => {
     | ["4", "02", _] => Ok(V402)
     | ["4", "06", _] => Ok(V406)
     | ["4", "07", _] => Ok(V407)
-    | version => Error("Unsupported OCaml version: " ++ line)
+    | _ => Error("Unsupported OCaml version: " ++ line)
   }
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
   } : Error("Could not run compiler (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
@@ -127,7 +127,7 @@ let detect = (rootPath, bsconfig) => {
   }) : Bsb(bsbVersion);
 };
 
-let getEsyCompiledBase = (root) => {
+let getEsyCompiledBase = () => {
   let env = Unix.environment()->Array.to_list;
 
   switch(Utils.getEnvVar(~env, "cur__original_root"), Utils.getEnvVar(~env, "cur__target_dir")) {
@@ -169,13 +169,13 @@ let getCompiledBase = (root, buildSystem) => {
   | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
   | Dune(Opam(_)) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
   | Dune(Esy) =>
-    let%try_wrap esyTargetDir = getEsyCompiledBase(root);
+    let%try_wrap esyTargetDir = getEsyCompiledBase();
     root /+ esyTargetDir
   };
 
   switch compiledBase {
   | Ok(compiledBase) => Files.ifExists(compiledBase);
-  | err => None
+  | _ => None
   };
 };
 
@@ -286,7 +286,7 @@ let hiddenLocation = (rootPath, buildSystem) => {
     | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
     | Dune(Opam(_)) => Ok(rootPath /+ "_build" /+ ".lsp")
     | Dune(Esy) =>
-      let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath);
+      let%try_wrap esyTargetDir = getEsyCompiledBase();
       rootPath /+ esyTargetDir /+ ".lsp"
   };
 };

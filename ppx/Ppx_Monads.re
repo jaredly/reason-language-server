@@ -74,7 +74,7 @@ let process_let = (contents, loc) => {
   open Parsetree;
   let bindings =
     switch contents {
-    | PStr([{pstr_desc: Pstr_value(Nonrecursive, bindings), pstr_loc}]) => bindings
+    | PStr([{pstr_desc: Pstr_value(Nonrecursive, bindings)}]) => bindings
     | _ => fail(loc, "extension must contain a nonrecursive let binding")
     };
   process_bindings(bindings)
@@ -151,7 +151,7 @@ This is intented for performing side-effects only -- `otherStuff`
 must end up as type `unit`.
 |};
 
-let mapper = 
+let mapper =
   Parsetree.{
     ...Ast_mapper.default_mapper,
     expr: (mapper, expr) =>
@@ -160,7 +160,7 @@ let mapper =
         "opt" | "opt_wrap" | "opt_consume" | "opt_force"
         | "try" | "try_wrap" | "try_consume" | "try_force"
         | "await" | "await_wrap" | "await_consume"
-        ) as txt, loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, attributes)}]))) => {
+        ) as txt, loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, _)}]))) => {
         let (front, explanation) = switch (txt) {
           | "opt" => ([%expr Monads.Option.bind], opt_explanation)
           | "opt_wrap" => ([%expr Monads.Option.map], opt_wrap_explanation)

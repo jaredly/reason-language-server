@@ -94,7 +94,7 @@ let handleNotification = (log, notificationHandlers, method, params, state) =>
 
 /* Will wait up to 100ms */
 let canRead = desc => {
-  let (r, w, e) = Unix.select([desc], [], [], 0.1);
+  let (r, _, _) = Unix.select([desc], [], [], 0.1);
   r != [];
 };
 
@@ -105,7 +105,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
     let state = tick(state);
     if (canRead(stdin_descr)) {
       switch (Rpc.readMessage(log, stdin)) {
-      | Message(id, "shutdown", params) =>
+      | Message(id, "shutdown", _) =>
         Rpc.sendMessage(log, stdout, id, Json.Null);
         loop(~isShuttingDown=true, state)
       | Message(id, method, params) => loop(~isShuttingDown, handleMessage(log, messageHandlers, id, method, params, state))
@@ -117,7 +117,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
           exit(1)
         }
       | Notification(method, params) => loop(~isShuttingDown, handleNotification(log, notificationHandlers, method, params, state))
-      | Response(id, _) => loop(~isShuttingDown, state)
+      | Response(_, _) => loop(~isShuttingDown, state)
       };
     } else {
       loop(~isShuttingDown, state);

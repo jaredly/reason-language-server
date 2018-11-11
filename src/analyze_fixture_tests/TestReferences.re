@@ -10,7 +10,7 @@ let getOutput = (files, mainFile) => {
   let fileNames = ["Test.re", ...fileNames];
   let fileData = fileNames |. Belt.List.reverse |. Belt.List.map((name) => {
     /* print_endline("Check " ++ name); */
-    let moduleName = Filename.chop_extension(name) |. String.capitalize;
+    let moduleName = Filename.chop_extension(name) |. String.capitalize_ascii;
     let uri = TestUtils.uriForName(name);
     let%try_force result = State.getCompilationResult(uri, state, ~package);
     switch result {
@@ -47,7 +47,7 @@ let getOutput = (files, mainFile) => {
   let num = List.length(waypoints) / 2;
   let process = (i, curi, cursor, cpos) => {
       /* let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints); */
-      let targets = List.filter(((name, contents)) => name == "t" ++ string_of_int(i), waypoints);
+      let targets = List.filter(((name, _)) => name == "t" ++ string_of_int(i), waypoints);
       /* let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
 
       let {SharedTypes.file, extra} = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult;
@@ -69,7 +69,7 @@ let getOutput = (files, mainFile) => {
           )) {
             | Error(e) => "No definition! at " ++ showPos(cpos) ++ " message " ++ e
             | Ok(allReferences) =>
-              let targetValues = targets |> List.map(((a, b)) => b);
+              let targetValues = targets |> List.map(((_, b)) => b);
               let found = allReferences |> List.map(((uri, refs)) => {
                 refs |> List.map((({Location.loc_start: {pos_cnum, pos_lnum, pos_bol}})) => (
                   uri, pos_cnum, (pos_lnum, pos_cnum - pos_bol)

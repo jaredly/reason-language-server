@@ -3,7 +3,7 @@ open Infix;
 open TopTypes;
 
 module Show = {
-  let state = ({rootPath}, {localModules, compilerPath, dependencyModules, pathsForModule}) => {
+  let state = ({rootPath}, {localModules, dependencyModules, pathsForModule}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, (name) => {
@@ -69,7 +69,7 @@ let rec getAffectedFiles = (root, lines) => switch lines {
       | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(root, rest)]
       | _ => getAffectedFiles(root, [two, ...rest])
     }
-  | [one, ...rest] => {
+  | [_, ...rest] => {
     /* Log.log(
       "Not covered " ++ one
     ); */
@@ -82,7 +82,7 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   /** TODO refactor so Dune projects don't get bsconfig.json handling below */
   let%opt_consume (buildCommand, commandDirectory) = buildCommand;
   Log.log(">> Build system running: " ++ buildCommand);
-  let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
+  let (stdout, stderr, _) = Commands.execFull(~pwd=commandDirectory, buildCommand);
   Log.log(">>> stdout");
   Log.log(Utils.joinLines(stdout));
   Log.log(">>> stderr");
@@ -94,7 +94,6 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   files |. Belt.List.forEach(uri => {
     if (Utils.endsWith(uri, "bsconfig.json")) {
       bsconfigClean := false;
-      open Util.JsonShort;
       Log.log("Bsconfig.json sending");
       reportDiagnostics(
         uri, `BuildFailed(stdout @ stderr)
@@ -105,7 +104,6 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   });
   if (bsconfigClean^) {
     Log.log("Cleaning bsconfig.json");
-      open Util.JsonShort;
     reportDiagnostics(bsconfigJson, `BuildSucceeded)
   }
   /* TODO report notifications here */
@@ -173,7 +171,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   let (flags, opens) = switch buildSystem {
     /* Bsb-native's support for merlin is not dependable */
     /* So I have to reimplement the compiler flags here. */
-    | BsbNative(v, _) =>
+    | BsbNative(_, _) =>
       let defaultFlags = [
         "-w -30-40+6+7+27+32..39+44+45+101",
       ];
@@ -307,7 +305,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   Log.log("=== Build dir:    " ++ buildDir);
 
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
-  let (source, build, flags) = MerlinFile.parseMerlin("", merlinRaw);
+  let (source, _, flags) = MerlinFile.parseMerlin("", merlinRaw);
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
@@ -349,14 +347,14 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
       | `Library(libraryName) =>
-        String.capitalize(libraryName) ++ "__" ++ String.capitalize(name)
+        String.capitalize_ascii(libraryName) ++ "__" ++ String.capitalize_ascii(name)
     };
     Log.log("Local file: " ++ (rootPath /+ filename));
     let implCmtPath =
       compiledBase
         /+ (
           fold(libraryName, "", l => l ++ "__")
-          ++ String.capitalize(Filename.chop_extension(filename))
+          ++ String.capitalize_ascii(Filename.chop_extension(filename))
           ++ ".cmt"
         );
     Log.log("Local .cmt file: " ++ implCmtPath);
@@ -412,7 +410,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     |> List.filter(FindFiles.isCompiledFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (Filename.chop_extension(name) |> String.capitalize, SharedTypes.Impl(compiled, Some(path /+ name)));
+      (Filename.chop_extension(name) |> String.capitalize_ascii, SharedTypes.Impl(compiled, Some(path /+ name)));
     })
   })
   |> List.concat;
@@ -424,7 +422,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   libraryName |?< libraryName => Hashtbl.replace(
     pathsForModule,
-    String.capitalize(libraryName),
+    String.capitalize_ascii(libraryName),
     Impl(compiledBase /+ libraryName ++ ".cmt", None)
   );
 
@@ -462,7 +460,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     buildSystem,
     buildCommand,
     /* TODO check if there's a module called that */
-    opens: fold(libraryName, [], libraryName => [String.capitalize(libraryName)]),
+    opens: fold(libraryName, [], libraryName => [String.capitalize_ascii(libraryName)]),
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
@@ -572,7 +570,7 @@ let getPackage = (~reportDiagnostics, uri, state) => {
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
-let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
+let odocToMd = text => MarkdownOfOCamldoc.convert(text);
 let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
 
 let converter = (src, usePlainText) => {
@@ -740,10 +738,7 @@ let getInterfaceFile = (uri, state, ~package: TopTypes.package) => {
   : package.includeDirectories;
   let%try refmtPath = refmtForUri(uri, package);
   AsYouType.getInterface(
-    ~compilerVersion=package.compilerVersion,
-    ~uri,
     ~moduleName,
-    ~allLocations=state.settings.recordAllLocations,
     ~basePath=package.basePath,
     ~reasonFormat=switch (package.buildSystem) {
       | Bsb(_) | BsbNative(_, Js) => Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei")
@@ -915,7 +910,7 @@ let fileForModule = (state,  ~package, modname) => {
     }
   } : None;
   switch file {
-    | Some(f) => file
+    | Some(_) => file
     | None =>
       let%opt (file, _) = docsForModule(modname, state, ~package);
       Some(file)
@@ -927,7 +922,7 @@ let extraForModule = (state, ~package, modname) => {
     let paths = Hashtbl.find(package.pathsForModule, modname);
     /* TODO do better? */
     let%opt src = SharedTypes.getSrc(paths);
-    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> RResult.toOptionAndLog;
+    let%opt {extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> RResult.toOptionAndLog;
     Some(extra)
   } else {
     None;

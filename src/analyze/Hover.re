@@ -1,5 +1,3 @@
-open RResult;
-
 let digConstructor = (~env, ~getModule, path) => {
   switch (Query.resolveFromCompilerPath(~env, ~getModule, path)) {
   | `Not_found => None
@@ -49,13 +47,13 @@ let showModule = (~markdown, ~file: SharedTypes.file, ~name, declared: option(Sh
 };
 
 open Infix;
-let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown, ~showPath, loc) => {
+let newHover = (~rootUri, ~file: SharedTypes.file, ~getModule, ~markdown, ~showPath, loc) => {
   switch (loc) {
     | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
     | Open => Some("an open")
-    | TypeDefinition(name, tdecl, stamp) => None
-    | Module(LocalReference(stamp, tip)) => {
+    | TypeDefinition(_) => None
+    | Module(LocalReference(stamp, _)) => {
       let%opt md = Query.hashFind(file.stamps.modules, stamp);
       let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
       let name = switch declared {
@@ -99,7 +97,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       let extraTypeInfo = {
         let env = {Query.file, exported: file.contents.exported};
         let%opt (path, _args) = t.getConstructorPath();
-        let%opt (env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
+        let%opt (_, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
         Some(typ.declToString(txt))
         /* TODO type declaration */
         /* None */
@@ -114,7 +112,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
       });
 
       Some({
-        let%opt ({name, deprecated, docstring}, {uri, moduleName}, res) = References.definedForLoc(
+        let%opt ({docstring}, {uri}, res) = References.definedForLoc(
           ~file,
           ~getModule,
           loc,
@@ -128,17 +126,17 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~extra, ~getModule, ~markdown
           | `Declared => {
             [Some(typeString), docstring]
           }
-          | `Constructor({name: {txt}, args, res}) => {
+          | `Constructor({name: {txt}, args}) => {
             [Some(typeString),
             Some(codeBlock(txt ++ "(" ++ (args |. Belt.List.map(((t, _)) => {
-              let typeString = 
+              let typeString =
                 t.toString();
               typeString
 
             }) |> String.concat(", ")) ++ ")")),
             docstring]
           }
-          | `Attribute({SharedTypes.Type.Attribute.name: {txt}, typ}) => {
+          | `Attribute(_) => {
             [Some(typeString), docstring]
           }
         };

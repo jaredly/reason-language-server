@@ -82,7 +82,7 @@ let deserialize_Belt__Belt_HashMapInt____t = (valueTransform, json) => {
   loop(items)
 };
 
-let serialize_Belt__Belt_HashMapInt____t = (valueTransform, map) => {
+let serialize_Belt__Belt_HashMapInt____t = (_valueTransform, _map) => {
   /* map->Belt.HashMap.Int.toArray; */
   /* map->Belt.HashMap.Int.reduce([], (result, key, value) => {
     [("one", Json.Null), ...result]

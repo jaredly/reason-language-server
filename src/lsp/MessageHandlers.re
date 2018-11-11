@@ -7,7 +7,7 @@ open Infix;
 let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);
 
 let log = Log.log;
-let (-?>) = (a,b) => b;
+let (-?>) = (_, b) => b;
 
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
@@ -44,15 +44,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/signatureHelp", (state, params) => {
     let%try (uri, position) = Protocol.rPositionParams(params);
-    let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
+    let%try (text, _, _) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
     let%try full = State.getDefinitionData(uri, state, ~package);
     let {SharedTypes.file, extra} = full;
-    let position = Utils.cmtLocFromVscode(position);
 
     {
-      let%opt (commas, labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
+      let%opt (commas, _, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
       Log.log("Signature help lident " ++ lident);
       let lastPos = i + String.length(lident) - 1;
       let%opt pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode;
@@ -61,13 +60,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | None =>
           let tokenParts = Utils.split_on_char('.', lident);
           let rawOpens = PartialParser.findOpens(text, offset);
-          let allModules = package.localModules @ package.dependencyModules;
           let%opt declared = NewCompletions.findDeclaredValue(
             ~full,
             ~package,
             ~rawOpens,
             ~getModule=State.fileForModule(state, ~package),
-            ~allModules,
             pos,
             tokenParts
           );
@@ -83,7 +80,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             Hover.newHover(
               ~rootUri=state.rootUri,
               ~file,
-              ~extra,
               ~getModule=State.fileForModule(state, ~package),
               ~markdown=! state.settings.clientNeedsPlainText,
               ~showPath=state.settings.showModulePathOnHover,
@@ -94,7 +90,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
-      let (args, rest) = typ.getArguments();
+      let (args, _) = typ.getArguments();
       let%opt args = args == [] ? None : Some(args);
       let printedType = typ.toString();
       open Util.JsonShort;
@@ -122,7 +118,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/completion", (state, params) => {
     let%try (uri, pos) = Protocol.rPositionParams(params);
-    let%try (text, verison, isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
+    let%try (text, _, _) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, pos) |> orError("invalid offset");
     /* TODO get last non-syntax-erroring definitions */
@@ -133,7 +129,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       Log.log("Nothing completable found :/");
       Ok([])
     }
-    | Labeled(string) => {
+    | Labeled(_) => {
       Log.log("don't yet support completion for argument labels, but I hope to soon!");
       Ok([])
     }
@@ -141,11 +137,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       /* Log.log("Completing for string " ++ string); */
       let parts = Str.split(Str.regexp_string("."), string);
       let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
-      let currentModuleName = String.capitalize(Filename.chop_extension(Filename.basename(uri)));
       let rawOpens = PartialParser.findOpens(text, offset);
 
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
-      let useMarkdown = !state.settings.clientNeedsPlainText;
       let allModules = package.localModules @ package.dependencyModules;
       let items = NewCompletions.get(
         ~full={file, extra},
@@ -159,7 +153,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       /* TODO(#107): figure out why we're getting duplicates. */
       let items = Utils.dedup(items);
 
-      List.map(items, ((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, deprecated, docstring, contents})) => o([
+      List.map(items, ((uri, {name: {txt: name, loc: {loc_start: {pos_lnum}}}, docstring, contents})) => o([
         ("label", s(name)),
         ("kind", i(NewCompletions.kindToInt(contents))),
         ("detail", NewCompletions.detail(name, contents) |> s),
@@ -173,7 +167,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     Ok((state, l(completions)))
   }),
 
-  ("completionItem/resolve", (state, params) => {
+  ("completionItem/resolve", (state, _) => {
     Ok((state, Json.Null))
     /* switch (params |> Json.get("documentation") |?> Json.string) {
     | Some(_) => Ok((state, params))
@@ -215,7 +209,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("textDocument/references", (state, params) => {
-    open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
     let%try_wrap (file, extra) = State.fileForUri(state, ~package, uri);
@@ -256,7 +249,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("textDocument/rename", (state, params) => {
-    open InfixResult;
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
@@ -320,7 +312,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     | Ok(package) =>
 
       /* Log.log("<< codleens me please"); */
-      open Infix;
 
       let topLoc = {
         Location.loc_start: {Lexing.pos_fname: "", pos_lnum: 1, pos_bol: 0, pos_cnum: 0},
@@ -343,7 +334,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
                   };
                 List.concat(currentCl, getTypeLensTopLevel(tlp))
               }
-            } 
+            }
         }
         let showToplevelTypes = state.settings.perValueCodelens; /* TODO config option */
         let lenses = showToplevelTypes ? file.contents.topLevel |. getTypeLensTopLevel : [];
@@ -396,7 +387,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt text = Hover.newHover(
         ~rootUri=state.rootUri,
         ~file,
-        ~extra,
         ~getModule=State.fileForModule(state, ~package),
         ~markdown=!state.settings.clientNeedsPlainText,
         ~showPath=state.settings.showModulePathOnHover,
@@ -418,9 +408,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
     let%try refmtPath = State.refmtForUri(uri, package);
     let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
-    
+
     let text = State.getContents(uri, state);
-    open Infix;
     let maybeResult = {
       let%try startPos = PartialParser.positionToOffset(text, start) |> orError("Invalid start position");
       let%try endPos = PartialParser.positionToOffset(text, end_) |> orError("Invalid end position");
@@ -435,7 +424,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         let trailingNewlines = substring |> countTrailing('\n');
         let (leadingNewlines, charsToFirstLines) = {
           let splitted = substring |> split_on_char('\n');
-          let l = List.length(splitted);
           let rec loop = (i, leadingLines, skipChars) => {
             let line = List.getExn(splitted, i);
             switch (line |. String.trim |. String.length) {
@@ -511,12 +499,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = getPackage(uri, state);
 
-    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try (file, _) = State.fileForUri(state, ~package, uri);
 
     open SharedTypes;
 
     let rec getItems = ({Module.topLevel}) => {
-      let fn = ({name: {txt, loc}, extentLoc, contents}) => {
+      let fn = ({name: {txt}, extentLoc, contents}) => {
         let (item, siblings) = switch contents {
           | Module.Value(v) => (v.typ.variableKind, [])
           | Type(t) => (t.typ.declarationKind, [])
@@ -566,7 +554,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/codeAction", (state, params) => {
     open InfixResult;
     let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
-    let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
+    let%try (start, _) = RJson.get("range", params) |?> Protocol.rgetRange;
     let pos = start;
     let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
@@ -576,7 +564,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt () = Filename.check_suffix(uri, ".re") ? Some(()) : None;
 
       let pos = Utils.cmtLocFromVscode(pos);
-      let%opt (location, loc) = References.locForPos(~extra, pos);
+      let%opt (_, loc) = References.locForPos(~extra, pos);
       let%opt signatureText = switch loc {
         | Typed(t, Definition(stamp, Value)) =>
           let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, Value);
@@ -650,7 +638,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("custom:reasonLanguageServer/createInterface", (state, params) => {
     open InfixResult;
     let%try uri = RJson.get("uri", params) |?> RJson.string;
-    let%try minimal = RJson.get("minimal", params) |?> RJson.bool;
     let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
     let%try package = getPackage(uri, state);
     let interfacePath = path ++ "i";

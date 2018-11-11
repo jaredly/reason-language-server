@@ -78,8 +78,6 @@ let completionForDeclareds = (~pos, declareds, prefix, transformContents) =>
           ...results,
         ];
       } else {
-        let (l, c) = pos;
-        let m = Printf.sprintf("%d, %d", l, c);
         /* Log.log("Nope doesn't count " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ m); */
         results;
       },
@@ -285,9 +283,9 @@ let detail = (name, contents) =>
     typ.declToString(name)
   | Value({typ}) =>
     typ.toString()
-  | Module(m) => "module"
-  | ModuleType(m) => "module type"
-  | FileModule(m) => "file module"
+  | Module(_) => "module"
+  | ModuleType(_) => "module type"
+  | FileModule(_) => "file module"
   | Attribute({typ}, t) =>
     name
     ++ ": "
@@ -306,7 +304,7 @@ let detail = (name, contents) =>
     )
   };
 
-let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => {
+let localValueCompletions = (~pos, ~env: Query.queryEnv, suffix) => {
   let results = [];
   Log.log("---------------- LOCAL VAL");
   let results =
@@ -356,7 +354,7 @@ let localValueCompletions = (~pos, ~env: Query.queryEnv, ~getModule, suffix) => 
   results |. Belt.List.map(x => (env.file.uri, x));
 };
 
-let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
+let valueCompletions = (~env: Query.queryEnv, suffix) => {
   Log.log(" - Completing in " ++ env.file.uri);
   let results = [];
   let results =
@@ -416,7 +414,7 @@ let valueCompletions = (~env: Query.queryEnv, ~getModule, suffix) => {
   results |. Belt.List.map(x => (env.file.uri, x));
 };
 
-let attributeCompletions = (~env: Query.queryEnv, ~getModule, ~suffix) => {
+let attributeCompletions = (~env: Query.queryEnv, ~suffix) => {
   let results = [];
   let results =
     if (suffix == "" || isCapitalized(suffix)) {
@@ -489,7 +487,6 @@ let findDeclaredValue =
       /* the text that we found e.g. open A.B.C, this is "A.B.C" */
       ~rawOpens,
       ~getModule,
-      ~allModules,
       pos,
       tokenParts,
     ) => {
@@ -531,7 +528,7 @@ let get =
   | [] => []
   | [suffix] =>
     let locallyDefinedValues =
-      localValueCompletions(~pos, ~env, ~getModule, suffix);
+      localValueCompletions(~pos, ~env, suffix);
     let alreadyUsedIdentifiers = Hashtbl.create(10);
     let valuesFromOpens =
       Belt.List.reduce(
@@ -539,8 +536,8 @@ let get =
         [],
         (results, env) => {
           let completionsFromThisOpen =
-            valueCompletions(~env, ~getModule, suffix);
-          Belt.List.keep(completionsFromThisOpen, ((uri, declared)) => {
+            valueCompletions(~env, suffix);
+          Belt.List.keep(completionsFromThisOpen, ((_, declared)) => {
             if (! Hashtbl.mem(alreadyUsedIdentifiers, declared.name.txt)) {
               Hashtbl.add(alreadyUsedIdentifiers, declared.name.txt, true);
               true;
@@ -576,7 +573,7 @@ let get =
         let%opt_wrap (env, suffix) =
           getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
         Log.log("Got the env");
-        valueCompletions(~env, ~getModule, suffix);
+        valueCompletions(~env, suffix);
       }
       |? []
     | `Attribute(target, suffix) =>
@@ -637,10 +634,10 @@ let get =
         let%opt_wrap (env, suffix) =
           getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
 
-        attributeCompletions(~env, ~getModule, ~suffix)
+        attributeCompletions(~env, ~suffix)
         @ List.concat(
             Belt.List.map(opens, env =>
-              attributeCompletions(~env, ~getModule, ~suffix)
+              attributeCompletions(~env, ~suffix)
             ),
           );
       }

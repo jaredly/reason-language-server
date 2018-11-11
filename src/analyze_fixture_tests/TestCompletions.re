@@ -6,16 +6,15 @@ let name = "TestCompletions";
 
 let getOutput = (files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
-  let (state, package, cmt, full) = TestUtils.setUp(files, text)
+  let (state, package, _, full) = TestUtils.setUp(files, text)
   let completions = switch (PartialParser.findCompletable(text, offset)) {
   | Nothing => failwith("Nothing completable found")
-  | Labeled(string) => failwith("Can't do labeled completions yet")
+  | Labeled(_) => failwith("Can't do labeled completions yet")
   | Lident(string) =>
     Log.log("Complete: " ++ string);
     let parts = Str.split(Str.regexp_string("."), string);
     let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
     let rawOpens = PartialParser.findOpens(text, offset);
-    let useMarkdown = !state.settings.clientNeedsPlainText;
     let allModules = package.localModules;
     Log.log(showExtra(full.extra));
     NewCompletions.get(
@@ -43,5 +42,5 @@ let getOutput = (files, text) => {
   }
 };
 
-/* let cases = 
+/* let cases =
 cases |> List.iter(test) */

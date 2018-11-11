@@ -4,7 +4,7 @@ let typesAndDependencies = (tbl) => {
 
   let rec loop = (source) => {
     if (!Hashtbl.mem(collector, source)) {
-      let (attributes, decl) = Hashtbl.find(tbl, source);
+      let (_attributes, decl) = Hashtbl.find(tbl, source);
       collector->Hashtbl.replace(source, `Reference(source));
 
       let sources = SharedTypes.SimpleType.usedSources(decl)->Belt.List.keepMap(source => switch source {
@@ -23,7 +23,7 @@ let typesAndDependencies = (tbl) => {
     }
   };
 
-  Hashtbl.iter((key, value) => loop(key), tbl);
+  Hashtbl.iter((key, _value) => loop(key), tbl);
 
   let collected = Hashtbl.create(10);
   collector |> Hashtbl.iter((key, value) => switch value {
@@ -57,7 +57,7 @@ let typesAndDependencies = (tbl) => {
   let resolved = Hashtbl.create(10);
   collected |> Hashtbl.iter((k, v) => resolved->Hashtbl.replace(k, v->Belt.List.map(item => switch item {
       | `Plain(x) => x
-      | `Reference(inner) => failwith("Unresolved reference")
+      | `Reference(_inner) => failwith("Unresolved reference")
   })->Belt.List.sort(compare)));
   resolved
 };

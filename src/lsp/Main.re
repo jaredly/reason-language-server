@@ -85,10 +85,6 @@ let getInitialState = (params) => {
     ),
   );
 
-  open InfixResult;
-
-  let packagesByRoot = Hashtbl.create(1);
-
   /* if client needs plain text in any place, we disable markdown everywhere */
   let clientNeedsPlainText = ! Infix.(
       Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true
@@ -121,8 +117,6 @@ let getInitialState = (params) => {
 
   Ok({...state, settings: {...state.settings, clientNeedsPlainText}})
 };
-
-open TopTypes;
 
 let tick = state => {
   NotificationHandlers.checkPackageTimers(state);

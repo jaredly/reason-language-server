@@ -39,7 +39,7 @@ let stripLeft = text => {
   String.concat("\n", List.map(line => sliceToEnd(line, min), lines))
 };
 
-let makeHeader = (level, label, content) => {
+let makeHeader = (level, content) => {
   switch level {
   | `Title => Omd.H1(content)
   | `Section => Omd.H2(content)
@@ -53,7 +53,7 @@ let makeHeader = (level, label, content) => {
     | `Exception | `Value | `Class | `ClassType
     | `Method | `InstanceVariable | `Label | `Page ] */
 let handleRef = reference => switch reference {
-| Paths.Reference.Root(name, tag) => name
+| Paths.Reference.Root(name, _) => name
 | Paths.Reference.Resolved(_) => "resolved..."
 | Paths.Reference.Dot(_, name) => name
 | Paths.Reference.Module(_, name) => name
@@ -70,10 +70,10 @@ let handleRef = reference => switch reference {
 | _ => "(unhandled reference)"
 };
 
-let convertItem = (currentModule, item) => {
+let convertItem = (item) => {
 
   let rec convertItem = item => switch item.Location_.value {
-  | `Heading(level, label, content) => makeHeader(level, label, List.map(convertLink, content))
+  | `Heading(level, _, content) => makeHeader(level, List.map(convertLink, content))
   | `Tag(`Author(string)) => Omd.Text("Author: " ++ string)
   | `Tag(`Deprecated(contents)) => Omd.Paragraph([Omd.Text("Deprecated: "), ...List.map(stripLoc(convertNestable), contents)])
   | `Tag(`Param(name, contents)) => Omd.Paragraph([Omd.Text("Param: " ++ name), ...List.map(stripLoc(convertNestable), contents)])
@@ -81,7 +81,7 @@ let convertItem = (currentModule, item) => {
   | `Tag(`Return(contents)) => Omd.Paragraph([Omd.Text("Returns: "), ...List.map(stripLoc(convertNestable), contents)])
   | `Tag(`See(_, link, contents)) => Omd.Paragraph([Omd.Text("See: "), Omd.Url(link, List.map(stripLoc(convertNestable), contents), "")])
   | `Tag(`Since(versionString)) => Omd.Text("Since: " ++ versionString)
-  | `Tag(tag) => {
+  | `Tag(_) => {
     output_string(stderr, "Warning: Unhandled tag in ocamldoc (please tell the docre maintainers)\n");
     Omd.Text("Unhandled tag")
   }
@@ -104,7 +104,7 @@ let convertItem = (currentModule, item) => {
   | `Paragraph(inline) => Omd.Paragraph(List.map(convertInline, inline))
   | `Code_block(text) => Omd.Code_block("ml", stripLeft(text))
   | `Verbatim(text) => Omd.Raw(text) /* TODO */
-  | `Modules(modules) => {
+  | `Modules(_) => {
     Log.log("Unhandled modules");
     Omd.Raw("!!!! Modules please")
   }
@@ -115,7 +115,7 @@ let convertItem = (currentModule, item) => {
   and convertInline = item => switch item.Location_.value {
   | `Link(href, content) => Omd.Url(href, List.map(convertLink, content), "")
   | `Styled(style, contents) => withStyle(style, List.map(convertInline, contents))
-  | `Reference(someref, link) => {
+  | `Reference(someref, _) => {
     let text = handleRef(someref);
     Omd.Text(text)
     /* Omd.Url("#TODO-ref", [Omd.Text("REFERENCE"), ...List.map(convertLink, link)], "") */
@@ -137,7 +137,7 @@ let convertItem = (currentModule, item) => {
   convertItem(item)
 };
 
-let convert = (currentModule, text) => {
+let convert = (text) => {
   let res = Parser_.parse_comment(
     ~permissive=true,
     ~sections_allowed=`All,
@@ -146,7 +146,7 @@ let convert = (currentModule, text) => {
     ~text
   );
   switch res.result {
-  | Error.Ok(docs) => List.map(convertItem(currentModule), docs)
+  | Error.Ok(docs) => List.map(convertItem, docs)
   | Error(message) => [Omd.Text("failed to parse: " ++ Error.to_string(message))]
   }
 };

@@ -78,7 +78,7 @@ let mapFnExpr = (expr, fnMapper) => {
 };
 
 let mapConstructor = (expr, ~ident=?, constrMapper) => {
-  expr->mapExpr((mapper, expr) => switch (expr.pexp_desc) {
+  expr->mapExpr((_, expr) => switch (expr.pexp_desc) {
     | Pexp_construct({txt} as lid, Some({pexp_desc: Pexp_tuple(args)})) =>
       switch ident {
         | None => constrMapper(lid, args, expr)
@@ -104,7 +104,7 @@ let getExprType = (ctx, expr) => {
   }
 };
 
-let getTypeDefinition = (ctx, {TypeMap.DigTypes.uri, moduleName, modulePath, declared, name, env}) => {
+let getTypeDefinition = (ctx, {TypeMap.DigTypes.declared, env}) => {
   let getModule = ctx.state->Analyze.State.fileForModule(~package=ctx.package);
   SharedTypes.SimpleType.declMapSource(
     TypeMap.GetTypeMap.mapSource(~env, ~getModule),

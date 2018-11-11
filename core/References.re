@@ -78,7 +78,6 @@ let localReferencesForLoc = (~file, ~extra, loc) =>
 
 let definedForLoc = (~file, ~getModule, loc) => {
   let inner = (~file, stamp, tip) => {
-    open Infix;
     switch tip {
       | Constructor(name) => {
         let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
@@ -155,7 +154,7 @@ let resolveModuleReference = (~file, ~getModule, declared: SharedTypes.declared(
   switch (declared.contents) {
     | SharedTypes.Module.Structure(_) =>
       Some((file, Some(declared)))
-    | Ident(path) => 
+    | Ident(path) =>
       let env = {Query.file, exported: file.contents.exported};
       switch (Query.fromCompilerPath(~env, path)) {
         | `Not_found => None
@@ -306,7 +305,7 @@ let resolveModuleDefinition = (~file, ~getModule, stamp) => {
   Some((file.uri, loc))
 };
 
-let rec definition = (~file, ~getModule, stamp, tip) => {
+let definition = (~file, ~getModule, stamp, tip) => {
   switch tip {
     | Constructor(name) =>
       let%opt constructor = Query.getConstructor(file, stamp, name);
@@ -333,7 +332,7 @@ let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
       Log.log("Declared");
       if (declared.exported) {
         Log.log("exported, looking for alternate " ++ file.moduleName);
-        let%opt (file, extra, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
+        let%opt (file, _, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
         let loc = validateLoc(declared.name.loc, declared.extentLoc);
         Some((file.uri, loc))
       } else {

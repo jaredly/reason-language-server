@@ -6,4 +6,4 @@ let array = obj => Json.array(obj) |> RResult.orError("Expected an array");
 let obj = obj => Json.obj(obj) |> RResult.orError("Expected an object");
 let bool = obj => Json.bool(obj) |> RResult.orError("Expected a boolean");
 
-let extend = (obj, attributes) => Json.obj(obj) |> RResult.orError("Expected an object")
+let extend = (obj) => Json.obj(obj) |> RResult.orError("Expected an object")

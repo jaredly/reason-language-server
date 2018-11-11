@@ -20,7 +20,7 @@ let range = (num, fn) => {
 };
 
 let makeTypArgs = variables =>
-      variables->Belt.List.mapWithIndex((index, arg) => {
+      variables->Belt.List.mapWithIndex((index, _) => {
         "arg" ++ string_of_int(index)
       });
 
@@ -140,7 +140,7 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
     })))
   | Variant(constructors) =>
     let constructors =
-      constructors->Belt.List.map(((name, args, result)) => {
+      constructors->Belt.List.map(((name, args, _result)) => {
         let body =
           ok(
             Exp.constraint_(
@@ -236,7 +236,7 @@ let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
   let typ =
     switch (decl.variables) {
     | [] => typ
-    | args => Typ.poly(makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc), typ)
+    | _args => Typ.poly(makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc), typ)
     };
   let fullName = transformerName(~moduleName, ~modulePath, ~name);
 

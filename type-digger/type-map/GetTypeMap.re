@@ -7,12 +7,12 @@ let getType = (~env: Query.queryEnv, name) => {
   Query.hashFind(env.exported.types, name) |?> stamp => Query.hashFind(env.file.stamps.types, stamp)
 };
 
-let isBuiltin = fun 
+let isBuiltin = fun
   | "list" | "string" | "option" | "int" | "float" | "bool" | "array" => true
   | _ => false;
 let rec getFullType_ = (env, path, name) => switch path {
   | [] => getType(~env, name)
-  | [one, ...more] => 
+  | [one, ...more] =>
     let%opt modStamp = Query.hashFind(env.exported.modules, one);
     let%opt declared = Query.hashFind(env.file.stamps.modules, modStamp);
     switch (declared.contents) {
@@ -57,7 +57,7 @@ let mapSource = (~env, ~getModule, path) => {
         NotFound
       }
     }
-    | Some(({contents, name, modulePath} as declared, env)) =>
+    | Some(({name, modulePath} as declared, env)) =>
       let%opt_force ((uri, moduleName), path) = Query.showVisibilityPath(~env, ~getModule, modulePath);
       Public({
         uri,
@@ -76,7 +76,6 @@ let recursiveMapSource = (~env, ~getModule, loop, path) => {
   let result = mapSource(~env, ~getModule, path);
   switch result {
     | Public({
-      uri,
       moduleName,
       modulePath: path,
       declared,
@@ -106,7 +105,7 @@ let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, key, t: Share
   };
 };
 
-let rec splitFull = fullName => {
+let splitFull = fullName => {
   let parts = Util.Utils.split_on_char('.', fullName);
   let rec loop = parts => switch parts {
     | [] => assert(false)
@@ -120,10 +119,7 @@ let rec splitFull = fullName => {
 
 let fileToReference = (~state, uri, fullName) => {
   let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
-  let%try (file, _) = State.fileForUri(state, ~package, uri);
-  let env = Query.fileEnv(file);
   let (path, name) = splitFull(fullName);
-  let%try declared = getFullType(~env, path, name) |> RResult.orError("No declared type named " ++ fullName);
   let getModuleName = uri => {
     let%opt path = Utils.parseUri(uri);
     package.nameForPath->Query.hashFind(path);

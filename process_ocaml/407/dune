@@ -2,6 +2,6 @@
   (name Process_407)
   (public_name ReasonLanguageServer.Process_407)
   (libraries Belt Current Vendor Util str Compiler_libs_407 Core)
-  (flags :standard -open Vendor -open Util -w -26-32-50-9-27-39-33-35-6-3)
+  (flags :standard -open Vendor -open Util -w -9)
   (preprocess (pps Belt_ppx Ppx_monads))
   )
