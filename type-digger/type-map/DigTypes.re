@@ -38,7 +38,7 @@ type typeMap('reference) = Hashtbl.t(shortReference, SharedTypes.SimpleType.decl
 
 type lockfile('reference) = {
   version: int,
-  pastVersions: Belt.HashMap.Int.t(typeMap('reference)),
+  pastVersions: Hashtbl.t(int, typeMap('reference)),
   current: typeMap('reference)
 };
 

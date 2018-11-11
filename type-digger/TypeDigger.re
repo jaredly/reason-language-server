@@ -105,20 +105,56 @@ let loadTypeMap = config => {
   TypeMap.GetTypeMap.toSimpleMap(tbl);
 };
 
+let compareHashtbls = (one, two) => {
+  if (Hashtbl.length(one) != Hashtbl.length(two)) {
+    false
+  } else {
+    Hashtbl.fold((k, v, good) => {
+      good && Hashtbl.mem(two, k) && v == Hashtbl.find(two, k)
+    }, one, true)
+  }
+};
+
 let main = configPath => {
   let config = Json.parse(Util.Files.readFileExn(configPath));
   open Util.RResult.InfixResult;
   let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
   let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
+  let%try_force version = Util.RJson.get("version", config) |?> Util.RJson.number |?>> int_of_float;
   let tbl = loadTypeMap(config);
 
   let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
 
-  let lockfileJson = TypeMapSerde.lockfileToJson({
-    version: 1,
-    pastVersions: Belt.HashMap.Int.make(~hintSize=10),
-    current: tbl
-  });
+  let lockfile = switch (Files.readFileResult(lockFilePath)) {
+    | Error(_) => {
+      TypeMap.DigTypes.version,
+      pastVersions: Hashtbl.create(1),
+      current: tbl
+    }
+    | Ok(contents) => {
+      let json = Json.parse(contents);
+      let%try_force lockfile = TypeMapSerde.lockfileFromJson(json)
+      if (lockfile.version == version) {
+        /* TODO allow addative type changes */
+        if (!compareHashtbls(lockfile.current, tbl)) {
+          failwith("Types do not match lockfile! You must increment the version number in your types.json")
+        } else {
+          lockfile
+        }
+      } else if (lockfile.version + 1 == version) {
+        lockfile.pastVersions->Hashtbl.replace(lockfile.version, lockfile.current);
+        {
+          version,
+          pastVersions: lockfile.pastVersions,
+          current: tbl
+        }
+      } else {
+        failwith("Version must be incremented by one")
+      }
+    }
+  };
+
+  let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
   Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
 
   /* tbl */

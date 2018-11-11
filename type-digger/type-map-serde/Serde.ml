@@ -2,7 +2,6 @@ module V1_Locked =
   struct
     type _Analyze__TopTypes__moduleName = string
     and 'arg0 _Belt__Belt_HashMapInt__t = 'arg0 Belt__Belt_HashMapInt.t
-    and ('arg0, 'arg1) _Hashtbl__t = ('arg0, 'arg1) Hashtbl.t
     and 'source _SharedTypes__SimpleType__body =
       'source SharedTypes.SimpleType.body =
       | Open 
@@ -32,7 +31,7 @@ module V1_Locked =
       {
       version: int ;
       pastVersions:
-        'reference _TypeMap__DigTypes__typeMap _Belt__Belt_HashMapInt__t ;
+        (int, 'reference _TypeMap__DigTypes__typeMap) _Stdlib__hashtbl__t ;
       current: 'reference _TypeMap__DigTypes__typeMap }
     and _TypeMap__DigTypes__serializableLockfile =
       _TypeMap__DigTypes__shortReference _TypeMap__DigTypes__lockfile
@@ -306,10 +305,10 @@ module DeserializeRaw =
                | Error error -> Error error)
           | _ -> Error "Expected an array"
     and deserialize_SharedTypes__SimpleType__declaration :
-      'arg0 .
-        (Json.t -> ('arg0, string) Belt.Result.t) ->
+      type arg0 .
+        (Json.t -> (arg0, string) Belt.Result.t) ->
           Json.t ->
-            ('arg0 SharedTypes.SimpleType.declaration, string) Belt.Result.t
+            (arg0 SharedTypes.SimpleType.declaration, string) Belt.Result.t
       =
       fun sourceTransformer ->
         fun record ->
@@ -672,7 +671,17 @@ module DeserializeRaw =
                                  (("No attribute " ^ "pastVersions")))
                              [@explicit_arity ])
                          | ((Some (json))[@explicit_arity ]) ->
-                             (match (deserialize_Belt__Belt_HashMapInt____t
+                             (match (deserialize_Stdlib__hashtbl____t
+                                       (fun number ->
+                                          match number with
+                                          | ((Json.Number
+                                              (number))[@explicit_arity ]) ->
+                                              ((Belt.Result.Ok
+                                                  ((int_of_float number)))
+                                              [@explicit_arity ])
+                                          | _ ->
+                                              ((Error ("Expected a float"))
+                                              [@explicit_arity ]))
                                        (deserialize_TypeMap__DigTypes____typeMap
                                           referenceTransformer)) json
                               with
@@ -982,7 +991,9 @@ module SerializeRaw =
                (((fun i -> ((Json.Number ((float_of_int i)))
                     [@explicit_arity ]))) record.version));
             ("pastVersions",
-              ((serialize_Belt__Belt_HashMapInt____t
+              ((serialize_Stdlib__hashtbl____t
+                  (fun i -> ((Json.Number ((float_of_int i)))
+                     [@explicit_arity ]))
                   (serialize_TypeMap__DigTypes____typeMap
                      referenceTransformer)) record.pastVersions));
             ("current",

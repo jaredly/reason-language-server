@@ -4,10 +4,31 @@ open Vendor;
 open Util;
 
 let deserialize_Belt__Belt_HashMapInt____t = (valueTransform, json) => {
-  Ok(Belt.HashMap.Int.make(~hintSize=10))
+  let map = Belt.HashMap.Int.make(~hintSize=10);
+  let%try items = RJson.obj(json);
+  let rec loop = items => {
+    switch items {
+      | [] => Ok(map)
+      | [(k, v), ...rest] => switch (int_of_string(k)) {
+        | exception _ => Error("Expected integer key: " ++ k)
+        | key => {
+          let%try value = valueTransform(v);
+          map->Belt.HashMap.Int.set(key, value);
+          loop(rest)
+        }
+      }
+    }
+  };
+  loop(items)
 };
 
-let serialize_Belt__Belt_HashMapInt____t = (valueTransform, map) => Json.Null;
+let serialize_Belt__Belt_HashMapInt____t = (valueTransform, map) => {
+  /* map->Belt.HashMap.Int.toArray; */
+  /* map->Belt.HashMap.Int.reduce([], (result, key, value) => {
+    [("one", Json.Null), ...result]
+  })->Json.Object; */
+  Json.Null
+};
 
 let deserialize_Stdlib__hashtbl____t = (keyTransform, valueTransform, json) => {
   let%try items = RJson.array(json);
@@ -34,5 +55,5 @@ let deserialize_Stdlib__hashtbl____t = (keyTransform, valueTransform, json) => {
 let serialize_Stdlib__hashtbl____t = (keyTransform, valueTransform, tbl) => {
   Vendor.Json.Array(Hashtbl.fold((key, value, result) => {
     [Vendor.Json.Array([keyTransform(key), valueTransform(value)]), ...result]
-  }, tbl, []))
+  }, tbl, [])->Belt.List.sort(compare))
 };
