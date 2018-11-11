@@ -7,9 +7,12 @@ let outputDeclaration = (showSource, declaration) => {
 }
 
 /* TODO TODO TODO */
-let rec outputDeclaration = (showSource, declaration) => {
-  let name: Ast_helper.str = Location.mknoloc(declaration.name)
-  let mk = Ast_helper.Type.mk;
+let rec outputDeclaration = (name, showSource, declaration) => {
+  let name: Ast_helper.str = Location.mknoloc(name)
+  let mk = Ast_helper.Type.mk(~params=declaration.variables->Belt.List.map(expr => (
+    outputExpr(showSource, expr),
+    Asttypes.Invariant
+  )));
   switch (declaration.body) {
   | Open => mk(~kind=Parsetree.Ptype_open, name)
   | Abstract => mk(~kind=Parsetree.Ptype_abstract, name)

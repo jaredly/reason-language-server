@@ -9,18 +9,24 @@ let makeModule = (moduleName, contents) =>
     Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
   );
 
-let lockTypes = (tbl) => {
+let makeLockedTypeName = (version, moduleName, modulePath, name) => {
+  String.concat("__", ["v" ++ string_of_int(version), moduleName] @ modulePath @ [name]);
+};
+
+let lockTypes = (version, tbl) => {
   let decls = Hashtbl.fold(((moduleName, modulePath, name), decl, bindings) => [
-    Serde.OutputType.outputDeclaration((source, args) =>  {
+    Serde.OutputType.outputDeclaration(makeLockedTypeName(version, moduleName, modulePath, name), (source, args) =>  {
       Ast_helper.Typ.constr(Location.mknoloc(switch source {
         | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
         | Builtin(name) => Longident.Lident(name)
-        | Public(reference) => TypeMap.DigTypes.referenceToLident(reference)
+        | Public(reference) =>
+          TypeMap.DigTypes.referenceToLident(reference)
       }), args)
     }
     , decl),
     ...bindings
-  ], tbl, [])
+  ], tbl, []);
+  makeModule("V" ++ string_of_int(version) ++ "_Locked", [Ast_helper.Str.type_(Recursive, decls)])
 };
 
 let makeFns = (moduleName, maker, tbl) => {
@@ -100,6 +106,10 @@ switch (Sys.argv->Belt.List.fromArray) {
       | "rex-json" => [makeFns("DeserializeRaw", Serde.Json.declDeserializer, tbl), makeFns("SerializeRaw", Serde.Json.declSerializer, tbl)]
       | _ => assert(false)
     };
+    let body = [
+      lockTypes(1, tbl),
+      ...body
+    ];
 
     Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
 
