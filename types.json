@@ -6,6 +6,10 @@
     {
       "file": "type-digger/type-map/DigTypes.re",
       "type": "serializableLockfile"
+    },
+    {
+      "file": "type-digger/type-map-serde/Config.re",
+      "type": "t"
     }
   ],
   "custom": [
