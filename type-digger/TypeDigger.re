@@ -53,66 +53,81 @@ let getTypeMap = (base, state, types) => {
   tbl
 };
 
+let main = configPath => {
+  let config = Json.parse(Util.Files.readFileExn(configPath));
+  open Util.RResult.InfixResult;
+  let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
+  let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
+  let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array;
+  open Util.Infix;
+  let custom = Json.get("custom", config) |?> Json.array |? [];
 
-switch (Sys.argv->Belt.List.fromArray) {
-  | [_, config] => {
-    let config = Json.parse(Util.Files.readFileExn(config));
+  let state = TopTypes.forRootPath(Sys.getcwd());
+
+  let tbl = Hashtbl.create(10);
+
+  custom->Belt.List.forEach(custom => {
     open Util.RResult.InfixResult;
-    let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
-    let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
-    let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array;
+    let%try_force modname = Util.RJson.get("module", custom) |?> Util.RJson.string;
+    let%try_force path = Util.RJson.get("path", custom) |?> Util.RJson.array;
+    let%try_force name = Util.RJson.get("name", custom) |?> Util.RJson.string;
     open Util.Infix;
-    let custom = Json.get("custom", config) |?> Json.array |? [];
-
-    let state = TopTypes.forRootPath(Sys.getcwd());
-
-    let tbl = Hashtbl.create(10);
-
-    custom->Belt.List.forEach(custom => {
-      open Util.RResult.InfixResult;
-      let%try_force modname = Util.RJson.get("module", custom) |?> Util.RJson.string;
-      let%try_force path = Util.RJson.get("path", custom) |?> Util.RJson.array;
-      let%try_force name = Util.RJson.get("name", custom) |?> Util.RJson.string;
-      open Util.Infix;
-      let args = Json.get("args", custom) |?> Json.number |?>> int_of_float |? 0;
-      Hashtbl.replace(tbl, (modname, path |> List.map(item => {
-        let%opt_force item = Json.string(item);
-        item
-      }), name), SharedTypes.SimpleType.{
+    let args = Json.get("args", custom) |?> Json.number |?>> int_of_float |? 0;
+    Hashtbl.replace(
+      tbl,
+      (
+        modname,
+        path
+        |> List.map(item => {
+             let%opt_force item = Json.string(item);
+             item;
+           }),
+        name,
+      ),
+      SharedTypes.SimpleType.{
         name,
         variables: {
           let rec loop = n =>
             n <= 0 ? [] : [SharedTypes.SimpleType.Variable("arg" ++ string_of_int(args - n)), ...loop(n - 1)];
-          loop(args)
+          loop(args);
         },
-        body: Abstract
-      })
-    });
+        body: Abstract,
+      },
+    );
+  });
 
-    /* Digest.string */
+  /* Digest.string */
 
-    entries->Belt.List.forEach(typ => {
-      let%opt_force file = Json.get("file", typ) |?> Json.string;
-      let%opt_force typeName = Json.get("type", typ) |?> Json.string;
-      let%try_force () = TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), typeName);
-    });
+  entries->Belt.List.forEach(typ => {
+    let%opt_force file = Json.get("file", typ) |?> Json.string;
+    let%opt_force typeName = Json.get("type", typ) |?> Json.string;
+    let%try_force () =
+      TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), typeName);
+    ();
+  });
 
-    /* tbl */
-    let body = switch engine {
-      | "bs-json" => [makeFns("DeserializeRaw", Serde.BsJson.declDeserializer, tbl), makeFns("SerializeRaw", Serde.BsJson.declSerializer, tbl)]
-      | "rex-json" => [makeFns("DeserializeRaw", Serde.Json.declDeserializer, tbl), makeFns("SerializeRaw", Serde.Json.declSerializer, tbl)]
-      | _ => assert(false)
+  /* tbl */
+  let body =
+    switch (engine) {
+    | "bs-json" => [
+        makeFns("DeserializeRaw", Serde.BsJson.declDeserializer, tbl),
+        makeFns("SerializeRaw", Serde.BsJson.declSerializer, tbl),
+      ]
+    | "rex-json" => [
+        makeFns("DeserializeRaw", Serde.Json.declDeserializer, tbl),
+        makeFns("SerializeRaw", Serde.Json.declSerializer, tbl),
+      ]
+    | _ => assert(false)
     };
-    let body = [
-      lockTypes(1, tbl),
-      ...body
-    ];
+  let body = [lockTypes(1, tbl), ...body];
 
-    Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
+  Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
 
-    let ml = Format.flush_str_formatter();
-    Files.writeFile(output, ml) |> ignore;
+  let ml = Format.flush_str_formatter();
+  Files.writeFile(output, ml) |> ignore;
+};
 
-  }
+switch (Sys.argv->Belt.List.fromArray) {
+  | [_, config] => main(config)
   | _ => failwith("Bad args")
 }
