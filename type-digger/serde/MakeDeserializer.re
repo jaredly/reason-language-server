@@ -143,7 +143,6 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
     });
 
     transformer.variant(constructors)
-
 };
 
 let declInner = (transformer, typeLident, {variables, body}, fullName) => {

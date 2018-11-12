@@ -1,0 +1,18 @@
+{
+  "name": "example",
+  "bsc-flags": ["-open Belt", "-bs-g"],
+  "sources": [{
+    "dir" : "src",
+    "subdirs" : true
+  }],
+  "warnings": {
+    "number": "-44-27-45"
+  },
+  "package-specs": [{
+    "module": "commonjs",
+    "in-source": true
+  }],
+  "suffix": ".bs.js",
+  "namespace": false,
+  "refmt": 3
+}

@@ -191,7 +191,8 @@ let rec stringifyPretty = (~indent=0, t) =>
   | String(value) => "\"" ++ escape(value) ++ "\""
   | Number(num) => string_of_number(num)
   | Array([]) => "[]"
-  | Array(items) => "[\n" ++ white(indent) ++ String.concat(",\n" ++ white(indent), List.map(stringifyPretty(~indent=indent + 2), items)) ++ "\n" ++ white(indent) ++ "]"
+  | Array([String(value) as contents]) => "[" ++ stringifyPretty(contents) ++ "]"
+  | Array(items) => "[\n" ++ white(indent) ++ String.concat(",\n" ++ white(indent), List.map(stringifyPretty(~indent=indent + 2), items)) ++ "\n" ++ white(indent - 2) ++ "]"
   | Object([]) => "{}"
   | Object(items) =>
     "{\n" ++ white(indent)
@@ -199,7 +200,7 @@ let rec stringifyPretty = (~indent=0, t) =>
          ",\n" ++ white(indent),
          List.map(((k, v)) => "\"" ++ String.escaped(k) ++ "\": " ++ stringifyPretty(~indent=indent + 2, v), items)
        )
-    ++ "\n" ++ white(indent) ++ "}"
+    ++ "\n" ++ white(indent - 2) ++ "}"
   | True => "true"
   | False => "false"
   | Null => "null"

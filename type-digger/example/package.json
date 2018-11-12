@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "bs-platform": "^4.0.7"
+  },
+  "scripts": {
+    "start": "../../_esy/default/build/install/default/bin/type-digger types.json"
+  }
+}
