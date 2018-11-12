@@ -115,9 +115,23 @@ let rec splitFull = fullName => {
   loop(parts)
 };
 
+let fileToReference = (~state, uri, fullName) => {
+  let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
+  let%try (file, _) = State.fileForUri(state, ~package, uri);
+  let env = Query.fileEnv(file);
+  let (path, name) = splitFull(fullName);
+  let%try declared = getFullType(~env, path, name) |> RResult.orError("No declared type named " ++ fullName);
+  let getModuleName = uri => {
+    let%opt path = Utils.parseUri(uri);
+    package.nameForPath->Query.hashFind(path);
+  };
+  let%opt_force moduleName = getModuleName(uri);
+  Ok((moduleName, path, name))
+};
+
 let forInitialType = (~tbl, ~state, uri, fullName) => {
   let%try package = State.getPackage(~reportDiagnostics=(_, _) => (), uri, state);
-  print_endline("Got package...");
+  /* print_endline("Got package..."); */
   let%try (file, _) = State.fileForUri(state, ~package, uri);
   let env = Query.fileEnv(file);
   let (path, name) = splitFull(fullName);

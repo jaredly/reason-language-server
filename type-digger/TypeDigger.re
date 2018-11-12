@@ -39,7 +39,7 @@ let makeFns = (moduleName, maker, tbl) => {
     makeModule(moduleName, [Ast_helper.Str.value(Recursive, decls)])
 };
 
-let getTypeMap = (base, state, types) => {
+/* let getTypeMap = (base, state, types) => {
   let tbl = Hashtbl.create(10);
 
   types->Belt.List.forEach(typ => {
@@ -50,7 +50,7 @@ let getTypeMap = (base, state, types) => {
     }
   });
   tbl
-};
+}; */
 
 open TypeMapSerde.Config;
 
@@ -66,11 +66,7 @@ let loadTypeMap = config => {
 
   config.custom->Belt.List.forEach(({path, name, module_, args}) => {
     open Util.RResult.InfixResult;
-    /* let%try_force modname = Util.RJson.get("module", custom) |?> Util.RJson.string;
-    let%try_force path = Util.RJson.get("path", custom) |?> Util.RJson.array;
-    let%try_force name = Util.RJson.get("name", custom) |?> Util.RJson.string; */
     open Util.Infix;
-    /* let args = Json.get("args", custom) |?> Json.number |?>> int_of_float |? 0; */
     Hashtbl.replace(
       tbl,
       (
@@ -93,14 +89,12 @@ let loadTypeMap = config => {
   /* Digest.string */
 
   config.entries->Belt.List.forEach(({file, type_}) => {
-    /* let%opt_force file = Json.get("file", typ) |?> Json.string;
-    let%opt_force typeName = Json.get("type", typ) |?> Json.string; */
     let%try_force () =
       TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), type_);
     ();
   });
 
-  TypeMap.GetTypeMap.toSimpleMap(tbl);
+  (state, TypeMap.GetTypeMap.toSimpleMap(tbl));
 };
 
 let compareHashtbls = (one, two) => {
@@ -117,10 +111,7 @@ let main = configPath => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config = TypeMapSerde.configFromJson(json);
   open Util.RResult.InfixResult;
-  /* let%try_force engine = Util.RJson.get("engine", config) |?> Util.RJson.string;
-  let%try_force output = Util.RJson.get("output", config) |?> Util.RJson.string;
-  let%try_force version = Util.RJson.get("version", config) |?> Util.RJson.number |?>> int_of_float; */
-  let tbl = loadTypeMap(config);
+  let (state, tbl) = loadTypeMap(config);
 
   let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
 
@@ -156,6 +147,9 @@ let main = configPath => {
   let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
   Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
 
+  let capitalize = s => s == "" ? "" :
+  String.uppercase(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
+
   /* tbl */
   let body =
     switch (config.engine) {
@@ -170,7 +164,30 @@ let main = configPath => {
     };
   let body = [lockTypes(1, tbl), ...body];
 
-  Pprintast.structure(Format.str_formatter, body @ [%str include SerializeRaw; include DeserializeRaw]);
+  let converters = config.entries->Belt.List.map(({file, type_}) => {
+    let uri = Utils.toUri(Filename.concat(Sys.getcwd(), file));
+    let%try_force (moduleName, modulePath, name) = TypeMap.GetTypeMap.fileToReference(~state, uri, type_);
+    let des = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
+    let ser = Serde.MakeSerializer.transformerName(~moduleName, ~modulePath, ~name);
+
+    let cleanName = Str.global_replace(Str.regexp_string("."), "_", type_);
+
+    Ast_helper.Str.value(
+      Asttypes.Nonrecursive,
+      [
+        Ast_helper.Vb.mk(
+          Ast_helper.Pat.var(Location.mknoloc("serialize" ++ capitalize(cleanName))),
+          Ast_helper.Exp.ident(Location.mknoloc(Longident.Ldot(Longident.Lident("SerializeRaw"), ser))),
+        ),
+        Ast_helper.Vb.mk(
+          Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ capitalize(cleanName))),
+          Ast_helper.Exp.ident(Location.mknoloc(Longident.Ldot(Longident.Lident("DeserializeRaw"), des))),
+        ),
+      ],
+    );
+  });
+
+  Pprintast.structure(Format.str_formatter, body @ converters @ [%str include SerializeRaw; include DeserializeRaw]);
 
   let ml = Format.flush_str_formatter();
   Files.writeFile(config.output, ml) |> ignore;
