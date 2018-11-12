@@ -392,6 +392,9 @@ module Version2 =
         match constructor with
         | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
+    let rec upgrade_Types__Current__household data = wat
+    and upgrade_Types__Current__person data = wat
+    and upgrade_Types__Current__pet data = data
   end
 module Version3 =
   struct
@@ -593,6 +596,9 @@ module Version3 =
         | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
+    let rec upgrade_Types__Current__household data = wat
+    and upgrade_Types__Current__person data = data
+    and upgrade_Types__Current__pet data = wat
   end
 module Version4 =
   struct
@@ -851,6 +857,10 @@ module Version4 =
                                           arg0)|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
+    let rec upgrade_Types__Current__dogBreed data = wat
+    and upgrade_Types__Current__household data = wat
+    and upgrade_Types__Current__person data = data
+    and upgrade_Types__Current__pet data = wat
   end
 let currentVersion = 4
 let parseVersion json =

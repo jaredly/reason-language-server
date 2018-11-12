@@ -6,7 +6,19 @@ open Longident;
 open Ast_helper;
 open Asttypes;
 
-let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, decl) => {
+let hashFind = (tbl, key) => switch (Hashtbl.find(tbl, key)) {
+  | exception Not_found => None
+  | v => Some(v)
+};
+
+/* ok, so actually I need to go deep I think */
+let upgradeBetween = (~version, ~lockedDeep, name, thisType, prevType) => {
+  switch (prevType)
+
+
+};
+
+let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, decl, pastDecl) => {
   let source = (moduleName, modulePath, name);
   let name = upgradeName(~moduleName, ~modulePath, ~name);
 

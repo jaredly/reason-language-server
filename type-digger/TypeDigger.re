@@ -164,10 +164,20 @@ let main = configPath => {
       Ast_helper.Str.type_(Recursive, lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
       Ast_helper.Str.value(Recursive, fns),
       ...(if (version > 1) {
+        let pastTypeMap = lockfile.pastVersions->Hashtbl.find(version - 1);
         [
           Ast_helper.Str.value(
             Recursive,
-            makeFns(Upgrade.makeUpgrader(version, lockfile.pastVersions->Hashtbl.find(version - 1), lockedDeep), typeMap),
+            hashList(typeMap)
+            ->Belt.List.sort(compare)
+            ->Belt.List.keepMap((((moduleName, modulePath, name) as ref, decl)) =>  {
+              switch (pastTypeMap->Upgrade.hashFind(ref)) {
+                | Some(dPast) => Some(
+                    Upgrade.makeUpgrader(version, pastTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, decl, dPast)
+                  )
+                | None => None
+              }
+            })
           ),
         ];
       } else {
