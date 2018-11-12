@@ -1,5 +1,5 @@
 
-module V1 = {
+/* module V1 = {
   let v = 1;
   type person = {
     name: string,
@@ -55,7 +55,7 @@ module V3 = {
   };
 
   let example = {people: [{name: "Me", age: 10.}], pets: [Dog]}
-};
+}; */
 
 module V4 = {
   let v = 4;

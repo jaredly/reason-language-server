@@ -9,14 +9,26 @@ let makeModule = (moduleName, contents) =>
     Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
   );
 
+let versionModuleName = version => "Version" ++ string_of_int(version);
+
 let hashList = tbl => Hashtbl.fold((key, value, result) => [(key, value), ...result], tbl, []);
 
-let lockTypes = (tbl) => {
-  /* let decls = */
-  hashList(tbl)
+let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
+  hashList(typeMap)
   ->Belt.List.sort(compare)
-  ->Belt.List.map((((moduleName, modulePath, name), decl)) => {
-    Serde.OutputType.outputDeclaration(moduleName, modulePath, name, (source, args) =>  {
+  ->Belt.List.map((((moduleName, modulePath, name) as ref, decl)) => {
+    let alias = if (currentVersion == version ||
+      lockedDeep[currentVersion]->Hashtbl.find(ref) == lockedDeep[version]->Hashtbl.find(ref)
+    ) {
+      Some(Serde.OutputType.unflatten([moduleName] @ modulePath @ [name]));
+    } else if (version > 1 &&
+      lockedDeep[version - 1]->Hashtbl.find(ref) == lockedDeep[version]->Hashtbl.find(ref)
+    ) {
+      Some(Ldot(Lident(versionModuleName(version - 1)), Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name)))
+    } else {
+      None
+    }
+    Serde.OutputType.outputDeclaration(~alias, moduleName, modulePath, name, (source, args) =>  {
       Ast_helper.Typ.constr(Location.mknoloc(switch source {
         | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
         | Builtin(name) => Longident.Lident(name)
@@ -25,41 +37,92 @@ let lockTypes = (tbl) => {
       }), args)
     }, decl)
   });
-  /* makeModule("V" ++ string_of_int(version) ++ "_Locked", [Ast_helper.Str.type_(Recursive, decls)]) */
+};
+
+let optimiseLater = (timeout, closure) => {
+  let start = Unix.gettimeofday();
+  let result = closure();
+  let time = Unix.gettimeofday() -. start;
+  if (time > 1.) {
+    print_endline("This took too long! " ++ string_of_float(time))
+  };
+  result
+};
+
+let typesAndDependencies = (tbl) => {
+  let collector = Hashtbl.create(10);
+
+  let rec loop = (source) => {
+    if (!Hashtbl.mem(collector, source)) {
+      let decl = Hashtbl.find(tbl, source);
+      collector->Hashtbl.replace(source, `Reference(source));
+
+      let sources = SharedTypes.SimpleType.usedSources(decl)->Belt.List.keepMap(source => switch source {
+        | TypeMap.DigTypes.NotFound => assert(false)
+        | Builtin(_) => None
+        | Public(s) => Some(s)
+      });
+      sources->Belt.List.forEach(loop)
+
+      let contents = sources->Belt.List.reduce([`Plain(decl)], (result, source) => switch (collector->Hashtbl.find(source)) {
+        | `Reference(what) => [`Reference(what), ...result]
+        | `Resolved(items) => items @ result
+      });
+
+      collector->Hashtbl.replace(source, `Resolved(contents))
+    }
+  };
+
+  Hashtbl.iter((key, value) => loop(key), tbl);
+
+  let collected = Hashtbl.create(10);
+  collector |> Hashtbl.iter((key, value) => switch value {
+    | `Resolved(items) => collected->Hashtbl.replace(key, items)
+    | _ => assert(false)
+  });
+
+  let resolve = (source, items) => {
+    let (unresolved, contents) = items->Belt.List.reduce((false, []), ((unresolved, contents), item) => switch item {
+      | `Reference(inner) when inner == source => (unresolved, contents)
+      | `Reference(inner) => (true, collected->Hashtbl.find(inner) @ contents)
+      | `Plain(x) => (unresolved, [`Plain(x), ...contents])
+    })
+    Hashtbl.replace(collected, source, contents);
+    unresolved
+  };
+
+  let rec loop = i => {
+    let unresolved = Hashtbl.fold((k, v, unresolved) => {
+      resolve(k, v) || unresolved
+    }, collected, false);
+    if (unresolved) {
+      if (i > 1000) {
+        failwith("Failed to resolve in 1000 iterations");
+      };
+      loop(i + 1)
+    }
+  };
+  loop(0);
+
+  let resolved = Hashtbl.create(10);
+  collected |> Hashtbl.iter((k, v) => resolved->Hashtbl.replace(k, v->Belt.List.map(item => switch item {
+      | `Plain(x) => x
+      | `Reference(inner) => failwith("Unresolved reference")
+  })->Belt.List.sort(compare)));
+  resolved
 };
 
 let makeFns = (maker, tbl) => {
-  /* let decls = */
     hashList(tbl)
     ->Belt.List.sort(compare)
     ->Belt.List.map((((moduleName, modulePath, name), decl)) => 
         maker(~moduleName, ~modulePath, ~name, decl)
     );
-
-    /* makeModule(moduleName, [Ast_helper.Str.value(Recursive, decls)]) */
 };
-
-/* let getTypeMap = (base, state, types) => {
-  let tbl = Hashtbl.create(10);
-
-  types->Belt.List.forEach(typ => {
-    switch (Utils.split_on_char(':', typ)) {
-      | [path, name] =>
-        let%try_force () = TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(base, path)), name);
-      | _ => failwith("Expected /some/path.re:typename")
-    }
-  });
-  tbl
-}; */
 
 open TypeMapSerde.Config;
 
 let loadTypeMap = config => {
-  open Util.RResult.InfixResult;
-  /* let%try_force entries = Util.RJson.get("entries", config) |?> Util.RJson.array; */
-  open Util.Infix;
-  /* let custom = Json.get("custom", config) |?> Json.array |? []; */
-
   let state = TopTypes.forRootPath(Sys.getcwd());
 
   let tbl = Hashtbl.create(10);
@@ -110,7 +173,7 @@ let compareHashtbls = (one, two) => {
 let main = configPath => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config = TypeMapSerde.configFromJson(json);
-  let (state, tbl) = loadTypeMap(config);
+  let (state, currentTypeMap) = loadTypeMap(config);
 
   let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
 
@@ -118,14 +181,14 @@ let main = configPath => {
     | Error(_) => {
       TypeMap.DigTypes.version: config.version,
       pastVersions: Hashtbl.create(1),
-      current: tbl
+      current: currentTypeMap
     }
     | Ok(contents) => {
       let json = Json.parse(contents);
       let%try_force lockfile = TypeMapSerde.lockfileFromJson(json)
       if (lockfile.version == config.version) {
         /* TODO allow addative type changes */
-        if (!compareHashtbls(lockfile.current, tbl)) {
+        if (!compareHashtbls(lockfile.current, currentTypeMap)) {
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
           lockfile
@@ -135,7 +198,7 @@ let main = configPath => {
         {
           version: config.version,
           pastVersions: lockfile.pastVersions,
-          current: tbl
+          current: currentTypeMap
         }
       } else {
         failwith("Version must be incremented by one")
@@ -149,26 +212,45 @@ let main = configPath => {
   let capitalize = s => s == "" ? "" :
   String.uppercase(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
 
-  /* tbl */
-  let fns =
-    switch (config.engine) {
-    | Bs_json => makeFns(Serde.BsJson.declDeserializer, tbl) @ makeFns(Serde.BsJson.declSerializer, tbl)
-    | Rex_json => makeFns(Serde.Json.declDeserializer, tbl) @ makeFns(Serde.Json.declSerializer, tbl)
-    };
+  let lockedDeep = Array.make(config.version + 1, Hashtbl.create(0));
+  lockedDeep[config.version] = typesAndDependencies(currentTypeMap);
+  for (version in 1 to config.version - 1) {
+    lockedDeep[version] = typesAndDependencies(lockfile.pastVersions->Hashtbl.find(version))
+  };
 
-  let versionModuleName = version => "Version" ++ string_of_int(version);
+  let makeFullModule = (version, typeMap) => {
+    let fns =
+      switch (config.engine) {
+      | Bs_json => makeFns(Serde.BsJson.declDeserializer, typeMap) @ makeFns(Serde.BsJson.declSerializer, typeMap)
+      | Rex_json => makeFns(Serde.Json.declDeserializer, typeMap) @ makeFns(Serde.Json.declSerializer, typeMap)
+      };
 
-  let body = 
-    makeModule(versionModuleName(config.version), [
-      Ast_helper.Str.type_(Recursive, lockTypes(tbl)),
+    makeModule(versionModuleName(version), [
+      Ast_helper.Str.type_(Recursive, lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
       Ast_helper.Str.value(Recursive, fns)
     ]);
+  };
+
+  let makeAllModules = () => {
+    let rec loop = version => version > config.version ? [] : {
+      let tbl = if (version == config.version) {
+        currentTypeMap
+      } else {
+        lockfile.pastVersions->Hashtbl.find(version)
+      };
+
+      [makeFullModule(version, tbl), ...loop(version + 1)]
+    };
+    loop(1)
+    /* loop(config.version) */
+  };
+
   open Parsetree;
-  let body = [
+  let body = makeAllModules() @ [
     [%stri
       let currentVersion = [%e Ast_helper.Exp.constant(Parsetree.Pconst_integer(string_of_int(config.version), None))]
     ],
-    body,
+    /* body, */
     ...switch (config.engine) {
        | Bs_json => [%str
            let parseVersion = [%e Serde.BsJson.deserializeTransformer.parseVersion];
@@ -223,27 +305,29 @@ let main = configPath => {
                 Ast_helper.Exp.match(
                   [%expr version],
                   {
-                    let rec loop = n => n < config.version ? [Ast_helper.Exp.case([%pat? _], [%expr Belt.Result.Error("Unexpected version " ++ string_of_int(version))])] : {
-                      [
-                        {
+                    let rec loop = n =>
+                      if (n < config.version /* 1 */) {
+                        [Ast_helper.Exp.case([%pat? _], [%expr Belt.Result.Error("Unexpected version " ++ string_of_int(version))])];
+                      } else {
+                        [
                           Ast_helper.Exp.case(
                             Ast_helper.Pat.constant(Parsetree.Pconst_integer(string_of_int(n), None)),
-                            [%expr switch ([%e expIdent(Ldot(Lident(versionModuleName(n)), des))](data)) {
-                              | Belt.Result.Error(error) => Belt.Result.Error(error)
-                              | Ok(data) => [%e makeUpgrader(n, config.version)]
-                            }]
-                          )
-                        },
-                        ...loop(n - 1)
-                      ]
-                    };
+                            switch%expr ([%e expIdent(Ldot(Lident(versionModuleName(n)), des))](data)) {
+                            | Belt.Result.Error(error) => Belt.Result.Error(error)
+                            | Ok(data) =>
+                              %e
+                              makeUpgrader(n, config.version)
+                            },
+                          ),
+                          ...loop(n - 1),
+                        ];
+                      };
                     loop(config.version)
                   }
                 )
               ]
             }
           ],
-          /* Ast_helper.Exp.ident(Location.mknoloc(Longident.Ldot(Longident.Lident(versionModuleName(config.version)), des))), */
         ),
       ],
     );

@@ -4,13 +4,14 @@ open Location;
 open TypeMap;
 
 let makeLident = (~moduleName, ~modulePath, ~name) => {
-  let base = switch (Str.split(Str.regexp_string("-"), moduleName)) {
+  Lident(OutputType.makeLockedTypeName(moduleName, modulePath, name))
+  /* let base = switch (Str.split(Str.regexp_string("-"), moduleName)) {
     | [one, two] => Ldot(Lident(two), one)
     | [one] => Lident(one)
     | _ => failwith("Bad modulename")
   };
   let base = modulePath->Belt.List.reduce(base, (base, item) => Ldot(base, item));
-  Ldot(base, name)
+  Ldot(base, name) */
 };
 
 let range = (num, fn) => {
