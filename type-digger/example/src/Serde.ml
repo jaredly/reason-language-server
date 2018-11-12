@@ -857,8 +857,7 @@ module Version4 =
                                           arg0)|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
-    let rec upgrade_Types__Current__dogBreed data = wat
-    and upgrade_Types__Current__household data = wat
+    let rec upgrade_Types__Current__household data = wat
     and upgrade_Types__Current__person data = data
     and upgrade_Types__Current__pet data = wat
   end

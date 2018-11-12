@@ -11,11 +11,15 @@ let hashFind = (tbl, key) => switch (Hashtbl.find(tbl, key)) {
   | v => Some(v)
 };
 
-/* ok, so actually I need to go deep I think */
+open SharedTypes.SimpleType;
+
 let upgradeBetween = (~version, ~lockedDeep, name, thisType, prevType) => {
-  switch (prevType)
-
-
+  switch (thisType.body, prevType.body) {
+    | (Expr(Reference(source, args)), Expr(Reference(prevSource, prevArgs))) => Some(1)
+    | (Record(items), Record(prevItems)) => Some(1)
+    | (Variant(items), Record(prevItems)) => Some(1)
+    | _ => None
+  }
 };
 
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, decl, pastDecl) => {
@@ -31,7 +35,11 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
       if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
         Exp.ident(mknoloc(Lident("data")));
       } else {
-        Exp.ident(mknoloc(Lident("wat")))
+        Exp.ident(mknoloc(Lident("wat")));
+        /* TODO allow custom t */
+        /* switch (upgradeBetween(~version, ~lockedDeep, name, decl, pastDecl)) {
+          | None => 
+        } */
       },
     ),
   );

@@ -83,12 +83,16 @@ module V4 = {
     age: float,
   };
 
+  [@simple.simple]
   type dogBreed =
     | Schnouser
     | Lab
     | Retriever
-    | Poodle
+    | Poodle;
 
+  [@migrate (awesome) => {
+    10
+  }]
   type pet =
     | Dog(option(dogBreed))
     | Cat
@@ -169,11 +173,13 @@ module V5 = {
 
 module V6 = {
   let v = 4;
+  [@awesome]
   type person = V3.person = {
     name: string,
     age: float,
   };
 
+  [@things]
   [@migrate pet => switch pat {
   | Dog(dogBreed) => Dog
   | Cat => Cat

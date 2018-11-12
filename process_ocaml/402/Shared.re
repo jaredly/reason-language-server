@@ -98,6 +98,7 @@ let rec asSimpleType = t => {
 };
 
 let rec asSimpleDeclaration = (name, t) => {
+  print_endline("Assimple: " ++ string_of_int(List.length(t.Types.type_attributes)) ++ " attributes");
   open SharedTypes;
   {
     SimpleType.name,
@@ -129,12 +130,15 @@ let rec asSimpleDeclaration = (name, t) => {
 };
 
 let makeDeclaration = t => {
+  print_endline("Converting: " ++ string_of_int(List.length(t.Types.type_attributes)) ++ " attributes");
+  {
   SharedTypes.declToString: name =>
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
   |> SharedTypes.SimpleType.declMapSource(mapOldPath)
 }
+};
 
 let labelToString = label => label;
 
