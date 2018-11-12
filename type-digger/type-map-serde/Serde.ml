@@ -38,7 +38,9 @@ module V1_Locked =
     and _TypeMapSerde__Config__entry = TypeMapSerde__Config.entry =
       {
       file: string ;
-      type_: string }
+      type_: string ;
+      publicName: string ;
+      history: bool }
     and _TypeMapSerde__Config__t = TypeMapSerde__Config.t =
       {
       version: int ;
@@ -850,23 +852,26 @@ module DeserializeRaw =
       fun record ->
         match record with
         | ((Json.Object (items))[@explicit_arity ]) ->
-            (match Belt.List.getAssoc items "type_" (=) with
-             | None -> ((Belt.Result.Error (("No attribute " ^ "type_")))
+            (match Belt.List.getAssoc items "history" (=) with
+             | None -> ((Belt.Result.Error (("No attribute " ^ "history")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
-                 (match (fun string ->
-                           match string with
-                           | ((Json.String (string))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (string))[@explicit_arity ])
-                           | _ -> ((Error ("epected a string"))
+                 (match (fun bool ->
+                           match bool with
+                           | Json.True -> ((Belt.Result.Ok (true))
+                               [@explicit_arity ])
+                           | Json.False -> ((Belt.Result.Ok (false))
+                               [@explicit_arity ])
+                           | _ -> ((Belt.Result.Error ("Expected a bool"))
                                [@explicit_arity ])) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                       ((Belt.Result.Error (error))[@explicit_arity ])
-                  | ((Belt.Result.Ok (attr_type_))[@explicit_arity ]) ->
-                      (match Belt.List.getAssoc items "file" (=) with
+                  | ((Belt.Result.Ok (attr_history))[@explicit_arity ]) ->
+                      (match Belt.List.getAssoc items "publicName" (=) with
                        | None ->
-                           ((Belt.Result.Error (("No attribute " ^ "file")))
+                           ((Belt.Result.Error
+                               (("No attribute " ^ "publicName")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match (fun string ->
@@ -882,9 +887,79 @@ module DeserializeRaw =
                                 -> ((Belt.Result.Error (error))
                                 [@explicit_arity ])
                             | ((Belt.Result.Ok
-                                (attr_file))[@explicit_arity ]) ->
-                                Belt.Result.Ok
-                                  { file = attr_file; type_ = attr_type_ }))))
+                                (attr_publicName))[@explicit_arity ]) ->
+                                (match Belt.List.getAssoc items "type_" (=)
+                                 with
+                                 | None ->
+                                     ((Belt.Result.Error
+                                         (("No attribute " ^ "type_")))
+                                     [@explicit_arity ])
+                                 | ((Some (json))[@explicit_arity ]) ->
+                                     (match (fun string ->
+                                               match string with
+                                               | ((Json.String
+                                                   (string))[@explicit_arity
+                                                              ])
+                                                   ->
+                                                   ((Belt.Result.Ok (string))
+                                                   [@explicit_arity ])
+                                               | _ ->
+                                                   ((Error
+                                                       ("epected a string"))
+                                                   [@explicit_arity ])) json
+                                      with
+                                      | ((Belt.Result.Error
+                                          (error))[@explicit_arity ]) ->
+                                          ((Belt.Result.Error (error))
+                                          [@explicit_arity ])
+                                      | ((Belt.Result.Ok
+                                          (attr_type_))[@explicit_arity ]) ->
+                                          (match Belt.List.getAssoc items
+                                                   "file" (=)
+                                           with
+                                           | None ->
+                                               ((Belt.Result.Error
+                                                   (("No attribute " ^ "file")))
+                                               [@explicit_arity ])
+                                           | ((Some
+                                               (json))[@explicit_arity ]) ->
+                                               (match (fun string ->
+                                                         match string with
+                                                         | ((Json.String
+                                                             (string))
+                                                             [@explicit_arity
+                                                               ])
+                                                             ->
+                                                             ((Belt.Result.Ok
+                                                                 (string))
+                                                             [@explicit_arity
+                                                               ])
+                                                         | _ ->
+                                                             ((Error
+                                                                 ("epected a string"))
+                                                             [@explicit_arity
+                                                               ])) json
+                                                with
+                                                | ((Belt.Result.Error
+                                                    (error))[@explicit_arity
+                                                              ])
+                                                    ->
+                                                    ((Belt.Result.Error
+                                                        (error))
+                                                    [@explicit_arity ])
+                                                | ((Belt.Result.Ok
+                                                    (attr_file))[@explicit_arity
+                                                                  ])
+                                                    ->
+                                                    Belt.Result.Ok
+                                                      {
+                                                        file = attr_file;
+                                                        type_ = attr_type_;
+                                                        publicName =
+                                                          attr_publicName;
+                                                        history =
+                                                          attr_history
+                                                      }))))))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_TypeMapSerde__Config____t :
       Json.t -> (TypeMapSerde__Config.t, string) Belt.Result.t) =
@@ -1471,7 +1546,14 @@ module SerializeRaw =
           [("file",
              (((fun s -> ((Json.String (s))[@explicit_arity ]))) record.file));
           ("type_",
-            (((fun s -> ((Json.String (s))[@explicit_arity ]))) record.type_))]
+            (((fun s -> ((Json.String (s))[@explicit_arity ]))) record.type_));
+          ("publicName",
+            (((fun s -> ((Json.String (s))[@explicit_arity ])))
+               record.publicName));
+          ("history",
+            (((fun b ->
+                 match b with | true -> Json.True | false -> Json.False))
+               record.history))]
     and (serialize_TypeMapSerde__Config____t :
       TypeMapSerde__Config.t -> Json.t) =
       fun record ->
@@ -1555,5 +1637,11 @@ module SerializeRaw =
               Json.Array [Json.String "Public"; referenceTransformer arg0]
           | NotFound -> Json.Array [Json.String "NotFound"]
   end
+let serializeSerializableLockfile =
+  SerializeRaw.serialize_TypeMap__DigTypes____serializableLockfile
+and deserializeSerializableLockfile =
+  DeserializeRaw.deserialize_TypeMap__DigTypes____serializableLockfile
+let serializeT = SerializeRaw.serialize_TypeMapSerde__Config____t
+and deserializeT = DeserializeRaw.deserialize_TypeMapSerde__Config____t
 include SerializeRaw
 include DeserializeRaw

@@ -164,23 +164,21 @@ let main = configPath => {
     };
   let body = [lockTypes(1, tbl), ...body];
 
-  let converters = config.entries->Belt.List.map(({file, type_}) => {
+  let converters = config.entries->Belt.List.map(({file, type_, publicName}) => {
     let uri = Utils.toUri(Filename.concat(Sys.getcwd(), file));
     let%try_force (moduleName, modulePath, name) = TypeMap.GetTypeMap.fileToReference(~state, uri, type_);
     let des = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
     let ser = Serde.MakeSerializer.transformerName(~moduleName, ~modulePath, ~name);
 
-    let cleanName = Str.global_replace(Str.regexp_string("."), "_", type_);
-
     Ast_helper.Str.value(
       Asttypes.Nonrecursive,
       [
         Ast_helper.Vb.mk(
-          Ast_helper.Pat.var(Location.mknoloc("serialize" ++ capitalize(cleanName))),
+          Ast_helper.Pat.var(Location.mknoloc("serialize" ++ capitalize(publicName))),
           Ast_helper.Exp.ident(Location.mknoloc(Longident.Ldot(Longident.Lident("SerializeRaw"), ser))),
         ),
         Ast_helper.Vb.mk(
-          Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ capitalize(cleanName))),
+          Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ capitalize(publicName))),
           Ast_helper.Exp.ident(Location.mknoloc(Longident.Ldot(Longident.Lident("DeserializeRaw"), des))),
         ),
       ],

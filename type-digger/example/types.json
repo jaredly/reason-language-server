@@ -6,6 +6,7 @@
     {
       "file": "src/Types.re",
       "type_": "Current.household",
+      "publicName": "household",
       "history": true
     }
   ],

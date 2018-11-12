@@ -1,6 +1,6 @@
 
-
 module V1 = {
+  let v = 1;
   type person = {
     name: string,
     age: int,
@@ -14,9 +14,12 @@ module V1 = {
     people: list(person),
     pets: list(pet),
   };
+
+  let example = {people: [{name: "Me", age: 10}], pets: [Dog]}
 };
 
 module V2 = {
+  let v = 2;
   type person = {
     name: string,
     age: float,
@@ -30,9 +33,12 @@ module V2 = {
     people: list(person),
     pets: list(pet),
   };
+
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog]}
 };
 
 module V3 = {
+  let v = 3;
   type person = {
     name: string,
     age: float,
@@ -47,9 +53,12 @@ module V3 = {
     people: list(person),
     pets: list(pet),
   };
+
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog]}
 };
 
 module V4 = {
+  let v = 4;
   type person = {
     name: string,
     age: float,
@@ -70,6 +79,8 @@ module V4 = {
     people: list(person),
     pets: list(pet),
   };
+
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog(None)]}
 };
 
 module Current = { include V4 };

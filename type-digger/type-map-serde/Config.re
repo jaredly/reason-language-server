@@ -9,6 +9,8 @@ type custom = {
 type entry = {
   file: string,
   type_: string,
+  publicName: string,
+  history: bool,
 };
 
 type engine = Rex_json | Bs_json;

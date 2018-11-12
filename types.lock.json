@@ -7,7 +7,7 @@
         "Analyze__TopTypes",
         [],
         "moduleName"
-        ],
+      ],
       {
         "name": "moduleName",
         "variables": [],
@@ -18,47 +18,43 @@
             [
               "Builtin",
               "string"
-              ],
+            ],
             []
-            ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "Belt__Belt_HashMapInt",
         [],
         "t"
-        ],
+      ],
       {
         "name": "t",
         "variables": [
           [
             "Variable",
             "arg0"
-            ]
-          ],
-        "body": [
-          "Abstract"
           ]
-        }
-      ],
+        ],
+        "body": ["Abstract"]
+      }
+    ],
     [
       [
         "SharedTypes",
-        [
-          "SimpleType"
-          ],
+        ["SimpleType"],
         "body"
-        ],
+      ],
       {
         "name": "body",
         "variables": [
           [
             "Variable",
             "source"
-            ]
-          ],
+          ]
+        ],
         "body": [
           "Variant",
           [
@@ -66,12 +62,12 @@
               "Open",
               [],
               null
-              ],
+            ],
             [
               "Abstract",
               [],
               null
-              ],
+            ],
             [
               "Expr",
               [
@@ -81,22 +77,20 @@
                     "Public",
                     [
                       "SharedTypes",
-                      [
-                        "SimpleType"
-                        ],
+                      ["SimpleType"],
                       "expr"
-                      ]
-                    ],
+                    ]
+                  ],
                   [
                     [
                       "Variable",
                       "source"
-                      ]
                     ]
                   ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "Record",
               [
@@ -105,7 +99,7 @@
                   [
                     "Builtin",
                     "list"
-                    ],
+                  ],
                   [
                     [
                       "Tuple",
@@ -115,35 +109,33 @@
                           [
                             "Builtin",
                             "string"
-                            ],
-                          []
                           ],
+                          []
+                        ],
                         [
                           "Reference",
                           [
                             "Public",
                             [
                               "SharedTypes",
-                              [
-                                "SimpleType"
-                                ],
+                              ["SimpleType"],
                               "expr"
-                              ]
-                            ],
+                            ]
+                          ],
                           [
                             [
                               "Variable",
                               "source"
-                              ]
                             ]
                           ]
                         ]
                       ]
                     ]
                   ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "Variant",
               [
@@ -152,7 +144,7 @@
                   [
                     "Builtin",
                     "list"
-                    ],
+                  ],
                   [
                     [
                       "Tuple",
@@ -162,15 +154,15 @@
                           [
                             "Builtin",
                             "string"
-                            ],
-                          []
                           ],
+                          []
+                        ],
                         [
                           "Reference",
                           [
                             "Builtin",
                             "list"
-                            ],
+                          ],
                           [
                             [
                               "Reference",
@@ -178,27 +170,25 @@
                                 "Public",
                                 [
                                   "SharedTypes",
-                                  [
-                                    "SimpleType"
-                                    ],
+                                  ["SimpleType"],
                                   "expr"
-                                  ]
-                                ],
+                                ]
+                              ],
                               [
                                 [
                                   "Variable",
                                   "source"
-                                  ]
                                 ]
                               ]
                             ]
-                          ],
+                          ]
+                        ],
                         [
                           "Reference",
                           [
                             "Builtin",
                             "option"
-                            ],
+                          ],
                           [
                             [
                               "Reference",
@@ -206,17 +196,14 @@
                                 "Public",
                                 [
                                   "SharedTypes",
-                                  [
-                                    "SimpleType"
-                                    ],
+                                  ["SimpleType"],
                                   "expr"
-                                  ]
-                                ],
+                                ]
+                              ],
                               [
                                 [
                                   "Variable",
                                   "source"
-                                  ]
                                 ]
                               ]
                             ]
@@ -225,29 +212,28 @@
                       ]
                     ]
                   ]
-                ],
+                ]
+              ],
               null
-              ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "SharedTypes",
-        [
-          "SimpleType"
-          ],
+        ["SimpleType"],
         "declaration"
-        ],
+      ],
       {
         "name": "declaration",
         "variables": [
           [
             "Variable",
             "source"
-            ]
-          ],
+          ]
+        ],
         "body": [
           "Record",
           [
@@ -258,10 +244,10 @@
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "variables",
               [
@@ -269,7 +255,7 @@
                 [
                   "Builtin",
                   "list"
-                  ],
+                ],
                 [
                   [
                     "Reference",
@@ -277,22 +263,20 @@
                       "Public",
                       [
                         "SharedTypes",
-                        [
-                          "SimpleType"
-                          ],
+                        ["SimpleType"],
                         "expr"
-                        ]
-                      ],
+                      ]
+                    ],
                     [
                       [
                         "Variable",
                         "source"
-                        ]
                       ]
                     ]
                   ]
                 ]
-              ],
+              ]
+            ],
             [
               "body",
               [
@@ -301,40 +285,36 @@
                   "Public",
                   [
                     "SharedTypes",
-                    [
-                      "SimpleType"
-                      ],
+                    ["SimpleType"],
                     "body"
-                    ]
-                  ],
+                  ]
+                ],
                 [
                   [
                     "Variable",
                     "source"
-                    ]
                   ]
                 ]
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "SharedTypes",
-        [
-          "SimpleType"
-          ],
+        ["SimpleType"],
         "expr"
-        ],
+      ],
       {
         "name": "expr",
         "variables": [
           [
             "Variable",
             "source"
-            ]
-          ],
+          ]
+        ],
         "body": [
           "Variant",
           [
@@ -346,30 +326,30 @@
                   [
                     "Builtin",
                     "string"
-                    ],
+                  ],
                   []
-                  ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "AnonVariable",
               [],
               null
-              ],
+            ],
             [
               "Reference",
               [
                 [
                   "Variable",
                   "source"
-                  ],
+                ],
                 [
                   "Reference",
                   [
                     "Builtin",
                     "list"
-                    ],
+                  ],
                   [
                     [
                       "Reference",
@@ -377,24 +357,22 @@
                         "Public",
                         [
                           "SharedTypes",
-                          [
-                            "SimpleType"
-                            ],
+                          ["SimpleType"],
                           "expr"
-                          ]
-                        ],
+                        ]
+                      ],
                       [
                         [
                           "Variable",
                           "source"
-                          ]
                         ]
                       ]
                     ]
                   ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "Tuple",
               [
@@ -403,7 +381,7 @@
                   [
                     "Builtin",
                     "list"
-                    ],
+                  ],
                   [
                     [
                       "Reference",
@@ -411,24 +389,22 @@
                         "Public",
                         [
                           "SharedTypes",
-                          [
-                            "SimpleType"
-                            ],
+                          ["SimpleType"],
                           "expr"
-                          ]
-                        ],
+                        ]
+                      ],
                       [
                         [
                           "Variable",
                           "source"
-                          ]
                         ]
                       ]
                     ]
                   ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "Fn",
               [
@@ -437,7 +413,7 @@
                   [
                     "Builtin",
                     "list"
-                    ],
+                  ],
                   [
                     [
                       "Tuple",
@@ -447,101 +423,95 @@
                           [
                             "Builtin",
                             "option"
-                            ],
+                          ],
                           [
                             [
                               "Reference",
                               [
                                 "Builtin",
                                 "string"
-                                ],
+                              ],
                               []
-                              ]
                             ]
-                          ],
+                          ]
+                        ],
                         [
                           "Reference",
                           [
                             "Public",
                             [
                               "SharedTypes",
-                              [
-                                "SimpleType"
-                                ],
+                              ["SimpleType"],
                               "expr"
-                              ]
-                            ],
+                            ]
+                          ],
                           [
                             [
                               "Variable",
                               "source"
-                              ]
                             ]
                           ]
                         ]
                       ]
                     ]
-                  ],
+                  ]
+                ],
                 [
                   "Reference",
                   [
                     "Public",
                     [
                       "SharedTypes",
-                      [
-                        "SimpleType"
-                        ],
+                      ["SimpleType"],
                       "expr"
-                      ]
-                    ],
+                    ]
+                  ],
                   [
                     [
                       "Variable",
                       "source"
-                      ]
                     ]
                   ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "Other",
               [],
               null
-              ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "Stdlib__hashtbl",
         [],
         "t"
-        ],
+      ],
       {
         "name": "t",
         "variables": [
           [
             "Variable",
             "a"
-            ],
+          ],
           [
             "Variable",
             "b"
-            ]
-          ],
-        "body": [
-          "Abstract"
           ]
-        }
-      ],
+        ],
+        "body": ["Abstract"]
+      }
+    ],
     [
       [
         "TypeMapSerde__Config",
         [],
         "custom"
-        ],
+      ],
       {
         "name": "custom",
         "variables": [],
@@ -555,10 +525,10 @@
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "path",
               [
@@ -566,19 +536,19 @@
                 [
                   "Builtin",
                   "list"
-                  ],
+                ],
                 [
                   [
                     "Reference",
                     [
                       "Builtin",
                       "string"
-                      ],
+                    ],
                     []
-                    ]
                   ]
                 ]
-              ],
+              ]
+            ],
             [
               "name",
               [
@@ -586,10 +556,10 @@
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "args",
               [
@@ -597,20 +567,20 @@
                 [
                   "Builtin",
                   "int"
-                  ],
+                ],
                 []
-                ]
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMapSerde__Config",
         [],
         "engine"
-        ],
+      ],
       {
         "name": "engine",
         "variables": [],
@@ -621,22 +591,22 @@
               "Rex_json",
               [],
               null
-              ],
+            ],
             [
               "Bs_json",
               [],
               null
-              ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMapSerde__Config",
         [],
         "entry"
-        ],
+      ],
       {
         "name": "entry",
         "variables": [],
@@ -650,10 +620,10 @@
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "type_",
               [
@@ -661,20 +631,42 @@
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
+              ]
+            ],
+            [
+              "publicName",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "string"
+                ],
+                []
+              ]
+            ],
+            [
+              "history",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "bool"
+                ],
+                []
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMapSerde__Config",
         [],
         "t"
-        ],
+      ],
       {
         "name": "t",
         "variables": [],
@@ -688,10 +680,10 @@
                 [
                   "Builtin",
                   "int"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "output",
               [
@@ -699,10 +691,10 @@
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "engine",
               [
@@ -713,11 +705,11 @@
                     "TypeMapSerde__Config",
                     [],
                     "engine"
-                    ]
-                  ],
+                  ]
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "entries",
               [
@@ -725,7 +717,7 @@
                 [
                   "Builtin",
                   "list"
-                  ],
+                ],
                 [
                   [
                     "Reference",
@@ -735,13 +727,13 @@
                         "TypeMapSerde__Config",
                         [],
                         "entry"
-                        ]
-                      ],
+                      ]
+                    ],
                     []
-                    ]
                   ]
                 ]
-              ],
+              ]
+            ],
             [
               "custom",
               [
@@ -749,7 +741,7 @@
                 [
                   "Builtin",
                   "list"
-                  ],
+                ],
                 [
                   [
                     "Reference",
@@ -759,31 +751,31 @@
                         "TypeMapSerde__Config",
                         [],
                         "custom"
-                        ]
-                      ],
+                      ]
+                    ],
                     []
-                    ]
                   ]
                 ]
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMap__DigTypes",
         [],
         "lockfile"
-        ],
+      ],
       {
         "name": "lockfile",
         "variables": [
           [
             "Variable",
             "reference"
-            ]
-          ],
+          ]
+        ],
         "body": [
           "Record",
           [
@@ -794,10 +786,10 @@
                 [
                   "Builtin",
                   "int"
-                  ],
+                ],
                 []
-                ]
-              ],
+              ]
+            ],
             [
               "pastVersions",
               [
@@ -808,17 +800,17 @@
                     "Stdlib__hashtbl",
                     [],
                     "t"
-                    ]
-                  ],
+                  ]
+                ],
                 [
                   [
                     "Reference",
                     [
                       "Builtin",
                       "int"
-                      ],
-                    []
                     ],
+                    []
+                  ],
                   [
                     "Reference",
                     [
@@ -827,18 +819,18 @@
                         "TypeMap__DigTypes",
                         [],
                         "typeMap"
-                        ]
-                      ],
+                      ]
+                    ],
                     [
                       [
                         "Variable",
                         "reference"
-                        ]
                       ]
                     ]
                   ]
                 ]
-              ],
+              ]
+            ],
             [
               "current",
               [
@@ -849,26 +841,26 @@
                     "TypeMap__DigTypes",
                     [],
                     "typeMap"
-                    ]
-                  ],
+                  ]
+                ],
                 [
                   [
                     "Variable",
                     "reference"
-                    ]
                   ]
                 ]
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMap__DigTypes",
         [],
         "serializableLockfile"
-        ],
+      ],
       {
         "name": "serializableLockfile",
         "variables": [],
@@ -882,8 +874,8 @@
                 "TypeMap__DigTypes",
                 [],
                 "lockfile"
-                ]
-              ],
+              ]
+            ],
             [
               [
                 "Reference",
@@ -893,21 +885,21 @@
                     "TypeMap__DigTypes",
                     [],
                     "shortReference"
-                    ]
-                  ],
+                  ]
+                ],
                 []
-                ]
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMap__DigTypes",
         [],
         "shortReference"
-        ],
+      ],
       {
         "name": "shortReference",
         "variables": [],
@@ -924,54 +916,54 @@
                     "Analyze__TopTypes",
                     [],
                     "moduleName"
-                    ]
-                  ],
-                []
+                  ]
                 ],
+                []
+              ],
               [
                 "Reference",
                 [
                   "Builtin",
                   "list"
-                  ],
+                ],
                 [
                   [
                     "Reference",
                     [
                       "Builtin",
                       "string"
-                      ],
+                    ],
                     []
-                    ]
                   ]
-                ],
+                ]
+              ],
               [
                 "Reference",
                 [
                   "Builtin",
                   "string"
-                  ],
+                ],
                 []
-                ]
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMap__DigTypes",
         [],
         "typeMap"
-        ],
+      ],
       {
         "name": "typeMap",
         "variables": [
           [
             "Variable",
             "reference"
-            ]
-          ],
+          ]
+        ],
         "body": [
           "Expr",
           [
@@ -982,8 +974,8 @@
                 "Stdlib__hashtbl",
                 [],
                 "t"
-                ]
-              ],
+              ]
+            ],
             [
               [
                 "Reference",
@@ -993,22 +985,20 @@
                     "TypeMap__DigTypes",
                     [],
                     "shortReference"
-                    ]
-                  ],
-                []
+                  ]
                 ],
+                []
+              ],
               [
                 "Reference",
                 [
                   "Public",
                   [
                     "SharedTypes",
-                    [
-                      "SimpleType"
-                      ],
+                    ["SimpleType"],
                     "declaration"
-                    ]
-                  ],
+                  ]
+                ],
                 [
                   [
                     "Reference",
@@ -1018,13 +1008,12 @@
                         "TypeMap__DigTypes",
                         [],
                         "typeSource"
-                        ]
-                      ],
+                      ]
+                    ],
                     [
                       [
                         "Variable",
                         "reference"
-                        ]
                       ]
                     ]
                   ]
@@ -1032,22 +1021,23 @@
               ]
             ]
           ]
-        }
-      ],
+        ]
+      }
+    ],
     [
       [
         "TypeMap__DigTypes",
         [],
         "typeSource"
-        ],
+      ],
       {
         "name": "typeSource",
         "variables": [
           [
             "Variable",
             "reference"
-            ]
-          ],
+          ]
+        ],
         "body": [
           "Variant",
           [
@@ -1059,30 +1049,30 @@
                   [
                     "Builtin",
                     "string"
-                    ],
+                  ],
                   []
-                  ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "Public",
               [
                 [
                   "Variable",
                   "reference"
-                  ]
-                ],
-              null
+                ]
               ],
+              null
+            ],
             [
               "NotFound",
               [],
               null
-              ]
             ]
           ]
-        }
-      ]
+        ]
+      }
     ]
-  }
+  ]
+}

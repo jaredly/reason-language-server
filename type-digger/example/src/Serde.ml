@@ -262,9 +262,8 @@ module SerializeRaw =
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
   end
-let serializeCurrent_household =
-  SerializeRaw.serialize_Types__Current__household
-and deserializeCurrent_household =
+let serializeHousehold = SerializeRaw.serialize_Types__Current__household
+and deserializeHousehold =
   DeserializeRaw.deserialize_Types__Current__household
 include SerializeRaw
 include DeserializeRaw
