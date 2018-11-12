@@ -879,6 +879,53 @@ and deserializeHousehold data =
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
                 [@explicit_arity ]))
+       | 3 ->
+           (match Version3.deserialize_Types__Current__household data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) ->
+                (match Version4.upgrade_Types__Current__household data with
+                 | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                     ((Belt.Result.Error (error))[@explicit_arity ])
+                 | ((Ok (data))[@explicit_arity ]) ->
+                     ((Belt.Result.Ok (data))[@explicit_arity ])))
+       | 2 ->
+           (match Version2.deserialize_Types__Current__household data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) ->
+                (match Version3.upgrade_Types__Current__household data with
+                 | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                     ((Belt.Result.Error (error))[@explicit_arity ])
+                 | ((Ok (data))[@explicit_arity ]) ->
+                     (match Version4.upgrade_Types__Current__household data
+                      with
+                      | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                          ((Belt.Result.Error (error))[@explicit_arity ])
+                      | ((Ok (data))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (data))[@explicit_arity ]))))
+       | 1 ->
+           (match Version1.deserialize_Types__Current__household data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) ->
+                (match Version2.upgrade_Types__Current__household data with
+                 | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                     ((Belt.Result.Error (error))[@explicit_arity ])
+                 | ((Ok (data))[@explicit_arity ]) ->
+                     (match Version3.upgrade_Types__Current__household data
+                      with
+                      | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                          ((Belt.Result.Error (error))[@explicit_arity ])
+                      | ((Ok (data))[@explicit_arity ]) ->
+                          (match Version4.upgrade_Types__Current__household
+                                   data
+                           with
+                           | ((Belt.Result.Error (error))[@explicit_arity ])
+                               -> ((Belt.Result.Error (error))
+                               [@explicit_arity ])
+                           | ((Ok (data))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (data))[@explicit_arity ])))))
        | _ ->
            ((Belt.Result.Error
                (("Unexpected version " ^ (string_of_int version))))
