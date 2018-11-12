@@ -221,8 +221,18 @@ let getStdlib = (base, buildSystem) => {
     /+ "lib"
     /+ "ocaml"]
   | Dune(Esy) =>
-    let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
-    [esy_ocamllib]
+    let env = Unix.environment()->Array.to_list;
+    try {
+      let esy_ocamllib_var = List.find(var => Utils.startsWith(var, "OCAMLLIB="), env);
+      switch (Utils.split_on_char('=', esy_ocamllib_var)) {
+      | [_, esy_ocamllib] => Ok([esy_ocamllib])
+      | _ => Error("Couldn't find Esy OCAMLLIB (env missing)")
+      };
+    } {
+      | _ =>
+        let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
+        [esy_ocamllib]
+    }
   | Dune(Opam(switchPrefix)) =>
     let%try libPath = getOpamLibOrBinPath(base, switchPrefix, "lib" /+ "ocaml")
     Ok([libPath])
