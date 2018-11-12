@@ -12,3 +12,4 @@ Js.log(
   Serde.deserializeHousehold(Serde.serializeHousehold(Types.Current.example))
   == Ok(Types.Current.example),
 );
+

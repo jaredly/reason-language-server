@@ -52,11 +52,12 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
-let transformer = MakeSerializer.{
+let serializeTransformer = MakeSerializer.{
   outputType: Typ.constr(
           Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")),
           []
           ),
+  wrapWithVersion: [%expr (version, payload) => Js.Json.array([|Js.Json.number(float_of_int(version)), payload|])],
   source: sourceTransformer,
   list: jsonArray,
   tuple: exps => makeJson("array", Ast_helper.Exp.array(exps)),
@@ -73,7 +74,7 @@ let transformer = MakeSerializer.{
             ))
 };
 
-let declSerializer = MakeSerializer.decl(transformer);
+let declSerializer = MakeSerializer.decl(serializeTransformer);
 
 
 
@@ -203,9 +204,18 @@ let sourceTransformer = source => switch source {
 
 let jsonT = Typ.constr(Location.mknoloc(Ldot(jsJson, "t")), []);
 
-let transformer = {
+let deserializeTransformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
+  parseVersion: [%expr 
+    json => switch (Js.Json.classify(json)) {
+      | JSONArray([|version, payload|]) => switch (Js.Json.classify(version)) {
+        | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
+        | _ => Belt.Result.Error("Invalid version")
+      }
+      | _ => Belt.Result.Error("Must have a version")
+    }
+  ],
   list,
   tuple,
   record: (items) =>  {
@@ -234,7 +244,6 @@ let transformer = {
     }]
   },
   variant: (constructors) => {
-
     let cases = constructors->Belt.List.map(((name, argCount, argTransformer)) => {
           Exp.case(
             Pat.construct(Location.mknoloc(Lident("JSONArray")), Some(
@@ -270,4 +279,4 @@ let transformer = {
 };
 
 
-let declDeserializer = MakeDeserializer.decl(transformer);
+let declDeserializer = MakeDeserializer.decl(deserializeTransformer);

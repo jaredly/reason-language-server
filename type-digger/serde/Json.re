@@ -89,6 +89,9 @@ let sourceTransformer = source => switch source {
 
 let serializeTransformer = MakeSerializer.{
   outputType: Typ.constr(Location.mknoloc(Ldot(Lident("Json"), "t")), []),
+  wrapWithVersion: [%expr 
+    (version, payload) => Json.Array([Json.Number(version), payload])
+  ],
   source: sourceTransformer,
   list: jsonArray,
   tuple: exps => makeJson("Array", Some(makeList(exps))),
@@ -202,6 +205,12 @@ let jsonT = [%type: Json.t];
 let deserializeTransformer = {
   MakeDeserializer.inputType: jsonT,
   source: sourceTransformer,
+  parseVersion: [%expr
+    json => switch json {
+      | Json.Array([Json.Number(version), payload]) => Belt.Result.Ok((version, payload))
+      | _ => Belt.Result.Error("Not wrapped in a version")
+    }
+  ],
   tuple: (value, patArgs, body) => [%expr json => switch ([%e value]) {
     | Json.Array([%p makePatList(patArgs)]) => [%e body]
     | _ => Belt.Result.Error("Expected array")

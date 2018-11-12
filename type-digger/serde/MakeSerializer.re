@@ -30,6 +30,7 @@ let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
 
 type transformer('source) = {
   outputType: Parsetree.core_type,
+  wrapWithVersion: Parsetree.expression,
   source: ('source) => Parsetree.expression,
   list: (Parsetree.expression) => Parsetree.expression,
   tuple: (list(Parsetree.expression)) => Parsetree.expression,

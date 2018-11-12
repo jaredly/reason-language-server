@@ -46,7 +46,10 @@ module V4 = {
 }
 
 let serializeDog = dog => {
-  V4.serializeDog(dog)
+  wrapWithVersion(
+    version,
+    V4.serializeDog(dog)
+  )
 };
 
 let deserializeDog = json => {

@@ -25,13 +25,15 @@ let makeTypArgs = variables =>
         "arg" ++ string_of_int(index)
       });
 
-let transformerName = (~moduleName, ~modulePath, ~name) =>
-  "deserialize_" ++
+let fullName = (~moduleName, ~modulePath, ~name) =>
   Str.global_replace(
     Str.regexp_string("-"),
     "__",
     moduleName,
   )  ++ "__" ++ String.concat("__", modulePath) ++ "__" ++ name;
+
+let transformerName = (~moduleName, ~modulePath, ~name) =>
+  "deserialize_" ++ fullName(~moduleName, ~modulePath, ~name);
 
 open Parsetree;
 open Ast_helper;
@@ -40,6 +42,7 @@ open SharedTypes.SimpleType;
 
 type transformer('source) = {
   inputType: Parsetree.core_type,
+  parseVersion: Parsetree.expression,
   tuple: (Parsetree.expression, list(Parsetree.pattern), Parsetree.expression) => Parsetree.expression,
   record: (list((string, Parsetree.expression))) => Parsetree.expression,
   source: ('source) => Parsetree.expression,

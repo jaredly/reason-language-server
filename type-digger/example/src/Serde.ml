@@ -1,4 +1,5 @@
-module V1_Locked =
+let currentVersion = 4
+module Version4 =
   struct
     type _Types__Current__dogBreed = Types.Current.dogBreed =
       | Schnouser 
@@ -17,9 +18,6 @@ module V1_Locked =
       | Dog of _Types__Current__dogBreed option 
       | Cat 
       | Mouse 
-  end
-module DeserializeRaw =
-  struct
     let rec (deserialize_Types__Current__dogBreed :
       Js.Json.t -> (Types.Current.dogBreed, string) Belt.Result.t) =
       fun constructor ->
@@ -209,10 +207,7 @@ module DeserializeRaw =
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Mouse : Types.Current.pet)
         | _ -> Error "Expected an array"
-  end
-module SerializeRaw =
-  struct
-    let rec (serialize_Types__Current__dogBreed :
+    and (serialize_Types__Current__dogBreed :
       Types.Current.dogBreed -> Js.Json.t) =
       fun constructor ->
         match constructor with
@@ -262,8 +257,33 @@ module SerializeRaw =
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
   end
-let serializeHousehold = SerializeRaw.serialize_Types__Current__household
-and deserializeHousehold =
-  DeserializeRaw.deserialize_Types__Current__household
-include SerializeRaw
-include DeserializeRaw
+let parseVersion json =
+  match Js.Json.classify json with
+  | ((JSONArray ([|version;payload|]))[@explicit_arity ]) ->
+      (match Js.Json.classify version with
+       | ((JSONNumber (version))[@explicit_arity ]) ->
+           ((Belt.Result.Ok ((int_of_float version), payload))
+           [@implicit_arity ])
+       | _ -> ((Belt.Result.Error ("Invalid version"))[@explicit_arity ]))
+  | _ -> ((Belt.Result.Error ("Must have a version"))[@explicit_arity ])
+let wrapWithVersion version payload =
+  Js.Json.array [|(Js.Json.number (float_of_int version));payload|]
+let serializeHousehold data =
+  wrapWithVersion currentVersion
+    (Version4.serialize_Types__Current__household data)
+and deserializeHousehold data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error (err))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 4 ->
+           (match Version4.deserialize_Types__Current__household data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (("Unexpected version " ^ (string_of_int version))))
+           [@explicit_arity ]))
