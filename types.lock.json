@@ -652,9 +652,22 @@
                 "Reference",
                 [
                   "Builtin",
-                  "bool"
+                  "option"
                 ],
-                []
+                [
+                  [
+                    "Reference",
+                    [
+                      "Public",
+                      [
+                        "TypeMapSerde__Config",
+                        [],
+                        "versionPlacement"
+                      ]
+                    ],
+                    []
+                  ]
+                ]
               ]
             ]
           ]
@@ -757,6 +770,32 @@
                   ]
                 ]
               ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "TypeMapSerde__Config",
+        [],
+        "versionPlacement"
+      ],
+      {
+        "name": "versionPlacement",
+        "variables": [],
+        "body": [
+          "Variant",
+          [
+            [
+              "EmbeddedVersion",
+              [],
+              null
+            ],
+            [
+              "WrappedVersion",
+              [],
+              null
             ]
           ]
         ]

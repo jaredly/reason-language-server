@@ -5,11 +5,15 @@
   "entries": [
     {
       "file": "type-digger/type-map/DigTypes.re",
-      "type_": "serializableLockfile"
+      "type_": "serializableLockfile",
+      "publicName": "serializableLockfile",
+      "history": false
     },
     {
       "file": "type-digger/type-map-serde/Config.re",
-      "type_": "t"
+      "type_": "t",
+      "publicName": "t",
+      "history": false
     }
   ],
   "custom": [

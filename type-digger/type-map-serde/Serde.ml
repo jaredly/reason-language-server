@@ -40,7 +40,7 @@ module V1_Locked =
       file: string ;
       type_: string ;
       publicName: string ;
-      history: bool }
+      history: _TypeMapSerde__Config__versionPlacement option }
     and _TypeMapSerde__Config__t = TypeMapSerde__Config.t =
       {
       version: int ;
@@ -48,6 +48,10 @@ module V1_Locked =
       engine: _TypeMapSerde__Config__engine ;
       entries: _TypeMapSerde__Config__entry list ;
       custom: _TypeMapSerde__Config__custom list }
+    and _TypeMapSerde__Config__versionPlacement =
+      TypeMapSerde__Config.versionPlacement =
+      | EmbeddedVersion 
+      | WrappedVersion 
     and 'reference _TypeMap__DigTypes__lockfile =
       'reference TypeMap__DigTypes.lockfile =
       {
@@ -856,14 +860,25 @@ module DeserializeRaw =
              | None -> ((Belt.Result.Error (("No attribute " ^ "history")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
-                 (match (fun bool ->
-                           match bool with
-                           | Json.True -> ((Belt.Result.Ok (true))
-                               [@explicit_arity ])
-                           | Json.False -> ((Belt.Result.Ok (false))
-                               [@explicit_arity ])
-                           | _ -> ((Belt.Result.Error ("Expected a bool"))
-                               [@explicit_arity ])) json
+                 (match ((fun transformer ->
+                            fun option ->
+                              match option with
+                              | Json.Null -> ((Belt.Result.Ok (None))
+                                  [@explicit_arity ])
+                              | _ ->
+                                  (match transformer option with
+                                   | ((Belt.Result.Error
+                                       (error))[@explicit_arity ]) ->
+                                       ((Belt.Result.Error (error))
+                                       [@explicit_arity ])
+                                   | ((Belt.Result.Ok
+                                       (value))[@explicit_arity ]) ->
+                                       ((Belt.Result.Ok
+                                           (((Some (value))
+                                             [@explicit_arity ])))
+                                       [@explicit_arity ])))
+                           deserialize_TypeMapSerde__Config____versionPlacement)
+                          json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                       ((Belt.Result.Error (error))[@explicit_arity ])
@@ -1179,6 +1194,18 @@ module DeserializeRaw =
                                                                     attr_custom
                                                                 }))))))))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
+    and (deserialize_TypeMapSerde__Config____versionPlacement :
+      Json.t -> (TypeMapSerde__Config.versionPlacement, string) Belt.Result.t)
+      =
+      fun constructor ->
+        match constructor with
+        | Json.Array (tag::[]) when (Json.String "EmbeddedVersion") = tag ->
+            Belt.Result.Ok
+              (EmbeddedVersion : TypeMapSerde__Config.versionPlacement)
+        | Json.Array (tag::[]) when (Json.String "WrappedVersion") = tag ->
+            Belt.Result.Ok
+              (WrappedVersion : TypeMapSerde__Config.versionPlacement)
+        | _ -> Error "Expected an array"
     and deserialize_TypeMap__DigTypes____lockfile :
       'arg0 .
         (Json.t -> ('arg0, string) Belt.Result.t) ->
@@ -1350,7 +1377,7 @@ module DeserializeRaw =
                 (deserialize_TypeMap__DigTypes____typeSource
                    referenceTransformer))) value
     and deserialize_TypeMap__DigTypes____typeSource :
-      type arg0 .
+     type arg0 .
         (Json.t -> (arg0, string) Belt.Result.t) ->
           Json.t ->
             (arg0 TypeMap__DigTypes.typeSource, string) Belt.Result.t
@@ -1551,8 +1578,11 @@ module SerializeRaw =
             (((fun s -> ((Json.String (s))[@explicit_arity ])))
                record.publicName));
           ("history",
-            (((fun b ->
-                 match b with | true -> Json.True | false -> Json.False))
+            ((((fun transformer ->
+                  function
+                  | None -> Json.Null
+                  | ((Some (v))[@explicit_arity ]) -> transformer v))
+                serialize_TypeMapSerde__Config____versionPlacement)
                record.history))]
     and (serialize_TypeMapSerde__Config____t :
       TypeMapSerde__Config.t -> Json.t) =
@@ -1577,6 +1607,12 @@ module SerializeRaw =
                    (Belt.List.map list
                       serialize_TypeMapSerde__Config____custom)))
                record.custom))]
+    and (serialize_TypeMapSerde__Config____versionPlacement :
+      TypeMapSerde__Config.versionPlacement -> Json.t) =
+      fun constructor ->
+        match constructor with
+        | EmbeddedVersion -> Json.Array [Json.String "EmbeddedVersion"]
+        | WrappedVersion -> Json.Array [Json.String "WrappedVersion"]
     and serialize_TypeMap__DigTypes____lockfile :
       'arg0 . ('arg0 -> Json.t) -> 'arg0 TypeMap__DigTypes.lockfile -> Json.t
       =
