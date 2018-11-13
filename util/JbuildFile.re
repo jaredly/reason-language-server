@@ -159,22 +159,30 @@ let rec parseAtom = (raw, ln, i) => switch (raw.[i]) {
   }
   | 'a'..'z'
   | 'A'..'Z'
-  | ':'
+  | ':' | '.' | '/'
   | '-' =>
     let last = parseIdent(raw, ln, i + 1);
     (`Ident(String.sub(raw, i, last - i)), last);
+  | '%' =>
+    if(raw.[i + 1] === '{') {
+      let (lst, i) = parseList(~term='}', raw, ln, i + 2);
+      (List.hd(lst), i);
+    } else {
+      let last = parseIdent(raw, ln, i + 1);
+      (`Ident(String.sub(raw, i, last - i)), last);
+    }
   | '0'..'9' =>
     let last = parseNumber(raw, ln, i + 1);
     (`Number(float_of_string(String.sub(raw, i, last - i))), last)
   | _ => failwith("Unexpected char: " ++ String.sub(raw, i, 1) ++ " at " ++ string_of_int(i))
 }
-and parseList = (raw, ln, i) => {
+and parseList = (~term=')', raw, ln, i) => {
   let i = skipWhite(raw, ln, i);
   i >= ln ? ([], i) : switch (raw.[i]) {
-    | ')' => ([], i + 1)
+    | x when x === term => ([], i + 1)
     | _ =>
       let (item, i) = parseAtom(raw, ln, i);
-      let (rest, i) = parseList(raw, ln, i);
+      let (rest, i) = parseList(~term, raw, ln, i);
       ([item, ...rest], i)
   }
 };
