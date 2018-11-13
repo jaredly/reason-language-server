@@ -129,16 +129,10 @@ let detect = (rootPath, bsconfig) => {
 
 let getEsyCompiledBase = (root) => {
   let env = Unix.environment()->Array.to_list;
-  try {
-      let root = Utils.getEnvVar(~env, "cur__original_root");
-      let targetDir = Utils.getEnvVar(~env, "cur__target_dir");
-      let splitOnEquals = Utils.split_on_char('=');
-      switch (splitOnEquals(root), splitOnEquals(targetDir)) {
-      | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
-      | _ => Error("Couldn't find Esy target directory (env missing)")
-      };
-  } {
-  | _ =>
+
+  switch(Utils.getEnvVar(~env, "cur__original_root"), Utils.getEnvVar(~env, "cur__target_dir")) {
+  | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(projectRoot, targetDir))
+  | (_, _) =>
     switch (Commands.execResult("esy command-env --json")) {
     | Ok(commandEnv) =>
       switch (Json.parse(commandEnv)) {
@@ -162,7 +156,7 @@ let getEsyCompiledBase = (root) => {
       }
     | err => err
     }
-  };
+  }
 };
 
 let getCompiledBase = (root, buildSystem) => {
@@ -221,8 +215,13 @@ let getStdlib = (base, buildSystem) => {
     /+ "lib"
     /+ "ocaml"]
   | Dune(Esy) =>
-    let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
-    [esy_ocamllib]
+    let env = Unix.environment()->Array.to_list;
+    switch (Utils.getEnvVar(~env, "OCAMLLIB")) {
+    | Some(esy_ocamllib) => Ok([esy_ocamllib])
+    | None =>
+      let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
+      [esy_ocamllib];
+    };
   | Dune(Opam(switchPrefix)) =>
     let%try libPath = getOpamLibOrBinPath(base, switchPrefix, "lib" /+ "ocaml")
     Ok([libPath])
@@ -231,14 +230,11 @@ let getStdlib = (base, buildSystem) => {
 
 let getExecutableInEsyPath = (exeName, ~pwd) => {
   let env = Unix.environment()->Array.to_list;
-
-  try {
-    /* Check if we have `cur__target_dir` as a marker that we're inside an Esy context */
-    let _ = Utils.getEnvVar(~env, "cur__target_dir");
-    getLine("which " ++ exeName, ~pwd);
-  } {
-    | _ => getLine("esy which " ++ exeName, ~pwd);
-  }
+  /* Check if we have `cur__target_dir` as a marker that we're inside an Esy context */
+  switch (Utils.getEnvVar(~env, "cur__target_dir")) {
+  | Some(_) => getLine("which " ++ exeName, ~pwd)
+  | None => getLine("esy which " ++ exeName, ~pwd)
+  };
 };
 
 let getCompiler = (rootPath, buildSystem) => {
@@ -253,8 +249,7 @@ let getCompiler = (rootPath, buildSystem) => {
     | BsbNative(_, Bytecode) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
-    | Dune(Esy) =>
-      getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
+    | Dune(Esy) => getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt");
       binPath
@@ -275,8 +270,7 @@ let getRefmt = (rootPath, buildSystem) => {
     | Bsb(_) | BsbNative(_, _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt3.exe"
-    | Dune(Esy) =>
-      getExecutableInEsyPath("refmt",~pwd=rootPath)
+    | Dune(Esy) => getExecutableInEsyPath("refmt",~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       Ok(switchPrefix /+ "bin" /+ "refmt")
   };

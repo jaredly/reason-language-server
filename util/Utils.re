@@ -243,5 +243,10 @@ let locationContainsFuzzy = ({Location.loc_start, loc_end}, (l, c)) =>
   tupleOfLexing(loc_start) <= (l, c) && tupleOfLexing(loc_end) >= (l - 5, c);
 
 let getEnvVar = (~env=Unix.environment()->Array.to_list, varToFind) => {
-  List.find(var => startsWith(var, varToFind ++ "="), env);
+  let%opt var = Belt.List.getBy(env, var => startsWith(var, varToFind ++ "="));
+
+  switch (split_on_char('=', var)) {
+    | [_, value] => Some(value)
+    | _ => None
+  }
 }
