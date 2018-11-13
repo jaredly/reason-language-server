@@ -129,17 +129,15 @@ let detect = (rootPath, bsconfig) => {
 
 let getEsyCompiledBase = (root) => {
   let env = Unix.environment()->Array.to_list;
-  try (
-    {
-      let root = List.find(var => Utils.startsWith(var, "cur__original_root="), env);
-      let var = List.find(var => Utils.startsWith(var, "cur__target_dir="), env);
+  try {
+      let root = Utils.getEnvVar(~env, "cur__original_root");
+      let targetDir = Utils.getEnvVar(~env, "cur__target_dir");
       let splitOnEquals = Utils.split_on_char('=');
-      switch (splitOnEquals(root), splitOnEquals(var)) {
+      switch (splitOnEquals(root), splitOnEquals(targetDir)) {
       | ([_, projectRoot], [_, targetDir]) => Ok(Files.relpath(projectRoot, targetDir))
       | _ => Error("Couldn't find Esy target directory (env missing)")
       };
-    }
-  ) {
+  } {
   | _ =>
     switch (Commands.execResult("esy command-env --json")) {
     | Ok(commandEnv) =>
@@ -231,6 +229,18 @@ let getStdlib = (base, buildSystem) => {
   };
 };
 
+let getExecutableInEsyPath = (exeName, ~pwd) => {
+  let env = Unix.environment()->Array.to_list;
+
+  try {
+    /* Check if we have `cur__target_dir` as a marker that we're inside an Esy context */
+    let _ = Utils.getEnvVar(~env, "cur__target_dir");
+    getLine("which " ++ exeName, ~pwd);
+  } {
+    | _ => getLine("esy which " ++ exeName, ~pwd);
+  }
+};
+
 let getCompiler = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | BsbNative(_, Js)
@@ -244,10 +254,9 @@ let getCompiler = (rootPath, buildSystem) => {
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
     | Dune(Esy) =>
-      let%try_wrap ocamlopt = getLine("esy which ocamlopt.opt", ~pwd=rootPath);
-      ocamlopt
+      getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
-      let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt")
+      let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt");
       binPath
   };
 };
@@ -267,8 +276,7 @@ let getRefmt = (rootPath, buildSystem) => {
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt3.exe"
     | Dune(Esy) =>
-      let%try_wrap refmt = getLine("esy which refmt", ~pwd=rootPath);
-      refmt
+      getExecutableInEsyPath("refmt",~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       Ok(switchPrefix /+ "bin" /+ "refmt")
   };
