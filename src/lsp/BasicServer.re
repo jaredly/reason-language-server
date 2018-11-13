@@ -105,7 +105,7 @@ let run = (~tick, ~log, ~messageHandlers, ~notificationHandlers, ~getInitialStat
     let state = tick(state);
     if (canRead(stdin_descr)) {
       switch (Rpc.readMessage(log, stdin)) {
-      | Message(id, "shutdown", _) =>
+      | Message(id, "shutdown", _params) =>
         Rpc.sendMessage(log, stdout, id, Json.Null);
         loop(~isShuttingDown=true, state)
       | Message(id, method, params) => loop(~isShuttingDown, handleMessage(log, messageHandlers, id, method, params, state))

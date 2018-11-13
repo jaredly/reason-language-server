@@ -44,14 +44,14 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/signatureHelp", (state, params) => {
     let%try (uri, position) = Protocol.rPositionParams(params);
-    let%try (text, _, _) = maybeHash(state.documentText, uri) |> orError("No document text found");
+    let%try (text, _version, _isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
     let%try full = State.getDefinitionData(uri, state, ~package);
     let {SharedTypes.file, extra} = full;
 
     {
-      let%opt (commas, _, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
+      let%opt (commas, _labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
       Log.log("Signature help lident " ++ lident);
       let lastPos = i + String.length(lident) - 1;
       let%opt pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode;
@@ -90,7 +90,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
-      let (args, _) = typ.getArguments();
+      let (args, _rest) = typ.getArguments();
       let%opt args = args == [] ? None : Some(args);
       let printedType = typ.toString();
       open Util.JsonShort;
@@ -118,7 +118,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
   ("textDocument/completion", (state, params) => {
     let%try (uri, pos) = Protocol.rPositionParams(params);
-    let%try (text, _, _) = maybeHash(state.documentText, uri) |> orError("No document text found");
+    let%try (text, _version, _isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, pos) |> orError("invalid offset");
     /* TODO get last non-syntax-erroring definitions */
@@ -167,7 +167,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     Ok((state, l(completions)))
   }),
 
-  ("completionItem/resolve", (state, _) => {
+  ("completionItem/resolve", (state, _params) => {
     Ok((state, Json.Null))
     /* switch (params |> Json.get("documentation") |?> Json.string) {
     | Some(_) => Ok((state, params))
@@ -499,7 +499,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = getPackage(uri, state);
 
-    let%try (file, _) = State.fileForUri(state, ~package, uri);
+    let%try (file, _extra) = State.fileForUri(state, ~package, uri);
 
     open SharedTypes;
 
@@ -554,7 +554,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   ("textDocument/codeAction", (state, params) => {
     open InfixResult;
     let%try uri = RJson.get("textDocument", params) |?> RJson.get("uri") |?> RJson.string;
-    let%try (start, _) = RJson.get("range", params) |?> Protocol.rgetRange;
+    let%try (start, _end) = RJson.get("range", params) |?> Protocol.rgetRange;
     let pos = start;
     let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
@@ -564,7 +564,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%opt () = Filename.check_suffix(uri, ".re") ? Some(()) : None;
 
       let pos = Utils.cmtLocFromVscode(pos);
-      let%opt (_, loc) = References.locForPos(~extra, pos);
+      let%opt (_location, loc) = References.locForPos(~extra, pos);
       let%opt signatureText = switch loc {
         | Typed(t, Definition(stamp, Value)) =>
           let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, Value);

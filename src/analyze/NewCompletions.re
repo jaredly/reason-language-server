@@ -537,7 +537,7 @@ let get =
         (results, env) => {
           let completionsFromThisOpen =
             valueCompletions(~env, suffix);
-          Belt.List.keep(completionsFromThisOpen, ((_, declared)) => {
+          Belt.List.keep(completionsFromThisOpen, ((_uri, declared)) => {
             if (! Hashtbl.mem(alreadyUsedIdentifiers, declared.name.txt)) {
               Hashtbl.add(alreadyUsedIdentifiers, declared.name.txt, true);
               true;

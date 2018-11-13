@@ -82,7 +82,7 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   /** TODO refactor so Dune projects don't get bsconfig.json handling below */
   let%opt_consume (buildCommand, commandDirectory) = buildCommand;
   Log.log(">> Build system running: " ++ buildCommand);
-  let (stdout, stderr, _) = Commands.execFull(~pwd=commandDirectory, buildCommand);
+  let (stdout, stderr, _success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
   Log.log(">>> stdout");
   Log.log(Utils.joinLines(stdout));
   Log.log(">>> stderr");
@@ -305,7 +305,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   Log.log("=== Build dir:    " ++ buildDir);
 
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
-  let (source, _, flags) = MerlinFile.parseMerlin("", merlinRaw);
+  let (source, _build, flags) = MerlinFile.parseMerlin("", merlinRaw);
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {

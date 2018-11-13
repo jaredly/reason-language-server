@@ -52,8 +52,8 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~getModule, ~markdown, ~showP
     | SharedTypes.Loc.Explanation(text) => Some(text)
     /* TODO store a "defined" for Open (the module) */
     | Open => Some("an open")
-    | TypeDefinition(_) => None
-    | Module(LocalReference(stamp, _)) => {
+    | TypeDefinition(_name, _tdecl, _stamp) => None
+    | Module(LocalReference(stamp, _tip)) => {
       let%opt md = Query.hashFind(file.stamps.modules, stamp);
       let%opt (file, declared) = References.resolveModuleReference(~file, ~getModule, md);
       let name = switch declared {
@@ -97,7 +97,7 @@ let newHover = (~rootUri, ~file: SharedTypes.file, ~getModule, ~markdown, ~showP
       let extraTypeInfo = {
         let env = {Query.file, exported: file.contents.exported};
         let%opt (path, _args) = t.getConstructorPath();
-        let%opt (_, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
+        let%opt (_env, {name: {txt}, contents: {typ}}) = digConstructor(~env, ~getModule, path);
         Some(typ.declToString(txt))
         /* TODO type declaration */
         /* None */

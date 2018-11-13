@@ -160,7 +160,7 @@ let mapper =
         "opt" | "opt_wrap" | "opt_consume" | "opt_force"
         | "try" | "try_wrap" | "try_consume" | "try_force"
         | "await" | "await_wrap" | "await_consume"
-        ) as txt, loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, _)}]))) => {
+        ) as txt, loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_let(Nonrecursive, bindings, continuation)}, _attributes)}]))) => {
         let (front, explanation) = switch (txt) {
           | "opt" => ([%expr Monads.Option.bind], opt_explanation)
           | "opt_wrap" => ([%expr Monads.Option.map], opt_wrap_explanation)

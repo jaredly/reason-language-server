@@ -332,7 +332,7 @@ let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
       Log.log("Declared");
       if (declared.exported) {
         Log.log("exported, looking for alternate " ++ file.moduleName);
-        let%opt (file, _, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
+        let%opt (file, _extra, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
         let loc = validateLoc(declared.name.loc, declared.extentLoc);
         Some((file.uri, loc))
       } else {

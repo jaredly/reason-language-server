@@ -20,7 +20,7 @@ let range = (num, fn) => {
 };
 
 let makeTypArgs = variables =>
-      variables->Belt.List.mapWithIndex((index, _) => {
+      variables->Belt.List.mapWithIndex((index, _arg) => {
         "arg" ++ string_of_int(index)
       });
 

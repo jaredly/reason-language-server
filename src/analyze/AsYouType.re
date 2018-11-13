@@ -149,7 +149,7 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sour
 
 let getInterface = (~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   let interface = false;
-  let%try (_, astFile) = switch (refmtPath) {
+  let%try (_syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
       let astFile = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
@@ -161,7 +161,7 @@ let getInterface = (~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation,
     | Error(lines) => {
       Error("Failed to generate interface file\n\n" ++ String.concat("\n", lines))
     }
-    | Ok((lines, _)) =>
+    | Ok((lines, _errlines)) =>
     let text = String.concat("\n", lines);
     Log.log("GOT ITNERFACE");
     Log.log(text);
@@ -202,7 +202,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
             SyntaxError(String.concat("\n", s), errorText, {file, extra})
           | None => {
             let errorText = switch (parseDependencyError(errorText)) {
-              | Some((name, _, _)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
+              | Some((name, _oname, _iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
               | None => errorText
             };
             TypeError(errorText, {file, extra})

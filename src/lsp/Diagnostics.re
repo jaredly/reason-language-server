@@ -48,7 +48,7 @@ let runDiagnostics = (uri, state, ~package) => {
     ("diagnostics", switch result {
     | AsYouType.SyntaxError(text, otherText, _) => {
       let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(otherText)));
-      let errors = errors |. Belt.List.keep(((_, message)) => message != ["Error: Uninterpreted extension 'merlin.syntax-error'."]);
+      let errors = errors |. Belt.List.keep(((_loc, message)) => message != ["Error: Uninterpreted extension 'merlin.syntax-error'."]);
       let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text))) @ errors;
       l(errors |. Belt.List.keepMap(makeDiagnostic(documentText)))
     }
@@ -63,7 +63,7 @@ let runDiagnostics = (uri, state, ~package) => {
     | TypeError(text, _) => {
       Log.log("type error here " ++ text);
       let errors = AsYouType.parseErrors(Utils.splitLines(Utils.stripAnsii(text)))
-      |. Belt.List.keep(((_, message)) => {
+      |. Belt.List.keep(((_loc, message)) => {
         !Str.string_match(Str.regexp({|.*Missing dependency [a-zA-Z]+ in search path|}), String.concat(" ", message), 0)
       })
       ;

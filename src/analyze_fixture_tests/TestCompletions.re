@@ -6,7 +6,7 @@ let name = "TestCompletions";
 
 let getOutput = (files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
-  let (state, package, _, full) = TestUtils.setUp(files, text)
+  let (state, package, _cmt, full) = TestUtils.setUp(files, text)
   let completions = switch (PartialParser.findCompletable(text, offset)) {
   | Nothing => failwith("Nothing completable found")
   | Labeled(_) => failwith("Can't do labeled completions yet")

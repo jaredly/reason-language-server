@@ -156,7 +156,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
       /* ), */
       Exp.match(
         makeIdent(Lident("constructor")),
-        constructors->Belt.List.map(((name, args, _)) => {
+        constructors->Belt.List.map(((name, args, _result)) => {
           Exp.case(
             Pat.construct(
               Location.mknoloc(Lident(name)),
@@ -185,7 +185,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
 };
 
 let makeTypArgs = variables =>
-      variables->Belt.List.mapWithIndex((index, _) => {
+      variables->Belt.List.mapWithIndex((index, _arg) => {
         "arg" ++ string_of_int(index)
       });
 

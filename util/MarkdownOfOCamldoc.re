@@ -53,7 +53,7 @@ let makeHeader = (level, content) => {
     | `Exception | `Value | `Class | `ClassType
     | `Method | `InstanceVariable | `Label | `Page ] */
 let handleRef = reference => switch reference {
-| Paths.Reference.Root(name, _) => name
+| Paths.Reference.Root(name, _tag) => name
 | Paths.Reference.Resolved(_) => "resolved..."
 | Paths.Reference.Dot(_, name) => name
 | Paths.Reference.Module(_, name) => name
@@ -73,7 +73,7 @@ let handleRef = reference => switch reference {
 let convertItem = (item) => {
 
   let rec convertItem = item => switch item.Location_.value {
-  | `Heading(level, _, content) => makeHeader(level, List.map(convertLink, content))
+  | `Heading(level, _label, content) => makeHeader(level, List.map(convertLink, content))
   | `Tag(`Author(string)) => Omd.Text("Author: " ++ string)
   | `Tag(`Deprecated(contents)) => Omd.Paragraph([Omd.Text("Deprecated: "), ...List.map(stripLoc(convertNestable), contents)])
   | `Tag(`Param(name, contents)) => Omd.Paragraph([Omd.Text("Param: " ++ name), ...List.map(stripLoc(convertNestable), contents)])
@@ -115,7 +115,7 @@ let convertItem = (item) => {
   and convertInline = item => switch item.Location_.value {
   | `Link(href, content) => Omd.Url(href, List.map(convertLink, content), "")
   | `Styled(style, contents) => withStyle(style, List.map(convertInline, contents))
-  | `Reference(someref, _) => {
+  | `Reference(someref, _link) => {
     let text = handleRef(someref);
     Omd.Text(text)
     /* Omd.Url("#TODO-ref", [Omd.Text("REFERENCE"), ...List.map(convertLink, link)], "") */

@@ -7,7 +7,7 @@ open Infix;
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
-    | Path.Pdot(_, typename, _) => typename
+    | Path.Pdot(_path, typename, _) => typename
     | Pident(ident) => Ident.name(ident)
     | _ => assert false
     };
@@ -264,7 +264,7 @@ module F = (Collector: {
         | None => addForPathParent(Shared.mapOldPath(path), l)
       };
       switch (path, txt) {
-        | (Pdot(pinner, _, _), Ldot(inner, name)) => {
+        | (Pdot(pinner, _pname, _), Ldot(inner, name)) => {
           addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
         }
         | (Pident(_), Lident(_)) => ()
@@ -279,7 +279,7 @@ module F = (Collector: {
       Log.log("Ident!! " ++ String.concat(".", Longident.flatten(txt)));
       maybeAddUse(path, txt, loc, Module);
       addForLongident(None, path, txt, loc);
-    | Tmod_functor(_, _, _, resultExpr) =>
+    | Tmod_functor(_ident, _argName, _maybeType, resultExpr) =>
       handle_module_expr(resultExpr.mod_desc)
     | Tmod_apply(obj, arg, _) =>
       handle_module_expr(obj.mod_desc);
@@ -369,7 +369,7 @@ module F = (Collector: {
 
   let enter_core_type = ({ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
-      | Ttyp_constr(path, {txt, loc}, _) => {
+      | Ttyp_constr(path, {txt, loc}, _args) => {
         /* addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type) */
         addForLongident(
           Some((Shared.makeFlexible(ctyp_type), Type)),
@@ -412,7 +412,7 @@ module F = (Collector: {
       | Tpat_construct(lident, constructor, _) => {
         addForConstructor(pat_type, lident, constructor)
       }
-      | Tpat_alias(_, ident, name) => {
+      | Tpat_alias(_inner, ident, name) => {
         let stamp = Ident.binding_time(ident);
         addForPattern(stamp, name);
       }

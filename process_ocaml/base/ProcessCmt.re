@@ -227,7 +227,7 @@ and forSignatureType = (env, signature) => {
   | Mty_signature(signature) => {
     Module.Structure(forSignatureType(env, signature))
   }
-  | Mty_functor(_, _, resultType) => forModuleType(env, resultType)
+  | Mty_functor(_argIdent, _argType, resultType) => forModuleType(env, resultType)
 };
 
 let getModuleTypePath = (mod_desc) => switch mod_desc {
@@ -247,7 +247,7 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id, typ_loc, ty
     kind: switch typ_kind {
       | Ttype_abstract =>
         switch (typ_manifest) {
-          | Some({ctyp_desc: Ttyp_constr(path, _, args)}) => Abstract(Some((
+          | Some({ctyp_desc: Ttyp_constr(path, _lident, args)}) => Abstract(Some((
             Shared.mapOldPath(path),
             args |> List.map(t => Shared.makeFlexible(t.ctyp_type))
           )))
@@ -338,19 +338,19 @@ let forSignature = (~env, items) => {
 let forTreeModuleType = (~env, {mty_desc}) => switch mty_desc {
   | Tmty_ident(_) => None
   | Tmty_signature({sig_items}) => {
-    let (_, contents) = forSignature(~env, sig_items);
+    let (_doc, contents) = forSignature(~env, sig_items);
     Some(Module.Structure(contents))
   }
   | _ => None
 };
 
 let rec getModulePath = (mod_desc) => switch mod_desc {
-  | Tmod_ident(path, _) => Some(path)
+  | Tmod_ident(path, _lident) => Some(path)
   | Tmod_structure(_) => None
-  | Tmod_functor(_, _, _, _) => None
-  | Tmod_apply(functor_, _, _) => getModulePath(functor_.mod_desc)
-  | Tmod_unpack(_, _) => None
-  | Tmod_constraint(expr, _, _, _) => getModulePath(expr.mod_desc)
+  | Tmod_functor(_ident, _argName, _maybeType, _resultExpr) => None
+  | Tmod_apply(functor_, _arg, _coercion) => getModulePath(functor_.mod_desc)
+  | Tmod_unpack(_expr, _moduleType) => None
+  | Tmod_constraint(expr, _typ, _constraint, _coercion) => getModulePath(expr.mod_desc)
 };
 
 let rec forItem = (
@@ -358,7 +358,7 @@ let rec forItem = (
   ~exported: Module.exported,
   item
 ) => switch (item.str_desc) {
-| Tstr_value(_, bindings) =>
+| Tstr_value(_isRec, bindings) =>
   optMap(({vb_loc, vb_pat: {pat_desc, pat_type}, vb_attributes}) =>
     /* TODO get all the things out of the var. */
     switch (pat_desc) {
@@ -405,10 +405,10 @@ let rec forItem = (
 }
 
 and forModule = (env, mod_desc, moduleName) => switch mod_desc {
-  | Tmod_ident(path, _) => Module.Ident(Shared.mapOldPath(path))
+  | Tmod_ident(path, _lident) => Module.Ident(Shared.mapOldPath(path))
   | Tmod_structure(structure) => {
     let env = {...env, scope: itemsExtent(structure.str_items), modulePath: ExportedModule(moduleName, env.modulePath)};
-    let (_, contents) = forStructure(~env, structure.str_items);
+    let (_doc, contents) = forStructure(~env, structure.str_items);
     Module.Structure(contents)
   }
   | Tmod_functor(ident, argName, maybeType, resultExpr) => {
@@ -433,11 +433,11 @@ and forModule = (env, mod_desc, moduleName) => switch mod_desc {
     };
     forModule(env, resultExpr.mod_desc, moduleName)
   }
-  | Tmod_apply(functor_, _, _) => forModule(env, functor_.mod_desc, moduleName)
-  | Tmod_unpack(_, moduleType) =>
+  | Tmod_apply(functor_, _arg, _coercion) => forModule(env, functor_.mod_desc, moduleName)
+  | Tmod_unpack(_expr, moduleType) =>
     let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
     forModuleType(env, moduleType)
-  | Tmod_constraint(_, typ, _, _) => {
+  | Tmod_constraint(_expr, typ, _constraint, _coercion) => {
     /* TODO do this better I think */
     let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
     forModuleType(env, typ)

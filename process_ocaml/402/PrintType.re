@@ -208,7 +208,7 @@ let print_decl = (stringifier, realName, name, decl) => {
   switch decl.type_kind {
   | Type_abstract => Pretty.empty
   | Type_open => str(" = ..")
-  | Type_record(labels, _) => {
+  | Type_record(labels, _representation) => {
     str(" = {") @! indentGroup(break @!
     commad_list(print_attr(stringifier), labels)
      @! dedent) @! str("}")

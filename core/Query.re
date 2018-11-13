@@ -139,7 +139,7 @@ let fromCompilerPath = (~env, path) => {
     | `Stamp(stamp) => `Stamp(stamp)
     | `Path((0, moduleName, path)) => `Global(moduleName, path)
     | `GlobalMod(name) => `GlobalMod(name)
-    | `Path((stamp, _, path)) => {
+    | `Path((stamp, _moduleName, path)) => {
       let res = {
         let%opt {contents: kind} = hashFind(env.file.stamps.modules, stamp);
         let%opt_wrap res = findInModule(~env, kind, path);
@@ -264,7 +264,7 @@ let rec showVisibilityPath = (~env, ~getModule, path) => switch path {
 };
 
 let rec getSourceUri = (~env, ~getModule, path) => switch path {
-  | File(uri, _) => uri
+  | File(uri, _moduleName) => uri
   | NotVisible => env.file.uri
   | IncludedModule(path, inner) =>
   Log.log("INCLUDED MODULE");

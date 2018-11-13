@@ -394,7 +394,7 @@ let showExtra = ({internalReferences, externalReferences, opens}) => {
     "Open at " ++ Utils.showLocation(loc) ++
     "\n  path: " ++ Path.name(tracker.path) ++
     "\n  ident: " ++ String.concat(".", Longident.flatten(tracker.ident.txt)) ++
-    "\n  used:" ++ String.concat("", tracker.used |> List.map(((path, tip, _)) => {
+    "\n  used:" ++ String.concat("", tracker.used |> List.map(((path, tip, _loc)) => {
       "\n    " ++ pathToString(path) ++ " : " ++ tipToString(tip)
     }))
 

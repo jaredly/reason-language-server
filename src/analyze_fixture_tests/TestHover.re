@@ -44,7 +44,7 @@ let getOutput = (files, mainFile) => {
   });
 
   let process = i => {
-      let (curi, _, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
+      let (curi, _cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
       /* Log.log("Curi " ++ curi);
       let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
       /* let%opt_force (_, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult; */

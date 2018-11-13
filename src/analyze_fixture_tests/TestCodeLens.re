@@ -5,7 +5,7 @@ open SharedTypes;
 
 let getOutput = (files, text) => {
   /* let (text, offset, pos) = TestUtils.extractPosition(text); */
-  let (_, _, _, full) = TestUtils.setUp(files, text);
+  let (_state, _package, _cmt, full) = TestUtils.setUp(files, text);
 
   let opens = CodeLens.forOpens(full.extra);
 

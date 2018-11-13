@@ -78,7 +78,7 @@ let mapFnExpr = (expr, fnMapper) => {
 };
 
 let mapConstructor = (expr, ~ident=?, constrMapper) => {
-  expr->mapExpr((_, expr) => switch (expr.pexp_desc) {
+  expr->mapExpr((_mapper, expr) => switch (expr.pexp_desc) {
     | Pexp_construct({txt} as lid, Some({pexp_desc: Pexp_tuple(args)})) =>
       switch ident {
         | None => constrMapper(lid, args, expr)
