@@ -1,6 +1,6 @@
 /*
   steal from OCaml stdlib
-  https://github.com/ocaml/ocaml/blob/7c9c210884e1b46f21af5bb4dfab995bb3336cf7/stdlib/string.ml#L205-L214 
+  https://github.com/ocaml/ocaml/blob/7c9c210884e1b46f21af5bb4dfab995bb3336cf7/stdlib/string.ml#L205-L214
 */
 let split_on_char = (sep, s) => {
   open String;
@@ -241,3 +241,7 @@ If it's within 5 lines, go with it.
  */
 let locationContainsFuzzy = ({Location.loc_start, loc_end}, (l, c)) =>
   tupleOfLexing(loc_start) <= (l, c) && tupleOfLexing(loc_end) >= (l - 5, c);
+
+let getEnvVar = (~env=Unix.environment()->Array.to_list, varToFind) => {
+  List.find(var => startsWith(var, varToFind ++ "="), env);
+}
