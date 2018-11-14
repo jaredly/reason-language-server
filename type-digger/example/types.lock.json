@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "pastVersions": [
     [
       1,
@@ -456,6 +456,239 @@
           ]
         ]
       ]
+    ],
+    [
+      4,
+      [
+        [
+          [
+            "Types",
+            ["Current"],
+            "dogBreed"
+          ],
+          [
+            [],
+            {
+              "name": "dogBreed",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Schnouser",
+                    [],
+                    null
+                  ],
+                  [
+                    "Lab",
+                    [],
+                    null
+                  ],
+                  [
+                    "Retriever",
+                    [],
+                    null
+                  ],
+                  [
+                    "Poodle",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            ["Current"],
+            "household"
+          ],
+          [
+            [],
+            {
+              "name": "household",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "people",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              ["Current"],
+                              "person"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "pets",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              ["Current"],
+                              "pet"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            ["Current"],
+            "person"
+          ],
+          [
+            [],
+            {
+              "name": "person",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "age",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            ["Current"],
+            "pet"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "upgrade",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun pet ->\n    match pet with\n    | Dog -> ((Dog None)[@explicit_arity ])\n    | Cat -> Cat\n    | Mouse -> Mouse"
+                ]
+              ]
+            ],
+            {
+              "name": "pet",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Dog",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "option"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "Types",
+                                ["Current"],
+                                "dogBreed"
+                              ]
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Cat",
+                    [],
+                    null
+                  ],
+                  [
+                    "Mouse",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ]
+      ]
     ]
   ],
   "current": [
@@ -466,7 +699,32 @@
         "dogBreed"
       ],
       [
-        [],
+        [
+          [
+            {
+              "txt": "upgrade",
+              "loc": {
+                "loc_start": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_end": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_ghost": true
+              }
+            },
+            [
+              "PStr",
+              ";;fun breed ->\n    match breed with\n    | Schnouser -> ((Schnouser (\"white\"))[@explicit_arity ])\n    | Lab -> Lab\n    | Retriever -> Retriever\n    | Poodle -> Poodle"
+            ]
+          ]
+        ],
         {
           "name": "dogBreed",
           "variables": [],
@@ -475,7 +733,16 @@
             [
               [
                 "Schnouser",
-                [],
+                [
+                  [
+                    "Reference",
+                    [
+                      "Builtin",
+                      "string"
+                    ],
+                    []
+                  ]
+                ],
                 null
               ],
               [
@@ -613,32 +880,7 @@
         "pet"
       ],
       [
-        [
-          [
-            {
-              "txt": "upgrade",
-              "loc": {
-                "loc_start": {
-                  "pos_fname": "_none_",
-                  "pos_lnum": 1,
-                  "pos_bol": 0,
-                  "pos_cnum": -1
-                },
-                "loc_end": {
-                  "pos_fname": "_none_",
-                  "pos_lnum": 1,
-                  "pos_bol": 0,
-                  "pos_cnum": -1
-                },
-                "loc_ghost": true
-              }
-            },
-            [
-              "PStr",
-              ";;fun pet ->\n    match pet with\n    | Dog -> ((Dog (None))[@explicit_arity ])\n    | Cat -> Cat\n    | Mouse -> Mouse"
-            ]
-          ]
-        ],
+        [],
         {
           "name": "pet",
           "variables": [],

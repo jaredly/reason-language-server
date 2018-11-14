@@ -27,6 +27,12 @@ let rec upgradeExpr = (variable, expr) => {
   | Reference(Builtin("array"), [arg]) =>
     let%opt converter = upgradeExpr([%expr _item], arg);
     Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
+  | Reference(Builtin("option"), [arg]) =>
+    let%opt converter = upgradeExpr([%expr _item], arg);
+    Some([%expr switch ([%e variable]) {
+      | None => None
+      | Some(_item) => Some([%e converter])
+    }]);
   | _ => None
   }
 };
@@ -139,7 +145,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
             [%expr _input_data]
           } else {
             switch (upgradeBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl)) {
-              | None => failwith("Must provide upgrader. Cannot upgrade automatically.")
+              | None => failwith("Must provide upgrader. Cannot upgrade automatically: " ++ name)
               | Some(expr) => expr
             }
           },
