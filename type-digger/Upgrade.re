@@ -17,31 +17,6 @@ let loc = Location.none;
 
 let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
 
-let rec migrateExpr = (variable, expr) => {
-  switch expr {
-  | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), []) =>
-    Some(Exp.apply(expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
-  | Reference(Builtin("list"), [arg]) =>
-    let%opt converter = migrateExpr([%expr _item], arg);
-    Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
-  | Reference(Builtin("array"), [arg]) =>
-    let%opt converter = migrateExpr([%expr _item], arg);
-    Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
-  | Reference(Builtin("option"), [arg]) =>
-    let%opt converter = migrateExpr([%expr _item], arg);
-    Some([%expr switch ([%e variable]) {
-      | None => None
-      | Some(_item) => Some([%e converter])
-    }]);
-  | Reference(Builtin(_), []) => Some(variable)
-  | _ => {
-    print_endline("Cannot automatically migrate this expression");
-    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpExpr(expr)));
-    None
-  }
-  }
-};
-
 let rec mapAll = (items, fn) => switch items {
   | [] => Some([])
   | [one, ...rest] => switch (fn(one)) {
@@ -68,6 +43,38 @@ let rec mapAllWithIndex = (items, fn) => {
       }
     };
   loop(0, items);
+};
+
+let rec migrateExpr = (variable, expr) => {
+  switch expr {
+  | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), []) =>
+    Some(Exp.apply(expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
+  | Reference(Builtin("list"), [arg]) =>
+    let%opt converter = migrateExpr([%expr _item], arg);
+    Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
+  | Reference(Builtin("array"), [arg]) =>
+    let%opt converter = migrateExpr([%expr _item], arg);
+    Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
+  | Reference(Builtin("option"), [arg]) =>
+    let%opt converter = migrateExpr([%expr _item], arg);
+    Some([%expr switch ([%e variable]) {
+      | None => None
+      | Some(_item) => Some([%e converter])
+    }]);
+  | Reference(Builtin(_), []) => Some(variable)
+  | Tuple(contents) =>
+    let%opt migrators = contents->mapAllWithIndex((index, expr) => migrateExpr(expIdent(Lident("arg" ++ string_of_int(index))), expr))
+    let pat = Pat.tuple(contents->Belt.List.mapWithIndex((index, _) => Pat.var(mknoloc("arg" ++ string_of_int(index)))));
+    Some([%expr {
+      let [%p pat] = [%e variable];
+      [%e Exp.tuple(migrators)]
+    }])
+  | _ => {
+    print_endline("Cannot automatically migrate this expression");
+    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpExpr(expr)));
+    None
+  }
+  }
 };
 
 let orLog = (what, message) => {

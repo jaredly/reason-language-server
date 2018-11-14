@@ -106,6 +106,71 @@
                       ],
                       []
                     ]
+                  ],
+                  [
+                    "coords",
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "parents",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Tuple",
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "Types",
+                                  [],
+                                  "person"
+                                ]
+                              ],
+                              []
+                            ],
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "Types",
+                                  [],
+                                  "person"
+                                ]
+                              ],
+                              []
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
                   ]
                 ]
               ]
@@ -273,6 +338,71 @@
                       ],
                       []
                     ]
+                  ],
+                  [
+                    "coords",
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "parents",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Tuple",
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "Types",
+                                  [],
+                                  "person"
+                                ]
+                              ],
+                              []
+                            ],
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "Types",
+                                  [],
+                                  "person"
+                                ]
+                              ],
+                              []
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
                   ]
                 ]
               ]
@@ -414,6 +544,30 @@
                         "float"
                       ],
                       []
+                    ]
+                  ],
+                  [
+                    "coords",
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ]
+                      ]
                     ]
                   ]
                 ]
@@ -600,6 +754,30 @@
                         "float"
                       ],
                       []
+                    ]
+                  ],
+                  [
+                    "coords",
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ]
+                      ]
                     ]
                   ]
                 ]
@@ -868,6 +1046,30 @@
                       ],
                       []
                     ]
+                  ],
+                  [
+                    "coords",
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
                   ]
                 ]
               ]
@@ -1084,6 +1286,30 @@
                     "float"
                   ],
                   []
+                ]
+              ],
+              [
+                "coords",
+                [
+                  "Tuple",
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ]
                 ]
               ]
             ]
