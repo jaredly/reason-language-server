@@ -2351,8 +2351,8 @@ module Version6 =
            people = _converted_people
          } : Version5._Types__household -> _Types__household)
     and migrate_Types____named =
-      (fun _input_data -> _input_data : Version5._Types__named ->
-                                          _Types__named)
+      (fun _input_data -> _input_data : 'a Version5._Types__named ->
+                                          'a _Types__named)
     and migrate_Types____person =
       (fun _input_data -> _input_data : Version5._Types__person ->
                                           _Types__person)

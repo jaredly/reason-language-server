@@ -198,7 +198,12 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
 
   let typeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
 
-  let prevTypeName = Typ.constr(mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)), []);
+  let args = decl.variables->Belt.List.map(Serde.OutputType.outputExpr(Serde.OutputType.showSource));
+
+  let prevTypeName = Typ.constr(
+    mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
+    args
+  );
 
   Vb.mk(
     Pat.var(mknoloc(boundName)),
@@ -223,7 +228,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
           },
         )
       },
-      Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), [])),
+      Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), args)),
     ),
   );
 };
