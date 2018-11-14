@@ -22,25 +22,8 @@ let rec upgradeExpr = (variable, expr) => {
   | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), []) =>
     Some(Exp.apply(expIdent(Lident(upgradeName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
   | Reference(Builtin("list"), [arg]) =>
-    let%opt converter = upgradeExpr([%expr data], arg);
-    Some(
-      {
-        let%expr rec loop = items =>
-          switch (items) {
-          | [] => Belt.Result.Ok([])
-          | [data, ...rest] =>
-            switch ([%e converter]) {
-            | Belt.Result.Error(msg) => Belt.Result.Error(msg)
-            | Ok(newValue) =>
-              switch (loop(rest)) {
-              | Belt.Result.Error(msg) => Belt.Result.Error(msg)
-              | Ok(rest) => Ok([newValue, ...rest])
-              }
-            }
-          };
-        loop([%e variable]);
-      },
-    );
+    let%opt converter = upgradeExpr([%expr _item], arg);
+    Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
   | _ => None
   }
 };
@@ -51,7 +34,7 @@ let rec upgradeBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
   | (Record(items), Record(prevItems)) when prevItems == items =>
     let rec loop = (items, labels) =>
       switch (items) {
-      | [] => Some([%expr Belt.Result.Ok([%e Exp.record(labels, None)])])
+      | [] => Some(Exp.record(labels, None))
       | [(name, expr), ...rest] =>
         switch (upgradeExpr(Exp.field(variable, mknoloc(Lident(name))), expr)) {
         | None => None
@@ -60,11 +43,9 @@ let rec upgradeBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
           | None => None
           | Some(inner) =>
             Some(
-                [%expr {
-                switch ([%e upgrade]) {
-                  | Belt.Result.Error(err) => Belt.Result.Error(err)
-                  | Ok([%p Pat.var(mknoloc("_converted_" ++ name))]) => [%e inner];
-                }
+              [%expr {
+                let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e upgrade];
+                [%e inner];
               }]
             )
           }
@@ -100,7 +81,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
           None,
           Pat.var(mknoloc("_input_data")),
           if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
-            [%expr Ok(_input_data)]
+            [%expr _input_data]
           } else {
             switch (upgradeBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl)) {
               | None => failwith("Must provide upgrader. Cannot upgrade automatically.")
@@ -110,7 +91,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
         )
     },
     Typ.arrow(Nolabel, Typ.constr(mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)), []),
-    [%type: Belt.Result.t([%t Typ.constr(mknoloc(Lident(typeName)), [])], string)]
+    Typ.constr(mknoloc(Lident(typeName)), [])
     )
     )
   );

@@ -234,9 +234,9 @@ let main = configPath => {
       let rec loop = current => if (current === target) {
         [%expr Belt.Result.Ok(data)]
       } else {
-        [%expr switch ([%e expIdent(Ldot(Lident(versionModuleName(current + 1)), "upgrade_" ++ fullName))](data)) {
-          | Belt.Result.Error(error) => Belt.Result.Error(error)
-          | Ok(data) => [%e loop(current + 1)]
+        [%expr {
+          let data = [%e expIdent(Ldot(Lident(versionModuleName(current + 1)), "upgrade_" ++ fullName))](data);
+          [%e loop(current + 1)]
         }]
       };
       loop(current)

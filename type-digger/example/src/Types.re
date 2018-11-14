@@ -20,7 +20,7 @@ module V1 = {
 
 module V2 = {
   let v = 2;
-  [@upgrade person => Ok({name: person.name, age: float_of_int(person.age)})]
+  [@upgrade person => {name: person.name, age: float_of_int(person.age)}]
   type person = {
     name: string,
     age: float,

@@ -1,149 +1,6 @@
 {
-  "version": 2,
-  "pastVersions": [
-    [
-      1,
-      [
-        [
-          [
-            "Types",
-            ["Current"],
-            "household"
-          ],
-          [
-            [],
-            {
-              "name": "household",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "people",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "list"
-                      ],
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Public",
-                            [
-                              "Types",
-                              ["Current"],
-                              "person"
-                            ]
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "pets",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "list"
-                      ],
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Public",
-                            [
-                              "Types",
-                              ["Current"],
-                              "pet"
-                            ]
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "person"
-          ],
-          [
-            [],
-            {
-              "name": "person",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "name",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "age",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "int"
-                      ],
-                      []
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "pet"
-          ],
-          [
-            [],
-            {
-              "name": "pet",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "Dog",
-                    [],
-                    null
-                  ],
-                  [
-                    "Cat",
-                    [],
-                    null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ]
-      ]
-    ]
-  ],
+  "version": 1,
+  "pastVersions": [],
   "current": [
     [
       [
@@ -219,32 +76,7 @@
         "person"
       ],
       [
-        [
-          [
-            {
-              "txt": "upgrade",
-              "loc": {
-                "loc_start": {
-                  "pos_fname": "_none_",
-                  "pos_lnum": 1,
-                  "pos_bol": 0,
-                  "pos_cnum": -1
-                },
-                "loc_end": {
-                  "pos_fname": "_none_",
-                  "pos_lnum": 1,
-                  "pos_bol": 0,
-                  "pos_cnum": -1
-                },
-                "loc_ghost": true
-              }
-            },
-            [
-              "PStr",
-              ";;fun person ->\n    ((Ok ({ name = (person.name); age = (float_of_int person.age) }))\n    [@explicit_arity ])"
-            ]
-          ]
-        ],
+        [],
         {
           "name": "person",
           "variables": [],
@@ -268,7 +100,7 @@
                   "Reference",
                   [
                     "Builtin",
-                    "float"
+                    "int"
                   ],
                   []
                 ]
