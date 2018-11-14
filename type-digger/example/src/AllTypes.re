@@ -58,25 +58,6 @@ module V3 = {
   let example = {people: [{name: "Me", age: 10.}], pets: [Dog]}
 };
 
-
-
-/*
-
-type person
-type pet
-type *household
-
-type person
-type dogBreed
-type pet
-type *household
-
-
-
-*/
-
-
-
 module V4 = {
   let v = 4;
   type person = V3.person = {
@@ -105,7 +86,7 @@ module V4 = {
     pets: list(pet),
   };
 
-  let example = {people: [{name: "Me", age: 10.}], pets: [Dog(None)]}
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog(Some(Schnouser))]}
 
   /* let upgrade_Current_pet: V3.pet => pet = data => {
     switch data {
@@ -153,7 +134,7 @@ module V5 = {
     pets: list(pet),
   };
 
-  let example = {people: [{name: "Me", age: 10.}], pets: [Dog(None)]}
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog(Some(Schnouser("black")))]}
 
   /* let upgrade_Current_dogBreed: V4.dogBreed => dogBreed = data => switch data {
     | Schnouser => Schnouser("white")
@@ -201,7 +182,7 @@ module V6 = {
     pets: list(pet),
   };
 
-  let example = {people: [{name: "Me", age: 10.}], pets: [Dog]}
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog, Mouse]}
 
   /* let upgrade_Current_pet: V5.pet => pet = data => {
     switch data {
