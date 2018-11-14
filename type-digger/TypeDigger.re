@@ -102,8 +102,12 @@ let compareHashtbls = (one, two) => {
   if (Hashtbl.length(one) != Hashtbl.length(two)) {
     false
   } else {
-    Hashtbl.fold((k, v, good) => {
-      good && Hashtbl.mem(two, k) && v == Hashtbl.find(two, k)
+    Hashtbl.fold((k, (a, v), good) => {
+      good && Hashtbl.mem(two, k) && {
+        let (a2, v2) = Hashtbl.find(two, k);
+        /* TODO compare upgrade functions? Actually maybe I don't care about them being locked. */
+        v2 == v
+      }
     }, one, true)
   }
 };
