@@ -4,7 +4,7 @@ let typesAndDependencies = (tbl) => {
 
   let rec loop = (source) => {
     if (!Hashtbl.mem(collector, source)) {
-      let decl = Hashtbl.find(tbl, source);
+      let (attributes, decl) = Hashtbl.find(tbl, source);
       collector->Hashtbl.replace(source, `Reference(source));
 
       let sources = SharedTypes.SimpleType.usedSources(decl)->Belt.List.keepMap(source => switch source {

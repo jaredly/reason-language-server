@@ -17,6 +17,11 @@
     }
   ],
   "custom": [
-    {"module_": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1}
+    {"module_": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1},
+    {"module_": "Parsetree", "path": [], "name": "signature", "args": 0},
+    {"module_": "Parsetree", "path": [], "name": "structure", "args": 0},
+    {"module_": "Parsetree", "path": [], "name": "core_type", "args": 0},
+    {"module_": "Parsetree", "path": [], "name": "expression", "args": 0},
+    {"module_": "Parsetree", "path": [], "name": "pattern", "args": 0}
   ]
 }

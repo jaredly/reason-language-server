@@ -34,7 +34,7 @@ let toShortSource = source => switch source {
   | Public(r) => Public(toShortReference(r))
 };
 
-type typeMap('reference) = Hashtbl.t(shortReference, SharedTypes.SimpleType.declaration(typeSource('reference)));
+type typeMap('reference) = Hashtbl.t(shortReference, (Parsetree.attributes, SharedTypes.SimpleType.declaration(typeSource('reference))));
 
 type lockfile('reference) = {
   version: int,

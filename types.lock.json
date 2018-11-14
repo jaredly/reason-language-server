@@ -26,6 +26,49 @@
     ],
     [
       [
+        "Asttypes",
+        [],
+        "loc"
+      ],
+      {
+        "name": "loc",
+        "variables": [
+          [
+            "Variable",
+            "a"
+          ]
+        ],
+        "body": [
+          "Record",
+          [
+            [
+              "txt",
+              [
+                "Variable",
+                "a"
+              ]
+            ],
+            [
+              "loc",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "Location",
+                    [],
+                    "t"
+                  ]
+                ],
+                []
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
         "Belt__Belt_HashMapInt",
         [],
         "t"
@@ -38,6 +81,319 @@
             "arg0"
           ]
         ],
+        "body": ["Abstract"]
+      }
+    ],
+    [
+      [
+        "Location",
+        [],
+        "t"
+      ],
+      {
+        "name": "t",
+        "variables": [],
+        "body": [
+          "Record",
+          [
+            [
+              "loc_start",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "Stdlib__lexing",
+                    [],
+                    "position"
+                  ]
+                ],
+                []
+              ]
+            ],
+            [
+              "loc_end",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "Stdlib__lexing",
+                    [],
+                    "position"
+                  ]
+                ],
+                []
+              ]
+            ],
+            [
+              "loc_ghost",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "bool"
+                ],
+                []
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "attribute"
+      ],
+      {
+        "name": "attribute",
+        "variables": [],
+        "body": [
+          "Expr",
+          [
+            "Tuple",
+            [
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "Asttypes",
+                    [],
+                    "loc"
+                  ]
+                ],
+                [
+                  [
+                    "Reference",
+                    [
+                      "Builtin",
+                      "string"
+                    ],
+                    []
+                  ]
+                ]
+              ],
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "Parsetree",
+                    [],
+                    "payload"
+                  ]
+                ],
+                []
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "attributes"
+      ],
+      {
+        "name": "attributes",
+        "variables": [],
+        "body": [
+          "Expr",
+          [
+            "Reference",
+            [
+              "Builtin",
+              "list"
+            ],
+            [
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "Parsetree",
+                    [],
+                    "attribute"
+                  ]
+                ],
+                []
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "core_type"
+      ],
+      {
+        "name": "core_type",
+        "variables": [],
+        "body": ["Abstract"]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "expression"
+      ],
+      {
+        "name": "expression",
+        "variables": [],
+        "body": ["Abstract"]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "pattern"
+      ],
+      {
+        "name": "pattern",
+        "variables": [],
+        "body": ["Abstract"]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "payload"
+      ],
+      {
+        "name": "payload",
+        "variables": [],
+        "body": [
+          "Variant",
+          [
+            [
+              "PStr",
+              [
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Parsetree",
+                      [],
+                      "structure"
+                    ]
+                  ],
+                  []
+                ]
+              ],
+              null
+            ],
+            [
+              "PSig",
+              [
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Parsetree",
+                      [],
+                      "signature"
+                    ]
+                  ],
+                  []
+                ]
+              ],
+              null
+            ],
+            [
+              "PTyp",
+              [
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Parsetree",
+                      [],
+                      "core_type"
+                    ]
+                  ],
+                  []
+                ]
+              ],
+              null
+            ],
+            [
+              "PPat",
+              [
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Parsetree",
+                      [],
+                      "pattern"
+                    ]
+                  ],
+                  []
+                ],
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "option"
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Parsetree",
+                          [],
+                          "expression"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ],
+              null
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "signature"
+      ],
+      {
+        "name": "signature",
+        "variables": [],
+        "body": ["Abstract"]
+      }
+    ],
+    [
+      [
+        "Parsetree",
+        [],
+        "structure"
+      ],
+      {
+        "name": "structure",
+        "variables": [],
         "body": ["Abstract"]
       }
     ],
@@ -504,6 +860,66 @@
           ]
         ],
         "body": ["Abstract"]
+      }
+    ],
+    [
+      [
+        "Stdlib__lexing",
+        [],
+        "position"
+      ],
+      {
+        "name": "position",
+        "variables": [],
+        "body": [
+          "Record",
+          [
+            [
+              "pos_fname",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "string"
+                ],
+                []
+              ]
+            ],
+            [
+              "pos_lnum",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "int"
+                ],
+                []
+              ]
+            ],
+            [
+              "pos_bol",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "int"
+                ],
+                []
+              ]
+            ],
+            [
+              "pos_cnum",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "int"
+                ],
+                []
+              ]
+            ]
+          ]
+        ]
       }
     ],
     [
@@ -1029,30 +1445,47 @@
                 []
               ],
               [
-                "Reference",
-                [
-                  "Public",
-                  [
-                    "SharedTypes",
-                    ["SimpleType"],
-                    "declaration"
-                  ]
-                ],
+                "Tuple",
                 [
                   [
                     "Reference",
                     [
                       "Public",
                       [
-                        "TypeMap__DigTypes",
+                        "Parsetree",
                         [],
-                        "typeSource"
+                        "attributes"
+                      ]
+                    ],
+                    []
+                  ],
+                  [
+                    "Reference",
+                    [
+                      "Public",
+                      [
+                        "SharedTypes",
+                        ["SimpleType"],
+                        "declaration"
                       ]
                     ],
                     [
                       [
-                        "Variable",
-                        "reference"
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "TypeMap__DigTypes",
+                            [],
+                            "typeSource"
+                          ]
+                        ],
+                        [
+                          [
+                            "Variable",
+                            "reference"
+                          ]
+                        ]
                       ]
                     ]
                   ]

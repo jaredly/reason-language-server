@@ -16,7 +16,7 @@ let hashList = tbl => Hashtbl.fold((key, value, result) => [(key, value), ...res
 let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
   hashList(typeMap)
   ->Belt.List.sort(compare)
-  ->Belt.List.map((((moduleName, modulePath, name) as ref, decl)) => {
+  ->Belt.List.map((((moduleName, modulePath, name) as ref, (attributes, decl))) => {
     let alias = if (currentVersion == version ||
       lockedDeep[currentVersion]->Hashtbl.find(ref) == lockedDeep[version]->Hashtbl.find(ref)
     ) {
@@ -30,7 +30,7 @@ let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
     }
     Serde.OutputType.outputDeclaration(~alias, moduleName, modulePath, name, (source, args) =>  {
       Ast_helper.Typ.constr(Location.mknoloc(switch source {
-        | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
+        | TypeMap.DigTypes.NotFound => failwith("Not found type reference: " ++ moduleName ++ ".." ++ name)
         | Builtin(name) => Longident.Lident(name)
         | Public((moduleName, modulePath, name)) =>
           Longident.Lident(Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name))
@@ -52,7 +52,7 @@ let optimiseLater = (timeout, closure) => {
 let makeFns = (maker, tbl) => {
     hashList(tbl)
     ->Belt.List.sort(compare)
-    ->Belt.List.map((((moduleName, modulePath, name), decl)) => 
+    ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) => 
         maker(~moduleName, ~modulePath, ~name, decl)
     );
 };
@@ -74,6 +74,8 @@ let loadTypeMap = config => {
         path,
         name,
       ),
+      (
+        [],
       SharedTypes.SimpleType.{
         name,
         variables: {
@@ -83,6 +85,7 @@ let loadTypeMap = config => {
         },
         body: Abstract,
       },
+      )
     );
   });
 

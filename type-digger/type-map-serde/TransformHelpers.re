@@ -3,6 +3,61 @@
 open Vendor;
 open Util;
 
+let deserialize_Parsetree____structure = json => {
+  let%try text = RJson.string(json);
+  let lexbuf = Stdlib.Lexing.from_string(text);
+  Ok(Parser.implementation(Lexer.token, lexbuf))
+};
+
+let serialize_Parsetree____structure = structure => {
+  Pprintast.structure(Stdlib.Format.str_formatter, structure);
+  Json.String(Stdlib.Format.flush_str_formatter());
+};
+
+let deserialize_Parsetree____signature = json => {
+  let%try text = RJson.string(json);
+  let lexbuf = Stdlib.Lexing.from_string(text);
+  Ok(Parser.interface(Lexer.token, lexbuf))
+};
+
+let serialize_Parsetree____signature = data => {
+  Pprintast.signature(Stdlib.Format.str_formatter, data);
+  Json.String(Stdlib.Format.flush_str_formatter());
+};
+
+let deserialize_Parsetree____pattern = json => {
+  let%try text = RJson.string(json);
+  let lexbuf = Stdlib.Lexing.from_string(text);
+  Ok(Parser.parse_pattern(Lexer.token, lexbuf))
+};
+
+let serialize_Parsetree____pattern = data => {
+  Pprintast.pattern(Stdlib.Format.str_formatter, data);
+  Json.String(Stdlib.Format.flush_str_formatter());
+};
+
+let deserialize_Parsetree____core_type = json => {
+  let%try text = RJson.string(json);
+  let lexbuf = Stdlib.Lexing.from_string(text);
+  Ok(Parser.parse_core_type(Lexer.token, lexbuf))
+};
+
+let serialize_Parsetree____core_type = data => {
+  Pprintast.core_type(Stdlib.Format.str_formatter, data);
+  Json.String(Stdlib.Format.flush_str_formatter());
+};
+
+let deserialize_Parsetree____expression = json => {
+  let%try text = RJson.string(json);
+  let lexbuf = Stdlib.Lexing.from_string(text);
+  Ok(Parser.parse_expression(Lexer.token, lexbuf))
+};
+
+let serialize_Parsetree____expression = data => {
+  Pprintast.expression(Stdlib.Format.str_formatter, data);
+  Json.String(Stdlib.Format.flush_str_formatter());
+};
+
 let deserialize_Belt__Belt_HashMapInt____t = (valueTransform, json) => {
   let map = Belt.HashMap.Int.make(~hintSize=10);
   let%try items = RJson.obj(json);

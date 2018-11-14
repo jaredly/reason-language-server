@@ -95,9 +95,12 @@ let rec digType = (~tbl, ~set, ~state, ~package, ~env, ~getModule, key, t: Share
     let loop = digType(~tbl, ~set, ~state, ~package, ~getModule);
     Hashtbl.replace(set, key, ());
     Hashtbl.replace(tbl, key,
+        (
+          t.contents.typ.migrateAttributes(),
       SharedTypes.SimpleType.declMapSource(
         recursiveMapSource(~env, ~getModule, loop),
-        t.contents.typ.asSimpleDeclaration(t.name.txt)
+          t.contents.typ.asSimpleDeclaration(t.name.txt),
+        )
       )
     )
   };
@@ -163,8 +166,8 @@ let forInitialType = (~tbl, ~state, uri, fullName) => {
 
 let toSimpleMap = (tbl) => {
   let ntbl = Hashtbl.create(10);
-  Hashtbl.iter((key, value) => {
-    Hashtbl.replace(ntbl, key, SharedTypes.SimpleType.declMapSource(DigTypes.toShortSource, value))
+  Hashtbl.iter((key, (attributes, value)) => {
+    Hashtbl.replace(ntbl, key, (attributes, SharedTypes.SimpleType.declMapSource(DigTypes.toShortSource, value)))
   }, tbl);
   ntbl
 };
