@@ -84,15 +84,16 @@ module V4 = {
     age: float,
   };
 
-  [@simple.simple]
   type dogBreed =
     | Schnouser
     | Lab
     | Retriever
     | Poodle;
 
-  [@migrate (awesome) => {
-    10
+  [@upgrade pet => switch pet {
+    | Dog => Dog(None)
+    | Cat => Cat
+    | Mouse => Mouse
   }]
   type pet =
     | Dog(option(dogBreed))

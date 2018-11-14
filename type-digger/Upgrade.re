@@ -24,35 +24,90 @@ let rec upgradeExpr = (variable, expr) => {
   | Reference(Builtin("list"), [arg]) =>
     let%opt converter = upgradeExpr([%expr _item], arg);
     Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
+  | Reference(Builtin("array"), [arg]) =>
+    let%opt converter = upgradeExpr([%expr _item], arg);
+    Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
   | _ => None
   }
+};
+
+let rec mapAll = (items, fn) => switch items {
+  | [] => Some([])
+  | [one, ...rest] => switch (fn(one)) {
+    | None => None
+    | Some(one) => switch (mapAll(rest, fn)) {
+      | None => None
+      | Some(rest) => Some([one, ...rest])
+    }
+  }
+};
+
+let rec mapAllWithIndex = (items, fn) => {
+  let rec loop = (i, items) =>
+    switch (items) {
+    | [] => Some([])
+    | [one, ...rest] =>
+      switch (fn(i, one)) {
+      | None => None
+      | Some(one) =>
+        switch (loop(i + 1, rest)) {
+        | None => None
+        | Some(rest) => Some([one, ...rest])
+        }
+      }
+    };
+  loop(0, items);
 };
 
 let rec upgradeBetween = (~version, ~lockedDeep, variable, name, thisType, prevType) =>
   switch (thisType.body, prevType.body) {
   | (Expr(current), Expr(prev)) when current == prev => upgradeExpr(variable, current)
-  | (Record(items), Record(prevItems)) when prevItems == items =>
+  | (Record(items), Record(prevItems)) when items->Belt.List.every(item => prevItems->Belt.List.has(item, (==))) =>
     let rec loop = (items, labels) =>
       switch (items) {
       | [] => Some(Exp.record(labels, None))
       | [(name, expr), ...rest] =>
-        switch (upgradeExpr(Exp.field(variable, mknoloc(Lident(name))), expr)) {
-        | None => None
-        | Some(upgrade) =>
-          switch (loop(rest, [(mknoloc(Lident(name)), expIdent(Lident("_converted_" ++ name))), ...labels])) {
-          | None => None
-          | Some(inner) =>
-            Some(
-              [%expr {
-                let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e upgrade];
-                [%e inner];
-              }]
-            )
-          }
-        }
+        let%opt upgrade = upgradeExpr(Exp.field(variable, mknoloc(Lident(name))), expr);
+        let%opt inner = loop(rest, [(mknoloc(Lident(name)), expIdent(Lident("_converted_" ++ name))), ...labels]);
+        Some(
+          [%expr {
+            let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e upgrade];
+            [%e inner];
+          }]
+        )
       };
     loop(items, []);
-  | (Variant(items), Record(prevItems)) => None
+  | (Variant(items), Variant(prevItems)) when prevItems->Belt.List.every(item => items->Belt.List.has(item, (==))) => {
+    let%opt cases = prevItems->mapAll(((name, args, _result)) => {
+      let%opt_wrap upgraders = args->mapAllWithIndex((i, arg) => {
+        let name = "arg" ++ string_of_int(i)
+        let%opt upgrader = upgradeExpr(expIdent(Lident(name)), arg);
+        Some((Pat.var(mknoloc(name)), upgrader))
+      });
+      let (pat, exp) = switch upgraders {
+        | [] => (None, None)
+        | _ => {
+          let (pats, exps) = Belt.List.unzip(upgraders);
+          (Some(Pat.tuple(pats)), Some(Exp.tuple(exps)))
+        }
+      };
+      Exp.case(Pat.construct(mknoloc(Lident(name)), pat), Exp.construct(mknoloc(Lident(name)), exp));
+    });
+    Some(Exp.match(variable, cases));
+        
+        /* switch (loop(rest, [Exp.case(Pat.construct(mknoloc(Lident(name)), None), expIdent(Lident("_converted_" ++ name))), ...labels])) {
+        | None => None
+        | Some(inner) =>
+          Some(
+            [%expr {
+              let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e upgrade];
+              [%e inner];
+            }]
+          )
+        }
+      };
+    loop(items, []); */
+  }
   | _ => None
   };
 
