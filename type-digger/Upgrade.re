@@ -110,7 +110,17 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
 
   let upgradeAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => switch (txt, payload) {
     | ("upgrade", Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])) => Some(expr)
-    | ("upgrade", _) => failwith("Upgrade attribute must be an expression")
+    | ("upgrade", Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
+      {
+        pvb_pat: {ppat_desc: Ppat_any},
+        pvb_expr: expr
+      }
+    ])}])) => Some(expr)
+    | ("upgrade", Parsetree.PStr(items)) => {
+      Printast.structure(0, Stdlib.Format.str_formatter, items);
+      print_endline(Stdlib.Format.flush_str_formatter());
+      failwith("Upgrade attribute must be an expression")
+    }
     | _ => None
   });
 

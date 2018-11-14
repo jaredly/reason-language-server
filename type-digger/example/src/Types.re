@@ -181,18 +181,16 @@ module V5 = {
 
 module V6 = {
   let v = 4;
-  [@awesome]
   type person = V3.person = {
     name: string,
     age: float,
   };
 
-  [@things]
-  [@migrate pet => switch pat {
+  [@upgrade (pet => switch pet {
   | Dog(dogBreed) => Dog
   | Cat => Cat
   | Mouse => Mouse
-  }]
+  })]
   type pet =
     | Dog
     | Cat
@@ -221,4 +219,4 @@ module V6 = {
   };
 };
 
-module Current = { include V5 };
+module Current = { include V6 };
