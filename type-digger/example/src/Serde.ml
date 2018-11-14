@@ -1,17 +1,17 @@
 module Version1 =
   struct
-    type _Types__Current__household =
+    type _Types__household =
       {
-      people: _Types__Current__person list ;
-      pets: _Types__Current__pet list }
-    and _Types__Current__person = {
+      people: _Types__person list ;
+      pets: _Types__pet list }
+    and _Types__person = {
       name: string ;
       age: int }
-    and _Types__Current__pet =
+    and _Types__pet =
       | Dog 
       | Cat 
-    let rec (deserialize_Types__Current__household :
-      Js.Json.t -> (_Types__Current__household, string) Belt.Result.t) =
+    let rec (deserialize_Types____household :
+      Js.Json.t -> (_Types__household, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -22,8 +22,7 @@ module Version1 =
                  (match (fun list ->
                            match Js.Json.classify list with
                            | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_Types__Current__pet in
+                               let transformer = deserialize_Types____pet in
                                let rec loop items =
                                  match items with
                                  | [] -> ((Belt.Result.Ok ([]))
@@ -63,7 +62,7 @@ module Version1 =
                                      | ((JSONArray
                                          (items))[@explicit_arity ]) ->
                                          let transformer =
-                                           deserialize_Types__Current__person in
+                                           deserialize_Types____person in
                                          let rec loop items =
                                            match items with
                                            | [] -> ((Belt.Result.Ok ([]))
@@ -110,8 +109,8 @@ module Version1 =
                                 Belt.Result.Ok
                                   { people = attr_people; pets = attr_pets }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__person :
-      Js.Json.t -> (_Types__Current__person, string) Belt.Result.t) =
+    and (deserialize_Types____person :
+      Js.Json.t -> (_Types__person, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -151,19 +150,18 @@ module Version1 =
                                 Belt.Result.Ok
                                   { name = attr_name; age = attr_age }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__pet :
-      Js.Json.t -> (_Types__Current__pet, string) Belt.Result.t) =
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Dog") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Dog : _Types__Current__pet)
+            Belt.Result.Ok (Dog : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Cat : _Types__Current__pet)
+            Belt.Result.Ok (Cat : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types__Current__household :
-      _Types__Current__household -> Js.Json.t) =
+    and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -171,17 +169,15 @@ module Version1 =
                  (((fun list ->
                       Js.Json.array
                         (Belt.List.toArray
-                           (Belt.List.map list
-                              serialize_Types__Current__person))))
+                           (Belt.List.map list serialize_Types____person))))
                     record.people));("pets",
                                       (((fun list ->
                                            Js.Json.array
                                              (Belt.List.toArray
                                                 (Belt.List.map list
-                                                   serialize_Types__Current__pet))))
+                                                   serialize_Types____pet))))
                                          record.pets))|])
-    and (serialize_Types__Current__person :
-      _Types__Current__person -> Js.Json.t) =
+    and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -191,7 +187,7 @@ module Version1 =
                                                                (float_of_int
                                                                   int)))
                                                            record.age))|])
-    and (serialize_Types__Current__pet : _Types__Current__pet -> Js.Json.t) =
+    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
@@ -199,19 +195,18 @@ module Version1 =
   end
 module Version2 =
   struct
-    type _Types__Current__household =
+    type _Types__household =
       {
-      people: _Types__Current__person list ;
-      pets: _Types__Current__pet list }
-    and _Types__Current__person = Types.Current.person =
-      {
+      people: _Types__person list ;
+      pets: _Types__pet list }
+    and _Types__person = Types.person = {
       name: string ;
       age: float }
-    and _Types__Current__pet = Version1._Types__Current__pet =
+    and _Types__pet = Version1._Types__pet =
       | Dog 
       | Cat 
-    let rec (deserialize_Types__Current__household :
-      Js.Json.t -> (_Types__Current__household, string) Belt.Result.t) =
+    let rec (deserialize_Types____household :
+      Js.Json.t -> (_Types__household, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -222,8 +217,7 @@ module Version2 =
                  (match (fun list ->
                            match Js.Json.classify list with
                            | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_Types__Current__pet in
+                               let transformer = deserialize_Types____pet in
                                let rec loop items =
                                  match items with
                                  | [] -> ((Belt.Result.Ok ([]))
@@ -263,7 +257,7 @@ module Version2 =
                                      | ((JSONArray
                                          (items))[@explicit_arity ]) ->
                                          let transformer =
-                                           deserialize_Types__Current__person in
+                                           deserialize_Types____person in
                                          let rec loop items =
                                            match items with
                                            | [] -> ((Belt.Result.Ok ([]))
@@ -310,8 +304,8 @@ module Version2 =
                                 Belt.Result.Ok
                                   { people = attr_people; pets = attr_pets }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__person :
-      Js.Json.t -> (_Types__Current__person, string) Belt.Result.t) =
+    and (deserialize_Types____person :
+      Js.Json.t -> (_Types__person, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -350,19 +344,18 @@ module Version2 =
                                 Belt.Result.Ok
                                   { name = attr_name; age = attr_age }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__pet :
-      Js.Json.t -> (_Types__Current__pet, string) Belt.Result.t) =
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Dog") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Dog : _Types__Current__pet)
+            Belt.Result.Ok (Dog : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Cat : _Types__Current__pet)
+            Belt.Result.Ok (Cat : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types__Current__household :
-      _Types__Current__household -> Js.Json.t) =
+    and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -370,63 +363,59 @@ module Version2 =
                  (((fun list ->
                       Js.Json.array
                         (Belt.List.toArray
-                           (Belt.List.map list
-                              serialize_Types__Current__person))))
+                           (Belt.List.map list serialize_Types____person))))
                     record.people));("pets",
                                       (((fun list ->
                                            Js.Json.array
                                              (Belt.List.toArray
                                                 (Belt.List.map list
-                                                   serialize_Types__Current__pet))))
+                                                   serialize_Types____pet))))
                                          record.pets))|])
-    and (serialize_Types__Current__person :
-      _Types__Current__person -> Js.Json.t) =
+    and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
              [|("name", (Js.Json.string record.name));("age",
                                                         (Js.Json.number
                                                            record.age))|])
-    and (serialize_Types__Current__pet : _Types__Current__pet -> Js.Json.t) =
+    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
-    let rec upgrade_Types__Current__household =
+    let rec upgrade_Types____household =
       (fun _input_data ->
          let _converted_people =
            (Belt.List.map _input_data.people)
-             (fun _item -> upgrade_Types__Current__person _item) in
+             (fun _item -> upgrade_Types____person _item) in
          let _converted_pets =
            (Belt.List.map _input_data.pets)
-             (fun _item -> upgrade_Types__Current__pet _item) in
-         { pets = _converted_pets; people = _converted_people } : Version1._Types__Current__household
+             (fun _item -> upgrade_Types____pet _item) in
+         { pets = _converted_pets; people = _converted_people } : Version1._Types__household
                                                                     ->
-                                                                    _Types__Current__household)
-    and upgrade_Types__Current__person =
+                                                                    _Types__household)
+    and upgrade_Types____person =
       (fun person ->
          { name = (person.name); age = (float_of_int person.age) } : 
-      Version1._Types__Current__person -> _Types__Current__person)
-    and upgrade_Types__Current__pet =
-      (fun _input_data -> _input_data : Version1._Types__Current__pet ->
-                                          _Types__Current__pet)
+      Version1._Types__person -> _Types__person)
+    and upgrade_Types____pet =
+      (fun _input_data -> _input_data : Version1._Types__pet -> _Types__pet)
   end
 module Version3 =
   struct
-    type _Types__Current__household = Types.Current.household =
+    type _Types__household = Types.household =
       {
-      people: _Types__Current__person list ;
-      pets: _Types__Current__pet list }
-    and _Types__Current__person = Types.Current.person =
-      {
+      people: _Types__person list ;
+      pets: _Types__pet list }
+    and _Types__person = Types.person = {
       name: string ;
       age: float }
-    and _Types__Current__pet = Types.Current.pet =
+    and _Types__pet = Types.pet =
       | Dog 
       | Cat 
       | Mouse 
-    let rec (deserialize_Types__Current__household :
-      Js.Json.t -> (_Types__Current__household, string) Belt.Result.t) =
+    let rec (deserialize_Types____household :
+      Js.Json.t -> (_Types__household, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -437,8 +426,7 @@ module Version3 =
                  (match (fun list ->
                            match Js.Json.classify list with
                            | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_Types__Current__pet in
+                               let transformer = deserialize_Types____pet in
                                let rec loop items =
                                  match items with
                                  | [] -> ((Belt.Result.Ok ([]))
@@ -478,7 +466,7 @@ module Version3 =
                                      | ((JSONArray
                                          (items))[@explicit_arity ]) ->
                                          let transformer =
-                                           deserialize_Types__Current__person in
+                                           deserialize_Types____person in
                                          let rec loop items =
                                            match items with
                                            | [] -> ((Belt.Result.Ok ([]))
@@ -525,8 +513,8 @@ module Version3 =
                                 Belt.Result.Ok
                                   { people = attr_people; pets = attr_pets }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__person :
-      Js.Json.t -> (_Types__Current__person, string) Belt.Result.t) =
+    and (deserialize_Types____person :
+      Js.Json.t -> (_Types__person, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -565,22 +553,21 @@ module Version3 =
                                 Belt.Result.Ok
                                   { name = attr_name; age = attr_age }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__pet :
-      Js.Json.t -> (_Types__Current__pet, string) Belt.Result.t) =
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Dog") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Dog : _Types__Current__pet)
+            Belt.Result.Ok (Dog : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Cat : _Types__Current__pet)
+            Belt.Result.Ok (Cat : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Mouse : _Types__Current__pet)
+            Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types__Current__household :
-      _Types__Current__household -> Js.Json.t) =
+    and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -588,85 +575,82 @@ module Version3 =
                  (((fun list ->
                       Js.Json.array
                         (Belt.List.toArray
-                           (Belt.List.map list
-                              serialize_Types__Current__person))))
+                           (Belt.List.map list serialize_Types____person))))
                     record.people));("pets",
                                       (((fun list ->
                                            Js.Json.array
                                              (Belt.List.toArray
                                                 (Belt.List.map list
-                                                   serialize_Types__Current__pet))))
+                                                   serialize_Types____pet))))
                                          record.pets))|])
-    and (serialize_Types__Current__person :
-      _Types__Current__person -> Js.Json.t) =
+    and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
              [|("name", (Js.Json.string record.name));("age",
                                                         (Js.Json.number
                                                            record.age))|])
-    and (serialize_Types__Current__pet : _Types__Current__pet -> Js.Json.t) =
+    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
-    let rec upgrade_Types__Current__household =
+    let rec upgrade_Types____household =
       (fun _input_data ->
          let _converted_people =
            (Belt.List.map _input_data.people)
-             (fun _item -> upgrade_Types__Current__person _item) in
+             (fun _item -> upgrade_Types____person _item) in
          let _converted_pets =
            (Belt.List.map _input_data.pets)
-             (fun _item -> upgrade_Types__Current__pet _item) in
-         { pets = _converted_pets; people = _converted_people } : Version2._Types__Current__household
+             (fun _item -> upgrade_Types____pet _item) in
+         { pets = _converted_pets; people = _converted_people } : Version2._Types__household
                                                                     ->
-                                                                    _Types__Current__household)
-    and upgrade_Types__Current__person =
-      (fun _input_data -> _input_data : Version2._Types__Current__person ->
-                                          _Types__Current__person)
-    and upgrade_Types__Current__pet =
+                                                                    _Types__household)
+    and upgrade_Types____person =
+      (fun _input_data -> _input_data : Version2._Types__person ->
+                                          _Types__person)
+    and upgrade_Types____pet =
       (fun _input_data -> match _input_data with | Dog -> Dog | Cat -> Cat : 
-      Version2._Types__Current__pet -> _Types__Current__pet)
+      Version2._Types__pet -> _Types__pet)
   end
 module Version4 =
   struct
-    type _Types__Current__dogBreed =
+    type _Types__dogBreed =
       | Schnouser 
       | Lab 
       | Retriever 
       | Poodle 
-    and _Types__Current__household =
+    and _Types__household =
       {
-      people: _Types__Current__person list ;
-      pets: _Types__Current__pet list }
-    and _Types__Current__person = Types.Current.person =
-      {
+      people: _Types__person list ;
+      pets: _Types__pet list }
+    and _Types__person = Types.person = {
       name: string ;
       age: float }
-    and _Types__Current__pet =
-      | Dog of _Types__Current__dogBreed option 
+    and _Types__pet =
+      | Dog of _Types__dogBreed option 
       | Cat 
       | Mouse 
-    let rec (deserialize_Types__Current__dogBreed :
-      Js.Json.t -> (_Types__Current__dogBreed, string) Belt.Result.t) =
+    let rec (deserialize_Types____dogBreed :
+      Js.Json.t -> (_Types__dogBreed, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Schnouser") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Schnouser : _Types__Current__dogBreed)
+            Belt.Result.Ok (Schnouser : _Types__dogBreed)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Lab") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Lab : _Types__Current__dogBreed)
+            Belt.Result.Ok (Lab : _Types__dogBreed)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Retriever") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Retriever : _Types__Current__dogBreed)
+            Belt.Result.Ok (Retriever : _Types__dogBreed)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Poodle") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Poodle : _Types__Current__dogBreed)
+            Belt.Result.Ok (Poodle : _Types__dogBreed)
         | _ -> Error "Expected an array"
-    and (deserialize_Types__Current__household :
-      Js.Json.t -> (_Types__Current__household, string) Belt.Result.t) =
+    and (deserialize_Types____household :
+      Js.Json.t -> (_Types__household, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -677,8 +661,7 @@ module Version4 =
                  (match (fun list ->
                            match Js.Json.classify list with
                            | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_Types__Current__pet in
+                               let transformer = deserialize_Types____pet in
                                let rec loop items =
                                  match items with
                                  | [] -> ((Belt.Result.Ok ([]))
@@ -718,7 +701,7 @@ module Version4 =
                                      | ((JSONArray
                                          (items))[@explicit_arity ]) ->
                                          let transformer =
-                                           deserialize_Types__Current__person in
+                                           deserialize_Types____person in
                                          let rec loop items =
                                            match items with
                                            | [] -> ((Belt.Result.Ok ([]))
@@ -765,8 +748,8 @@ module Version4 =
                                 Belt.Result.Ok
                                   { people = attr_people; pets = attr_pets }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__person :
-      Js.Json.t -> (_Types__Current__person, string) Belt.Result.t) =
+    and (deserialize_Types____person :
+      Js.Json.t -> (_Types__person, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -805,8 +788,8 @@ module Version4 =
                                 Belt.Result.Ok
                                   { name = attr_name; age = attr_age }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__pet :
-      Js.Json.t -> (_Types__Current__pet, string) Belt.Result.t) =
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag;arg0|] when
@@ -825,28 +808,26 @@ module Version4 =
                               | ((Ok (value))[@explicit_arity ]) ->
                                   ((Ok (((Some (value))[@explicit_arity ])))
                                   [@explicit_arity ])))
-                      deserialize_Types__Current__dogBreed) arg0
+                      deserialize_Types____dogBreed) arg0
              with
              | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Dog (arg0) : _Types__Current__pet)
+                 Belt.Result.Ok (Dog (arg0) : _Types__pet)
              | Error error -> Error error)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Cat : _Types__Current__pet)
+            Belt.Result.Ok (Cat : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Mouse : _Types__Current__pet)
+            Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types__Current__dogBreed :
-      _Types__Current__dogBreed -> Js.Json.t) =
+    and (serialize_Types____dogBreed : _Types__dogBreed -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Schnouser -> Js.Json.array [|(Js.Json.string "Schnouser")|]
         | Lab -> Js.Json.array [|(Js.Json.string "Lab")|]
         | Retriever -> Js.Json.array [|(Js.Json.string "Retriever")|]
         | Poodle -> Js.Json.array [|(Js.Json.string "Poodle")|]
-    and (serialize_Types__Current__household :
-      _Types__Current__household -> Js.Json.t) =
+    and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -854,24 +835,22 @@ module Version4 =
                  (((fun list ->
                       Js.Json.array
                         (Belt.List.toArray
-                           (Belt.List.map list
-                              serialize_Types__Current__person))))
+                           (Belt.List.map list serialize_Types____person))))
                     record.people));("pets",
                                       (((fun list ->
                                            Js.Json.array
                                              (Belt.List.toArray
                                                 (Belt.List.map list
-                                                   serialize_Types__Current__pet))))
+                                                   serialize_Types____pet))))
                                          record.pets))|])
-    and (serialize_Types__Current__person :
-      _Types__Current__person -> Js.Json.t) =
+    and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
              [|("name", (Js.Json.string record.name));("age",
                                                         (Js.Json.number
                                                            record.age))|])
-    and (serialize_Types__Current__pet : _Types__Current__pet -> Js.Json.t) =
+    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Dog arg0 ->
@@ -882,53 +861,50 @@ module Version4 =
                                                  (inner))[@explicit_arity ])
                                                  -> transformer inner
                                              | None -> Js.Json.null))
-                                           serialize_Types__Current__dogBreed)
-                                          arg0)|]
+                                           serialize_Types____dogBreed) arg0)|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
-    let rec upgrade_Types__Current__household =
+    let rec upgrade_Types____household =
       (fun _input_data ->
          let _converted_people =
            (Belt.List.map _input_data.people)
-             (fun _item -> upgrade_Types__Current__person _item) in
+             (fun _item -> upgrade_Types____person _item) in
          let _converted_pets =
            (Belt.List.map _input_data.pets)
-             (fun _item -> upgrade_Types__Current__pet _item) in
-         { pets = _converted_pets; people = _converted_people } : Version3._Types__Current__household
+             (fun _item -> upgrade_Types____pet _item) in
+         { pets = _converted_pets; people = _converted_people } : Version3._Types__household
                                                                     ->
-                                                                    _Types__Current__household)
-    and upgrade_Types__Current__person =
-      (fun _input_data -> _input_data : Version3._Types__Current__person ->
-                                          _Types__Current__person)
-    and upgrade_Types__Current__pet =
+                                                                    _Types__household)
+    and upgrade_Types____person =
+      (fun _input_data -> _input_data : Version3._Types__person ->
+                                          _Types__person)
+    and upgrade_Types____pet =
       (fun pet ->
          match pet with
          | Dog -> ((Dog None)[@explicit_arity ])
          | Cat -> Cat
-         | Mouse -> Mouse : Version3._Types__Current__pet ->
-                              _Types__Current__pet)
+         | Mouse -> Mouse : Version3._Types__pet -> _Types__pet)
   end
 module Version5 =
   struct
-    type _Types__Current__dogBreed =
+    type _Types__dogBreed =
       | Schnouser of string 
       | Lab 
       | Retriever 
       | Poodle 
-    and _Types__Current__household =
+    and _Types__household =
       {
-      people: _Types__Current__person list ;
-      pets: _Types__Current__pet list }
-    and _Types__Current__person = Types.Current.person =
-      {
+      people: _Types__person list ;
+      pets: _Types__pet list }
+    and _Types__person = Types.person = {
       name: string ;
       age: float }
-    and _Types__Current__pet =
-      | Dog of _Types__Current__dogBreed option 
+    and _Types__pet =
+      | Dog of _Types__dogBreed option 
       | Cat 
       | Mouse 
-    let rec (deserialize_Types__Current__dogBreed :
-      Js.Json.t -> (_Types__Current__dogBreed, string) Belt.Result.t) =
+    let rec (deserialize_Types____dogBreed :
+      Js.Json.t -> (_Types__dogBreed, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag;arg0|] when
@@ -941,21 +917,20 @@ module Version5 =
                      arg0
              with
              | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok
-                   (Schnouser (arg0) : _Types__Current__dogBreed)
+                 Belt.Result.Ok (Schnouser (arg0) : _Types__dogBreed)
              | Error error -> Error error)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Lab") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Lab : _Types__Current__dogBreed)
+            Belt.Result.Ok (Lab : _Types__dogBreed)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Retriever") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Retriever : _Types__Current__dogBreed)
+            Belt.Result.Ok (Retriever : _Types__dogBreed)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Poodle") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Poodle : _Types__Current__dogBreed)
+            Belt.Result.Ok (Poodle : _Types__dogBreed)
         | _ -> Error "Expected an array"
-    and (deserialize_Types__Current__household :
-      Js.Json.t -> (_Types__Current__household, string) Belt.Result.t) =
+    and (deserialize_Types____household :
+      Js.Json.t -> (_Types__household, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -966,8 +941,7 @@ module Version5 =
                  (match (fun list ->
                            match Js.Json.classify list with
                            | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_Types__Current__pet in
+                               let transformer = deserialize_Types____pet in
                                let rec loop items =
                                  match items with
                                  | [] -> ((Belt.Result.Ok ([]))
@@ -1007,7 +981,7 @@ module Version5 =
                                      | ((JSONArray
                                          (items))[@explicit_arity ]) ->
                                          let transformer =
-                                           deserialize_Types__Current__person in
+                                           deserialize_Types____person in
                                          let rec loop items =
                                            match items with
                                            | [] -> ((Belt.Result.Ok ([]))
@@ -1054,8 +1028,8 @@ module Version5 =
                                 Belt.Result.Ok
                                   { people = attr_people; pets = attr_pets }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__person :
-      Js.Json.t -> (_Types__Current__person, string) Belt.Result.t) =
+    and (deserialize_Types____person :
+      Js.Json.t -> (_Types__person, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -1094,8 +1068,8 @@ module Version5 =
                                 Belt.Result.Ok
                                   { name = attr_name; age = attr_age }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__pet :
-      Js.Json.t -> (_Types__Current__pet, string) Belt.Result.t) =
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag;arg0|] when
@@ -1114,20 +1088,19 @@ module Version5 =
                               | ((Ok (value))[@explicit_arity ]) ->
                                   ((Ok (((Some (value))[@explicit_arity ])))
                                   [@explicit_arity ])))
-                      deserialize_Types__Current__dogBreed) arg0
+                      deserialize_Types____dogBreed) arg0
              with
              | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Dog (arg0) : _Types__Current__pet)
+                 Belt.Result.Ok (Dog (arg0) : _Types__pet)
              | Error error -> Error error)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Cat : _Types__Current__pet)
+            Belt.Result.Ok (Cat : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Mouse : _Types__Current__pet)
+            Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types__Current__dogBreed :
-      _Types__Current__dogBreed -> Js.Json.t) =
+    and (serialize_Types____dogBreed : _Types__dogBreed -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Schnouser arg0 ->
@@ -1136,8 +1109,7 @@ module Version5 =
         | Lab -> Js.Json.array [|(Js.Json.string "Lab")|]
         | Retriever -> Js.Json.array [|(Js.Json.string "Retriever")|]
         | Poodle -> Js.Json.array [|(Js.Json.string "Poodle")|]
-    and (serialize_Types__Current__household :
-      _Types__Current__household -> Js.Json.t) =
+    and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -1145,24 +1117,22 @@ module Version5 =
                  (((fun list ->
                       Js.Json.array
                         (Belt.List.toArray
-                           (Belt.List.map list
-                              serialize_Types__Current__person))))
+                           (Belt.List.map list serialize_Types____person))))
                     record.people));("pets",
                                       (((fun list ->
                                            Js.Json.array
                                              (Belt.List.toArray
                                                 (Belt.List.map list
-                                                   serialize_Types__Current__pet))))
+                                                   serialize_Types____pet))))
                                          record.pets))|])
-    and (serialize_Types__Current__person :
-      _Types__Current__person -> Js.Json.t) =
+    and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
              [|("name", (Js.Json.string record.name));("age",
                                                         (Js.Json.number
                                                            record.age))|])
-    and (serialize_Types__Current__pet : _Types__Current__pet -> Js.Json.t) =
+    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Dog arg0 ->
@@ -1173,33 +1143,31 @@ module Version5 =
                                                  (inner))[@explicit_arity ])
                                                  -> transformer inner
                                              | None -> Js.Json.null))
-                                           serialize_Types__Current__dogBreed)
-                                          arg0)|]
+                                           serialize_Types____dogBreed) arg0)|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
-    let rec upgrade_Types__Current__dogBreed =
+    let rec upgrade_Types____dogBreed =
       (fun breed ->
          match breed with
          | Schnouser -> ((Schnouser "white")[@explicit_arity ])
          | Lab -> Lab
          | Retriever -> Retriever
-         | Poodle -> Poodle : Version4._Types__Current__dogBreed ->
-                                _Types__Current__dogBreed)
-    and upgrade_Types__Current__household =
+         | Poodle -> Poodle : Version4._Types__dogBreed -> _Types__dogBreed)
+    and upgrade_Types____household =
       (fun _input_data ->
          let _converted_people =
            (Belt.List.map _input_data.people)
-             (fun _item -> upgrade_Types__Current__person _item) in
+             (fun _item -> upgrade_Types____person _item) in
          let _converted_pets =
            (Belt.List.map _input_data.pets)
-             (fun _item -> upgrade_Types__Current__pet _item) in
-         { pets = _converted_pets; people = _converted_people } : Version4._Types__Current__household
+             (fun _item -> upgrade_Types____pet _item) in
+         { pets = _converted_pets; people = _converted_people } : Version4._Types__household
                                                                     ->
-                                                                    _Types__Current__household)
-    and upgrade_Types__Current__person =
-      (fun _input_data -> _input_data : Version4._Types__Current__person ->
-                                          _Types__Current__person)
-    and upgrade_Types__Current__pet =
+                                                                    _Types__household)
+    and upgrade_Types____person =
+      (fun _input_data -> _input_data : Version4._Types__person ->
+                                          _Types__person)
+    and upgrade_Types____pet =
       (fun _input_data ->
          match _input_data with
          | Dog (arg0) ->
@@ -1207,28 +1175,26 @@ module Version5 =
                (((match arg0 with
                   | None -> None
                   | ((Some (_item))[@explicit_arity ]) ->
-                      ((Some ((upgrade_Types__Current__dogBreed _item)))
+                      ((Some ((upgrade_Types____dogBreed _item)))
                       [@explicit_arity ]))))
          | Cat -> Cat
-         | Mouse -> Mouse : Version4._Types__Current__pet ->
-                              _Types__Current__pet)
+         | Mouse -> Mouse : Version4._Types__pet -> _Types__pet)
   end
 module Version6 =
   struct
-    type _Types__Current__household = Types.Current.household =
+    type _Types__household = Types.household =
       {
-      people: _Types__Current__person list ;
-      pets: _Types__Current__pet list }
-    and _Types__Current__person = Types.Current.person =
-      {
+      people: _Types__person list ;
+      pets: _Types__pet list }
+    and _Types__person = Types.person = {
       name: string ;
       age: float }
-    and _Types__Current__pet = Types.Current.pet =
+    and _Types__pet = Types.pet =
       | Dog 
       | Cat 
       | Mouse 
-    let rec (deserialize_Types__Current__household :
-      Js.Json.t -> (_Types__Current__household, string) Belt.Result.t) =
+    let rec (deserialize_Types____household :
+      Js.Json.t -> (_Types__household, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -1239,8 +1205,7 @@ module Version6 =
                  (match (fun list ->
                            match Js.Json.classify list with
                            | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_Types__Current__pet in
+                               let transformer = deserialize_Types____pet in
                                let rec loop items =
                                  match items with
                                  | [] -> ((Belt.Result.Ok ([]))
@@ -1280,7 +1245,7 @@ module Version6 =
                                      | ((JSONArray
                                          (items))[@explicit_arity ]) ->
                                          let transformer =
-                                           deserialize_Types__Current__person in
+                                           deserialize_Types____person in
                                          let rec loop items =
                                            match items with
                                            | [] -> ((Belt.Result.Ok ([]))
@@ -1327,8 +1292,8 @@ module Version6 =
                                 Belt.Result.Ok
                                   { people = attr_people; pets = attr_pets }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__person :
-      Js.Json.t -> (_Types__Current__person, string) Belt.Result.t) =
+    and (deserialize_Types____person :
+      Js.Json.t -> (_Types__person, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
@@ -1367,22 +1332,21 @@ module Version6 =
                                 Belt.Result.Ok
                                   { name = attr_name; age = attr_age }))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
-    and (deserialize_Types__Current__pet :
-      Js.Json.t -> (_Types__Current__pet, string) Belt.Result.t) =
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Dog") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Dog : _Types__Current__pet)
+            Belt.Result.Ok (Dog : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Cat : _Types__Current__pet)
+            Belt.Result.Ok (Cat : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Mouse : _Types__Current__pet)
+            Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types__Current__household :
-      _Types__Current__household -> Js.Json.t) =
+    and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
@@ -1390,50 +1354,47 @@ module Version6 =
                  (((fun list ->
                       Js.Json.array
                         (Belt.List.toArray
-                           (Belt.List.map list
-                              serialize_Types__Current__person))))
+                           (Belt.List.map list serialize_Types____person))))
                     record.people));("pets",
                                       (((fun list ->
                                            Js.Json.array
                                              (Belt.List.toArray
                                                 (Belt.List.map list
-                                                   serialize_Types__Current__pet))))
+                                                   serialize_Types____pet))))
                                          record.pets))|])
-    and (serialize_Types__Current__person :
-      _Types__Current__person -> Js.Json.t) =
+    and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
              [|("name", (Js.Json.string record.name));("age",
                                                         (Js.Json.number
                                                            record.age))|])
-    and (serialize_Types__Current__pet : _Types__Current__pet -> Js.Json.t) =
+    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
         | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
-    let rec upgrade_Types__Current__household =
+    let rec upgrade_Types____household =
       (fun _input_data ->
          let _converted_people =
            (Belt.List.map _input_data.people)
-             (fun _item -> upgrade_Types__Current__person _item) in
+             (fun _item -> upgrade_Types____person _item) in
          let _converted_pets =
            (Belt.List.map _input_data.pets)
-             (fun _item -> upgrade_Types__Current__pet _item) in
-         { pets = _converted_pets; people = _converted_people } : Version5._Types__Current__household
+             (fun _item -> upgrade_Types____pet _item) in
+         { pets = _converted_pets; people = _converted_people } : Version5._Types__household
                                                                     ->
-                                                                    _Types__Current__household)
-    and upgrade_Types__Current__person =
-      (fun _input_data -> _input_data : Version5._Types__Current__person ->
-                                          _Types__Current__person)
-    and upgrade_Types__Current__pet =
+                                                                    _Types__household)
+    and upgrade_Types____person =
+      (fun _input_data -> _input_data : Version5._Types__person ->
+                                          _Types__person)
+    and upgrade_Types____pet =
       (fun pet ->
          match pet with
          | ((Dog dogBreed)[@explicit_arity ]) -> Dog
          | Cat -> Cat
-         | Mouse -> Mouse : Version5._Types__Current__pet ->
-                              _Types__Current__pet)
+         | Mouse -> Mouse : Version5._Types__pet -> _Types__pet)
   end
 let currentVersion = 6
 let parseVersion json =
@@ -1448,8 +1409,7 @@ let parseVersion json =
 let wrapWithVersion version payload =
   Js.Json.array [|(Js.Json.number (float_of_int version));payload|]
 let serializeHousehold data =
-  wrapWithVersion currentVersion
-    (Version6.serialize_Types__Current__household data)
+  wrapWithVersion currentVersion (Version6.serialize_Types____household data)
 and deserializeHousehold data =
   match parseVersion data with
   | ((Belt.Result.Error (err))[@explicit_arity ]) ->
@@ -1457,55 +1417,55 @@ and deserializeHousehold data =
   | ((Ok (version, data))[@implicit_arity ]) ->
       (match version with
        | 6 ->
-           (match Version6.deserialize_Types__Current__household data with
+           (match Version6.deserialize_Types____household data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
                 [@explicit_arity ]))
        | 5 ->
-           (match Version5.deserialize_Types__Current__household data with
+           (match Version5.deserialize_Types____household data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) ->
-                let data = Version6.upgrade_Types__Current__household data in
+                let data = Version6.upgrade_Types____household data in
                 ((Belt.Result.Ok (data))[@explicit_arity ]))
        | 4 ->
-           (match Version4.deserialize_Types__Current__household data with
+           (match Version4.deserialize_Types____household data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) ->
-                let data = Version5.upgrade_Types__Current__household data in
-                let data = Version6.upgrade_Types__Current__household data in
+                let data = Version5.upgrade_Types____household data in
+                let data = Version6.upgrade_Types____household data in
                 ((Belt.Result.Ok (data))[@explicit_arity ]))
        | 3 ->
-           (match Version3.deserialize_Types__Current__household data with
+           (match Version3.deserialize_Types____household data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) ->
-                let data = Version4.upgrade_Types__Current__household data in
-                let data = Version5.upgrade_Types__Current__household data in
-                let data = Version6.upgrade_Types__Current__household data in
+                let data = Version4.upgrade_Types____household data in
+                let data = Version5.upgrade_Types____household data in
+                let data = Version6.upgrade_Types____household data in
                 ((Belt.Result.Ok (data))[@explicit_arity ]))
        | 2 ->
-           (match Version2.deserialize_Types__Current__household data with
+           (match Version2.deserialize_Types____household data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) ->
-                let data = Version3.upgrade_Types__Current__household data in
-                let data = Version4.upgrade_Types__Current__household data in
-                let data = Version5.upgrade_Types__Current__household data in
-                let data = Version6.upgrade_Types__Current__household data in
+                let data = Version3.upgrade_Types____household data in
+                let data = Version4.upgrade_Types____household data in
+                let data = Version5.upgrade_Types____household data in
+                let data = Version6.upgrade_Types____household data in
                 ((Belt.Result.Ok (data))[@explicit_arity ]))
        | 1 ->
-           (match Version1.deserialize_Types__Current__household data with
+           (match Version1.deserialize_Types____household data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) ->
-                let data = Version2.upgrade_Types__Current__household data in
-                let data = Version3.upgrade_Types__Current__household data in
-                let data = Version4.upgrade_Types__Current__household data in
-                let data = Version5.upgrade_Types__Current__household data in
-                let data = Version6.upgrade_Types__Current__household data in
+                let data = Version2.upgrade_Types____household data in
+                let data = Version3.upgrade_Types____household data in
+                let data = Version4.upgrade_Types____household data in
+                let data = Version5.upgrade_Types____household data in
+                let data = Version6.upgrade_Types____household data in
                 ((Belt.Result.Ok (data))[@explicit_arity ]))
        | _ ->
            ((Belt.Result.Error

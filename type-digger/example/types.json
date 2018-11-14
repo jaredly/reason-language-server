@@ -5,7 +5,7 @@
   "entries": [
     {
       "file": "src/Types.re",
-      "type_": "Current.household",
+      "type_": "household",
       "publicName": "household",
       "history": ["WrappedVersion"]
     }

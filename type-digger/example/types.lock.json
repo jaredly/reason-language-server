@@ -7,7 +7,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "household"
           ],
           [
@@ -33,7 +33,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "person"
                             ]
                           ],
@@ -57,7 +57,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "pet"
                             ]
                           ],
@@ -74,7 +74,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "person"
           ],
           [
@@ -115,7 +115,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "pet"
           ],
           [
@@ -149,7 +149,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "household"
           ],
           [
@@ -175,7 +175,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "person"
                             ]
                           ],
@@ -199,7 +199,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "pet"
                             ]
                           ],
@@ -216,7 +216,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "person"
           ],
           [
@@ -242,7 +242,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun person -> { name = (person.name); age = (float_of_int person.age) }"
+                  "let _ =\n  fun person -> { name = (person.name); age = (float_of_int person.age) }"
                 ]
               ]
             ],
@@ -282,7 +282,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "pet"
           ],
           [
@@ -316,7 +316,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "household"
           ],
           [
@@ -342,7 +342,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "person"
                             ]
                           ],
@@ -366,7 +366,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "pet"
                             ]
                           ],
@@ -383,7 +383,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "person"
           ],
           [
@@ -424,7 +424,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "pet"
           ],
           [
@@ -463,7 +463,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "dogBreed"
           ],
           [
@@ -502,7 +502,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "household"
           ],
           [
@@ -528,7 +528,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "person"
                             ]
                           ],
@@ -552,7 +552,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "pet"
                             ]
                           ],
@@ -569,7 +569,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "person"
           ],
           [
@@ -610,7 +610,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "pet"
           ],
           [
@@ -636,7 +636,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun pet ->\n    match pet with\n    | Dog -> ((Dog None)[@explicit_arity ])\n    | Cat -> Cat\n    | Mouse -> Mouse"
+                  "let _ =\n  fun pet ->\n    match pet with\n    | Dog -> ((Dog None)[@explicit_arity ])\n    | Cat -> Cat\n    | Mouse -> Mouse"
                 ]
               ]
             ],
@@ -662,7 +662,7 @@
                               "Public",
                               [
                                 "Types",
-                                ["Current"],
+                                [],
                                 "dogBreed"
                               ]
                             ],
@@ -696,7 +696,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "dogBreed"
           ],
           [
@@ -722,7 +722,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun breed ->\n    match breed with\n    | Schnouser -> ((Schnouser \"white\")[@explicit_arity ])\n    | Lab -> Lab\n    | Retriever -> Retriever\n    | Poodle -> Poodle"
+                  "let _ =\n  fun breed ->\n    match breed with\n    | Schnouser -> ((Schnouser \"white\")[@explicit_arity ])\n    | Lab -> Lab\n    | Retriever -> Retriever\n    | Poodle -> Poodle"
                 ]
               ]
             ],
@@ -769,7 +769,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "household"
           ],
           [
@@ -795,7 +795,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "person"
                             ]
                           ],
@@ -819,7 +819,7 @@
                             "Public",
                             [
                               "Types",
-                              ["Current"],
+                              [],
                               "pet"
                             ]
                           ],
@@ -836,7 +836,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "person"
           ],
           [
@@ -877,7 +877,7 @@
         [
           [
             "Types",
-            ["Current"],
+            [],
             "pet"
           ],
           [
@@ -904,7 +904,7 @@
                               "Public",
                               [
                                 "Types",
-                                ["Current"],
+                                [],
                                 "dogBreed"
                               ]
                             ],
@@ -937,7 +937,7 @@
     [
       [
         "Types",
-        ["Current"],
+        [],
         "household"
       ],
       [
@@ -963,7 +963,7 @@
                         "Public",
                         [
                           "Types",
-                          ["Current"],
+                          [],
                           "person"
                         ]
                       ],
@@ -987,7 +987,7 @@
                         "Public",
                         [
                           "Types",
-                          ["Current"],
+                          [],
                           "pet"
                         ]
                       ],
@@ -1004,7 +1004,7 @@
     [
       [
         "Types",
-        ["Current"],
+        [],
         "person"
       ],
       [
@@ -1045,7 +1045,7 @@
     [
       [
         "Types",
-        ["Current"],
+        [],
         "pet"
       ],
       [
