@@ -131,6 +131,12 @@ module V5 = {
     age: float,
   };
 
+  [@upgrade breed => switch breed {
+    | Schnouser => Schnouser("white")
+    | Lab => Lab
+    | Retriever => Retriever
+    | Poodle => Poodle
+  }]
   type dogBreed =
     | Schnouser(string)
     | Lab

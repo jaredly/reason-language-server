@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "pastVersions": [
     [
       1,
@@ -309,9 +309,195 @@
           ]
         ]
       ]
+    ],
+    [
+      3,
+      [
+        [
+          [
+            "Types",
+            ["Current"],
+            "household"
+          ],
+          [
+            [],
+            {
+              "name": "household",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "people",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              ["Current"],
+                              "person"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "pets",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              ["Current"],
+                              "pet"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            ["Current"],
+            "person"
+          ],
+          [
+            [],
+            {
+              "name": "person",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "age",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            ["Current"],
+            "pet"
+          ],
+          [
+            [],
+            {
+              "name": "pet",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Dog",
+                    [],
+                    null
+                  ],
+                  [
+                    "Cat",
+                    [],
+                    null
+                  ],
+                  [
+                    "Mouse",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ]
+      ]
     ]
   ],
   "current": [
+    [
+      [
+        "Types",
+        ["Current"],
+        "dogBreed"
+      ],
+      [
+        [],
+        {
+          "name": "dogBreed",
+          "variables": [],
+          "body": [
+            "Variant",
+            [
+              [
+                "Schnouser",
+                [],
+                null
+              ],
+              [
+                "Lab",
+                [],
+                null
+              ],
+              [
+                "Retriever",
+                [],
+                null
+              ],
+              [
+                "Poodle",
+                [],
+                null
+              ]
+            ]
+          ]
+        }
+      ]
+    ],
     [
       [
         "Types",
@@ -427,7 +613,32 @@
         "pet"
       ],
       [
-        [],
+        [
+          [
+            {
+              "txt": "upgrade",
+              "loc": {
+                "loc_start": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_end": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_ghost": true
+              }
+            },
+            [
+              "PStr",
+              ";;fun pet ->\n    match pet with\n    | Dog -> ((Dog (None))[@explicit_arity ])\n    | Cat -> Cat\n    | Mouse -> Mouse"
+            ]
+          ]
+        ],
         {
           "name": "pet",
           "variables": [],
@@ -436,7 +647,29 @@
             [
               [
                 "Dog",
-                [],
+                [
+                  [
+                    "Reference",
+                    [
+                      "Builtin",
+                      "option"
+                    ],
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Types",
+                            ["Current"],
+                            "dogBreed"
+                          ]
+                        ],
+                        []
+                      ]
+                    ]
+                  ]
+                ],
                 null
               ],
               [
