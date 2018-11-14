@@ -20,7 +20,8 @@ module V1 = {
 
 module V2 = {
   let v = 2;
-  [@migrate person => {name: person.name, age: float_of_int(person.age)}]
+  [@migrate.age person => float_of_int(person.age)]
+  /* [@migrate person => {name: person.name, age: float_of_int(person.age)}] */
   type person = {
     name: string,
     age: float,
@@ -71,11 +72,7 @@ module V4 = {
     | Retriever
     | Poodle;
 
-  [@migrate pet => switch pet {
-    | Dog => Dog(None)
-    | Cat => Cat
-    | Mouse => Mouse
-  }]
+  [@migrate.Dog (Dog) => Dog(None)]
   type pet =
     | Dog(option(dogBreed))
     | Cat
@@ -96,12 +93,7 @@ module V5 = {
     age: float,
   };
 
-  [@migrate breed => switch breed {
-    | Schnouser => Schnouser("white")
-    | Lab => Lab
-    | Retriever => Retriever
-    | Poodle => Poodle
-  }]
+  [@migrate.Schnouser (Schnouser) => Schnouser("white")]
   type dogBreed =
     | Schnouser(string)
     | Lab

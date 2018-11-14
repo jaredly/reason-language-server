@@ -33,7 +33,12 @@ let rec migrateExpr = (variable, expr) => {
       | None => None
       | Some(_item) => Some([%e converter])
     }]);
-  | _ => None
+  | Reference(Builtin(_), []) => Some(variable)
+  | _ => {
+    print_endline("Cannot automatically migrate this expression");
+    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpExpr(expr)));
+    None
+  }
   }
 };
 
@@ -65,19 +70,31 @@ let rec mapAllWithIndex = (items, fn) => {
   loop(0, items);
 };
 
-let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevType, ~namedMigrateAttributes) =>
+let orLog = (what, message) => {
+  if (!what) {
+    print_endline(message)
+  };
+  what
+};
+
+let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName) => {
   switch (thisType.body, prevType.body) {
   | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
   | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
-    namedMigrateAttributes->Belt.List.hasAssoc(fst(item), (==))
-    || prevItems->Belt.List.has(item, (==))
+    (namedMigrateAttributes->Belt.List.hasAssoc(fst(item), (==))
+    || prevItems->Belt.List.has(item, (==)))->orLog("Bad record item")
   }) =>
     let rec loop = (items, labels) =>
       switch (items) {
       | [] => Some(Exp.record(labels, None))
       | [(name, expr), ...rest] =>
         let%opt migrate = switch (namedMigrateAttributes->Belt.List.getAssoc(name, (==))) {
-          | Some(expr) => Some(Exp.apply(expr, [(Nolabel, variable)]))
+          | Some(migrateExpr) => Some(Exp.apply(
+            Exp.constraint_(
+              migrateExpr,
+              Typ.arrow(Nolabel, prevTypeName, Serde.OutputType.outputExpr(Serde.OutputType.showSource, expr))
+            )
+            , [(Nolabel, variable)]))
           | None => migrateExpr(Exp.field(variable, mknoloc(Lident(name))), expr);
         };
         let%opt inner = loop(rest, [(mknoloc(Lident(name)), expIdent(Lident("_converted_" ++ name))), ...labels]);
@@ -116,8 +133,12 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
     });
     Some(Exp.match(variable, cases));
   }
-  | _ => None
+  | _ => {
+    print_endline("Bailed out");
+    None
+  }
   };
+};
 
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
   let source = (moduleName, modulePath, name);
@@ -169,10 +190,12 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
 
   let typeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
 
+  let prevTypeName = Typ.constr(mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)), []);
+
   Vb.mk(
     Pat.var(mknoloc(boundName)),
     Exp.constraint_(
-    switch (migrateAttribute) {
+      switch (migrateAttribute) {
       | Some(expr) => expr
       | None =>
         Exp.fun_(
@@ -180,18 +203,19 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
           None,
           Pat.var(mknoloc("_input_data")),
           if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
-            [%expr _input_data]
+            %expr
+            _input_data;
           } else {
-            switch (migrateBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl, ~namedMigrateAttributes)) {
-              | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
-              | Some(expr) => expr
-            }
+            switch (
+              migrateBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl, ~namedMigrateAttributes, ~prevTypeName)
+            ) {
+            | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
+            | Some(expr) => expr
+            };
           },
         )
-    },
-    Typ.arrow(Nolabel, Typ.constr(mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)), []),
-    Typ.constr(mknoloc(Lident(typeName)), [])
-    )
-    )
+      },
+      Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), [])),
+    ),
   );
 };

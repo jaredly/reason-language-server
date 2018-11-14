@@ -28,14 +28,7 @@ let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
     } else {
       None
     }
-    Serde.OutputType.outputDeclaration(~alias, moduleName, modulePath, name, (source, args) =>  {
-      Ast_helper.Typ.constr(Location.mknoloc(switch source {
-        | TypeMap.DigTypes.NotFound => failwith("Not found type reference: " ++ moduleName ++ ".." ++ name)
-        | Builtin(name) => Longident.Lident(name)
-        | Public((moduleName, modulePath, name)) =>
-          Longident.Lident(Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name))
-      }), args)
-    }, decl)
+    Serde.OutputType.outputDeclaration(~alias, moduleName, modulePath, name, Serde.OutputType.showSource, decl)
   });
 };
 

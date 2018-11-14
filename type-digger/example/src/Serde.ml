@@ -395,9 +395,14 @@ module Version2 =
                                                                     ->
                                                                     _Types__household)
     and migrate_Types____person =
-      (fun person ->
-         { name = (person.name); age = (float_of_int person.age) } : 
-      Version1._Types__person -> _Types__person)
+      (fun _input_data ->
+         let _converted_name = _input_data.name in
+         let _converted_age =
+           (fun person -> float_of_int person.age : Version1._Types__person
+                                                      -> float) _input_data in
+         { age = _converted_age; name = _converted_name } : Version1._Types__person
+                                                              ->
+                                                              _Types__person)
     and migrate_Types____pet =
       (fun _input_data -> _input_data : Version1._Types__pet -> _Types__pet)
   end
@@ -879,8 +884,8 @@ module Version4 =
       (fun _input_data -> _input_data : Version3._Types__person ->
                                           _Types__person)
     and migrate_Types____pet =
-      (fun pet ->
-         match pet with
+      (fun _input_data ->
+         match _input_data with
          | Dog -> ((Dog None)[@explicit_arity ])
          | Cat -> Cat
          | Mouse -> Mouse : Version3._Types__pet -> _Types__pet)
@@ -1147,8 +1152,8 @@ module Version5 =
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
     let rec migrate_Types____dogBreed =
-      (fun breed ->
-         match breed with
+      (fun _input_data ->
+         match _input_data with
          | Schnouser -> ((Schnouser "white")[@explicit_arity ])
          | Lab -> Lab
          | Retriever -> Retriever
@@ -1472,7 +1477,9 @@ module Version6 =
          let _converted_pets =
            (Belt.List.map _input_data.pets)
              (fun _item -> migrate_Types____pet _item) in
-         let _converted_visitors = (fun household -> []) _input_data in
+         let _converted_visitors =
+           (fun household -> [] : Version5._Types__household ->
+                                    _Types__person list) _input_data in
          {
            visitors = _converted_visitors;
            pets = _converted_pets;

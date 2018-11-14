@@ -223,7 +223,7 @@
             [
               [
                 {
-                  "txt": "migrate",
+                  "txt": "migrate.age",
                   "loc": {
                     "loc_start": {
                       "pos_fname": "_none_",
@@ -242,7 +242,7 @@
                 },
                 [
                   "PStr",
-                  "let _ =\n  fun person -> { name = (person.name); age = (float_of_int person.age) }"
+                  "let _ = fun person -> float_of_int person.age"
                 ]
               ]
             ],
@@ -617,7 +617,7 @@
             [
               [
                 {
-                  "txt": "migrate",
+                  "txt": "migrate.Dog",
                   "loc": {
                     "loc_start": {
                       "pos_fname": "_none_",
@@ -636,7 +636,7 @@
                 },
                 [
                   "PStr",
-                  "let _ =\n  fun pet ->\n    match pet with\n    | Dog -> ((Dog None)[@explicit_arity ])\n    | Cat -> Cat\n    | Mouse -> Mouse"
+                  "let _ = fun (Dog) -> ((Dog None)[@explicit_arity ])"
                 ]
               ]
             ],
@@ -703,7 +703,7 @@
             [
               [
                 {
-                  "txt": "migrate",
+                  "txt": "migrate.Schnouser",
                   "loc": {
                     "loc_start": {
                       "pos_fname": "_none_",
@@ -722,7 +722,7 @@
                 },
                 [
                   "PStr",
-                  "let _ =\n  fun breed ->\n    match breed with\n    | Schnouser -> ((Schnouser \"white\")[@explicit_arity ])\n    | Lab -> Lab\n    | Retriever -> Retriever\n    | Poodle -> Poodle"
+                  "let _ = fun (Schnouser) -> ((Schnouser \"white\")[@explicit_arity ])"
                 ]
               ]
             ],
@@ -1101,7 +1101,7 @@
         [
           [
             {
-              "txt": "migrate",
+              "txt": "migrate.Dog",
               "loc": {
                 "loc_start": {
                   "pos_fname": "_none_",
@@ -1120,7 +1120,7 @@
             },
             [
               "PStr",
-              "let _ =\n  fun pet ->\n    match pet with\n    | ((Dog dogBreed)[@explicit_arity ]) -> Dog\n    | Cat -> Cat\n    | Mouse -> Mouse"
+              "let _ = fun ((Dog dogBreed)[@explicit_arity ]) -> Dog"
             ]
           ]
         ],
