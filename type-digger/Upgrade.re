@@ -1,5 +1,5 @@
 
-let upgradeName = (~moduleName, ~modulePath, ~name) =>"upgrade_" ++ Serde.MakeDeserializer.fullName(~moduleName, ~modulePath, ~name);
+let migrateName = (~moduleName, ~modulePath, ~name) =>"migrate_" ++ Serde.MakeDeserializer.fullName(~moduleName, ~modulePath, ~name);
 
 open Location;
 open Longident;
@@ -17,18 +17,18 @@ let loc = Location.none;
 
 let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
 
-let rec upgradeExpr = (variable, expr) => {
+let rec migrateExpr = (variable, expr) => {
   switch expr {
   | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), []) =>
-    Some(Exp.apply(expIdent(Lident(upgradeName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
+    Some(Exp.apply(expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
   | Reference(Builtin("list"), [arg]) =>
-    let%opt converter = upgradeExpr([%expr _item], arg);
+    let%opt converter = migrateExpr([%expr _item], arg);
     Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
   | Reference(Builtin("array"), [arg]) =>
-    let%opt converter = upgradeExpr([%expr _item], arg);
+    let%opt converter = migrateExpr([%expr _item], arg);
     Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
   | Reference(Builtin("option"), [arg]) =>
-    let%opt converter = upgradeExpr([%expr _item], arg);
+    let%opt converter = migrateExpr([%expr _item], arg);
     Some([%expr switch ([%e variable]) {
       | None => None
       | Some(_item) => Some([%e converter])
@@ -65,39 +65,54 @@ let rec mapAllWithIndex = (items, fn) => {
   loop(0, items);
 };
 
-let rec upgradeBetween = (~version, ~lockedDeep, variable, name, thisType, prevType) =>
+let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevType, ~namedMigrateAttributes) =>
   switch (thisType.body, prevType.body) {
-  | (Expr(current), Expr(prev)) when current == prev => upgradeExpr(variable, current)
-  | (Record(items), Record(prevItems)) when items->Belt.List.every(item => prevItems->Belt.List.has(item, (==))) =>
+  | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
+  | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
+    namedMigrateAttributes->Belt.List.hasAssoc(fst(item), (==))
+    || prevItems->Belt.List.has(item, (==))
+  }) =>
     let rec loop = (items, labels) =>
       switch (items) {
       | [] => Some(Exp.record(labels, None))
       | [(name, expr), ...rest] =>
-        let%opt upgrade = upgradeExpr(Exp.field(variable, mknoloc(Lident(name))), expr);
+        let%opt migrate = switch (namedMigrateAttributes->Belt.List.getAssoc(name, (==))) {
+          | Some(expr) => Some(Exp.apply(expr, [(Nolabel, variable)]))
+          | None => migrateExpr(Exp.field(variable, mknoloc(Lident(name))), expr);
+        };
         let%opt inner = loop(rest, [(mknoloc(Lident(name)), expIdent(Lident("_converted_" ++ name))), ...labels]);
         Some(
           [%expr {
-            let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e upgrade];
+            let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e migrate];
             [%e inner];
           }]
         )
       };
     loop(items, []);
-  | (Variant(items), Variant(prevItems)) when prevItems->Belt.List.every(item => items->Belt.List.has(item, (==))) => {
+  | (Variant(items), Variant(prevItems)) when prevItems->Belt.List.every(((name, _, _) as item) => {
+    namedMigrateAttributes->Belt.List.hasAssoc(name, (==)) ||
+    items->Belt.List.has(item, (==))
+  }) => {
     let%opt cases = prevItems->mapAll(((name, args, _result)) => {
-      let%opt_wrap upgraders = args->mapAllWithIndex((i, arg) => {
-        let name = "arg" ++ string_of_int(i)
-        let%opt upgrader = upgradeExpr(expIdent(Lident(name)), arg);
-        Some((Pat.var(mknoloc(name)), upgrader))
-      });
-      let (pat, exp) = switch upgraders {
-        | [] => (None, None)
-        | _ => {
-          let (pats, exps) = Belt.List.unzip(upgraders);
-          (Some(Pat.tuple(pats)), Some(Exp.tuple(exps)))
-        }
-      };
-      Exp.case(Pat.construct(mknoloc(Lident(name)), pat), Exp.construct(mknoloc(Lident(name)), exp));
+      switch (namedMigrateAttributes->Belt.List.getAssoc(name, (==))) {
+      | Some({pexp_desc: Pexp_fun(Nolabel, None, pattern, body)}) =>
+        Some(Exp.case(pattern, body))
+      | Some(_) => failwith("Variant constructor migrator must have the form (pattern) => expression")
+      | None => 
+        let%opt_wrap migraters = args->mapAllWithIndex((i, arg) => {
+          let name = "arg" ++ string_of_int(i)
+          let%opt migrater = migrateExpr(expIdent(Lident(name)), arg);
+          Some((Pat.var(mknoloc(name)), migrater))
+        });
+        let (pat, exp) = switch migraters {
+          | [] => (None, None)
+          | _ => {
+            let (pats, exps) = Belt.List.unzip(migraters);
+            (Some(Pat.tuple(pats)), Some(Exp.tuple(exps)))
+          }
+        };
+        Exp.case(Pat.construct(mknoloc(Lident(name)), pat), Exp.construct(mknoloc(Lident(name)), exp));
+      }
     });
     Some(Exp.match(variable, cases));
   }
@@ -106,22 +121,48 @@ let rec upgradeBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
 
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
   let source = (moduleName, modulePath, name);
-  let boundName = upgradeName(~moduleName, ~modulePath, ~name);
+  let boundName = migrateName(~moduleName, ~modulePath, ~name);
 
-  let upgradeAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => switch (txt, payload) {
-    | ("upgrade", Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])) => Some(expr)
-    | ("upgrade", Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
+  let getExpr = payload => switch payload {
+    | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])
+    | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
       {
         pvb_pat: {ppat_desc: Ppat_any},
         pvb_expr: expr
       }
-    ])}])) => Some(expr)
-    | ("upgrade", Parsetree.PStr(items)) => {
-      Printast.structure(0, Stdlib.Format.str_formatter, items);
-      print_endline(Stdlib.Format.flush_str_formatter());
-      failwith("Upgrade attribute must be an expression")
-    }
+    ])}]) => Some(expr)
     | _ => None
+  };
+
+  let migrateAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => {
+    if (txt == "migrate") {
+      switch (getExpr(payload)) {
+        | Some(expr) => Some(expr)
+        | None => 
+          /* Printast.structure(0, Stdlib.Format.str_formatter, items);
+          print_endline(Stdlib.Format.flush_str_formatter()); */
+          failwith("migrate attribute must be an expression")
+      }
+    } else {
+      None
+    }
+  });
+
+  let namedMigrateAttributes = attributes->Belt.List.keepMap((({Asttypes.txt}, payload)) => {
+    switch (Util.Utils.split_on_char('.', txt)) {
+      | ["migrate"] => None
+      | ["migrate", something] => {
+        switch (getExpr(payload)) {
+          | None => failwith("migrate attribute must be an expression")
+          | Some(expr) => Some((something, expr))
+        }
+      }
+      | ["migrate", ..._] => {
+        print_endline("Warning: invalid migrate specifier " ++ txt);
+        None
+      }
+      | _ => None
+    }
   });
 
   let versionModuleName = version => "Version" ++ string_of_int(version);
@@ -131,7 +172,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
   Vb.mk(
     Pat.var(mknoloc(boundName)),
     Exp.constraint_(
-    switch (upgradeAttribute) {
+    switch (migrateAttribute) {
       | Some(expr) => expr
       | None =>
         Exp.fun_(
@@ -141,8 +182,8 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
           if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
             [%expr _input_data]
           } else {
-            switch (upgradeBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl)) {
-              | None => failwith("Must provide upgrader. Cannot upgrade automatically: " ++ name)
+            switch (migrateBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl, ~namedMigrateAttributes)) {
+              | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
               | Some(expr) => expr
             }
           },

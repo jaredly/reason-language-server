@@ -20,7 +20,7 @@ module V1 = {
 
 module V2 = {
   let v = 2;
-  [@upgrade person => {name: person.name, age: float_of_int(person.age)}]
+  [@migrate person => {name: person.name, age: float_of_int(person.age)}]
   type person = {
     name: string,
     age: float,
@@ -71,7 +71,7 @@ module V4 = {
     | Retriever
     | Poodle;
 
-  [@upgrade pet => switch pet {
+  [@migrate pet => switch pet {
     | Dog => Dog(None)
     | Cat => Cat
     | Mouse => Mouse
@@ -87,22 +87,6 @@ module V4 = {
   };
 
   let example = {people: [{name: "Me", age: 10.}], pets: [Dog(Some(Schnouser))]}
-
-  /* let upgrade_Current_pet: V3.pet => pet = data => {
-    switch data {
-      | Dog => Dog(None)
-      | Cat => Cat
-      | Mouse => Mouse
-    }
-  };
-
-  let upgrade_Current_person: V3.person => person = data => data;
-
-  let upgrade_Current_household: V3.household => household = ({people, pets}) => {
-    people: people->Belt.List.map(upgrade_Current_person),
-    pets: pets->Belt.List.map(upgrade_Current_pet),
-  }; */
-
 };
 
 module V5 = {
@@ -112,7 +96,7 @@ module V5 = {
     age: float,
   };
 
-  [@upgrade breed => switch breed {
+  [@migrate breed => switch breed {
     | Schnouser => Schnouser("white")
     | Lab => Lab
     | Retriever => Retriever
@@ -135,29 +119,6 @@ module V5 = {
   };
 
   let example = {people: [{name: "Me", age: 10.}], pets: [Dog(Some(Schnouser("black")))]}
-
-  /* let upgrade_Current_dogBreed: V4.dogBreed => dogBreed = data => switch data {
-    | Schnouser => Schnouser("white")
-    | Lab => Lab
-    | Retriever => Retriever
-    | Poodle => Poodle
-  };
-
-  let upgrade_Current_pet: V4.pet => pet = data => {
-    switch data {
-      | Dog(Some(dogBreed)) => Dog(Some(upgrade_Current_dogBreed(dogBreed)))
-      | Dog(None) => Dog(None)
-      | Cat => Cat
-      | Mouse => Mouse
-    }
-  };
-
-  let upgrade_Current_person: V4.person => person = data => data;
-
-  let upgrade_Current_household: V4.household => household = ({people, pets}) => {
-    people: people->Belt.List.map(upgrade_Current_person),
-    pets: pets->Belt.List.map(upgrade_Current_pet),
-  }; */
 };
 
 module V6 = {
@@ -167,35 +128,18 @@ module V6 = {
     age: float,
   };
 
-  [@upgrade (pet => switch pet {
-  | Dog(dogBreed) => Dog
-  | Cat => Cat
-  | Mouse => Mouse
-  })]
+  [@migrate.Dog (Dog(dogBreed)) => Dog]
   type pet =
     | Dog
     | Cat
-    | Mouse
+    | Mouse;
 
+  [@migrate.visitors household => []]
   type household = {
     people: list(person),
     pets: list(pet),
+    visitors: list(person),
   };
 
-  let example = {people: [{name: "Me", age: 10.}], pets: [Dog, Mouse]}
-
-  /* let upgrade_Current_pet: V5.pet => pet = data => {
-    switch data {
-      | Dog(_) => Dog
-      | Cat => Cat
-      | Mouse => Mouse
-    }
-  };
-
-  let upgrade_Current_person: V5.person => person = data => data;
-
-  let upgrade_Current_household: V5.household => household = ({people, pets}) => {
-    people: people->Belt.List.map(upgrade_Current_person),
-    pets: pets->Belt.List.map(upgrade_Current_pet),
-  }; */
+  let example = {people: [{name: "Me", age: 10.}], pets: [Dog, Mouse], visitors: [{name: "Friend", age: 11.5}]}
 };

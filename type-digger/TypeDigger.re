@@ -105,7 +105,7 @@ let compareHashtbls = (one, two) => {
     Hashtbl.fold((k, (a, v), good) => {
       good && Hashtbl.mem(two, k) && {
         let (a2, v2) = Hashtbl.find(two, k);
-        /* TODO compare upgrade functions? Actually maybe I don't care about them being locked. */
+        /* TODO compare migrate functions? Actually maybe I don't care about them being locked. */
         v2 == v
       }
     }, one, true)
@@ -246,7 +246,7 @@ let main = configPath => {
         [%expr Belt.Result.Ok(data)]
       } else {
         [%expr {
-          let data = [%e expIdent(Ldot(Lident(versionModuleName(current + 1)), "upgrade_" ++ fullName))](data);
+          let data = [%e expIdent(Ldot(Lident(versionModuleName(current + 1)), "migrate_" ++ fullName))](data);
           [%e loop(current + 1)]
         }]
       };
