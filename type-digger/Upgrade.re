@@ -100,19 +100,6 @@ let rec upgradeBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
       Exp.case(Pat.construct(mknoloc(Lident(name)), pat), Exp.construct(mknoloc(Lident(name)), exp));
     });
     Some(Exp.match(variable, cases));
-        
-        /* switch (loop(rest, [Exp.case(Pat.construct(mknoloc(Lident(name)), None), expIdent(Lident("_converted_" ++ name))), ...labels])) {
-        | None => None
-        | Some(inner) =>
-          Some(
-            [%expr {
-              let [%p Pat.var(mknoloc("_converted_" ++ name))] = [%e upgrade];
-              [%e inner];
-            }]
-          )
-        }
-      };
-    loop(items, []); */
   }
   | _ => None
   };

@@ -154,36 +154,37 @@ let rec asSimpleDeclaration = (name, t) => {
   }
 };
 
-#ifn 407
-module Converter = Migrate_parsetree.Convert(
-#if 402
-  Migrate_parsetree.OCaml_402,
-#elif 406
-  Migrate_parsetree.OCaml_406,
-#endif
-  Migrate_parsetree.OCaml_current
-);
-#endif
-
 let migrateAttributes = t => {
-#if 407
-  t.Types.type_attributes
-#else
   t.Types.type_attributes->Belt.List.map((({Asttypes.txt}, payload)) => {
     (Current.mknoloc(txt), switch payload {
-      | PStr(structure) => Current.PStr(Converter.copy_structure(Obj.magic(structure)))
-      | PPat(pattern, guard) => Current.PPat(Converter.copy_pattern(Obj.magic(pattern)), switch guard {
-        | None => None
-        | Some(exp) => Some(Converter.copy_expression(Obj.magic(exp)))
-      })
-      | PTyp(typ) => Current.PTyp(Converter.copy_core_type(Obj.magic(typ)))
+      | PStr(structure) =>
+        Current.PStr(Current.Parser.implementation(Current.Lexer.token, Stdlib.Lexing.from_string({
+          Pprintast.structure(Stdlib.Format.str_formatter, structure);
+          Stdlib.Format.flush_str_formatter()
+        })))
+      | PPat(pattern, guard) => Current.PPat(Current.Parser.parse_pattern(Current.Lexer.token, Stdlib.Lexing.from_string({
+          Pprintast.pattern(Stdlib.Format.str_formatter, pattern)
+          Stdlib.Format.flush_str_formatter()
+        })), switch guard {
+          | None => None
+          | Some(expr) => Some(Current.Parser.parse_expression(Current.Lexer.token, Stdlib.Lexing.from_string({
+            Pprintast.expression(Stdlib.Format.str_formatter, expr);
+            Stdlib.Format.flush_str_formatter()
+          })))
+        })
+      | PTyp(typ) => Current.PTyp(Current.Parser.parse_core_type(Current.Lexer.token, Stdlib.Lexing.from_string({
+          Pprintast.core_type(Stdlib.Format.str_formatter, typ);
+          Stdlib.Format.flush_str_formatter()
+        })))
 #if 402
 #else
-      | PSig(signature) => Current.PSig(Converter.copy_signature(Obj.magic(signature)))
+      | PSig(signature) => Current.PSig(Current.Parser.interface(Current.Lexer.token, Stdlib.Lexing.from_string({
+        Pprintast.signature(Stdlib.Format.str_formatter, signature);
+        Stdlib.Format.flush_str_formatter()
+      })))
 #endif
     })
   });
-#endif
 };
 
 let makeDeclaration = t => {
