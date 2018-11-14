@@ -160,8 +160,12 @@ let main = configPath => {
   let makeFullModule = (version, typeMap) => {
     let fns =
       switch (config.engine) {
-      | Bs_json => makeFns(Serde.BsJson.declDeserializer, typeMap) @ makeFns(Serde.BsJson.declSerializer, typeMap)
-      | Rex_json => makeFns(Serde.Json.declDeserializer, typeMap) @ makeFns(Serde.Json.declSerializer, typeMap)
+      | Bs_json =>
+        let fns = makeFns(Serde.BsJson.declDeserializer, typeMap);
+        version == config.version ? fns @ makeFns(Serde.BsJson.declSerializer, typeMap) : fns;
+      | Rex_json =>
+        let fns = makeFns(Serde.Json.declDeserializer, typeMap);
+        version == config.version ? fns @ makeFns(Serde.Json.declSerializer, typeMap) : fns;
       };
 
     makeModule(versionModuleName(version), [

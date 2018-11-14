@@ -302,54 +302,6 @@ module Version1 =
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Cat : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types____household : _Types__household -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("people",
-                 (((fun list ->
-                      Js.Json.array
-                        (Belt.List.toArray
-                           (Belt.List.map list serialize_Types____person))))
-                    record.people));("pets",
-                                      (((fun list ->
-                                           Js.Json.array
-                                             (Belt.List.toArray
-                                                (Belt.List.map list
-                                                   serialize_Types____pet))))
-                                         record.pets))|])
-    and (serialize_Types____person : _Types__person -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("name", (Js.Json.string record.name));("age",
-                                                        (((fun int ->
-                                                             Js.Json.number
-                                                               (float_of_int
-                                                                  int)))
-                                                           record.age));
-               ("coords",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.coords));("parents",
-                                      ((((fun transformer ->
-                                            function
-                                            | ((Some
-                                                (inner))[@explicit_arity ])
-                                                -> transformer inner
-                                            | None -> Js.Json.null))
-                                          (fun (arg0, arg1) ->
-                                             Js.Json.array
-                                               [|(serialize_Types____person
-                                                    arg0);(serialize_Types____person
-                                                             arg1)|]))
-                                         record.parents))|])
-    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
-        | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
   end
 module Version2 =
   struct
@@ -654,51 +606,6 @@ module Version2 =
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Cat : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types____household : _Types__household -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("people",
-                 (((fun list ->
-                      Js.Json.array
-                        (Belt.List.toArray
-                           (Belt.List.map list serialize_Types____person))))
-                    record.people));("pets",
-                                      (((fun list ->
-                                           Js.Json.array
-                                             (Belt.List.toArray
-                                                (Belt.List.map list
-                                                   serialize_Types____pet))))
-                                         record.pets))|])
-    and (serialize_Types____person : _Types__person -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("name", (Js.Json.string record.name));("age",
-                                                        (Js.Json.number
-                                                           record.age));
-               ("coords",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.coords));("parents",
-                                      ((((fun transformer ->
-                                            function
-                                            | ((Some
-                                                (inner))[@explicit_arity ])
-                                                -> transformer inner
-                                            | None -> Js.Json.null))
-                                          (fun (arg0, arg1) ->
-                                             Js.Json.array
-                                               [|(serialize_Types____person
-                                                    arg0);(serialize_Types____person
-                                                             arg1)|]))
-                                         record.parents))|])
-    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
-        | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
     let rec migrate_Types____household =
       (fun _input_data ->
          let _converted_people =
@@ -962,40 +869,6 @@ module Version3 =
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types____household : _Types__household -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("people",
-                 (((fun list ->
-                      Js.Json.array
-                        (Belt.List.toArray
-                           (Belt.List.map list serialize_Types____person))))
-                    record.people));("pets",
-                                      (((fun list ->
-                                           Js.Json.array
-                                             (Belt.List.toArray
-                                                (Belt.List.map list
-                                                   serialize_Types____pet))))
-                                         record.pets))|])
-    and (serialize_Types____person : _Types__person -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("name", (Js.Json.string record.name));("age",
-                                                        (Js.Json.number
-                                                           record.age));
-               ("coords",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.coords))|])
-    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
-        | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
-        | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
     let rec migrate_Types____household =
       (fun _input_data ->
          let _converted_people =
@@ -1287,55 +1160,6 @@ module Version4 =
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types____dogBreed : _Types__dogBreed -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Schnouser -> Js.Json.array [|(Js.Json.string "Schnouser")|]
-        | Lab -> Js.Json.array [|(Js.Json.string "Lab")|]
-        | Retriever -> Js.Json.array [|(Js.Json.string "Retriever")|]
-        | Poodle -> Js.Json.array [|(Js.Json.string "Poodle")|]
-    and (serialize_Types____household : _Types__household -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("people",
-                 (((fun list ->
-                      Js.Json.array
-                        (Belt.List.toArray
-                           (Belt.List.map list serialize_Types____person))))
-                    record.people));("pets",
-                                      (((fun list ->
-                                           Js.Json.array
-                                             (Belt.List.toArray
-                                                (Belt.List.map list
-                                                   serialize_Types____pet))))
-                                         record.pets))|])
-    and (serialize_Types____person : _Types__person -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("name", (Js.Json.string record.name));("age",
-                                                        (Js.Json.number
-                                                           record.age));
-               ("coords",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.coords))|])
-    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Dog arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Dog");((((fun transformer ->
-                                             function
-                                             | ((Some
-                                                 (inner))[@explicit_arity ])
-                                                 -> transformer inner
-                                             | None -> Js.Json.null))
-                                           serialize_Types____dogBreed) arg0)|]
-        | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
-        | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
     let rec migrate_Types____household =
       (fun _input_data ->
          let _converted_people =
@@ -1739,72 +1563,6 @@ module Version5 =
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error "Expected an array"
-    and (serialize_Types____dogBreed : _Types__dogBreed -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Schnouser arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Schnouser");(Js.Json.string arg0)|]
-        | Lab -> Js.Json.array [|(Js.Json.string "Lab")|]
-        | Retriever -> Js.Json.array [|(Js.Json.string "Retriever")|]
-        | Poodle -> Js.Json.array [|(Js.Json.string "Poodle")|]
-    and (serialize_Types____household : _Types__household -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("people",
-                 (((fun list ->
-                      Js.Json.array
-                        (Belt.List.toArray
-                           (Belt.List.map list serialize_Types____person))))
-                    record.people));("pets",
-                                      (((fun list ->
-                                           Js.Json.array
-                                             (Belt.List.toArray
-                                                (Belt.List.map list
-                                                   serialize_Types____pet))))
-                                         record.pets));("county",
-                                                         ((serialize_Types____named
-                                                             (fun int ->
-                                                                Js.Json.number
-                                                                  (float_of_int
-                                                                    int)))
-                                                            record.county))|])
-    and serialize_Types____named :
-      'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 _Types__named -> Js.Json.t =
-      fun aTransformer ->
-        fun record ->
-          Js.Json.object_
-            (Js.Dict.fromArray
-               [|("name", (Js.Json.string record.name));("contents",
-                                                          (aTransformer
-                                                             record.contents))|])
-    and (serialize_Types____person : _Types__person -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("name", (Js.Json.string record.name));("age",
-                                                        (Js.Json.number
-                                                           record.age));
-               ("coords",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.coords))|])
-    and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Dog arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Dog");((((fun transformer ->
-                                             function
-                                             | ((Some
-                                                 (inner))[@explicit_arity ])
-                                                 -> transformer inner
-                                             | None -> Js.Json.null))
-                                           serialize_Types____dogBreed) arg0)|]
-        | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
-        | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
     let rec migrate_Types____dogBreed =
       (fun _input_data ->
          match _input_data with
