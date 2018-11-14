@@ -98,7 +98,6 @@ let rec asSimpleType = t => {
 };
 
 let rec asSimpleDeclaration = (name, t) => {
-  print_endline("Assimple: " ++ string_of_int(List.length(t.Types.type_attributes)) ++ " attributes");
   open SharedTypes;
   {
     SimpleType.name,
@@ -129,16 +128,31 @@ let rec asSimpleDeclaration = (name, t) => {
   }
 };
 
+module Converter = Migrate_parsetree.Convert(
+  Migrate_parsetree.OCaml_402,
+  Migrate_parsetree.OCaml_current
+);
+
+let migrateAttributes = t => {
+  t.Types.type_attributes->Belt.List.map((({Asttypes.txt}, payload)) => {
+    (Current.mknoloc(txt), switch payload {
+      | PStr(structure) => Current.PStr(Converter.copy_structure(Obj.magic(structure)))
+      | PPat(pattern, guard) => Current.PPat(Converter.copy_pattern(Obj.magic(pattern)), switch guard {
+        | None => None
+        | Some(exp) => Some(Converter.copy_expression(Obj.magic(exp)))
+      })
+      | PTyp(typ) => Current.PTyp(Converter.copy_core_type(Obj.magic(typ)))
+    })
+  });
+};
+
 let makeDeclaration = t => {
-  print_endline("Converting: " ++ string_of_int(List.length(t.Types.type_attributes)) ++ " attributes");
-  {
   SharedTypes.declToString: name =>
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
   |> SharedTypes.SimpleType.declMapSource(mapOldPath)
 }
-};
 
 let labelToString = label => label;
 

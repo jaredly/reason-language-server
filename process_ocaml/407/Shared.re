@@ -130,6 +130,11 @@ let rec asSimpleDeclaration = (name, t) => {
   }
 };
 
+
+let migrateAttributes = t => {
+  t.Types.type_attributes
+};
+
 let makeDeclaration = t => {
   SharedTypes.declToString: name =>
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
