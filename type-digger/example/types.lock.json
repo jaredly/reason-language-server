@@ -1,570 +1,28 @@
 {
-  "version": 4,
-  "pastVersions": [
-    [
-      1,
-      [
-        [
-          [
-            "Types",
-            ["Current"],
-            "household"
-          ],
-          {
-            "name": "household",
-            "variables": [],
-            "body": [
-              "Record",
-              [
-                [
-                  "people",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "list"
-                    ],
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Types",
-                            ["Current"],
-                            "person"
-                          ]
-                        ],
-                        []
-                      ]
-                    ]
-                  ]
-                ],
-                [
-                  "pets",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "list"
-                    ],
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Types",
-                            ["Current"],
-                            "pet"
-                          ]
-                        ],
-                        []
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            ]
-          }
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "person"
-          ],
-          {
-            "name": "person",
-            "variables": [],
-            "body": [
-              "Record",
-              [
-                [
-                  "name",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "string"
-                    ],
-                    []
-                  ]
-                ],
-                [
-                  "age",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "int"
-                    ],
-                    []
-                  ]
-                ]
-              ]
-            ]
-          }
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "pet"
-          ],
-          {
-            "name": "pet",
-            "variables": [],
-            "body": [
-              "Variant",
-              [
-                [
-                  "Dog",
-                  [],
-                  null
-                ],
-                [
-                  "Cat",
-                  [],
-                  null
-                ]
-              ]
-            ]
-          }
-        ]
-      ]
-    ],
-    [
-      2,
-      [
-        [
-          [
-            "Types",
-            ["Current"],
-            "household"
-          ],
-          {
-            "name": "household",
-            "variables": [],
-            "body": [
-              "Record",
-              [
-                [
-                  "people",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "list"
-                    ],
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Types",
-                            ["Current"],
-                            "person"
-                          ]
-                        ],
-                        []
-                      ]
-                    ]
-                  ]
-                ],
-                [
-                  "pets",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "list"
-                    ],
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Types",
-                            ["Current"],
-                            "pet"
-                          ]
-                        ],
-                        []
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            ]
-          }
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "person"
-          ],
-          {
-            "name": "person",
-            "variables": [],
-            "body": [
-              "Record",
-              [
-                [
-                  "name",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "string"
-                    ],
-                    []
-                  ]
-                ],
-                [
-                  "age",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "float"
-                    ],
-                    []
-                  ]
-                ]
-              ]
-            ]
-          }
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "pet"
-          ],
-          {
-            "name": "pet",
-            "variables": [],
-            "body": [
-              "Variant",
-              [
-                [
-                  "Dog",
-                  [],
-                  null
-                ],
-                [
-                  "Cat",
-                  [],
-                  null
-                ]
-              ]
-            ]
-          }
-        ]
-      ]
-    ],
-    [
-      3,
-      [
-        [
-          [
-            "Types",
-            ["Current"],
-            "household"
-          ],
-          {
-            "name": "household",
-            "variables": [],
-            "body": [
-              "Record",
-              [
-                [
-                  "people",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "list"
-                    ],
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Types",
-                            ["Current"],
-                            "person"
-                          ]
-                        ],
-                        []
-                      ]
-                    ]
-                  ]
-                ],
-                [
-                  "pets",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "list"
-                    ],
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Types",
-                            ["Current"],
-                            "pet"
-                          ]
-                        ],
-                        []
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            ]
-          }
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "person"
-          ],
-          {
-            "name": "person",
-            "variables": [],
-            "body": [
-              "Record",
-              [
-                [
-                  "name",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "string"
-                    ],
-                    []
-                  ]
-                ],
-                [
-                  "age",
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "float"
-                    ],
-                    []
-                  ]
-                ]
-              ]
-            ]
-          }
-        ],
-        [
-          [
-            "Types",
-            ["Current"],
-            "pet"
-          ],
-          {
-            "name": "pet",
-            "variables": [],
-            "body": [
-              "Variant",
-              [
-                [
-                  "Dog",
-                  [],
-                  null
-                ],
-                [
-                  "Cat",
-                  [],
-                  null
-                ],
-                [
-                  "Mouse",
-                  [],
-                  null
-                ]
-              ]
-            ]
-          }
-        ]
-      ]
-    ]
-  ],
+  "version": 1,
+  "pastVersions": [],
   "current": [
-    [
-      [
-        "Types",
-        ["Current"],
-        "dogBreed"
-      ],
-      {
-        "name": "dogBreed",
-        "variables": [],
-        "body": [
-          "Variant",
-          [
-            [
-              "Schnouser",
-              [],
-              null
-            ],
-            [
-              "Lab",
-              [],
-              null
-            ],
-            [
-              "Retriever",
-              [],
-              null
-            ],
-            [
-              "Poodle",
-              [],
-              null
-            ]
-          ]
-        ]
-      }
-    ],
     [
       [
         "Types",
         ["Current"],
         "household"
       ],
-      {
-        "name": "household",
-        "variables": [],
-        "body": [
-          "Record",
-          [
-            [
-              "people",
-              [
-                "Reference",
-                [
-                  "Builtin",
-                  "list"
-                ],
-                [
-                  [
-                    "Reference",
-                    [
-                      "Public",
-                      [
-                        "Types",
-                        ["Current"],
-                        "person"
-                      ]
-                    ],
-                    []
-                  ]
-                ]
-              ]
-            ],
-            [
-              "pets",
-              [
-                "Reference",
-                [
-                  "Builtin",
-                  "list"
-                ],
-                [
-                  [
-                    "Reference",
-                    [
-                      "Public",
-                      [
-                        "Types",
-                        ["Current"],
-                        "pet"
-                      ]
-                    ],
-                    []
-                  ]
-                ]
-              ]
-            ]
-          ]
-        ]
-      }
-    ],
-    [
       [
-        "Types",
-        ["Current"],
-        "person"
-      ],
-      {
-        "name": "person",
-        "variables": [],
-        "body": [
-          "Record",
-          [
+        [],
+        {
+          "name": "household",
+          "variables": [],
+          "body": [
+            "Record",
             [
-              "name",
               [
-                "Reference",
-                [
-                  "Builtin",
-                  "string"
-                ],
-                []
-              ]
-            ],
-            [
-              "age",
-              [
-                "Reference",
-                [
-                  "Builtin",
-                  "float"
-                ],
-                []
-              ]
-            ]
-          ]
-        ]
-      }
-    ],
-    [
-      [
-        "Types",
-        ["Current"],
-        "pet"
-      ],
-      {
-        "name": "pet",
-        "variables": [],
-        "body": [
-          "Variant",
-          [
-            [
-              "Dog",
-              [
+                "people",
                 [
                   "Reference",
                   [
                     "Builtin",
-                    "option"
+                    "list"
                   ],
                   [
                     [
@@ -574,7 +32,7 @@
                         [
                           "Types",
                           ["Current"],
-                          "dogBreed"
+                          "person"
                         ]
                       ],
                       []
@@ -582,21 +40,104 @@
                   ]
                 ]
               ],
-              null
-            ],
-            [
-              "Cat",
-              [],
-              null
-            ],
-            [
-              "Mouse",
-              [],
-              null
+              [
+                "pets",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "list"
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          ["Current"],
+                          "pet"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
             ]
           ]
-        ]
-      }
+        }
+      ]
+    ],
+    [
+      [
+        "Types",
+        ["Current"],
+        "person"
+      ],
+      [
+        [],
+        {
+          "name": "person",
+          "variables": [],
+          "body": [
+            "Record",
+            [
+              [
+                "name",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "string"
+                  ],
+                  []
+                ]
+              ],
+              [
+                "age",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "int"
+                  ],
+                  []
+                ]
+              ]
+            ]
+          ]
+        }
+      ]
+    ],
+    [
+      [
+        "Types",
+        ["Current"],
+        "pet"
+      ],
+      [
+        [],
+        {
+          "name": "pet",
+          "variables": [],
+          "body": [
+            "Variant",
+            [
+              [
+                "Dog",
+                [],
+                null
+              ],
+              [
+                "Cat",
+                [],
+                null
+              ]
+            ]
+          ]
+        }
+      ]
     ]
   ]
 }

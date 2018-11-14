@@ -20,6 +20,7 @@ module V1 = {
 
 module V2 = {
   let v = 2;
+  [@upgrade person => {name: person.name, age: float_of_int(person.age)}]
   type person = {
     name: string,
     age: float,
@@ -213,4 +214,4 @@ module V6 = {
   };
 };
 
-module Current = { include V4 };
+module Current = { include V2 };

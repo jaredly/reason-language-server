@@ -144,9 +144,6 @@ let main = configPath => {
     }
   };
 
-  let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
-  Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
-
   let capitalize = s => s == "" ? "" :
   String.uppercase(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
 
@@ -292,8 +289,11 @@ let main = configPath => {
   });
 
   Pprintast.structure(Format.str_formatter, body @ converters);
-
   let ml = Format.flush_str_formatter();
+
+  let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
+  Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
+
   Files.writeFile(config.output, ml) |> ignore;
 };
 

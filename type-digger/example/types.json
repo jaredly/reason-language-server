@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 2,
   "output": "src/Serde.ml",
   "engine": ["Bs_json"],
   "entries": [
