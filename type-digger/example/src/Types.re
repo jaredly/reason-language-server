@@ -180,7 +180,7 @@ module V5 = {
 };
 
 module V6 = {
-  let v = 4;
+  let v = 6;
   type person = V3.person = {
     name: string,
     age: float,

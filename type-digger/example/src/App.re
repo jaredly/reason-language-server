@@ -13,3 +13,12 @@ Js.log(
   == Ok(Types.Current.example),
 );
 
+for (i in 1 to 6) {
+  let raw = readFileSync("data." ++ string_of_int(i) ++ ".json");
+  let json = Js.Json.parseExn(raw);
+  switch (Serde.deserializeHousehold(json)) {
+    | Ok(result) => Js.log3(i, "Good", result)
+    | Error(error) => Js.log3(i, "Failed", error)
+  }
+
+}
