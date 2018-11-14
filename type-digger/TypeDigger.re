@@ -127,6 +127,13 @@ let main = configPath => {
       if (lockfile.version == config.version) {
         /* TODO allow addative type changes */
         if (!compareHashtbls(lockfile.current, currentTypeMap)) {
+
+          let lockfileJson = TypeMapSerde.lockfileToJson({
+            ...lockfile,
+            current: currentTypeMap
+          });
+          Files.writeFileExn(lockFilePath ++ ".new", Json.stringifyPretty(~indent=2, lockfileJson));
+
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
           lockfile

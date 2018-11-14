@@ -1071,7 +1071,7 @@
             },
             [
               "PStr",
-              "let _ =\n  fun pet ->\n    match pat with\n    | ((Dog dogBreed)[@explicit_arity ]) -> Dog\n    | Cat -> Cat\n    | Mouse -> Mouse"
+              "let _ =\n  fun pet ->\n    match pet with\n    | ((Dog dogBreed)[@explicit_arity ]) -> Dog\n    | Cat -> Cat\n    | Mouse -> Mouse"
             ]
           ]
         ],
