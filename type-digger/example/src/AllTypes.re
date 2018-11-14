@@ -144,7 +144,7 @@ module V6 = {
     | Cat
     | Mouse;
   
-  [@migrate named => false]
+  [@migrate (contentsMigrator, named) => {name: named.name, contents: contentsMigrator(named.contents), isClosed: false}]
   type named('a) = {
     name: string,
     contents: 'a,

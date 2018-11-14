@@ -47,8 +47,15 @@ let rec mapAllWithIndex = (items, fn) => {
 
 let rec migrateExpr = (variable, expr) => {
   switch expr {
-  | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), []) =>
-    Some(Exp.apply(expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
+  | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), args) =>
+    let%opt argMappers = args->mapAll(arg => {
+    let%opt mapper = migrateExpr([%expr arg], arg);
+      Some((Nolabel, [%expr arg => [%e mapper]]))
+    });
+    Some(Exp.apply(
+      expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))),
+      argMappers @ [(Nolabel, variable)]
+    ))
   | Reference(Builtin("list"), [arg]) =>
     let%opt converter = migrateExpr([%expr _item], arg);
     Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
@@ -148,6 +155,7 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
 };
 
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
+  print_endline("Migrating " ++ name);
   let source = (moduleName, modulePath, name);
   let boundName = migrateName(~moduleName, ~modulePath, ~name);
 
@@ -165,7 +173,9 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
   let migrateAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => {
     if (txt == "migrate") {
       switch (getExpr(payload)) {
-        | Some(expr) => Some(expr)
+        | Some(expr) => 
+        print_endline("Have migrate attr");
+        Some(expr)
         | None => 
           /* Printast.structure(0, Stdlib.Format.str_formatter, items);
           print_endline(Stdlib.Format.flush_str_formatter()); */
@@ -199,36 +209,57 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
   let typeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
 
   let args = decl.variables->Belt.List.map(Serde.OutputType.outputExpr(Serde.OutputType.showSource));
+  let argNames = decl.variables->Belt.List.map(expr => switch expr {
+    | Variable(name) => name
+    | _ => failwith("Unnamed variable in type " ++ name)
+  });
 
   let prevTypeName = Typ.constr(
     mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
     args
   );
 
+  let migratorFunction =
+    switch (migrateAttribute) {
+    | Some(expr) => expr
+    | None =>
+      let body =
+        if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
+          %expr
+          _input_data;
+        } else {
+          switch (
+            migrateBetween(
+              ~version,
+              ~lockedDeep,
+              [%expr _input_data],
+              name,
+              decl,
+              pastDecl,
+              ~namedMigrateAttributes,
+              ~prevTypeName,
+            )
+          ) {
+          | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
+          | Some(expr) => expr
+          };
+        };
+      argNames->Belt.List.reduce(Exp.fun_(Nolabel, None, Pat.var(mknoloc("_input_data")), body), (body, arg) =>
+        Exp.fun_(Nolabel, None, Pat.var(mknoloc("_migrator_" ++ arg)), body)
+      );
+    };
+
+  let functionType = argNames->Belt.List.reduce(
+    Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), argNames->Belt.List.map(arg => Typ.var(arg ++ "_migrated")))),
+    (inner, arg) => Typ.arrow(Nolabel,
+      Typ.arrow(Nolabel, Typ.var(arg), Typ.var(arg ++ "_migrated")),
+      inner
+    )
+  );
+
   Vb.mk(
     Pat.var(mknoloc(boundName)),
-    Exp.constraint_(
-      switch (migrateAttribute) {
-      | Some(expr) => expr
-      | None =>
-        Exp.fun_(
-          Nolabel,
-          None,
-          Pat.var(mknoloc("_input_data")),
-          if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
-            %expr
-            _input_data;
-          } else {
-            switch (
-              migrateBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl, ~namedMigrateAttributes, ~prevTypeName)
-            ) {
-            | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
-            | Some(expr) => expr
-            };
-          },
-        )
-      },
-      Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), args)),
+    Exp.constraint_(migratorFunction, functionType,
     ),
   );
 };

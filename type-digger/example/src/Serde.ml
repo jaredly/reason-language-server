@@ -2376,9 +2376,7 @@ module Version6 =
            (fun household -> [] : Version5._Types__household ->
                                     _Types__person list) _input_data in
          let _converted_county =
-           (fun household -> household.county : Version5._Types__household ->
-                                                  int _Types__named)
-             _input_data in
+           migrate_Types____named (fun arg -> arg) _input_data.county in
          {
            county = _converted_county;
            visitors = _converted_visitors;
@@ -2386,7 +2384,14 @@ module Version6 =
            people = _converted_people
          } : Version5._Types__household -> _Types__household)
     and migrate_Types____named =
-      (fun named -> false : 'a Version5._Types__named -> 'a _Types__named)
+      (fun contentsMigrator ->
+         fun named ->
+           {
+             name = (named.name);
+             contents = (contentsMigrator named.contents);
+             isClosed = false
+           } : ('a -> 'a_migrated) ->
+                 'a Version5._Types__named -> 'a_migrated _Types__named)
     and migrate_Types____person =
       (fun _input_data -> _input_data : Version5._Types__person ->
                                           _Types__person)

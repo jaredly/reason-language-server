@@ -1258,30 +1258,6 @@
               "PStr",
               "let _ = fun household -> []"
             ]
-          ],
-          [
-            {
-              "txt": "migrate.county",
-              "loc": {
-                "loc_start": {
-                  "pos_fname": "_none_",
-                  "pos_lnum": 1,
-                  "pos_bol": 0,
-                  "pos_cnum": -1
-                },
-                "loc_end": {
-                  "pos_fname": "_none_",
-                  "pos_lnum": 1,
-                  "pos_bol": 0,
-                  "pos_cnum": -1
-                },
-                "loc_ghost": true
-              }
-            },
-            [
-              "PStr",
-              "let _ = fun household -> household.county"
-            ]
           ]
         ],
         {
@@ -1420,7 +1396,7 @@
             },
             [
               "PStr",
-              "let _ = fun named -> false"
+              "let _ =\n  fun contentsMigrator ->\n    fun named ->\n      {\n        name = (named.name);\n        contents = (contentsMigrator named.contents);\n        isClosed = false\n      }"
             ]
           ]
         ],
