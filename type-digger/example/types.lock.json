@@ -1398,7 +1398,32 @@
         "named"
       ],
       [
-        [],
+        [
+          [
+            {
+              "txt": "migrate",
+              "loc": {
+                "loc_start": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_end": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_ghost": true
+              }
+            },
+            [
+              "PStr",
+              "let _ = fun named -> false"
+            ]
+          ]
+        ],
         {
           "name": "named",
           "variables": [
@@ -1426,6 +1451,17 @@
                 [
                   "Variable",
                   "a"
+                ]
+              ],
+              [
+                "isClosed",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "bool"
+                  ],
+                  []
                 ]
               ]
             ]

@@ -1369,7 +1369,7 @@ module Version5 =
       people: _Types__person list ;
       pets: _Types__pet list ;
       county: int _Types__named }
-    and 'a _Types__named = 'a Types.named = {
+    and 'a _Types__named = {
       name: string ;
       contents: 'a }
     and _Types__person = Types.person =
@@ -1855,9 +1855,11 @@ module Version6 =
       pets: _Types__pet list ;
       visitors: _Types__person list ;
       county: int _Types__named }
-    and 'a _Types__named = 'a Types.named = {
+    and 'a _Types__named = 'a Types.named =
+      {
       name: string ;
-      contents: 'a }
+      contents: 'a ;
+      isClosed: bool }
     and _Types__person = Types.person =
       {
       name: string ;
@@ -2129,39 +2131,71 @@ module Version6 =
         fun record ->
           match Js.Json.classify record with
           | ((JSONObject (dict))[@explicit_arity ]) ->
-              (match Js.Dict.get dict "contents" with
+              (match Js.Dict.get dict "isClosed" with
                | None ->
-                   ((Belt.Result.Error (("No attribute " ^ "contents")))
+                   ((Belt.Result.Error (("No attribute " ^ "isClosed")))
                    [@explicit_arity ])
                | ((Some (json))[@explicit_arity ]) ->
-                   (match aTransformer json with
+                   (match (fun bool ->
+                             match Js.Json.classify bool with
+                             | JSONTrue -> ((Belt.Result.Ok (true))
+                                 [@explicit_arity ])
+                             | JSONFalse -> ((Belt.Result.Ok (false))
+                                 [@explicit_arity ])
+                             | _ -> ((Belt.Result.Error ("Expected a bool"))
+                                 [@explicit_arity ])) json
+                    with
                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                         ((Belt.Result.Error (error))[@explicit_arity ])
-                    | ((Ok (attr_contents))[@explicit_arity ]) ->
-                        (match Js.Dict.get dict "name" with
+                    | ((Ok (attr_isClosed))[@explicit_arity ]) ->
+                        (match Js.Dict.get dict "contents" with
                          | None ->
-                             ((Belt.Result.Error (("No attribute " ^ "name")))
+                             ((Belt.Result.Error
+                                 (("No attribute " ^ "contents")))
                              [@explicit_arity ])
                          | ((Some (json))[@explicit_arity ]) ->
-                             (match (fun string ->
-                                       match Js.Json.classify string with
-                                       | ((JSONString
-                                           (string))[@explicit_arity ]) ->
-                                           ((Belt.Result.Ok (string))
-                                           [@explicit_arity ])
-                                       | _ -> ((Error ("epected a string"))
-                                           [@explicit_arity ])) json
-                              with
+                             (match aTransformer json with
                               | ((Belt.Result.Error
                                   (error))[@explicit_arity ]) ->
                                   ((Belt.Result.Error (error))
                                   [@explicit_arity ])
-                              | ((Ok (attr_name))[@explicit_arity ]) ->
-                                  Belt.Result.Ok
-                                    {
-                                      name = attr_name;
-                                      contents = attr_contents
-                                    }))))
+                              | ((Ok (attr_contents))[@explicit_arity ]) ->
+                                  (match Js.Dict.get dict "name" with
+                                   | None ->
+                                       ((Belt.Result.Error
+                                           (("No attribute " ^ "name")))
+                                       [@explicit_arity ])
+                                   | ((Some (json))[@explicit_arity ]) ->
+                                       (match (fun string ->
+                                                 match Js.Json.classify
+                                                         string
+                                                 with
+                                                 | ((JSONString
+                                                     (string))[@explicit_arity
+                                                                ])
+                                                     ->
+                                                     ((Belt.Result.Ok
+                                                         (string))
+                                                     [@explicit_arity ])
+                                                 | _ ->
+                                                     ((Error
+                                                         ("epected a string"))
+                                                     [@explicit_arity ]))
+                                                json
+                                        with
+                                        | ((Belt.Result.Error
+                                            (error))[@explicit_arity ]) ->
+                                            ((Belt.Result.Error (error))
+                                            [@explicit_arity ])
+                                        | ((Ok
+                                            (attr_name))[@explicit_arity ])
+                                            ->
+                                            Belt.Result.Ok
+                                              {
+                                                name = attr_name;
+                                                contents = attr_contents;
+                                                isClosed = attr_isClosed
+                                              }))))))
           | _ -> ((Belt.Result.Error ("Expected an object"))
               [@explicit_arity ])
     and (deserialize_Types____person :
@@ -2310,7 +2344,8 @@ module Version6 =
             (Js.Dict.fromArray
                [|("name", (Js.Json.string record.name));("contents",
                                                           (aTransformer
-                                                             record.contents))|])
+                                                             record.contents));
+                 ("isClosed", (Js.Json.boolean record.isClosed))|])
     and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
         Js.Json.object_
@@ -2351,8 +2386,7 @@ module Version6 =
            people = _converted_people
          } : Version5._Types__household -> _Types__household)
     and migrate_Types____named =
-      (fun _input_data -> _input_data : 'a Version5._Types__named ->
-                                          'a _Types__named)
+      (fun named -> false : 'a Version5._Types__named -> 'a _Types__named)
     and migrate_Types____person =
       (fun _input_data -> _input_data : Version5._Types__person ->
                                           _Types__person)
