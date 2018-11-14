@@ -89,7 +89,7 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
   | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
   | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
     (namedMigrateAttributes->Belt.List.hasAssoc(fst(item), (==))
-    || prevItems->Belt.List.has(item, (==)))->orLog("Bad record item")
+    || prevItems->Belt.List.has(item, (==)))->orLog("Bad record item: " ++ fst(item))
   }) =>
     let rec loop = (items, labels) =>
       switch (items) {
@@ -180,6 +180,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
     switch (Util.Utils.split_on_char('.', txt)) {
       | ["migrate"] => None
       | ["migrate", something] => {
+        /* print_endline("migrate -- " ++ something) */
         switch (getExpr(payload)) {
           | None => failwith("migrate attribute must be an expression")
           | Some(expr) => Some((something, expr))

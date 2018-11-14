@@ -307,7 +307,7 @@
                 },
                 [
                   "PStr",
-                  "let _ = fun person -> float_of_int person.age"
+                  "let _ = fun person -> float_of_int (person.age * 7)"
                 ]
               ]
             ],
@@ -951,7 +951,32 @@
             "household"
           ],
           [
-            [],
+            [
+              [
+                {
+                  "txt": "migrate.county",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = fun household -> { name = \"Nowhere\"; contents = 0 }"
+                ]
+              ]
+            ],
             {
               "name": "household",
               "variables": [],
@@ -1004,6 +1029,72 @@
                           []
                         ]
                       ]
+                    ]
+                  ],
+                  [
+                    "county",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          [],
+                          "named"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "int"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "named"
+          ],
+          [
+            [],
+            {
+              "name": "named",
+              "variables": [
+                [
+                  "Variable",
+                  "a"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "contents",
+                    [
+                      "Variable",
+                      "a"
                     ]
                   ]
                 ]
@@ -1167,6 +1258,30 @@
               "PStr",
               "let _ = fun household -> []"
             ]
+          ],
+          [
+            {
+              "txt": "migrate.county",
+              "loc": {
+                "loc_start": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_end": {
+                  "pos_fname": "_none_",
+                  "pos_lnum": 1,
+                  "pos_bol": 0,
+                  "pos_cnum": -1
+                },
+                "loc_ghost": true
+              }
+            },
+            [
+              "PStr",
+              "let _ = fun household -> household.county"
+            ]
           ]
         ],
         {
@@ -1245,6 +1360,72 @@
                       []
                     ]
                   ]
+                ]
+              ],
+              [
+                "county",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Types",
+                      [],
+                      "named"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      ]
+    ],
+    [
+      [
+        "Types",
+        [],
+        "named"
+      ],
+      [
+        [],
+        {
+          "name": "named",
+          "variables": [
+            [
+              "Variable",
+              "a"
+            ]
+          ],
+          "body": [
+            "Record",
+            [
+              [
+                "name",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "string"
+                  ],
+                  []
+                ]
+              ],
+              [
+                "contents",
+                [
+                  "Variable",
+                  "a"
                 ]
               ]
             ]

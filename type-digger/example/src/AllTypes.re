@@ -22,7 +22,7 @@ module V1 = {
 
 module V2 = {
   let v = 2;
-  [@migrate.age person => float_of_int(person.age)]
+  [@migrate.age person => float_of_int(person.age * 7)]
   type person = {
     name: string,
     age: float,
@@ -110,13 +110,24 @@ module V5 = {
     | Dog(option(dogBreed))
     | Cat
     | Mouse
+  
+  type named('a) = {
+    name: string,
+    contents: 'a
+  };
 
+  [@migrate.county household => {name: "Nowhere", contents: 0}]
   type household = {
     people: list(person),
     pets: list(pet),
+    county: named(int)
   };
 
-  let example = {people: [{name: "Me", age: 10., coords: (5., 6.)}], pets: [Dog(Some(Schnouser("black")))]}
+  let example = {
+    people: [{name: "Me", age: 10., coords: (5., 6.)}],
+    pets: [Dog(Some(Schnouser("black")))],
+    county: {name: "Bearland", contents: 5}
+  };
 };
 
 module V6 = {
@@ -132,13 +143,25 @@ module V6 = {
     | Dog
     | Cat
     | Mouse;
+  
+  type named('a) = {
+    name: string,
+    contents: 'a
+  };
 
   [@migrate.visitors household => []]
+  [@migrate.county household => household.county]
   type household = {
     people: list(person),
     pets: list(pet),
     visitors: list(person),
+    county: named(int)
   };
 
-  let example = {people: [{name: "Me", age: 10., coords: (5., 6.)}], pets: [Dog, Mouse], visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}]}
+  let example = {
+    people: [{name: "Me", age: 10., coords: (5., 6.)}],
+    pets: [Dog, Mouse],
+    visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}],
+    county: {name: "Bearland", contents: 5}
+  };
 };
