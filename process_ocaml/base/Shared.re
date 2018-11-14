@@ -191,7 +191,8 @@ let makeDeclaration = t => {
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
-  |> SharedTypes.SimpleType.declMapSource(mapOldPath)
+  |> SharedTypes.SimpleType.declMapSource(mapOldPath),
+  migrateAttributes: () => migrateAttributes(t),
 }
 
 #if 402

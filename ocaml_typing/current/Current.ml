@@ -41,7 +41,7 @@ type constant = Asttypes.constant =
   | Const_int64 of int64
   | Const_nativeint of nativeint
 
-type payload =
+type payload = Parsetree.payload =
   | PStr of Parsetree.structure
   | PSig of Parsetree.signature (* : SIG *)
   | PTyp of Parsetree.core_type  (* : T *)

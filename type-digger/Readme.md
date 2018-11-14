@@ -53,7 +53,7 @@ let serializeDog = dog => {
 };
 
 let deserializeDog = json => {
-  let (version, payload) = parseVersion(json);
+  let%Try (version, payload) = parseVersion(json);
   switch version {
     | 4 => V4.deserializeDog(payload)
     | 3 => V3.deserializeDog(payload)->V4.migrateDog

@@ -97,6 +97,7 @@ type flexibleDeclaration = {
   declToString: string => string,
   declarationKind: kinds,
   asSimpleDeclaration: string => SimpleType.declaration(Path.t),
+  migrateAttributes: unit => Parsetree.attributes,
 };
 
 type filePath = string
