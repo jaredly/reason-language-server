@@ -20,5 +20,21 @@ for (i in 1 to Types.v) {
     | Ok(result) => Js.log3(i, "Good", Js.Json.stringifyAny(result))
     | Error(error) => Js.log3(i, "Failed", error)
   }
+};
 
+let rawGood = [%bs.raw {|
+[6,{"people":[{"name":"Me","age":10,"coords":[5,6]}],"pets":[["Dog"],["Mouse"]],"visitors":[{
+  "name":"Friend","age":11.5,"coords":[1,6]
+}],"county":{"name":"Bearland","contents":5,"isClosed":false}}]
+|}];
+
+let rawBad = [%bs.raw {|
+[6,{"people":[{"name":"Me","age":10,"coords":[5,6]}],"pets":[["Dog"],["Mouse"]],"visitors":[{
+  "name":"Friend","age":11.5,"coords":["hi",6]
+}],"county":{"name":"Bearland","contents":5,"isClosed":false}}]
+|}];
+
+switch (Serde.deserializeHousehold(rawBad)) {
+  | Ok(_) => assert(false)
+  | Error(error) => Js.log2("Error message: ", Belt.List.toArray(error))
 }

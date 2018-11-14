@@ -263,14 +263,14 @@ let main = configPath => {
           Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ capitalize(publicName))),
           [%expr
             data => switch (parseVersion(data)) {
-              | Belt.Result.Error(err) => Belt.Result.Error(err)
+              | Belt.Result.Error(err) => Belt.Result.Error([err])
               | [@implicit_arity]Ok((version, data)) => [%e 
                 Ast_helper.Exp.match(
                   [%expr version],
                   {
                     let rec loop = n =>
                       if (n < 1) {
-                        [Ast_helper.Exp.case([%pat? _], [%expr Belt.Result.Error("Unexpected version " ++ string_of_int(version))])];
+                        [Ast_helper.Exp.case([%pat? _], [%expr Belt.Result.Error(["Unexpected version " ++ string_of_int(version)])])];
                       } else {
                         [
                           Ast_helper.Exp.case(
