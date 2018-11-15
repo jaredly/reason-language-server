@@ -96,7 +96,7 @@ let getInitialState = (params) => {
   );
 
   /* Check if we have `cur__target_dir` as a marker that we're inside an Esy context,
-   * i.e. the editor was started with e.g. `esy @myalias code .`.
+   * i.e. the editor was started with e.g. `esy @myalias code .` or `esy code .`.
    * We can't support auto rebuild in this case yet because Esy doesn't provide
    * enough information on which named sandbox we're in.
    */
