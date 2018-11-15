@@ -95,11 +95,30 @@ let getInitialState = (params) => {
       && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
   );
 
-  let state = {
-    ...TopTypes.empty(),
-    rootPath,
-    rootUri: uri,
-  };
+  /* Check if we have `cur__target_dir` as a marker that we're inside an Esy context,
+   * i.e. the editor was started with e.g. `esy @myalias code .`.
+   * We can't support auto rebuild in this case yet because Esy doesn't provide
+   * enough information on which named sandbox we're in.
+   */
+  let state =
+    switch (Utils.getEnvVar("cur__target_dir")) {
+    | Some(_) =>
+      let empty = TopTypes.empty();
+      {
+        ...empty,
+        settings: {
+          ...empty.settings,
+          autoRebuild: false
+        },
+        rootPath,
+        rootUri: uri
+      }
+    | None => {
+      ...TopTypes.empty(),
+      rootPath,
+      rootUri: uri
+    }
+    };
 
   Ok({...state, settings: {...state.settings, clientNeedsPlainText}})
 };
