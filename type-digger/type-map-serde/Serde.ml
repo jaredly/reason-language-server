@@ -65,8 +65,11 @@ module V1_Locked =
       {
       file: string ;
       type_: string ;
-      publicName: string ;
-      history: _TypeMapSerde__Config__versionPlacement option }
+      publicName: string option ;
+      versionPlacement: _TypeMapSerde__Config__versionPlacement option }
+    and _TypeMapSerde__Config__serializableLockfile =
+      _TypeMap__DigTypes__shortReference
+        _TypeMapSerde__Config__Locked__lockfile
     and _TypeMapSerde__Config__t = TypeMapSerde__Config.t =
       {
       version: int ;
@@ -78,15 +81,28 @@ module V1_Locked =
       TypeMapSerde__Config.versionPlacement =
       | EmbeddedVersion 
       | WrappedVersion 
-    and 'reference _TypeMap__DigTypes__lockfile =
-      'reference TypeMap__DigTypes.lockfile =
+    and 'reference _TypeMapSerde__Config__Locked__lockedConfig =
+      'reference TypeMapSerde__Config.Locked.lockedConfig =
       {
       version: int ;
+      entries: _TypeMapSerde__Config__Locked__lockedEntry list ;
+      versionedEngine: (_TypeMapSerde__Config__engine * int) ;
+      typeMap: 'reference _TypeMap__DigTypes__typeMap }
+    and _TypeMapSerde__Config__Locked__lockedEntry =
+      TypeMapSerde__Config.Locked.lockedEntry =
+      {
+      moduleName: string ;
+      modulePath: string list ;
+      name: string ;
+      versionPlacement: _TypeMapSerde__Config__versionPlacement }
+    and 'reference _TypeMapSerde__Config__Locked__lockfile =
+      'reference TypeMapSerde__Config.Locked.lockfile =
+      {
+      current: 'reference _TypeMapSerde__Config__Locked__lockedConfig ;
       pastVersions:
-        (int, 'reference _TypeMap__DigTypes__typeMap) _Stdlib__hashtbl__t ;
-      current: 'reference _TypeMap__DigTypes__typeMap }
-    and _TypeMap__DigTypes__serializableLockfile =
-      _TypeMap__DigTypes__shortReference _TypeMap__DigTypes__lockfile
+        (int, 'reference _TypeMapSerde__Config__Locked__lockedConfig)
+          _Stdlib__hashtbl__t
+        }
     and _TypeMap__DigTypes__shortReference =
       (_Analyze__TopTypes__moduleName * string list * string)
     and 'reference _TypeMap__DigTypes__typeMap =
@@ -318,24 +334,24 @@ module DeserializeRaw =
       Json.t -> (Parsetree.structure, string) Belt.Result.t) =
       TransformHelpers.deserialize_Parsetree____structure
     and deserialize_SharedTypes__SimpleType__body :
-      type arg0 .
-        (Json.t -> (arg0, string) Belt.Result.t) ->
-          Json.t -> (arg0 SharedTypes.SimpleType.body, string) Belt.Result.t
+      'arg0 .
+        (Json.t -> ('arg0, string) Belt.Result.t) ->
+          Json.t -> ('arg0 SharedTypes.SimpleType.body, string) Belt.Result.t
       =
       fun sourceTransformer ->
         fun constructor ->
           match constructor with
           | Json.Array (tag::[]) when (Json.String "Open") = tag ->
-              Belt.Result.Ok (Open : arg0 SharedTypes.SimpleType.body)
+              Belt.Result.Ok (Open : 'arg0 SharedTypes.SimpleType.body)
           | Json.Array (tag::[]) when (Json.String "Abstract") = tag ->
-              Belt.Result.Ok (Abstract : arg0 SharedTypes.SimpleType.body)
+              Belt.Result.Ok (Abstract : 'arg0 SharedTypes.SimpleType.body)
           | Json.Array (tag::arg0::[]) when (Json.String "Expr") = tag ->
               (match (deserialize_SharedTypes__SimpleType__expr
                         sourceTransformer) arg0
                with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Expr (arg0) : arg0 SharedTypes.SimpleType.body)
+                     (Expr (arg0) : 'arg0 SharedTypes.SimpleType.body)
                | Error error -> Error error)
           | Json.Array (tag::arg0::[]) when (Json.String "Record") = tag ->
               (match (fun list ->
@@ -398,7 +414,7 @@ module DeserializeRaw =
                with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Record (arg0) : arg0 SharedTypes.SimpleType.body)
+                     (Record (arg0) : 'arg0 SharedTypes.SimpleType.body)
                | Error error -> Error error)
           | Json.Array (tag::arg0::[]) when (Json.String "Variant") = tag ->
               (match (fun list ->
@@ -552,7 +568,7 @@ module DeserializeRaw =
                with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Variant (arg0) : arg0 SharedTypes.SimpleType.body)
+                     (Variant (arg0) : 'arg0 SharedTypes.SimpleType.body)
                | Error error -> Error error)
           | _ -> Error "Expected an array"
     and deserialize_SharedTypes__SimpleType__declaration :
@@ -671,9 +687,9 @@ module DeserializeRaw =
           | _ -> ((Belt.Result.Error ("Expected an object"))
               [@explicit_arity ])
     and deserialize_SharedTypes__SimpleType__expr :
-      type arg0 .
-        (Json.t -> (arg0, string) Belt.Result.t) ->
-          Json.t -> (arg0 SharedTypes.SimpleType.expr, string) Belt.Result.t
+      'arg0 .
+        (Json.t -> ('arg0, string) Belt.Result.t) ->
+          Json.t -> ('arg0 SharedTypes.SimpleType.expr, string) Belt.Result.t
       =
       fun sourceTransformer ->
         fun constructor ->
@@ -688,11 +704,11 @@ module DeserializeRaw =
                with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Variable (arg0) : arg0 SharedTypes.SimpleType.expr)
+                     (Variable (arg0) : 'arg0 SharedTypes.SimpleType.expr)
                | Error error -> Error error)
           | Json.Array (tag::[]) when (Json.String "AnonVariable") = tag ->
               Belt.Result.Ok
-                (AnonVariable : arg0 SharedTypes.SimpleType.expr)
+                (AnonVariable : 'arg0 SharedTypes.SimpleType.expr)
           | Json.Array (tag::arg0::arg1::[]) when
               (Json.String "Reference") = tag ->
               (match (fun list ->
@@ -731,7 +747,7 @@ module DeserializeRaw =
                    (match sourceTransformer arg0 with
                     | Belt.Result.Ok arg0 ->
                         Belt.Result.Ok
-                          (Reference (arg0, arg1) : arg0
+                          (Reference (arg0, arg1) : 'arg0
                                                       SharedTypes.SimpleType.expr)
                     | Error error -> Error error)
                | Error error -> Error error)
@@ -770,7 +786,7 @@ module DeserializeRaw =
                with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Tuple (arg0) : arg0 SharedTypes.SimpleType.expr)
+                     (Tuple (arg0) : 'arg0 SharedTypes.SimpleType.expr)
                | Error error -> Error error)
           | Json.Array (tag::arg0::arg1::[]) when (Json.String "Fn") = tag ->
               (match (deserialize_SharedTypes__SimpleType__expr
@@ -878,12 +894,12 @@ module DeserializeRaw =
                     with
                     | Belt.Result.Ok arg0 ->
                         Belt.Result.Ok
-                          (Fn (arg0, arg1) : arg0
+                          (Fn (arg0, arg1) : 'arg0
                                                SharedTypes.SimpleType.expr)
                     | Error error -> Error error)
                | Error error -> Error error)
           | Json.Array (tag::[]) when (Json.String "Other") = tag ->
-              Belt.Result.Ok (Other : arg0 SharedTypes.SimpleType.expr)
+              Belt.Result.Ok (Other : 'arg0 SharedTypes.SimpleType.expr)
           | _ -> Error "Expected an array"
     and deserialize_Stdlib__hashtbl____t :
       'arg0 'arg1 .
@@ -1200,8 +1216,9 @@ module DeserializeRaw =
       fun record ->
         match record with
         | ((Json.Object (items))[@explicit_arity ]) ->
-            (match Belt.List.getAssoc items "history" (=) with
-             | None -> ((Belt.Result.Error (("No attribute " ^ "history")))
+            (match Belt.List.getAssoc items "versionPlacement" (=) with
+             | None ->
+                 ((Belt.Result.Error (("No attribute " ^ "versionPlacement")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match ((fun transformer ->
@@ -1226,21 +1243,42 @@ module DeserializeRaw =
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                       ((Belt.Result.Error (error))[@explicit_arity ])
-                  | ((Belt.Result.Ok (attr_history))[@explicit_arity ]) ->
+                  | ((Belt.Result.Ok
+                      (attr_versionPlacement))[@explicit_arity ]) ->
                       (match Belt.List.getAssoc items "publicName" (=) with
                        | None ->
                            ((Belt.Result.Error
                                (("No attribute " ^ "publicName")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
-                           (match (fun string ->
-                                     match string with
-                                     | ((Json.String
-                                         (string))[@explicit_arity ]) ->
-                                         ((Belt.Result.Ok (string))
-                                         [@explicit_arity ])
-                                     | _ -> ((Error ("epected a string"))
-                                         [@explicit_arity ])) json
+                           (match ((fun transformer ->
+                                      fun option ->
+                                        match option with
+                                        | Json.Null ->
+                                            ((Belt.Result.Ok (None))
+                                            [@explicit_arity ])
+                                        | _ ->
+                                            (match transformer option with
+                                             | ((Belt.Result.Error
+                                                 (error))[@explicit_arity ])
+                                                 ->
+                                                 ((Belt.Result.Error (error))
+                                                 [@explicit_arity ])
+                                             | ((Belt.Result.Ok
+                                                 (value))[@explicit_arity ])
+                                                 ->
+                                                 ((Belt.Result.Ok
+                                                     (((Some (value))
+                                                       [@explicit_arity ])))
+                                                 [@explicit_arity ])))
+                                     (fun string ->
+                                        match string with
+                                        | ((Json.String
+                                            (string))[@explicit_arity ]) ->
+                                            ((Belt.Result.Ok (string))
+                                            [@explicit_arity ])
+                                        | _ -> ((Error ("epected a string"))
+                                            [@explicit_arity ]))) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
                                 -> ((Belt.Result.Error (error))
@@ -1316,10 +1354,17 @@ module DeserializeRaw =
                                                         type_ = attr_type_;
                                                         publicName =
                                                           attr_publicName;
-                                                        history =
-                                                          attr_history
+                                                        versionPlacement =
+                                                          attr_versionPlacement
                                                       }))))))))
         | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
+    and (deserialize_TypeMapSerde__Config____serializableLockfile :
+      Json.t ->
+        (TypeMapSerde__Config.serializableLockfile, string) Belt.Result.t)
+      =
+      fun value ->
+        (deserialize_TypeMapSerde__Config__Locked__lockfile
+           deserialize_TypeMap__DigTypes____shortReference) value
     and (deserialize_TypeMapSerde__Config____t :
       Json.t -> (TypeMapSerde__Config.t, string) Belt.Result.t) =
       fun record ->
@@ -1550,17 +1595,19 @@ module DeserializeRaw =
             Belt.Result.Ok
               (WrappedVersion : TypeMapSerde__Config.versionPlacement)
         | _ -> Error "Expected an array"
-    and deserialize_TypeMap__DigTypes____lockfile :
+    and deserialize_TypeMapSerde__Config__Locked__lockedConfig :
       'arg0 .
         (Json.t -> ('arg0, string) Belt.Result.t) ->
-          Json.t -> ('arg0 TypeMap__DigTypes.lockfile, string) Belt.Result.t
+          Json.t ->
+            ('arg0 TypeMapSerde__Config.Locked.lockedConfig, string)
+              Belt.Result.t
       =
       fun referenceTransformer ->
         fun record ->
           match record with
           | ((Json.Object (items))[@explicit_arity ]) ->
-              (match Belt.List.getAssoc items "current" (=) with
-               | None -> ((Belt.Result.Error (("No attribute " ^ "current")))
+              (match Belt.List.getAssoc items "typeMap" (=) with
+               | None -> ((Belt.Result.Error (("No attribute " ^ "typeMap")))
                    [@explicit_arity ])
                | ((Some (json))[@explicit_arity ]) ->
                    (match (deserialize_TypeMap__DigTypes____typeMap
@@ -1568,55 +1615,123 @@ module DeserializeRaw =
                     with
                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                         ((Belt.Result.Error (error))[@explicit_arity ])
-                    | ((Belt.Result.Ok (attr_current))[@explicit_arity ]) ->
-                        (match Belt.List.getAssoc items "pastVersions" (=)
+                    | ((Belt.Result.Ok (attr_typeMap))[@explicit_arity ]) ->
+                        (match Belt.List.getAssoc items "versionedEngine" (=)
                          with
                          | None ->
                              ((Belt.Result.Error
-                                 (("No attribute " ^ "pastVersions")))
+                                 (("No attribute " ^ "versionedEngine")))
                              [@explicit_arity ])
                          | ((Some (json))[@explicit_arity ]) ->
-                             (match (deserialize_Stdlib__hashtbl____t
-                                       (fun number ->
-                                          match number with
-                                          | ((Json.Number
-                                              (number))[@explicit_arity ]) ->
-                                              ((Belt.Result.Ok
-                                                  ((int_of_float number)))
-                                              [@explicit_arity ])
-                                          | _ ->
-                                              ((Error ("Expected a float"))
-                                              [@explicit_arity ]))
-                                       (deserialize_TypeMap__DigTypes____typeMap
-                                          referenceTransformer)) json
+                             (match (fun json ->
+                                       match json with
+                                       | ((Json.Array
+                                           (arg0::arg1::[]))[@explicit_arity
+                                                              ])
+                                           ->
+                                           (match (fun number ->
+                                                     match number with
+                                                     | ((Json.Number
+                                                         (number))[@explicit_arity
+                                                                    ])
+                                                         ->
+                                                         ((Belt.Result.Ok
+                                                             ((int_of_float
+                                                                 number)))
+                                                         [@explicit_arity ])
+                                                     | _ ->
+                                                         ((Error
+                                                             ("Expected a float"))
+                                                         [@explicit_arity ]))
+                                                    arg1
+                                            with
+                                            | Belt.Result.Ok arg1 ->
+                                                (match deserialize_TypeMapSerde__Config____engine
+                                                         arg0
+                                                 with
+                                                 | Belt.Result.Ok arg0 ->
+                                                     Belt.Result.Ok
+                                                       (arg0, arg1)
+                                                 | Error error -> Error error)
+                                            | Error error -> Error error)
+                                       | _ ->
+                                           ((Belt.Result.Error
+                                               ("Expected array"))
+                                           [@explicit_arity ])) json
                               with
                               | ((Belt.Result.Error
                                   (error))[@explicit_arity ]) ->
                                   ((Belt.Result.Error (error))
                                   [@explicit_arity ])
                               | ((Belt.Result.Ok
-                                  (attr_pastVersions))[@explicit_arity ]) ->
-                                  (match Belt.List.getAssoc items "version"
+                                  (attr_versionedEngine))[@explicit_arity ])
+                                  ->
+                                  (match Belt.List.getAssoc items "entries"
                                            (=)
                                    with
                                    | None ->
                                        ((Belt.Result.Error
-                                           (("No attribute " ^ "version")))
+                                           (("No attribute " ^ "entries")))
                                        [@explicit_arity ])
                                    | ((Some (json))[@explicit_arity ]) ->
-                                       (match (fun number ->
-                                                 match number with
-                                                 | ((Json.Number
-                                                     (number))[@explicit_arity
-                                                                ])
+                                       (match (fun list ->
+                                                 match list with
+                                                 | ((Json.Array
+                                                     (items))[@explicit_arity
+                                                               ])
                                                      ->
-                                                     ((Belt.Result.Ok
-                                                         ((int_of_float
-                                                             number)))
-                                                     [@explicit_arity ])
+                                                     let transformer =
+                                                       deserialize_TypeMapSerde__Config__Locked__lockedEntry in
+                                                     let rec loop items =
+                                                       match items with
+                                                       | [] ->
+                                                           ((Belt.Result.Ok
+                                                               ([]))
+                                                           [@explicit_arity ])
+                                                       | one::rest ->
+                                                           (match transformer
+                                                                    one
+                                                            with
+                                                            | ((Belt.Result.Error
+                                                                (error))
+                                                                [@explicit_arity
+                                                                  ])
+                                                                ->
+                                                                ((Belt.Result.Error
+                                                                    (error))
+                                                                [@explicit_arity
+                                                                  ])
+                                                            | ((Belt.Result.Ok
+                                                                (value))
+                                                                [@explicit_arity
+                                                                  ])
+                                                                ->
+                                                                (match 
+                                                                   loop rest
+                                                                 with
+                                                                 | ((Belt.Result.Error
+                                                                    (error))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    ((
+                                                                    Belt.Result.Error
+                                                                    (error))
+                                                                    [@explicit_arity
+                                                                    ])
+                                                                 | ((Belt.Result.Ok
+                                                                    (rest))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    ((
+                                                                    Belt.Result.Ok
+                                                                    ((value
+                                                                    :: rest)))
+                                                                    [@explicit_arity
+                                                                    ]))) in
+                                                     loop items
                                                  | _ ->
-                                                     ((Error
-                                                         ("Expected a float"))
+                                                     ((Belt.Result.Error
+                                                         ("expected an array"))
                                                      [@explicit_arity ]))
                                                 json
                                         with
@@ -1625,24 +1740,288 @@ module DeserializeRaw =
                                             ((Belt.Result.Error (error))
                                             [@explicit_arity ])
                                         | ((Belt.Result.Ok
-                                            (attr_version))[@explicit_arity ])
+                                            (attr_entries))[@explicit_arity ])
                                             ->
-                                            Belt.Result.Ok
-                                              {
-                                                version = attr_version;
-                                                pastVersions =
-                                                  attr_pastVersions;
-                                                current = attr_current
-                                              }))))))
+                                            (match Belt.List.getAssoc items
+                                                     "version" (=)
+                                             with
+                                             | None ->
+                                                 ((Belt.Result.Error
+                                                     (("No attribute " ^
+                                                         "version")))
+                                                 [@explicit_arity ])
+                                             | ((Some
+                                                 (json))[@explicit_arity ])
+                                                 ->
+                                                 (match (fun number ->
+                                                           match number with
+                                                           | ((Json.Number
+                                                               (number))
+                                                               [@explicit_arity
+                                                                 ])
+                                                               ->
+                                                               ((Belt.Result.Ok
+                                                                   ((int_of_float
+                                                                    number)))
+                                                               [@explicit_arity
+                                                                 ])
+                                                           | _ ->
+                                                               ((Error
+                                                                   ("Expected a float"))
+                                                               [@explicit_arity
+                                                                 ])) json
+                                                  with
+                                                  | ((Belt.Result.Error
+                                                      (error))[@explicit_arity
+                                                                ])
+                                                      ->
+                                                      ((Belt.Result.Error
+                                                          (error))
+                                                      [@explicit_arity ])
+                                                  | ((Belt.Result.Ok
+                                                      (attr_version))
+                                                      [@explicit_arity ]) ->
+                                                      Belt.Result.Ok
+                                                        {
+                                                          version =
+                                                            attr_version;
+                                                          entries =
+                                                            attr_entries;
+                                                          versionedEngine =
+                                                            attr_versionedEngine;
+                                                          typeMap =
+                                                            attr_typeMap
+                                                        }))))))))
           | _ -> ((Belt.Result.Error ("Expected an object"))
               [@explicit_arity ])
-    and (deserialize_TypeMap__DigTypes____serializableLockfile :
+    and (deserialize_TypeMapSerde__Config__Locked__lockedEntry :
       Json.t ->
-        (TypeMap__DigTypes.serializableLockfile, string) Belt.Result.t)
+        (TypeMapSerde__Config.Locked.lockedEntry, string) Belt.Result.t)
       =
-      fun value ->
-        (deserialize_TypeMap__DigTypes____lockfile
-           deserialize_TypeMap__DigTypes____shortReference) value
+      fun record ->
+        match record with
+        | ((Json.Object (items))[@explicit_arity ]) ->
+            (match Belt.List.getAssoc items "versionPlacement" (=) with
+             | None ->
+                 ((Belt.Result.Error (("No attribute " ^ "versionPlacement")))
+                 [@explicit_arity ])
+             | ((Some (json))[@explicit_arity ]) ->
+                 (match deserialize_TypeMapSerde__Config____versionPlacement
+                          json
+                  with
+                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                      ((Belt.Result.Error (error))[@explicit_arity ])
+                  | ((Belt.Result.Ok
+                      (attr_versionPlacement))[@explicit_arity ]) ->
+                      (match Belt.List.getAssoc items "name" (=) with
+                       | None ->
+                           ((Belt.Result.Error (("No attribute " ^ "name")))
+                           [@explicit_arity ])
+                       | ((Some (json))[@explicit_arity ]) ->
+                           (match (fun string ->
+                                     match string with
+                                     | ((Json.String
+                                         (string))[@explicit_arity ]) ->
+                                         ((Belt.Result.Ok (string))
+                                         [@explicit_arity ])
+                                     | _ -> ((Error ("epected a string"))
+                                         [@explicit_arity ])) json
+                            with
+                            | ((Belt.Result.Error (error))[@explicit_arity ])
+                                -> ((Belt.Result.Error (error))
+                                [@explicit_arity ])
+                            | ((Belt.Result.Ok
+                                (attr_name))[@explicit_arity ]) ->
+                                (match Belt.List.getAssoc items "modulePath"
+                                         (=)
+                                 with
+                                 | None ->
+                                     ((Belt.Result.Error
+                                         (("No attribute " ^ "modulePath")))
+                                     [@explicit_arity ])
+                                 | ((Some (json))[@explicit_arity ]) ->
+                                     (match (fun list ->
+                                               match list with
+                                               | ((Json.Array
+                                                   (items))[@explicit_arity ])
+                                                   ->
+                                                   let transformer string =
+                                                     match string with
+                                                     | ((Json.String
+                                                         (string))[@explicit_arity
+                                                                    ])
+                                                         ->
+                                                         ((Belt.Result.Ok
+                                                             (string))
+                                                         [@explicit_arity ])
+                                                     | _ ->
+                                                         ((Error
+                                                             ("epected a string"))
+                                                         [@explicit_arity ]) in
+                                                   let rec loop items =
+                                                     match items with
+                                                     | [] ->
+                                                         ((Belt.Result.Ok
+                                                             ([]))
+                                                         [@explicit_arity ])
+                                                     | one::rest ->
+                                                         (match transformer
+                                                                  one
+                                                          with
+                                                          | ((Belt.Result.Error
+                                                              (error))
+                                                              [@explicit_arity
+                                                                ])
+                                                              ->
+                                                              ((Belt.Result.Error
+                                                                  (error))
+                                                              [@explicit_arity
+                                                                ])
+                                                          | ((Belt.Result.Ok
+                                                              (value))
+                                                              [@explicit_arity
+                                                                ])
+                                                              ->
+                                                              (match 
+                                                                 loop rest
+                                                               with
+                                                               | ((Belt.Result.Error
+                                                                   (error))
+                                                                   [@explicit_arity
+                                                                    ])
+                                                                   ->
+                                                                   ((
+                                                                   Belt.Result.Error
+                                                                    (error))
+                                                                   [@explicit_arity
+                                                                    ])
+                                                               | ((Belt.Result.Ok
+                                                                   (rest))
+                                                                   [@explicit_arity
+                                                                    ])
+                                                                   ->
+                                                                   ((
+                                                                   Belt.Result.Ok
+                                                                    ((value
+                                                                    :: rest)))
+                                                                   [@explicit_arity
+                                                                    ]))) in
+                                                   loop items
+                                               | _ ->
+                                                   ((Belt.Result.Error
+                                                       ("expected an array"))
+                                                   [@explicit_arity ])) json
+                                      with
+                                      | ((Belt.Result.Error
+                                          (error))[@explicit_arity ]) ->
+                                          ((Belt.Result.Error (error))
+                                          [@explicit_arity ])
+                                      | ((Belt.Result.Ok
+                                          (attr_modulePath))[@explicit_arity
+                                                              ])
+                                          ->
+                                          (match Belt.List.getAssoc items
+                                                   "moduleName" (=)
+                                           with
+                                           | None ->
+                                               ((Belt.Result.Error
+                                                   (("No attribute " ^
+                                                       "moduleName")))
+                                               [@explicit_arity ])
+                                           | ((Some
+                                               (json))[@explicit_arity ]) ->
+                                               (match (fun string ->
+                                                         match string with
+                                                         | ((Json.String
+                                                             (string))
+                                                             [@explicit_arity
+                                                               ])
+                                                             ->
+                                                             ((Belt.Result.Ok
+                                                                 (string))
+                                                             [@explicit_arity
+                                                               ])
+                                                         | _ ->
+                                                             ((Error
+                                                                 ("epected a string"))
+                                                             [@explicit_arity
+                                                               ])) json
+                                                with
+                                                | ((Belt.Result.Error
+                                                    (error))[@explicit_arity
+                                                              ])
+                                                    ->
+                                                    ((Belt.Result.Error
+                                                        (error))
+                                                    [@explicit_arity ])
+                                                | ((Belt.Result.Ok
+                                                    (attr_moduleName))
+                                                    [@explicit_arity ]) ->
+                                                    Belt.Result.Ok
+                                                      {
+                                                        moduleName =
+                                                          attr_moduleName;
+                                                        modulePath =
+                                                          attr_modulePath;
+                                                        name = attr_name;
+                                                        versionPlacement =
+                                                          attr_versionPlacement
+                                                      }))))))))
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
+    and deserialize_TypeMapSerde__Config__Locked__lockfile :
+      'arg0 .
+        (Json.t -> ('arg0, string) Belt.Result.t) ->
+          Json.t ->
+            ('arg0 TypeMapSerde__Config.Locked.lockfile, string)
+              Belt.Result.t
+      =
+      fun referenceTransformer ->
+        fun record ->
+          match record with
+          | ((Json.Object (items))[@explicit_arity ]) ->
+              (match Belt.List.getAssoc items "pastVersions" (=) with
+               | None ->
+                   ((Belt.Result.Error (("No attribute " ^ "pastVersions")))
+                   [@explicit_arity ])
+               | ((Some (json))[@explicit_arity ]) ->
+                   (match (deserialize_Stdlib__hashtbl____t
+                             (fun number ->
+                                match number with
+                                | ((Json.Number (number))[@explicit_arity ])
+                                    ->
+                                    ((Belt.Result.Ok ((int_of_float number)))
+                                    [@explicit_arity ])
+                                | _ -> ((Error ("Expected a float"))
+                                    [@explicit_arity ]))
+                             (deserialize_TypeMapSerde__Config__Locked__lockedConfig
+                                referenceTransformer)) json
+                    with
+                    | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                        ((Belt.Result.Error (error))[@explicit_arity ])
+                    | ((Belt.Result.Ok
+                        (attr_pastVersions))[@explicit_arity ]) ->
+                        (match Belt.List.getAssoc items "current" (=) with
+                         | None ->
+                             ((Belt.Result.Error
+                                 (("No attribute " ^ "current")))
+                             [@explicit_arity ])
+                         | ((Some (json))[@explicit_arity ]) ->
+                             (match (deserialize_TypeMapSerde__Config__Locked__lockedConfig
+                                       referenceTransformer) json
+                              with
+                              | ((Belt.Result.Error
+                                  (error))[@explicit_arity ]) ->
+                                  ((Belt.Result.Error (error))
+                                  [@explicit_arity ])
+                              | ((Belt.Result.Ok
+                                  (attr_current))[@explicit_arity ]) ->
+                                  Belt.Result.Ok
+                                    {
+                                      current = attr_current;
+                                      pastVersions = attr_pastVersions
+                                    }))))
+          | _ -> ((Belt.Result.Error ("Expected an object"))
+              [@explicit_arity ])
     and (deserialize_TypeMap__DigTypes____shortReference :
       Json.t -> (TypeMap__DigTypes.shortReference, string) Belt.Result.t) =
       fun value ->
@@ -1733,10 +2112,10 @@ module DeserializeRaw =
                 | _ -> ((Belt.Result.Error ("Expected array"))
                     [@explicit_arity ]))) value
     and deserialize_TypeMap__DigTypes____typeSource :
-      type arg0 .
-        (Json.t -> (arg0, string) Belt.Result.t) ->
+      'arg0 .
+        (Json.t -> ('arg0, string) Belt.Result.t) ->
           Json.t ->
-            (arg0 TypeMap__DigTypes.typeSource, string) Belt.Result.t
+            ('arg0 TypeMap__DigTypes.typeSource, string) Belt.Result.t
       =
       fun referenceTransformer ->
         fun constructor ->
@@ -1751,16 +2130,16 @@ module DeserializeRaw =
                with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Builtin (arg0) : arg0 TypeMap__DigTypes.typeSource)
+                     (Builtin (arg0) : 'arg0 TypeMap__DigTypes.typeSource)
                | Error error -> Error error)
           | Json.Array (tag::arg0::[]) when (Json.String "Public") = tag ->
               (match referenceTransformer arg0 with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
-                     (Public (arg0) : arg0 TypeMap__DigTypes.typeSource)
+                     (Public (arg0) : 'arg0 TypeMap__DigTypes.typeSource)
                | Error error -> Error error)
           | Json.Array (tag::[]) when (Json.String "NotFound") = tag ->
-              Belt.Result.Ok (NotFound : arg0 TypeMap__DigTypes.typeSource)
+              Belt.Result.Ok (NotFound : 'arg0 TypeMap__DigTypes.typeSource)
           | _ -> Error "Expected an array"
   end
 module SerializeRaw =
@@ -2008,15 +2387,24 @@ module SerializeRaw =
           ("type_",
             (((fun s -> ((Json.String (s))[@explicit_arity ]))) record.type_));
           ("publicName",
-            (((fun s -> ((Json.String (s))[@explicit_arity ])))
+            ((((fun transformer ->
+                  function
+                  | None -> Json.Null
+                  | ((Some (v))[@explicit_arity ]) -> transformer v))
+                (fun s -> ((Json.String (s))[@explicit_arity ])))
                record.publicName));
-          ("history",
+          ("versionPlacement",
             ((((fun transformer ->
                   function
                   | None -> Json.Null
                   | ((Some (v))[@explicit_arity ]) -> transformer v))
                 serialize_TypeMapSerde__Config____versionPlacement)
-               record.history))]
+               record.versionPlacement))]
+    and (serialize_TypeMapSerde__Config____serializableLockfile :
+      TypeMapSerde__Config.serializableLockfile -> Json.t) =
+      fun value ->
+        (serialize_TypeMapSerde__Config__Locked__lockfile
+           serialize_TypeMap__DigTypes____shortReference) value
     and (serialize_TypeMapSerde__Config____t :
       TypeMapSerde__Config.t -> Json.t) =
       fun record ->
@@ -2046,8 +2434,10 @@ module SerializeRaw =
         match constructor with
         | EmbeddedVersion -> Json.Array [Json.String "EmbeddedVersion"]
         | WrappedVersion -> Json.Array [Json.String "WrappedVersion"]
-    and serialize_TypeMap__DigTypes____lockfile :
-      'arg0 . ('arg0 -> Json.t) -> 'arg0 TypeMap__DigTypes.lockfile -> Json.t
+    and serialize_TypeMapSerde__Config__Locked__lockedConfig :
+      'arg0 .
+        ('arg0 -> Json.t) ->
+          'arg0 TypeMapSerde__Config.Locked.lockedConfig -> Json.t
       =
       fun referenceTransformer ->
         fun record ->
@@ -2055,20 +2445,56 @@ module SerializeRaw =
             [("version",
                (((fun i -> ((Json.Number ((float_of_int i)))
                     [@explicit_arity ]))) record.version));
+            ("entries",
+              (((fun list ->
+                   Json.Array
+                     (Belt.List.map list
+                        serialize_TypeMapSerde__Config__Locked__lockedEntry)))
+                 record.entries));
+            ("versionedEngine",
+              (((fun (arg0, arg1) ->
+                   Json.Array
+                     [serialize_TypeMapSerde__Config____engine arg0;
+                     ((fun i -> ((Json.Number ((float_of_int i)))
+                         [@explicit_arity ]))) arg1])) record.versionedEngine));
+            ("typeMap",
+              ((serialize_TypeMap__DigTypes____typeMap referenceTransformer)
+                 record.typeMap))]
+    and (serialize_TypeMapSerde__Config__Locked__lockedEntry :
+      TypeMapSerde__Config.Locked.lockedEntry -> Json.t) =
+      fun record ->
+        Json.Object
+          [("moduleName",
+             (((fun s -> ((Json.String (s))[@explicit_arity ])))
+                record.moduleName));
+          ("modulePath",
+            (((fun list ->
+                 Json.Array
+                   (Belt.List.map list
+                      (fun s -> ((Json.String (s))[@explicit_arity ])))))
+               record.modulePath));
+          ("name",
+            (((fun s -> ((Json.String (s))[@explicit_arity ]))) record.name));
+          ("versionPlacement",
+            (serialize_TypeMapSerde__Config____versionPlacement
+               record.versionPlacement))]
+    and serialize_TypeMapSerde__Config__Locked__lockfile :
+      'arg0 .
+        ('arg0 -> Json.t) ->
+          'arg0 TypeMapSerde__Config.Locked.lockfile -> Json.t
+      =
+      fun referenceTransformer ->
+        fun record ->
+          Json.Object
+            [("current",
+               ((serialize_TypeMapSerde__Config__Locked__lockedConfig
+                   referenceTransformer) record.current));
             ("pastVersions",
               ((serialize_Stdlib__hashtbl____t
                   (fun i -> ((Json.Number ((float_of_int i)))
                      [@explicit_arity ]))
-                  (serialize_TypeMap__DigTypes____typeMap
-                     referenceTransformer)) record.pastVersions));
-            ("current",
-              ((serialize_TypeMap__DigTypes____typeMap referenceTransformer)
-                 record.current))]
-    and (serialize_TypeMap__DigTypes____serializableLockfile :
-      TypeMap__DigTypes.serializableLockfile -> Json.t) =
-      fun value ->
-        (serialize_TypeMap__DigTypes____lockfile
-           serialize_TypeMap__DigTypes____shortReference) value
+                  (serialize_TypeMapSerde__Config__Locked__lockedConfig
+                     referenceTransformer)) record.pastVersions))]
     and (serialize_TypeMap__DigTypes____shortReference :
       TypeMap__DigTypes.shortReference -> Json.t) =
       fun value ->
@@ -2110,9 +2536,9 @@ module SerializeRaw =
           | NotFound -> Json.Array [Json.String "NotFound"]
   end
 let serializeSerializableLockfile =
-  SerializeRaw.serialize_TypeMap__DigTypes____serializableLockfile
+  SerializeRaw.serialize_TypeMapSerde__Config____serializableLockfile
 and deserializeSerializableLockfile =
-  DeserializeRaw.deserialize_TypeMap__DigTypes____serializableLockfile
+  DeserializeRaw.deserialize_TypeMapSerde__Config____serializableLockfile
 let serializeT = SerializeRaw.serialize_TypeMapSerde__Config____t
 and deserializeT = DeserializeRaw.deserialize_TypeMapSerde__Config____t
 include SerializeRaw

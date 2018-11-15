@@ -1057,13 +1057,22 @@
                 "Reference",
                 [
                   "Builtin",
-                  "string"
+                  "option"
                 ],
-                []
+                [
+                  [
+                    "Reference",
+                    [
+                      "Builtin",
+                      "string"
+                    ],
+                    []
+                  ]
+                ]
               ]
             ],
             [
-              "history",
+              "versionPlacement",
               [
                 "Reference",
                 [
@@ -1084,6 +1093,45 @@
                     []
                   ]
                 ]
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "TypeMapSerde__Config",
+        [],
+        "serializableLockfile"
+      ],
+      {
+        "name": "serializableLockfile",
+        "variables": [],
+        "body": [
+          "Expr",
+          [
+            "Reference",
+            [
+              "Public",
+              [
+                "TypeMapSerde__Config",
+                ["Locked"],
+                "lockfile"
+              ]
+            ],
+            [
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "TypeMap__DigTypes",
+                    [],
+                    "shortReference"
+                  ]
+                ],
+                []
               ]
             ]
           ]
@@ -1219,12 +1267,12 @@
     ],
     [
       [
-        "TypeMap__DigTypes",
-        [],
-        "lockfile"
+        "TypeMapSerde__Config",
+        ["Locked"],
+        "lockedConfig"
       ],
       {
-        "name": "lockfile",
+        "name": "lockedConfig",
         "variables": [
           [
             "Variable",
@@ -1243,6 +1291,192 @@
                   "int"
                 ],
                 []
+              ]
+            ],
+            [
+              "entries",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "list"
+                ],
+                [
+                  [
+                    "Reference",
+                    [
+                      "Public",
+                      [
+                        "TypeMapSerde__Config",
+                        ["Locked"],
+                        "lockedEntry"
+                      ]
+                    ],
+                    []
+                  ]
+                ]
+              ]
+            ],
+            [
+              "versionedEngine",
+              [
+                "Tuple",
+                [
+                  [
+                    "Reference",
+                    [
+                      "Public",
+                      [
+                        "TypeMapSerde__Config",
+                        [],
+                        "engine"
+                      ]
+                    ],
+                    []
+                  ],
+                  [
+                    "Reference",
+                    [
+                      "Builtin",
+                      "int"
+                    ],
+                    []
+                  ]
+                ]
+              ]
+            ],
+            [
+              "typeMap",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "TypeMap__DigTypes",
+                    [],
+                    "typeMap"
+                  ]
+                ],
+                [
+                  [
+                    "Variable",
+                    "reference"
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "TypeMapSerde__Config",
+        ["Locked"],
+        "lockedEntry"
+      ],
+      {
+        "name": "lockedEntry",
+        "variables": [],
+        "body": [
+          "Record",
+          [
+            [
+              "moduleName",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "string"
+                ],
+                []
+              ]
+            ],
+            [
+              "modulePath",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "list"
+                ],
+                [
+                  [
+                    "Reference",
+                    [
+                      "Builtin",
+                      "string"
+                    ],
+                    []
+                  ]
+                ]
+              ]
+            ],
+            [
+              "name",
+              [
+                "Reference",
+                [
+                  "Builtin",
+                  "string"
+                ],
+                []
+              ]
+            ],
+            [
+              "versionPlacement",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "TypeMapSerde__Config",
+                    [],
+                    "versionPlacement"
+                  ]
+                ],
+                []
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    [
+      [
+        "TypeMapSerde__Config",
+        ["Locked"],
+        "lockfile"
+      ],
+      {
+        "name": "lockfile",
+        "variables": [
+          [
+            "Variable",
+            "reference"
+          ]
+        ],
+        "body": [
+          "Record",
+          [
+            [
+              "current",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "TypeMapSerde__Config",
+                    ["Locked"],
+                    "lockedConfig"
+                  ]
+                ],
+                [
+                  [
+                    "Variable",
+                    "reference"
+                  ]
+                ]
               ]
             ],
             [
@@ -1271,9 +1505,9 @@
                     [
                       "Public",
                       [
-                        "TypeMap__DigTypes",
-                        [],
-                        "typeMap"
+                        "TypeMapSerde__Config",
+                        ["Locked"],
+                        "lockedConfig"
                       ]
                     ],
                     [
@@ -1284,65 +1518,6 @@
                     ]
                   ]
                 ]
-              ]
-            ],
-            [
-              "current",
-              [
-                "Reference",
-                [
-                  "Public",
-                  [
-                    "TypeMap__DigTypes",
-                    [],
-                    "typeMap"
-                  ]
-                ],
-                [
-                  [
-                    "Variable",
-                    "reference"
-                  ]
-                ]
-              ]
-            ]
-          ]
-        ]
-      }
-    ],
-    [
-      [
-        "TypeMap__DigTypes",
-        [],
-        "serializableLockfile"
-      ],
-      {
-        "name": "serializableLockfile",
-        "variables": [],
-        "body": [
-          "Expr",
-          [
-            "Reference",
-            [
-              "Public",
-              [
-                "TypeMap__DigTypes",
-                [],
-                "lockfile"
-              ]
-            ],
-            [
-              [
-                "Reference",
-                [
-                  "Public",
-                  [
-                    "TypeMap__DigTypes",
-                    [],
-                    "shortReference"
-                  ]
-                ],
-                []
               ]
             ]
           ]
