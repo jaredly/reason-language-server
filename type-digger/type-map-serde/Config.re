@@ -34,15 +34,13 @@ module Locked = {
   };
 
   type lockedConfig('reference) = {
-    version: int,
     entries: list(lockedEntry),
     versionedEngine: (engine, int),
     typeMap: TypeMap.DigTypes.typeMap('reference)
   };
 
   type lockfile('reference) = {
-    current: lockedConfig('reference),
-    pastVersions: Hashtbl.t(int, lockedConfig('reference))
+    versions: list(lockedConfig('reference))
   };
 };
 
