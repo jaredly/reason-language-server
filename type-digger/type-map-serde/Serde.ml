@@ -84,7 +84,6 @@ module V1_Locked =
     and 'reference _TypeMapSerde__Config__Locked__lockedConfig =
       'reference TypeMapSerde__Config.Locked.lockedConfig =
       {
-      version: int ;
       entries: _TypeMapSerde__Config__Locked__lockedEntry list ;
       versionedEngine: (_TypeMapSerde__Config__engine * int) ;
       typeMap: 'reference _TypeMap__DigTypes__typeMap }
@@ -98,11 +97,7 @@ module V1_Locked =
     and 'reference _TypeMapSerde__Config__Locked__lockfile =
       'reference TypeMapSerde__Config.Locked.lockfile =
       {
-      current: 'reference _TypeMapSerde__Config__Locked__lockedConfig ;
-      pastVersions:
-        (int, 'reference _TypeMapSerde__Config__Locked__lockedConfig)
-          _Stdlib__hashtbl__t
-        }
+      versions: 'reference _TypeMapSerde__Config__Locked__lockedConfig list }
     and _TypeMap__DigTypes__shortReference =
       (_Analyze__TopTypes__moduleName * string list * string)
     and 'reference _TypeMap__DigTypes__typeMap =
@@ -1742,56 +1737,13 @@ module DeserializeRaw =
                                         | ((Belt.Result.Ok
                                             (attr_entries))[@explicit_arity ])
                                             ->
-                                            (match Belt.List.getAssoc items
-                                                     "version" (=)
-                                             with
-                                             | None ->
-                                                 ((Belt.Result.Error
-                                                     (("No attribute " ^
-                                                         "version")))
-                                                 [@explicit_arity ])
-                                             | ((Some
-                                                 (json))[@explicit_arity ])
-                                                 ->
-                                                 (match (fun number ->
-                                                           match number with
-                                                           | ((Json.Number
-                                                               (number))
-                                                               [@explicit_arity
-                                                                 ])
-                                                               ->
-                                                               ((Belt.Result.Ok
-                                                                   ((int_of_float
-                                                                    number)))
-                                                               [@explicit_arity
-                                                                 ])
-                                                           | _ ->
-                                                               ((Error
-                                                                   ("Expected a float"))
-                                                               [@explicit_arity
-                                                                 ])) json
-                                                  with
-                                                  | ((Belt.Result.Error
-                                                      (error))[@explicit_arity
-                                                                ])
-                                                      ->
-                                                      ((Belt.Result.Error
-                                                          (error))
-                                                      [@explicit_arity ])
-                                                  | ((Belt.Result.Ok
-                                                      (attr_version))
-                                                      [@explicit_arity ]) ->
-                                                      Belt.Result.Ok
-                                                        {
-                                                          version =
-                                                            attr_version;
-                                                          entries =
-                                                            attr_entries;
-                                                          versionedEngine =
-                                                            attr_versionedEngine;
-                                                          typeMap =
-                                                            attr_typeMap
-                                                        }))))))))
+                                            Belt.Result.Ok
+                                              {
+                                                entries = attr_entries;
+                                                versionedEngine =
+                                                  attr_versionedEngine;
+                                                typeMap = attr_typeMap
+                                              }))))))
           | _ -> ((Belt.Result.Error ("Expected an object"))
               [@explicit_arity ])
     and (deserialize_TypeMapSerde__Config__Locked__lockedEntry :
@@ -1979,47 +1931,50 @@ module DeserializeRaw =
         fun record ->
           match record with
           | ((Json.Object (items))[@explicit_arity ]) ->
-              (match Belt.List.getAssoc items "pastVersions" (=) with
+              (match Belt.List.getAssoc items "versions" (=) with
                | None ->
-                   ((Belt.Result.Error (("No attribute " ^ "pastVersions")))
+                   ((Belt.Result.Error (("No attribute " ^ "versions")))
                    [@explicit_arity ])
                | ((Some (json))[@explicit_arity ]) ->
-                   (match (deserialize_Stdlib__hashtbl____t
-                             (fun number ->
-                                match number with
-                                | ((Json.Number (number))[@explicit_arity ])
-                                    ->
-                                    ((Belt.Result.Ok ((int_of_float number)))
-                                    [@explicit_arity ])
-                                | _ -> ((Error ("Expected a float"))
-                                    [@explicit_arity ]))
-                             (deserialize_TypeMapSerde__Config__Locked__lockedConfig
-                                referenceTransformer)) json
+                   (match (fun list ->
+                             match list with
+                             | ((Json.Array (items))[@explicit_arity ]) ->
+                                 let transformer =
+                                   deserialize_TypeMapSerde__Config__Locked__lockedConfig
+                                     referenceTransformer in
+                                 let rec loop items =
+                                   match items with
+                                   | [] -> ((Belt.Result.Ok ([]))
+                                       [@explicit_arity ])
+                                   | one::rest ->
+                                       (match transformer one with
+                                        | ((Belt.Result.Error
+                                            (error))[@explicit_arity ]) ->
+                                            ((Belt.Result.Error (error))
+                                            [@explicit_arity ])
+                                        | ((Belt.Result.Ok
+                                            (value))[@explicit_arity ]) ->
+                                            (match loop rest with
+                                             | ((Belt.Result.Error
+                                                 (error))[@explicit_arity ])
+                                                 ->
+                                                 ((Belt.Result.Error (error))
+                                                 [@explicit_arity ])
+                                             | ((Belt.Result.Ok
+                                                 (rest))[@explicit_arity ])
+                                                 ->
+                                                 ((Belt.Result.Ok
+                                                     ((value :: rest)))
+                                                 [@explicit_arity ]))) in
+                                 loop items
+                             | _ ->
+                                 ((Belt.Result.Error ("expected an array"))
+                                 [@explicit_arity ])) json
                     with
                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                         ((Belt.Result.Error (error))[@explicit_arity ])
-                    | ((Belt.Result.Ok
-                        (attr_pastVersions))[@explicit_arity ]) ->
-                        (match Belt.List.getAssoc items "current" (=) with
-                         | None ->
-                             ((Belt.Result.Error
-                                 (("No attribute " ^ "current")))
-                             [@explicit_arity ])
-                         | ((Some (json))[@explicit_arity ]) ->
-                             (match (deserialize_TypeMapSerde__Config__Locked__lockedConfig
-                                       referenceTransformer) json
-                              with
-                              | ((Belt.Result.Error
-                                  (error))[@explicit_arity ]) ->
-                                  ((Belt.Result.Error (error))
-                                  [@explicit_arity ])
-                              | ((Belt.Result.Ok
-                                  (attr_current))[@explicit_arity ]) ->
-                                  Belt.Result.Ok
-                                    {
-                                      current = attr_current;
-                                      pastVersions = attr_pastVersions
-                                    }))))
+                    | ((Belt.Result.Ok (attr_versions))[@explicit_arity ]) ->
+                        Belt.Result.Ok { versions = attr_versions }))
           | _ -> ((Belt.Result.Error ("Expected an object"))
               [@explicit_arity ])
     and (deserialize_TypeMap__DigTypes____shortReference :
@@ -2442,15 +2397,12 @@ module SerializeRaw =
       fun referenceTransformer ->
         fun record ->
           Json.Object
-            [("version",
-               (((fun i -> ((Json.Number ((float_of_int i)))
-                    [@explicit_arity ]))) record.version));
-            ("entries",
-              (((fun list ->
-                   Json.Array
-                     (Belt.List.map list
-                        serialize_TypeMapSerde__Config__Locked__lockedEntry)))
-                 record.entries));
+            [("entries",
+               (((fun list ->
+                    Json.Array
+                      (Belt.List.map list
+                         serialize_TypeMapSerde__Config__Locked__lockedEntry)))
+                  record.entries));
             ("versionedEngine",
               (((fun (arg0, arg1) ->
                    Json.Array
@@ -2486,15 +2438,12 @@ module SerializeRaw =
       fun referenceTransformer ->
         fun record ->
           Json.Object
-            [("current",
-               ((serialize_TypeMapSerde__Config__Locked__lockedConfig
-                   referenceTransformer) record.current));
-            ("pastVersions",
-              ((serialize_Stdlib__hashtbl____t
-                  (fun i -> ((Json.Number ((float_of_int i)))
-                     [@explicit_arity ]))
-                  (serialize_TypeMapSerde__Config__Locked__lockedConfig
-                     referenceTransformer)) record.pastVersions))]
+            [("versions",
+               (((fun list ->
+                    Json.Array
+                      (Belt.List.map list
+                         (serialize_TypeMapSerde__Config__Locked__lockedConfig
+                            referenceTransformer)))) record.versions))]
     and (serialize_TypeMap__DigTypes____shortReference :
       TypeMap__DigTypes.shortReference -> Json.t) =
       fun value ->

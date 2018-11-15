@@ -1283,17 +1283,6 @@
           "Record",
           [
             [
-              "version",
-              [
-                "Reference",
-                [
-                  "Builtin",
-                  "int"
-                ],
-                []
-              ]
-            ],
-            [
               "entries",
               [
                 "Reference",
@@ -1460,46 +1449,14 @@
           "Record",
           [
             [
-              "current",
+              "versions",
               [
                 "Reference",
                 [
-                  "Public",
-                  [
-                    "TypeMapSerde__Config",
-                    ["Locked"],
-                    "lockedConfig"
-                  ]
+                  "Builtin",
+                  "list"
                 ],
                 [
-                  [
-                    "Variable",
-                    "reference"
-                  ]
-                ]
-              ]
-            ],
-            [
-              "pastVersions",
-              [
-                "Reference",
-                [
-                  "Public",
-                  [
-                    "Stdlib__hashtbl",
-                    [],
-                    "t"
-                  ]
-                ],
-                [
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "int"
-                    ],
-                    []
-                  ],
                   [
                     "Reference",
                     [

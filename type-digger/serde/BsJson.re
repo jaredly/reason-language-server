@@ -57,7 +57,14 @@ let serializeTransformer = MakeSerializer.{
           Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")),
           []
           ),
-  wrapWithVersion: [%expr (version, payload) => Js.Json.array([|Js.Json.number(float_of_int(version)), payload|])],
+  wrapWithVersion: [%expr (version, payload) => {
+    switch (Js.Json.classify(payload)) {
+      | JSONObject(dict) => 
+      Js.Dict.set(dict, "schemaVersion", Js.Json.number(float_of_int(version)))
+      Js.Json.object_(dict)
+      | _ => Js.Json.array([|Js.Json.number(float_of_int(version)), payload|])
+    }
+  }],
   source: sourceTransformer,
   list: jsonArray,
   tuple: exps => makeJson("array", Ast_helper.Exp.array(exps)),
@@ -209,11 +216,15 @@ let deserializeTransformer = {
   source: sourceTransformer,
   parseVersion: [%expr 
     json => switch (Js.Json.classify(json)) {
+      | JSONObject(dict) => switch (Js.Json.classify(Js.Dict.get(dict, "schemaVersion"))) {
+        | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
+        | _ => Belt.Result.Error("Invalid schemaVersion")
+      }
       | JSONArray([|version, payload|]) => switch (Js.Json.classify(version)) {
         | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
-        | _ => Belt.Result.Error("Invalid version")
+        | _ => Belt.Result.Error("Invalid wrapped version")
       }
-      | _ => Belt.Result.Error("Must have a version")
+      | _ => Belt.Result.Error("Must have a schema version")
     }
   ],
   list,

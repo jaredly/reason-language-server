@@ -6,13 +6,10 @@ type custom = {
   args: int,
 };
 
-type versionPlacement = EmbeddedVersion | WrappedVersion;
-
 type entry = {
   file: string,
   type_: string,
   publicName: option(string),
-  versionPlacement: option(versionPlacement),
 };
 
 type engine = Rex_json | Bs_json;
@@ -30,17 +27,17 @@ module Locked = {
     moduleName: string,
     modulePath: list(string),
     name: string,
-    versionPlacement: versionPlacement,
   };
 
   type lockedConfig('reference) = {
     entries: list(lockedEntry),
-    versionedEngine: (engine, int),
+    engineVersion: int,
     typeMap: TypeMap.DigTypes.typeMap('reference)
   };
 
   type lockfile('reference) = {
-    versions: list(lockedConfig('reference))
+    engine,
+    versions: array(lockedConfig('reference))
   };
 };
 
