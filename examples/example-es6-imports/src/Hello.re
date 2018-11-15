@@ -1,6 +1,6 @@
-let%opt.thing awesome = 10;
+/* let%opt.thing awesome = 10;
 let%o awesome = 10;
-let%oo awesome = 10;
+let%oo awesome = 10; */
 
 let rec x = 10;
 
