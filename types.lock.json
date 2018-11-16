@@ -1070,30 +1070,6 @@
                   ]
                 ]
               ]
-            ],
-            [
-              "versionPlacement",
-              [
-                "Reference",
-                [
-                  "Builtin",
-                  "option"
-                ],
-                [
-                  [
-                    "Reference",
-                    [
-                      "Public",
-                      [
-                        "TypeMapSerde__Config",
-                        [],
-                        "versionPlacement"
-                      ]
-                    ],
-                    []
-                  ]
-                ]
-              ]
             ]
           ]
         ]
@@ -1242,32 +1218,6 @@
     [
       [
         "TypeMapSerde__Config",
-        [],
-        "versionPlacement"
-      ],
-      {
-        "name": "versionPlacement",
-        "variables": [],
-        "body": [
-          "Variant",
-          [
-            [
-              "EmbeddedVersion",
-              [],
-              null
-            ],
-            [
-              "WrappedVersion",
-              [],
-              null
-            ]
-          ]
-        ]
-      }
-    ],
-    [
-      [
-        "TypeMapSerde__Config",
         ["Locked"],
         "lockedConfig"
       ],
@@ -1307,31 +1257,14 @@
               ]
             ],
             [
-              "versionedEngine",
+              "engineVersion",
               [
-                "Tuple",
+                "Reference",
                 [
-                  [
-                    "Reference",
-                    [
-                      "Public",
-                      [
-                        "TypeMapSerde__Config",
-                        [],
-                        "engine"
-                      ]
-                    ],
-                    []
-                  ],
-                  [
-                    "Reference",
-                    [
-                      "Builtin",
-                      "int"
-                    ],
-                    []
-                  ]
-                ]
+                  "Builtin",
+                  "int"
+                ],
+                []
               ]
             ],
             [
@@ -1411,21 +1344,6 @@
                 ],
                 []
               ]
-            ],
-            [
-              "versionPlacement",
-              [
-                "Reference",
-                [
-                  "Public",
-                  [
-                    "TypeMapSerde__Config",
-                    [],
-                    "versionPlacement"
-                  ]
-                ],
-                []
-              ]
             ]
           ]
         ]
@@ -1449,12 +1367,27 @@
           "Record",
           [
             [
+              "engine",
+              [
+                "Reference",
+                [
+                  "Public",
+                  [
+                    "TypeMapSerde__Config",
+                    [],
+                    "engine"
+                  ]
+                ],
+                []
+              ]
+            ],
+            [
               "versions",
               [
                 "Reference",
                 [
                   "Builtin",
-                  "list"
+                  "array"
                 ],
                 [
                   [
