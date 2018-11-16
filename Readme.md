@@ -73,6 +73,14 @@ let g:LanguageClient_serverCommands = {
 
 _TODO_ people have gotten it to work with emacs, but I don't know the steps.
 
+### Troubleshooting
+
+NOTE: reason-language-server runs bsb or dune *automatically* for you, it is not necessary to have a separate process running `bsb -w`. In fact, having a separate process running can sometimes get the editor into a weird state.
+
+If your editor is in a weird state, the first recourse (if you're in VSCode) is to restart the reason-language-server, with `cmd+shift+p "restart reason language server"`. That often clears things up.
+
+If that doesn't work, try cleaning built artifacts, with `bsb -clean-world` (or for dune, `dune clean`). Then try to build, with `bsb -make-world` (or `dune build @install`) and see if that works.
+
 ## What about the [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
 That project uses [merlin](https://github.com/ocaml/merlin) under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
