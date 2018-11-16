@@ -2,6 +2,7 @@
 Printexc.record_backtrace(true);
 open Analyze;
 module Json = Vendor.Json;
+module Locked = TypeMapSerde.Config.Locked;
 let loc = Location.none;
 
 let makeModule = (moduleName, contents) =>
@@ -82,16 +83,16 @@ let loadTypeMap = config => {
     );
   });
 
-  config.entries->Belt.List.forEach(({file, type_}) => {
-    let%try_force () =
+  let lockedEntries = config.entries->Belt.List.map(({file, type_}) => {
+    let%try_force ((moduleName, modulePath, name)) =
       TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), type_);
-    ();
+    {Locked.moduleName, modulePath, name};
   });
 
-  (state, TypeMap.GetTypeMap.toSimpleMap(tbl));
+  (state, TypeMap.GetTypeMap.toSimpleMap(tbl), lockedEntries);
 };
 
-let compareHashtbls = (one, two) => {
+let areHashtblsEqual = (one, two) => {
   if (Hashtbl.length(one) != Hashtbl.length(two)) {
     false
   } else {
@@ -108,40 +109,42 @@ let compareHashtbls = (one, two) => {
 let main = configPath => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config = TypeMapSerde.configFromJson(json);
-  let (state, currentTypeMap) = loadTypeMap(config);
+  let (state, currentTypeMap, lockedEntries) = loadTypeMap(config);
 
   let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
 
   let lockfile = switch (Files.readFileResult(lockFilePath)) {
     | Error(_) => {
-      TypeMap.DigTypes.version: config.version,
-      pastVersions: Hashtbl.create(1),
-      current: currentTypeMap
+      Locked.versions: [|{
+        typeMap: currentTypeMap,
+        engineVersion: 1,
+        entries: lockedEntries,
+      }|],
+      engine: config.engine,
     }
     | Ok(contents) => {
       let json = Json.parse(contents);
       let%try_force lockfile = TypeMapSerde.lockfileFromJson(json)
-      if (lockfile.version == config.version) {
-        /* TODO allow addative type changes */
-        if (!compareHashtbls(lockfile.current, currentTypeMap)) {
+      if (lockfile.engine != config.engine) {
+        failwith("Config engine does not match lockfile engine.")
+      };
+      let latestVersion = Locked.getLatestVersion(lockfile);
+      if (latestVersion == config.version) {
+        /* TODO allow addative type changes... maybe */
+        if (!areHashtblsEqual(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap)) {
 
-          let lockfileJson = TypeMapSerde.lockfileToJson({
+          /* let lockfileJson = TypeMapSerde.lockfileToJson({
             ...lockfile,
             current: currentTypeMap
           });
-          Files.writeFileExn(lockFilePath ++ ".new", Json.stringifyPretty(~indent=2, lockfileJson));
+          Files.writeFileExn(lockFilePath ++ ".new", Json.stringifyPretty(~indent=2, lockfileJson)); */
 
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
           lockfile
         }
-      } else if (lockfile.version + 1 == config.version) {
-        lockfile.pastVersions->Hashtbl.replace(lockfile.version, lockfile.current);
-        {
-          version: config.version,
-          pastVersions: lockfile.pastVersions,
-          current: currentTypeMap
-        }
+      } else if (latestVersion + 1 == config.version) {
+        lockfile->Locked.addVersion(~typeMap=currentTypeMap, ~entries=lockedEntries, ~engineVersion=1)
       } else {
         failwith("Version must be incremented by one")
       }
@@ -151,11 +154,9 @@ let main = configPath => {
   let capitalize = s => s == "" ? "" :
   String.uppercase(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
 
-  let lockedDeep = Array.make(config.version + 1, Hashtbl.create(0));
-  lockedDeep[config.version] = Lockdown.typesAndDependencies(currentTypeMap);
-  for (version in 1 to config.version - 1) {
-    lockedDeep[version] = Lockdown.typesAndDependencies(lockfile.pastVersions->Hashtbl.find(version))
-  };
+  let lockedDeep = Belt.Array.concat([|Hashtbl.create(0)|], lockfile.versions->Belt.Array.mapWithIndex((index, config) => {
+    Lockdown.typesAndDependencies(config.typeMap)
+  }));
 
   let makeFullModule = (version, typeMap) => {
     let fns =
@@ -172,7 +173,7 @@ let main = configPath => {
       Ast_helper.Str.type_(Recursive, lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
       Ast_helper.Str.value(Recursive, fns),
       ...(if (version > 1) {
-        let pastTypeMap = lockfile.pastVersions->Hashtbl.find(version - 1);
+        let pastTypeMap = lockfile->Locked.getVersion(version - 1).typeMap;
         [
           Ast_helper.Str.value(
             Recursive,
@@ -199,7 +200,7 @@ let main = configPath => {
       let tbl = if (version == config.version) {
         currentTypeMap
       } else {
-        lockfile.pastVersions->Hashtbl.find(version)
+        lockfile->Locked.getVersion(version).typeMap
       };
 
       [makeFullModule(version, tbl), ...loop(version + 1)]
@@ -229,6 +230,10 @@ let main = configPath => {
   let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
 
   let converters = config.entries->Belt.List.map(({file, type_, publicName}) => {
+    let publicName = switch publicName {
+      | None => type_
+      | Some(name) => name
+    };
     let uri = Utils.toUri(Filename.concat(Sys.getcwd(), file));
     let%try_force (moduleName, modulePath, name) = TypeMap.GetTypeMap.fileToReference(~state, uri, type_);
     let des = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);

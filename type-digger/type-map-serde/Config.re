@@ -39,6 +39,13 @@ module Locked = {
     engine,
     versions: array(lockedConfig('reference))
   };
+
+  let getLatestVersion = lockfile => Array.length(lockfile.versions);
+  let getVersion = (lockfile, version) => lockfile.versions[version - 1];
+  let addVersion = (lockfile, ~typeMap, ~entries, ~engineVersion) => {
+    ...lockfile,
+    versions: Belt.List.toArray(Belt.List.fromArray(lockfile.versions) @ [{typeMap, entries, engineVersion}])
+  }
 };
 
 type serializableLockfile = Locked.lockfile(TypeMap.DigTypes.shortReference);
