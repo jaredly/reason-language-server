@@ -216,9 +216,12 @@ let deserializeTransformer = {
   source: sourceTransformer,
   parseVersion: [%expr 
     json => switch (Js.Json.classify(json)) {
-      | JSONObject(dict) => switch (Js.Json.classify(Js.Dict.get(dict, "schemaVersion"))) {
-        | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
+      | JSONObject(dict) => switch (Js.Dict.get(dict, "schemaVersion")) {
+        | Some(schemaVersion) => switch (Js.Json.classify(schemaVersion)) {
+        | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), json))
         | _ => Belt.Result.Error("Invalid schemaVersion")
+        }
+        | None => Belt.Result.Error("No schemaVersion present")
       }
       | JSONArray([|version, payload|]) => switch (Js.Json.classify(version)) {
         | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))

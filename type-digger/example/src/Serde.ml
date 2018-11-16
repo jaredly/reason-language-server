@@ -2310,15 +2310,33 @@ module Version6 =
 let currentVersion = 6
 let parseVersion json =
   match Js.Json.classify json with
+  | ((JSONObject (dict))[@explicit_arity ]) ->
+      (match Js.Dict.get dict "schemaVersion" with
+       | ((Some (schemaVersion))[@explicit_arity ]) ->
+           (match Js.Json.classify schemaVersion with
+            | ((JSONNumber (version))[@explicit_arity ]) ->
+                ((Belt.Result.Ok ((int_of_float version), json))
+                [@implicit_arity ])
+            | _ -> ((Belt.Result.Error ("Invalid schemaVersion"))
+                [@explicit_arity ]))
+       | None -> ((Belt.Result.Error ("No schemaVersion present"))
+           [@explicit_arity ]))
   | ((JSONArray ([|version;payload|]))[@explicit_arity ]) ->
       (match Js.Json.classify version with
        | ((JSONNumber (version))[@explicit_arity ]) ->
            ((Belt.Result.Ok ((int_of_float version), payload))
            [@implicit_arity ])
-       | _ -> ((Belt.Result.Error ("Invalid version"))[@explicit_arity ]))
-  | _ -> ((Belt.Result.Error ("Must have a version"))[@explicit_arity ])
+       | _ -> ((Belt.Result.Error ("Invalid wrapped version"))
+           [@explicit_arity ]))
+  | _ -> ((Belt.Result.Error ("Must have a schema version"))
+      [@explicit_arity ])
 let wrapWithVersion version payload =
-  Js.Json.array [|(Js.Json.number (float_of_int version));payload|]
+  match Js.Json.classify payload with
+  | ((JSONObject (dict))[@explicit_arity ]) ->
+      (Js.Dict.set dict "schemaVersion"
+         (Js.Json.number (float_of_int version));
+       Js.Json.object_ dict)
+  | _ -> Js.Json.array [|(Js.Json.number (float_of_int version));payload|]
 let serializeHousehold data =
   wrapWithVersion currentVersion (Version6.serialize_Types____household data)
 and deserializeHousehold data =
