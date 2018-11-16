@@ -208,7 +208,6 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
-
 let jsonT = Typ.constr(Location.mknoloc(Ldot(jsJson, "t")), []);
 
 let deserializeTransformer = {

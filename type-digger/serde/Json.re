@@ -36,47 +36,11 @@ let sourceTransformer = source => switch source {
   | Public((moduleName, modulePath, name)) =>
     makeIdent(Lident(MakeSerializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
-        
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("array")),
-        makeJson("Array",
-            Some(Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "Array"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("array"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            ))
-        )
-      )
-    )
+    [%expr (transformer, array) => Json.Array(
+      Belt.List.fromArray(Belt.Array.map(array, transformer))
+    )]
   | Builtin("list") =>
-        
-    Exp.fun_(
-      Nolabel,
-      None,
-      Pat.var(Location.mknoloc("transformer")),
-      Exp.fun_(
-        Nolabel,
-        None,
-        Pat.var(Location.mknoloc("list")),
-        jsonArray(
-            Exp.apply(
-              makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
-              [
-                (Nolabel, makeIdent(Lident("list"))),
-                (Nolabel, makeIdent(Lident("transformer"))),
-              ]
-            )
-        )
-      )
-    )
+    [%expr (transformer, list) => Json.Array(Belt.List.map(list, transformer))]
   | Builtin("string") => [%expr s => Json.String(s)]
   | Builtin("bool") => [%expr b => b ? Json.True : Json.False]
   | Builtin("int") => [%expr i => Json.Number(float_of_int(i))]
@@ -137,7 +101,7 @@ let sourceTransformer = source => switch source {
               }
             }
           };
-          switch (loop(items->Belt.List.fromArray)) {
+          switch (loop(items)) {
             | Belt.Result.Error(error) => Belt.Result.Error(error)
             | Belt.Result.Ok(value) => Belt.Result.Ok(Belt.List.toArray(value))
           }
