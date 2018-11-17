@@ -152,13 +152,15 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
     ->Belt.List.sort(compare)
     ->Belt.List.map((((moduleName, modulePath, name) as ref, (attributes, decl))) => {
       let mine = lockedDeep[version]->Hashtbl.find(ref);
-      let rec loop = v => v < 1 ? None : {
-        switch (lockedDeep[v]->Upgrade.hashFind(ref)) {
-          | Some(prev) when prev == mine => Some(v)
-          | _ => loop(v-1)
+      let prevVersion = version == 1 ? None : {
+        switch (lockedDeep[version - 1]->Upgrade.hashFind(ref)) {
+          | Some(prev) when prev == mine => Some(version - 1)
+          | _ => None
         }
-      };
-      switch (loop(version - 1)) {
+      }
+      /* let rec loop = v => v < 1 ? None : {
+      }; */
+      switch (prevVersion) {
         | None => maker(~moduleName, ~modulePath, ~name, decl)
         | Some(prevVersion) =>
           let tname = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
@@ -177,7 +179,7 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
           )
       }
     }
-    );
+  );
 };
 
 let makeFullModule = (~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap, engineVersion}) => {

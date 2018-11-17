@@ -1878,7 +1878,20 @@ module Version6 =
           | _ -> ((Belt.Result.Error (["Expected an object"]))
               [@explicit_arity ])
     and deserialize_Types____person = Version5.deserialize_Types____person
-    and deserialize_Types____pet = Version3.deserialize_Types____pet
+    and (deserialize_Types____pet :
+      Js.Json.t -> (_Types__pet, string list) Belt.Result.t) =
+      fun constructor ->
+        match Js.Json.classify constructor with
+        | JSONArray [|tag|] when
+            (Js.Json.JSONString "Dog") = (Js.Json.classify tag) ->
+            Belt.Result.Ok (Dog : _Types__pet)
+        | JSONArray [|tag|] when
+            (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
+            Belt.Result.Ok (Cat : _Types__pet)
+        | JSONArray [|tag|] when
+            (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
+            Belt.Result.Ok (Mouse : _Types__pet)
+        | _ -> Error ["Expected an array"]
     and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
