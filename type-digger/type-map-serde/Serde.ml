@@ -562,10 +562,10 @@ module DeserializeRaw =
                | Error error -> Error error)
           | _ -> Error "Expected an array"
     and deserialize_SharedTypes__SimpleType__declaration :
-      type arg0 .
-        (Json.t -> (arg0, string) Belt.Result.t) ->
+      'arg0 .
+        (Json.t -> ('arg0, string) Belt.Result.t) ->
           Json.t ->
-            (arg0 SharedTypes.SimpleType.declaration, string) Belt.Result.t
+            ('arg0 SharedTypes.SimpleType.declaration, string) Belt.Result.t
       =
       fun sourceTransformer ->
         fun record ->
@@ -1811,7 +1811,7 @@ module DeserializeRaw =
                                                     ((Belt.Result.Ok
                                                         ((value :: rest)))
                                                     [@explicit_arity ]))) in
-                                    (match loop items
+                                    (match loop (items)
                                      with
                                      | ((Belt.Result.Error
                                          (error))[@explicit_arity ]) ->
@@ -2300,7 +2300,7 @@ module SerializeRaw =
             ("versions",
               ((((fun transformer ->
                     fun array ->
-                      Json.Array (Belt.List.map (Belt.List.fromArray array) transformer)))
+                      Json.Array (Belt.List.fromArray (Belt.Array.map array transformer))))
                   (serialize_TypeMapSerde__Config__Locked__lockedConfig
                      referenceTransformer)) record.versions))]
     and (serialize_TypeMap__DigTypes____shortReference :
