@@ -43,14 +43,6 @@ let optimiseLater = (timeout, closure) => {
   result
 };
 
-let makeFns = (maker, tbl) => {
-    hashList(tbl)
-    ->Belt.List.sort(compare)
-    ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) => 
-        maker(~moduleName, ~modulePath, ~name, decl)
-    );
-};
-
 open TypeMapSerde.Config;
 
 let loadTypeMap = config => {
@@ -147,15 +139,56 @@ let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
   };
 };
 
+let makeFns = (maker, tbl) => {
+    hashList(tbl)
+    ->Belt.List.sort(compare)
+    ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) => 
+        maker(~moduleName, ~modulePath, ~name, decl)
+    );
+};
+
+let makeDeserializers = (maker, tbl, lockedDeep, version) => {
+    hashList(tbl)
+    ->Belt.List.sort(compare)
+    ->Belt.List.map((((moduleName, modulePath, name) as ref, (attributes, decl))) => {
+      let mine = lockedDeep[version]->Hashtbl.find(ref);
+      let rec loop = v => v < 1 ? None : {
+        switch (lockedDeep[v]->Upgrade.hashFind(ref)) {
+          | Some(prev) when prev == mine => Some(v)
+          | _ => loop(v-1)
+        }
+      };
+      switch (loop(version - 1)) {
+        | None => maker(~moduleName, ~modulePath, ~name, decl)
+        | Some(prevVersion) =>
+          let tname = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
+          Ast_helper.Vb.mk(
+            Ast_helper.Pat.var(Location.mknoloc(tname)),
+            Ast_helper.Exp.ident(
+              Location.mknoloc(
+                Longident.Ldot(
+                  Longident.Lident(
+                    versionModuleName(prevVersion)
+                  ),
+                  tname
+                )
+              )
+            )
+          )
+      }
+    }
+    );
+};
+
 let makeFullModule = (~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap, engineVersion}) => {
   /* TODO respect engineVersion */
   let fns =
     switch (config.engine) {
     | Bs_json =>
-      let fns = makeFns(Serde.BsJson.declDeserializer, typeMap);
+      let fns = makeDeserializers(Serde.BsJson.declDeserializer, typeMap, lockedDeep, version);
       version == config.version ? fns @ makeFns(Serde.BsJson.declSerializer, typeMap) : fns;
     | Rex_json =>
-      let fns = makeFns(Serde.Json.declDeserializer, typeMap);
+      let fns = makeDeserializers(Serde.Json.declDeserializer, typeMap, lockedDeep, version);
       version == config.version ? fns @ makeFns(Serde.Json.declSerializer, typeMap) : fns;
     };
 
