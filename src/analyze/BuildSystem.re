@@ -228,13 +228,17 @@ let getStdlib = (base, buildSystem) => {
   };
 };
 
-let getExecutableInEsyPath = (exeName, ~pwd) => {
-  let env = Unix.environment()->Array.to_list;
+let isRunningInEsyNamedSandbox = () => {
   /* Check if we have `cur__target_dir` as a marker that we're inside an Esy context */
-  switch (Utils.getEnvVar(~env, "cur__target_dir")) {
-  | Some(_) => getLine("which " ++ exeName, ~pwd)
-  | None => getLine("esy which " ++ exeName, ~pwd)
-  };
+  Belt.Option.isSome(Utils.getEnvVar("cur__target_dir"))
+};
+
+let getExecutableInEsyPath = (exeName, ~pwd) => {
+  if (isRunningInEsyNamedSandbox()) {
+    getLine("which " ++ exeName, ~pwd)
+  } else {
+    getLine("esy which " ++ exeName, ~pwd)
+  }
 };
 
 let getCompiler = (rootPath, buildSystem) => {
