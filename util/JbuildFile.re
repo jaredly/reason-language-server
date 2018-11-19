@@ -150,19 +150,6 @@ let rec atomToString = atom => switch atom {
 };
 
 let rec parseAtom = (raw, ln, i) => switch (raw.[i]) {
-  | '"' =>
-    let (text, last) = parseString(raw, i + 1);
-    (`String(text), last)
-  | '(' => {
-    let (items, i) = parseList(raw, ln, i + 1);
-    (`List(items), i)
-  }
-  | 'a'..'z'
-  | 'A'..'Z'
-  | ':' | '.' | '/'
-  | '-' =>
-    let last = parseIdent(raw, ln, i + 1);
-    (`Ident(String.sub(raw, i, last - i)), last);
   | '%' =>
     if(raw.[i + 1] === '{') {
       let (lst, i) = parseList(~term='}', raw, ln, i + 2);
@@ -174,6 +161,17 @@ let rec parseAtom = (raw, ln, i) => switch (raw.[i]) {
   | '0'..'9' =>
     let last = parseNumber(raw, ln, i + 1);
     (`Number(float_of_string(String.sub(raw, i, last - i))), last)
+  | '"' =>
+    let (text, last) = parseString(raw, i + 1);
+    (`String(text), last)
+  | '(' => {
+    let (items, i) = parseList(raw, ln, i + 1);
+    (`List(items), i)
+  }
+  /* Any other ASCII chars */
+  | '!'..'~' =>
+    let last = parseIdent(raw, ln, i + 1);
+    (`Ident(String.sub(raw, i, last - i)), last);
   | _ => failwith("Unexpected char: " ++ String.sub(raw, i, 1) ++ " at " ++ string_of_int(i))
 }
 and parseList = (~term=')', raw, ln, i) => {
