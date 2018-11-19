@@ -164,7 +164,7 @@ let declInner = (transformer, typeLident, {variables, body}, fullName) => {
       )), loop(rest))
   };
 
-    loop(variables)
+  loop(variables)
 };
 
 let makeResult = t =>
@@ -192,7 +192,7 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
         ),
       ),
     );
-  let rec loop = (i, vbls) =>
+  let rec makeFunctionType = (i, vbls) =>
     switch (vbls) {
     | [] => typ
     | [_, ...rest] =>
@@ -203,10 +203,10 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
           transformer.inputType,
           makeResult(Typ.var("arg" ++ string_of_int(i))),
         ),
-        loop(i + 1, rest),
+        makeFunctionType(i + 1, rest),
       )
     };
-  let typ = loop(0, decl.variables);
+  let typ = makeFunctionType(0, decl.variables);
   let typ =
     switch (decl.variables) {
     | [] => typ

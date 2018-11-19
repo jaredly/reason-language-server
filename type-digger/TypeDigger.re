@@ -158,8 +158,6 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
           | _ => None
         }
       }
-      /* let rec loop = v => v < 1 ? None : {
-      }; */
       switch (prevVersion) {
         | None => maker(~moduleName, ~modulePath, ~name, decl)
         | Some(prevVersion) =>
