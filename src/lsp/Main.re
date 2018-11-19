@@ -95,7 +95,7 @@ let getInitialState = (params) => {
       && Json.getPath("capabilities.textDocument.completion.completionItem.documentationFormat", params) |?> Protocol.hasMarkdownCap |? true,
   );
 
-  /* Check the editor was started with e.g. `esy @myalias code .`.
+  /* Check the editor was started with e.g. `esy @myalias code .` or `esy code.`.
    * We can't support auto rebuild in this case yet because Esy doesn't provide
    * enough information on which named sandbox we're in.
    */
