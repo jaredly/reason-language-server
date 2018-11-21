@@ -1,5 +1,6 @@
 {
-  "engine": ["Bs_json"],
+  "$schemaVersion": 1,
+  "engine": ["Js.Json"],
   "versions": [
     {
       "entries": [

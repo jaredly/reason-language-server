@@ -7,13 +7,11 @@
     {
       "file": "type-digger/type-map-serde/Config.re",
       "type": "serializableLockfile",
-      "publicName": "serializableLockfile",
       "history": false
     },
     {
       "file": "type-digger/type-map-serde/Config.re",
       "type": "t",
-      "publicName": "t",
       "history": false
     }
   ],

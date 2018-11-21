@@ -166,7 +166,6 @@ let getExpr = payload => switch payload {
 };
 
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
-  print_endline("Migrating " ++ name);
   let source = (moduleName, modulePath, name);
   let boundName = migrateName(~moduleName, ~modulePath, ~name);
 

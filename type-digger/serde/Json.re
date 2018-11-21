@@ -212,20 +212,32 @@ let deserializeTransformer = {
     let body =
       MakeDeserializer.ok(
         Exp.record(
-          items->Belt.List.map(((label, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
+          items->Belt.List.map(((label, _, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
           None,
         ),
       );
-    let body = items->Belt.List.reduce(body, (body, (label, inner)) => {
+    let body = items->Belt.List.reduce(body, (body, (label, inner, isOptional)) => {
       let attrName = MakeDeserializer.getRename(~renames, label);
-      /* let inner = forExpr(expr); */
-      [%expr switch (Belt.List.getAssoc(items, [%e MakeDeserializer.expString(attrName)], (==))) {
-        | None => Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]])
-        | Some(json) => switch ([%e inner](json)) {
-          | Belt.Result.Error(error) => Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
-          | Belt.Result.Ok([%p Pat.var(Location.mknoloc("attr_" ++ label))]) => [%e body]
-        }
-      }]
+      let pat = Pat.var(Location.mknoloc("attr_" ++ label));
+      {
+        let%expr inner = ([%p pat]) => [%e body];
+        switch (Belt.List.getAssoc(items, [%e MakeDeserializer.expString(attrName)], (==))) {
+        | None =>
+          if%e (isOptional) {
+            %expr
+            inner(None);
+          } else {
+            %expr
+            Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]]);
+          }
+        | Some(json) =>
+          switch ([%e inner](json)) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
+          | Belt.Result.Ok(data) => inner(data)
+          }
+        };
+      };
     });
     [%expr record => switch (record) {
       | Json.Object(items) => [%e body]
@@ -234,24 +246,42 @@ let deserializeTransformer = {
   },
   variant: (~renames, constructors) => {
 
-    let cases = constructors->Belt.List.map(((name, argCount, argTransformer)) => {
-          let constrName = MakeDeserializer.getRename(~renames, name);
-          Exp.case(
-            Pat.construct(Location.mknoloc(Ldot(Lident("Json"), "Array")), Some(
+    let cases =
+      constructors->Belt.List.map(((name, argCount, argTransformer)) => {
+        let constrName = MakeDeserializer.getRename(~renames, name);
+        let pat =
+          Pat.construct(
+            Location.mknoloc(Ldot(Lident("Json"), "Array")),
+            Some(
               makePatList([
-                Pat.var(Location.mknoloc("tag")),
-                ...MakeDeserializer.range(argCount, index => {
-                  Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
-                })
-              ])
-            )),
-            ~guard=Exp.apply(makeIdent(Lident("=")), [
-              (Nolabel, Exp.construct(Location.mknoloc(Ldot(Lident("Json"), "String")), Some(Exp.constant(Pconst_string(constrName, None))))),
-              (Nolabel, makeIdent(Lident("tag")))
-            ]),
-            argTransformer
-          )
-        });
+                [%pat? Json.String([%p Pat.var(Location.mknoloc("tag"))])],
+                ...MakeDeserializer.range(argCount, index =>
+                     Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
+                   ),
+              ]),
+            ),
+          );
+        Exp.case(
+          if (argCount == 0) {
+            Pat.or_(
+              pat,
+              [%pat? Json.String(tag)]
+            )
+          } else { pat },
+          ~guard=
+            Exp.apply(
+              makeIdent(Lident("=")),
+              [
+                (
+                  Nolabel,
+                  Exp.constant(Pconst_string(constrName, None)),
+                ),
+                (Nolabel, makeIdent(Lident("tag"))),
+              ],
+            ),
+          argTransformer,
+        );
+      });
 
     Exp.fun_(
       Nolabel,
@@ -260,6 +290,7 @@ let deserializeTransformer = {
       Exp.match(
         makeIdent(Lident("constructor")),
         cases->Belt.List.concat([
+          Exp.case([%pat? Json.Array([Json.String(tag), ..._])], [%expr Belt.Result.Error(["Invalid constructor: " ++ tag])]),
           Exp.case(Pat.any(), MakeDeserializer.expError("Expected an array"))
         ])
       )
