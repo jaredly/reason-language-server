@@ -272,6 +272,7 @@ let deserializeTransformer = {
       Exp.match(
         makeIdent(Lident("constructor")),
         cases->Belt.List.concat([
+          Exp.case([%pat? Json.Array([Json.String(tag), ..._])], [%expr Belt.Result.Error(["Invalid constructor: " ++ tag])]),
           Exp.case(Pat.any(), MakeDeserializer.expError("Expected an array"))
         ])
       )

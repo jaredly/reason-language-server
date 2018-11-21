@@ -314,6 +314,10 @@ module Version1 =
                         (PPat (arg0, arg1) : _Parsetree__payload)
                   | Error error -> Error ("constructor argument 0" :: error))
              | Error error -> Error ("constructor argument 1" :: error))
+        | ((Json.Array
+            (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
+            -> ((Belt.Result.Error (["Invalid constructor: " ^ tag]))
+            [@explicit_arity ])
         | _ -> ((Belt.Result.Error (["Expected an array"]))
             [@explicit_arity ])
     and (deserialize_Parsetree____signature :
@@ -575,6 +579,10 @@ module Version1 =
                    Belt.Result.Ok
                      (Variant (arg0) : arg0 _SharedTypes__SimpleType__body)
                | Error error -> Error ("constructor argument 0" :: error))
+          | ((Json.Array
+              (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
+              -> ((Belt.Result.Error (["Invalid constructor: " ^ tag]))
+              [@explicit_arity ])
           | _ -> ((Belt.Result.Error (["Expected an array"]))
               [@explicit_arity ])
     and deserialize_SharedTypes__SimpleType__declaration :
@@ -901,6 +909,10 @@ module Version1 =
                | Error error -> Error ("constructor argument 1" :: error))
           | Json.Array (tag::[]) when (Json.String "Other") = tag ->
               Belt.Result.Ok (Other : arg0 _SharedTypes__SimpleType__expr)
+          | ((Json.Array
+              (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
+              -> ((Belt.Result.Error (["Invalid constructor: " ^ tag]))
+              [@explicit_arity ])
           | _ -> ((Belt.Result.Error (["Expected an array"]))
               [@explicit_arity ])
     and deserialize_Stdlib__hashtbl____t :
@@ -1127,6 +1139,10 @@ module Version1 =
             Belt.Result.Ok (Rex_json : _TypeMapSerde__Config__engine)
         | Json.Array (tag::[]) when (Json.String "Js.Json") = tag ->
             Belt.Result.Ok (Bs_json : _TypeMapSerde__Config__engine)
+        | ((Json.Array
+            (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
+            -> ((Belt.Result.Error (["Invalid constructor: " ^ tag]))
+            [@explicit_arity ])
         | _ -> ((Belt.Result.Error (["Expected an array"]))
             [@explicit_arity ])
     and (deserialize_TypeMapSerde__Config____entry :
@@ -1783,6 +1799,10 @@ module Version1 =
                | Error error -> Error ("constructor argument 0" :: error))
           | Json.Array (tag::[]) when (Json.String "NotFound") = tag ->
               Belt.Result.Ok (NotFound : arg0 _TypeMap__DigTypes__typeSource)
+          | ((Json.Array
+              (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
+              -> ((Belt.Result.Error (["Invalid constructor: " ^ tag]))
+              [@explicit_arity ])
           | _ -> ((Belt.Result.Error (["Expected an array"]))
               [@explicit_arity ])
     and (serialize_Analyze__TopTypes____moduleName :
