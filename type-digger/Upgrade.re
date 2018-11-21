@@ -154,21 +154,21 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
   };
 };
 
+let getExpr = payload => switch payload {
+  | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])
+  | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
+    {
+      pvb_pat: {ppat_desc: Ppat_any},
+      pvb_expr: expr
+    }
+  ])}]) => Some(expr)
+  | _ => None
+};
+
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
   print_endline("Migrating " ++ name);
   let source = (moduleName, modulePath, name);
   let boundName = migrateName(~moduleName, ~modulePath, ~name);
-
-  let getExpr = payload => switch payload {
-    | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])
-    | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
-      {
-        pvb_pat: {ppat_desc: Ppat_any},
-        pvb_expr: expr
-      }
-    ])}]) => Some(expr)
-    | _ => None
-  };
 
   let migrateAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => {
     if (txt == "migrate") {

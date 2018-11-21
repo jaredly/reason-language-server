@@ -1838,10 +1838,10 @@ module Version6 =
                                       (("attribute contents" :: error)))
                                   [@explicit_arity ])
                               | ((Ok (attr_contents))[@explicit_arity ]) ->
-                                  (match Js.Dict.get dict "name" with
+                                  (match Js.Dict.get dict "the name" with
                                    | None ->
                                        ((Belt.Result.Error
-                                           (["No attribute name"]))
+                                           (["No attribute the name"]))
                                        [@explicit_arity ])
                                    | ((Some (json))[@explicit_arity ]) ->
                                        (match (fun string ->
@@ -1864,7 +1864,8 @@ module Version6 =
                                         | ((Belt.Result.Error
                                             (error))[@explicit_arity ]) ->
                                             ((Belt.Result.Error
-                                                (("attribute name" :: error)))
+                                                (("attribute the name" ::
+                                                  error)))
                                             [@explicit_arity ])
                                         | ((Ok
                                             (attr_name))[@explicit_arity ])
@@ -1883,7 +1884,7 @@ module Version6 =
       fun constructor ->
         match Js.Json.classify constructor with
         | JSONArray [|tag|] when
-            (Js.Json.JSONString "Dog") = (Js.Json.classify tag) ->
+            (Js.Json.JSONString "a-cat") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Dog : _Types__pet)
         | JSONArray [|tag|] when
             (Js.Json.JSONString "Cat") = (Js.Json.classify tag) ->
@@ -1925,9 +1926,9 @@ module Version6 =
         fun record ->
           Js.Json.object_
             (Js.Dict.fromArray
-               [|("name", (Js.Json.string record.name));("contents",
-                                                          (aTransformer
-                                                             record.contents));
+               [|("the name", (Js.Json.string record.name));("contents",
+                                                              (aTransformer
+                                                                 record.contents));
                  ("isClosed", (Js.Json.boolean record.isClosed))|])
     and (serialize_Types____person : _Types__person -> Js.Json.t) =
       fun record ->
@@ -1944,7 +1945,7 @@ module Version6 =
     and (serialize_Types____pet : _Types__pet -> Js.Json.t) =
       fun constructor ->
         match constructor with
-        | Dog -> Js.Json.array [|(Js.Json.string "Dog")|]
+        | Dog -> Js.Json.array [|(Js.Json.string "a-cat")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
     let rec migrate_Types____household =

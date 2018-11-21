@@ -7,6 +7,11 @@ let makeLident = (~moduleName, ~modulePath, ~name) => {
   Lident(OutputType.makeLockedTypeName(moduleName, modulePath, name))
 };
 
+let getRename = (~renames, name) => switch (renames->Belt.List.getAssoc(name, (==))) {
+  | None => name
+  | Some(l) => l
+};
+
 let range = (num, fn) => {
   let rec loop = i => {
     i >= num ? [] : [fn(i), ...loop(i + 1)]
@@ -38,9 +43,9 @@ type transformer('source) = {
   inputType: Parsetree.core_type,
   parseVersion: Parsetree.expression,
   tuple: (Parsetree.expression, list(Parsetree.pattern), Parsetree.expression) => Parsetree.expression,
-  record: (list((string, Parsetree.expression))) => Parsetree.expression,
+  record: (~renames: list((string, string)), list((string, Parsetree.expression))) => Parsetree.expression,
   source: ('source) => Parsetree.expression,
-  variant: list((string, int, Parsetree.expression)) => Parsetree.expression,
+  variant: (~renames: list((string, string)), list((string, int, Parsetree.expression))) => Parsetree.expression,
   list: (Parsetree.expression, Parsetree.expression) => Parsetree.expression,
 };
 
@@ -105,7 +110,7 @@ let rec forArgs = (transformer, args, body, errorName) => {
   | _ => failer("not impl expr")
 };
 
-let forBody = (transformer, coreType, body, fullName, variables) => switch body {
+let forBody = (~renames, transformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
     let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
@@ -128,25 +133,39 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) =>
-    transformer.record(items->Belt.List.map(((label, expr)) => (label, forExpr(transformer, expr))))
+    transformer.record(~renames, items->Belt.List.map(((label, expr)) => (label, forExpr(transformer, expr))))
   | Variant(constructors) =>
-
-    let constructors = constructors->Belt.List.map(((name, args, result)) => {
-              let body = ok(Exp.constraint_(Exp.construct(mknoloc(Lident(name)), switch args {
+    let constructors =
+      constructors->Belt.List.map(((name, args, result)) => {
+        let body =
+          ok(
+            Exp.constraint_(
+              Exp.construct(
+                mknoloc(Lident(name)),
+                switch (args) {
                 | [] => None
-                | args => Some(Exp.tuple(args->Belt.List.mapWithIndex((index, _) => {
-                  makeIdent(Lident("arg" ++ string_of_int(index)))
-                })))
-              }), coreType));
-      (name, List.length(args), forArgs(transformer, args, body, "constructor argument"))
-    });
+                | args =>
+                  Some(
+                    Exp.tuple(
+                      args->Belt.List.mapWithIndex((index, _) =>
+                        makeIdent(Lident("arg" ++ string_of_int(index)))
+                      ),
+                    ),
+                  )
+                },
+              ),
+              coreType,
+            ),
+          );
+        (name, List.length(args), forArgs(transformer, args, body, "constructor argument"));
+      });
 
-    transformer.variant(constructors)
+    transformer.variant(~renames, constructors)
 };
 
-let declInner = (transformer, typeLident, {variables, body}, fullName) => {
+let declInner = (~renames, transformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(transformer,
+    | [] => forBody(~renames, transformer,
     Typ.constr(
       Location.mknoloc(
         typeLident,
@@ -179,7 +198,7 @@ let makeResult = t =>
     ],
   );
 
-let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
+let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let typ =
     Typ.arrow(
@@ -216,7 +235,7 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
 
   Vb.mk(
     Pat.constraint_(Pat.var(Location.mknoloc(fullName)), typ),
-    declInner(transformer, lident, decl, fullName),
+    declInner(~renames, transformer, lident, decl, fullName),
   );
 };
 

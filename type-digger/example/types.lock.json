@@ -1441,6 +1441,30 @@
                   "PStr",
                   "let _ =\n  fun contentsMigrator ->\n    fun named ->\n      {\n        name = (named.name);\n        contents = (contentsMigrator named.contents);\n        isClosed = false\n      }"
                 ]
+              ],
+              [
+                {
+                  "txt": "rename.name",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = \"the name\""
+                ]
               ]
             ],
             {
@@ -1583,6 +1607,30 @@
                 [
                   "PStr",
                   "let _ = fun ((Dog dogBreed)[@explicit_arity ]) -> Dog"
+                ]
+              ],
+              [
+                {
+                  "txt": "rename.Dog",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = \"a-cat\""
                 ]
               ]
             ],

@@ -35,8 +35,8 @@ type transformer('source) = {
   source: ('source) => Parsetree.expression,
   list: (Parsetree.expression) => Parsetree.expression,
   tuple: (list(Parsetree.expression)) => Parsetree.expression,
-  record: (list((string, Parsetree.expression))) => Parsetree.expression,
-  constructor: (string, list(Parsetree.expression)) => Parsetree.expression,
+  record: (~renames: list((string, string)), list((string, Parsetree.expression))) => Parsetree.expression,
+  constructor: (~renames: list((string, string)), string, list(Parsetree.expression)) => Parsetree.expression,
 };
 
 let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
@@ -104,7 +104,7 @@ let rec forExpr = (transformer, t) => switch t {
   | _ => failer("not impl expr")
 };
 
-let forBody = (transformer, coreType, body, fullName, variables) => switch body {
+let forBody = (~renames, transformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
     let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
@@ -134,7 +134,7 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
         Pat.var(Location.mknoloc("record")),
         /* coreType */
       /* ), */
-      transformer.record( items->Belt.List.map(((label, expr)) => {
+      transformer.record(~renames, items->Belt.List.map(((label, expr)) => {
         (label,
           Exp.apply(
             forExpr(transformer, expr),
@@ -171,7 +171,7 @@ let forBody = (transformer, coreType, body, fullName, variables) => switch body 
               }
             ),
             transformer.constructor(
-              name,
+              ~renames, name,
               args->Belt.List.mapWithIndex((index, arg) => {
                 Exp.apply(forExpr(transformer, arg),
                 [(Nolabel, makeIdent(Lident("arg" ++ string_of_int(index))))])
@@ -189,9 +189,9 @@ let makeTypArgs = variables =>
         "arg" ++ string_of_int(index)
       });
 
-let declInner = (transformer, typeLident, {variables, body}, fullName) => {
+let declInner = (~renames, transformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(transformer,
+    | [] => forBody(~renames, transformer,
     Typ.constr(
       Location.mknoloc(
         typeLident,
@@ -212,7 +212,7 @@ let declInner = (transformer, typeLident, {variables, body}, fullName) => {
     loop(variables)
 };
 
-let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
+let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let typ = Typ.arrow(
         Nolabel,
@@ -245,7 +245,7 @@ let decl = (transformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(transformer,
+    declInner(~renames, transformer,
         lident
     , decl, fullName)
   )

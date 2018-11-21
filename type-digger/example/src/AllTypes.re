@@ -139,12 +139,14 @@ module V6 = {
   };
 
   [@migrate.Dog (Dog(dogBreed)) => Dog]
+  [@rename.Dog "a-cat"]
   type pet =
     | Dog
     | Cat
     | Mouse;
-  
+
   [@migrate (contentsMigrator, named) => {name: named.name, contents: contentsMigrator(named.contents), isClosed: false}]
+  [@rename.name "the name"]
   type named('a) = {
     name: string,
     contents: 'a,

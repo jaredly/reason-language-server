@@ -84,15 +84,39 @@ let loadTypeMap = config => {
   (state, TypeMap.GetTypeMap.toSimpleMap(tbl), lockedEntries);
 };
 
+let isSerializationAttribute = (({Location.txt}, _)) => Util.Utils.startsWith(txt, "rename.");
+let getStringPayload = payload => switch (Upgrade.getExpr(payload)) {
+  | Some({Parsetree.pexp_desc: Pexp_constant(Pconst_string(text, _))}) => Some(text)
+  | _ => None
+};
+
+let getRenames = attributes =>
+  attributes->Belt.List.keepMap((({Location.txt}, payload)) =>
+    switch (Util.Utils.split_on_char('.', txt)) {
+    | ["rename", name] =>
+      switch (getStringPayload(payload)) {
+      | None => None
+      | Some(string) => Some((name, string))
+      }
+    | _ => None
+    }
+  );
+
+let compareAttributes = (one, two) => {
+  let one = one->getRenames->Belt.List.sort(compare);
+  let two = two->getRenames->Belt.List.sort(compare)
+  one == two
+};
+
 let areHashtblsEqual = (one, two) => {
   if (Hashtbl.length(one) != Hashtbl.length(two)) {
     false
   } else {
-    Hashtbl.fold((k, (a, v), good) => {
+    Hashtbl.fold((k, (attributes, v), good) => {
       good && Hashtbl.mem(two, k) && {
-        let (a2, v2) = Hashtbl.find(two, k);
-        /* TODO compare migrate functions? Actually maybe I don't care about them being locked. */
-        v2 == v
+        let (attributes2, v2) = Hashtbl.find(two, k);
+        /* TODO compare attributes that affect serializeation */
+        v2 == v && compareAttributes(attributes, attributes2)
       }
     }, one, true)
   }
@@ -143,7 +167,7 @@ let makeFns = (maker, tbl) => {
     hashList(tbl)
     ->Belt.List.sort(compare)
     ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) => 
-        maker(~moduleName, ~modulePath, ~name, decl)
+        maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, decl)
     );
 };
 
@@ -159,7 +183,7 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
         }
       }
       switch (prevVersion) {
-        | None => maker(~moduleName, ~modulePath, ~name, decl)
+        | None => maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, decl)
         | Some(prevVersion) =>
           let tname = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
           Ast_helper.Vb.mk(
