@@ -54,8 +54,7 @@ let loc = Location.none;
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
 let ok = v => Exp.construct(mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(v));
 let expString = message => Exp.constant(Pconst_string(message, None));
-let expError = message =>
-  Exp.construct(mknoloc(Lident("Error")), Some([%expr [[%e expString(message)]]]));
+let expError = message => [%expr Belt.Result.Error([[%e expString(message)]])];
 let expPassError = text => Exp.construct(mknoloc(Lident("Error")), Some([%expr [[%e expString(text)], ...[%e makeIdent(Lident("error"))]]]));
 let patPassError = Pat.construct(mknoloc(Lident("Error")), Some(Pat.var(mknoloc("error"))));
 
