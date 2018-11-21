@@ -172,11 +172,11 @@ let deserializeTransformer = {
   parseVersion: [%expr
     json => switch json {
       | Json.Object(items) => switch (items->Belt.List.getAssoc("schemaVersion", (==))) {
-        | Some(Json.Number(schemaVersion)) => [@implicit_arity]Belt.Result.Ok((schemaVersion, json))
+        | Some(Json.Number(schemaVersion)) => [@implicit_arity]Belt.Result.Ok((int_of_float(schemaVersion), json))
         | Some(_) => Belt.Result.Error(["Invalid schema version - expected number"])
         | None => Belt.Result.Error(["No schemaVersion"])
       }
-      | Json.Array([Json.Number(version), payload]) => Belt.Result.Ok((version, payload))
+      | Json.Array([Json.Number(version), payload]) => [@implicit_arity]Belt.Result.Ok((version, payload))
       | _ => Belt.Result.Error(["Not wrapped in a version"])
     }
   ],
