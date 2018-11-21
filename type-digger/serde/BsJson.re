@@ -280,9 +280,7 @@ let deserializeTransformer = {
           ),
         );
       Exp.case(
-        if (argCount == 0) {
-          Pat.or_(pat, [%pat? tag])
-        } else { pat },
+        pat,
         ~guard=Exp.apply(makeIdent(Lident("=")), [
           (Nolabel, [%expr Js.Json.JSONString([%e Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))])]),
           (Nolabel, makeClassify(makeIdent(Lident("tag"))))

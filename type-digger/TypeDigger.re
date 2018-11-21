@@ -354,6 +354,9 @@ let main = configPath => {
     [%stri
       let currentVersion = [%e Ast_helper.Exp.constant(Parsetree.Pconst_integer(string_of_int(config.version), None))]
     ],
+    [%stri
+      module Current = [%m Ast_helper.Mod.ident(Location.mknoloc(Longident.Lident(versionModuleName(config.version))))]
+    ],
     /* body, */
     ...switch (config.engine) {
        | Bs_json => [%str
