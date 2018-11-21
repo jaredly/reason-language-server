@@ -14,7 +14,7 @@
     "reprocess": "(cd process_ocaml; ./build.sh); esy",
     "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
 
-    "types": "./_esy/default/build/install/default/bin/type-digger types.json"
+    "types": "./_esy/default/build/install/default/bin/type-digger type-digger/types.json"
 
   },
   "keywords": [
