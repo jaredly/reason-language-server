@@ -57,19 +57,26 @@ let serializeTransformer = MakeSerializer.{
           Location.mknoloc(Ldot(Ldot(Lident("Js"), "Json"), "t")),
           []
           ),
-  wrapWithVersion: [%expr (version, payload) => Js.Json.array([|Js.Json.number(float_of_int(version)), payload|])],
+  wrapWithVersion: [%expr (version, payload) => {
+    switch (Js.Json.classify(payload)) {
+      | JSONObject(dict) => 
+      Js.Dict.set(dict, "$schemaVersion", Js.Json.number(float_of_int(version)))
+      Js.Json.object_(dict)
+      | _ => Js.Json.array([|Js.Json.number(float_of_int(version)), payload|])
+    }
+  }],
   source: sourceTransformer,
   list: jsonArray,
   tuple: exps => makeJson("array", Ast_helper.Exp.array(exps)),
-  record: items => jsonObject(items->Belt.List.map(((label, expr)) =>
+  record: (~renames, items) => jsonObject(items->Belt.List.map(((label, expr)) =>
         Ast_helper.Exp.tuple([
-          Ast_helper.Exp.constant(Pconst_string(label, None)),
+          Ast_helper.Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, label), None)),
           expr
         ])
        )),
-  constructor: (name, args) => 
+  constructor: (~renames, name, args) => 
             makeJson("array", Ast_helper.Exp.array([
-                makeJson("string", Ast_helper.Exp.constant(Pconst_string(name, None))),
+                makeJson("string", Ast_helper.Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))),
               ] @ args
             ))
 };
@@ -110,7 +117,7 @@ let jsonArray = items => makeJson(
 let tuple = (value, patArgs, body) => {
   [%expr json => switch (Js.Json.classify([%e value])) {
     | JSONArray([%p Pat.array(patArgs)]) => [%e body]
-    | _ => Belt.Result.Error("Expected array")
+    | _ => Belt.Result.Error(["Expected an array"])
   }]
 };
 
@@ -120,18 +127,18 @@ let list = (transformer, list) => {
       switch (Js.Json.classify([%e list])) {
         | JSONArray(items) =>
           let transformer = [%e transformer];
-          let rec loop = items => switch items {
+          let rec loop = (i, items) => switch items {
             | [] => Belt.Result.Ok([])
             | [one, ...rest] => switch (transformer(one)) {
-              | Belt.Result.Error(error) => Belt.Result.Error(error)
-              | Belt.Result.Ok(value) => switch (loop(rest)) {
+              | Belt.Result.Error(error) => Belt.Result.Error(["list element " ++ string_of_int(i), ...error])
+              | Belt.Result.Ok(value) => switch (loop(i + 1, rest)) {
                 | Belt.Result.Error(error) => Belt.Result.Error(error)
                 | Belt.Result.Ok(rest) => Belt.Result.Ok([value, ...rest])
               }
             }
           };
-          loop(Belt.List.fromArray(items))
-        | _ => Belt.Result.Error("expected an array")
+          loop(0, Belt.List.fromArray(items))
+        | _ => Belt.Result.Error(["expected an array"])
       }
     ];
 };
@@ -145,21 +152,21 @@ let sourceTransformer = source => switch source {
     [%expr 
       (transformer, array) => switch (Js.Json.classify(array)) {
         | JSONArray(items) =>
-          let rec loop = items => switch items {
+          let rec loop = (i, items) => switch items {
             | [] => Belt.Result.Ok([])
             | [one, ...rest] => switch (transformer(one)) {
-              | Belt.Result.Error(error) => Belt.Result.Error(error)
-              | Ok(value) => switch (loop(rest)) {
+              | Belt.Result.Error(error) => Belt.Result.Error(["list element " ++ string_of_int(i), ...error])
+              | Ok(value) => switch (loop(i + 1, rest)) {
                 | Belt.Result.Error(error) => Belt.Result.Error(error)
                 | Ok(rest) => Ok([value, ...rest])
               }
             }
           };
-          switch (loop(items->Belt.List.fromArray)) {
+          switch (loop(0, items->Belt.List.fromArray)) {
             | Belt.Result.Error(error) => Belt.Result.Error(error)
             | Ok(value) => Ok(Belt.List.toArray(value))
           }
-        | _ => Belt.Result.Error("expected an array")
+        | _ => Belt.Result.Error(["expected an array"])
       }
     ];
   | Builtin("list") =>
@@ -168,39 +175,38 @@ let sourceTransformer = source => switch source {
     let loc = Location.none;
     [%expr string => switch (Js.Json.classify(string)) {
       | JSONString(string) => Belt.Result.Ok(string)
-      | _ => Error("epected a string")
+      | _ => Error(["expected a string"])
     }]
   | Builtin("bool") =>
     let loc = Location.none;
     [%expr bool => switch (Js.Json.classify(bool)) {
       | JSONTrue => Belt.Result.Ok(true)
       | JSONFalse => Belt.Result.Ok(false)
-      | _ => Belt.Result.Error("Expected a bool")
+      | _ => Belt.Result.Error(["Expected a bool"])
     }]
   | Builtin("int") =>
     let loc = Location.none;
     [%expr number => switch (Js.Json.classify(number)) {
       | JSONNumber(number) => Belt.Result.Ok(int_of_float(number))
-      | _ => Error("Expected a float")
+      | _ => Error(["Expected a float"])
     }]
   | Builtin("float") =>
     let loc = Location.none;
     [%expr number => switch (Js.Json.classify(number)) {
       | JSONNumber(number) => Belt.Result.Ok(number)
-      | _ => Error("Expected a float")
+      | _ => Error(["Expected a float"])
     }]
   | Builtin("option") =>
     let loc = Location.none;
     [%expr (transformer, option) => switch (Js.Json.classify(option)) {
       | JSONNull => Belt.Result.Ok(None)
       | _ => switch (transformer(option)) {
-        | Belt.Result.Error(error) => Belt.Result.Error(error)
+        | Belt.Result.Error(error) => Belt.Result.Error(["optional value", ...error])
         | Ok(value) => Ok(Some(value))
       }
     }]
   | Builtin(name) => failer("Builtin: " ++ name)
 };
-
 
 let jsonT = Typ.constr(Location.mknoloc(Ldot(jsJson, "t")), []);
 
@@ -209,60 +215,81 @@ let deserializeTransformer = {
   source: sourceTransformer,
   parseVersion: [%expr 
     json => switch (Js.Json.classify(json)) {
+      | JSONObject(dict) => switch (Js.Dict.get(dict, "$schemaVersion")) {
+        | Some(schemaVersion) => switch (Js.Json.classify(schemaVersion)) {
+        | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), json))
+        | _ => Belt.Result.Error("Invalid $schemaVersion")
+        }
+        | None => Belt.Result.Error("No $schemaVersion present")
+      }
       | JSONArray([|version, payload|]) => switch (Js.Json.classify(version)) {
         | JSONNumber(version) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
-        | _ => Belt.Result.Error("Invalid version")
+        | _ => Belt.Result.Error("Invalid wrapped version")
       }
-      | _ => Belt.Result.Error("Must have a version")
+      | _ => Belt.Result.Error("Must have a schema version")
     }
   ],
   list,
   tuple,
-  record: (items) =>  {
+  record: (~renames, items) =>  {
     let body =
       MakeDeserializer.ok(
         Exp.record(
-          items->Belt.List.map(((label, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
+          items->Belt.List.map(((label, _, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
           None,
         ),
       );
-    let body = items->Belt.List.reduce(body, (body, (label, inner)) => {
+    let body = items->Belt.List.reduce(body, (body, (label, inner, isOptional)) => {
       /* let inner = forExpr(expr); */
       let loc = Location.none;
-      [%expr switch (Js.Dict.get(dict, [%e MakeDeserializer.expString(label)])) {
-        | None => Belt.Result.Error("No attribute " ++ [%e MakeDeserializer.expString(label)])
+      let attrName = MakeDeserializer.getRename(~renames, label);
+      [%expr {
+        let inner = ([%p Pat.var(Location.mknoloc("attr_" ++ label))]) => [%e body];
+        switch (Js.Dict.get(dict, [%e MakeDeserializer.expString(attrName)])) {
+        | None =>
+          if%e (isOptional) {
+            [%expr inner(None)]
+          } else {
+            [%expr Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]])]
+          }
         | Some(json) => switch ([%e inner](json)) {
-          | Belt.Result.Error(error) => Belt.Result.Error(error)
-          | Ok([%p Pat.var(Location.mknoloc("attr_" ++ label))]) => [%e body]
+          | Belt.Result.Error(error) => Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
+          | Ok(data) => inner(data)
         }
+      }
       }]
     });
     let loc = Location.none;
     [%expr record => switch (Js.Json.classify(record)) {
       | JSONObject(dict) => [%e body]
-      | _ => Belt.Result.Error("Expected an object")
+      | _ => Belt.Result.Error(["Expected an object"])
     }]
   },
-  variant: (constructors) => {
+  variant: (~renames, constructors) => {
     let cases = constructors->Belt.List.map(((name, argCount, argTransformer)) => {
-          Exp.case(
-            Pat.construct(Location.mknoloc(Lident("JSONArray")), Some(
-              Pat.array(
-                [
-                  Pat.var(Location.mknoloc("tag")),
-                  ...MakeDeserializer.range(argCount, index => {
-                    Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
-                  })
-                ]
-              ),
-            )),
-            ~guard=Exp.apply(makeIdent(Lident("=")), [
-              (Nolabel, Exp.construct(Location.mknoloc(Ldot(jsJson, "JSONString")), Some(Exp.constant(Pconst_string(name, None))))),
-              (Nolabel, makeClassify(makeIdent(Lident("tag"))))
+      let pat =
+        Pat.construct(
+          Location.mknoloc(Lident("JSONArray")),
+          Some(
+            Pat.array([
+              [%pat? JSONString([%p Pat.var(Location.mknoloc("tag"))])],
+              ...MakeDeserializer.range(argCount, index =>
+                   Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
+                 ),
             ]),
-            argTransformer
-          )
-        });
+          ),
+        );
+      Exp.case(
+        if (argCount == 0) {
+          Pat.or_(pat, [%pat? JSONString(tag)])
+        } else { pat },
+        ~guard=Exp.apply(makeIdent(Lident("=")), [
+          (Nolabel, Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))),
+          (Nolabel, makeClassify(makeIdent(Lident("tag"))))
+        ]),
+        argTransformer
+      )
+    });
 
     Exp.fun_(
       Nolabel,

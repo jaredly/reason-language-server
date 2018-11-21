@@ -17,31 +17,6 @@ let loc = Location.none;
 
 let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
 
-let rec migrateExpr = (variable, expr) => {
-  switch expr {
-  | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), []) =>
-    Some(Exp.apply(expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))), [(Nolabel, variable)]))
-  | Reference(Builtin("list"), [arg]) =>
-    let%opt converter = migrateExpr([%expr _item], arg);
-    Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
-  | Reference(Builtin("array"), [arg]) =>
-    let%opt converter = migrateExpr([%expr _item], arg);
-    Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
-  | Reference(Builtin("option"), [arg]) =>
-    let%opt converter = migrateExpr([%expr _item], arg);
-    Some([%expr switch ([%e variable]) {
-      | None => None
-      | Some(_item) => Some([%e converter])
-    }]);
-  | Reference(Builtin(_), []) => Some(variable)
-  | _ => {
-    print_endline("Cannot automatically migrate this expression");
-    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpExpr(expr)));
-    None
-  }
-  }
-};
-
 let rec mapAll = (items, fn) => switch items {
   | [] => Some([])
   | [one, ...rest] => switch (fn(one)) {
@@ -70,6 +45,45 @@ let rec mapAllWithIndex = (items, fn) => {
   loop(0, items);
 };
 
+let rec migrateExpr = (variable, expr) => {
+  switch expr {
+  | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), args) =>
+    let%opt argMappers = args->mapAll(arg => {
+    let%opt mapper = migrateExpr([%expr arg], arg);
+      Some((Nolabel, [%expr arg => [%e mapper]]))
+    });
+    Some(Exp.apply(
+      expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))),
+      argMappers @ [(Nolabel, variable)]
+    ))
+  | Reference(Builtin("list"), [arg]) =>
+    let%opt converter = migrateExpr([%expr _item], arg);
+    Some([%expr [%e variable]->Belt.List.map(_item => [%e converter])]);
+  | Reference(Builtin("array"), [arg]) =>
+    let%opt converter = migrateExpr([%expr _item], arg);
+    Some([%expr [%e variable]->Belt.Array.map(_item => [%e converter])]);
+  | Reference(Builtin("option"), [arg]) =>
+    let%opt converter = migrateExpr([%expr _item], arg);
+    Some([%expr switch ([%e variable]) {
+      | None => None
+      | Some(_item) => Some([%e converter])
+    }]);
+  | Reference(Builtin(_), []) => Some(variable)
+  | Tuple(contents) =>
+    let%opt migrators = contents->mapAllWithIndex((index, expr) => migrateExpr(expIdent(Lident("arg" ++ string_of_int(index))), expr))
+    let pat = Pat.tuple(contents->Belt.List.mapWithIndex((index, _) => Pat.var(mknoloc("arg" ++ string_of_int(index)))));
+    Some([%expr {
+      let [%p pat] = [%e variable];
+      [%e Exp.tuple(migrators)]
+    }])
+  | _ => {
+    print_endline("Cannot automatically migrate this expression");
+    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpExpr(expr)));
+    None
+  }
+  }
+};
+
 let orLog = (what, message) => {
   if (!what) {
     print_endline(message)
@@ -82,7 +96,7 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
   | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
   | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
     (namedMigrateAttributes->Belt.List.hasAssoc(fst(item), (==))
-    || prevItems->Belt.List.has(item, (==)))->orLog("Bad record item")
+    || prevItems->Belt.List.has(item, (==)))->orLog("Bad record item: " ++ fst(item))
   }) =>
     let rec loop = (items, labels) =>
       switch (items) {
@@ -140,25 +154,27 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
   };
 };
 
+let getExpr = payload => switch payload {
+  | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])
+  | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
+    {
+      pvb_pat: {ppat_desc: Ppat_any},
+      pvb_expr: expr
+    }
+  ])}]) => Some(expr)
+  | _ => None
+};
+
 let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
   let source = (moduleName, modulePath, name);
   let boundName = migrateName(~moduleName, ~modulePath, ~name);
 
-  let getExpr = payload => switch payload {
-    | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_eval(expr, _)}])
-    | Parsetree.PStr([{pstr_desc: Parsetree.Pstr_value(Asttypes.Nonrecursive, [
-      {
-        pvb_pat: {ppat_desc: Ppat_any},
-        pvb_expr: expr
-      }
-    ])}]) => Some(expr)
-    | _ => None
-  };
-
   let migrateAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => {
     if (txt == "migrate") {
       switch (getExpr(payload)) {
-        | Some(expr) => Some(expr)
+        | Some(expr) => 
+        print_endline("Have migrate attr");
+        Some(expr)
         | None => 
           /* Printast.structure(0, Stdlib.Format.str_formatter, items);
           print_endline(Stdlib.Format.flush_str_formatter()); */
@@ -173,6 +189,7 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
     switch (Util.Utils.split_on_char('.', txt)) {
       | ["migrate"] => None
       | ["migrate", something] => {
+        /* print_endline("migrate -- " ++ something) */
         switch (getExpr(payload)) {
           | None => failwith("migrate attribute must be an expression")
           | Some(expr) => Some((something, expr))
@@ -190,32 +207,58 @@ let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, 
 
   let typeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
 
-  let prevTypeName = Typ.constr(mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)), []);
+  let args = decl.variables->Belt.List.map(Serde.OutputType.outputExpr(Serde.OutputType.showSource));
+  let argNames = decl.variables->Belt.List.map(expr => switch expr {
+    | Variable(name) => name
+    | _ => failwith("Unnamed variable in type " ++ name)
+  });
+
+  let prevTypeName = Typ.constr(
+    mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
+    args
+  );
+
+  let migratorFunction =
+    switch (migrateAttribute) {
+    | Some(expr) => expr
+    | None =>
+      let body =
+        if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
+          %expr
+          _input_data;
+        } else {
+          switch (
+            migrateBetween(
+              ~version,
+              ~lockedDeep,
+              [%expr _input_data],
+              name,
+              decl,
+              pastDecl,
+              ~namedMigrateAttributes,
+              ~prevTypeName,
+            )
+          ) {
+          | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
+          | Some(expr) => expr
+          };
+        };
+      argNames->Belt.List.reduce(Exp.fun_(Nolabel, None, Pat.var(mknoloc("_input_data")), body), (body, arg) =>
+        Exp.fun_(Nolabel, None, Pat.var(mknoloc("_migrator_" ++ arg)), body)
+      );
+    };
+
+  let functionType = argNames->Belt.List.reduce(
+    Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), argNames->Belt.List.map(arg => Typ.var(arg ++ "_migrated")))),
+    (inner, arg) => Typ.arrow(Nolabel,
+      Typ.arrow(Nolabel, Typ.var(arg), Typ.var(arg ++ "_migrated")),
+      inner
+    )
+  );
 
   Vb.mk(
     Pat.var(mknoloc(boundName)),
-    Exp.constraint_(
-      switch (migrateAttribute) {
-      | Some(expr) => expr
-      | None =>
-        Exp.fun_(
-          Nolabel,
-          None,
-          Pat.var(mknoloc("_input_data")),
-          if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
-            %expr
-            _input_data;
-          } else {
-            switch (
-              migrateBetween(~version, ~lockedDeep, [%expr _input_data], name, decl, pastDecl, ~namedMigrateAttributes, ~prevTypeName)
-            ) {
-            | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)
-            | Some(expr) => expr
-            };
-          },
-        )
-      },
-      Typ.arrow(Nolabel, prevTypeName, Typ.constr(mknoloc(Lident(typeName)), [])),
+    Exp.constraint_(migratorFunction, functionType,
     ),
   );
 };

@@ -1,27 +1,26 @@
 {
   "version": 1,
+  "$schemaVersion": 1,
   "output": "type-digger/type-map-serde/Serde.ml",
-  "engine": ["Rex_json"],
+  "engine": ["rex-json"],
   "entries": [
     {
-      "file": "type-digger/type-map/DigTypes.re",
-      "type_": "serializableLockfile",
-      "publicName": "serializableLockfile",
+      "file": "type-digger/type-map-serde/Config.re",
+      "type": "serializableLockfile",
       "history": false
     },
     {
       "file": "type-digger/type-map-serde/Config.re",
-      "type_": "t",
-      "publicName": "t",
+      "type": "t",
       "history": false
     }
   ],
   "custom": [
-    {"module_": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1},
-    {"module_": "Parsetree", "path": [], "name": "signature", "args": 0},
-    {"module_": "Parsetree", "path": [], "name": "structure", "args": 0},
-    {"module_": "Parsetree", "path": [], "name": "core_type", "args": 0},
-    {"module_": "Parsetree", "path": [], "name": "expression", "args": 0},
-    {"module_": "Parsetree", "path": [], "name": "pattern", "args": 0}
+    {"module": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1},
+    {"module": "Parsetree", "path": [], "name": "signature", "args": 0},
+    {"module": "Parsetree", "path": [], "name": "structure", "args": 0},
+    {"module": "Parsetree", "path": [], "name": "core_type", "args": 0},
+    {"module": "Parsetree", "path": [], "name": "expression", "args": 0},
+    {"module": "Parsetree", "path": [], "name": "pattern", "args": 0}
   ]
 }

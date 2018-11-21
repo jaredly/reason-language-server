@@ -161,7 +161,7 @@ let forInitialType = (~tbl, ~state, uri, fullName) => {
     ),
   );
 
-  Ok();
+  Ok((moduleName, path, name));
 };
 
 let toSimpleMap = (tbl) => {
