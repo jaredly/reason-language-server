@@ -41,6 +41,16 @@ type constant = Asttypes.constant =
   | Const_int64 of int64
   | Const_nativeint of nativeint
 
+type payload = Parsetree.payload =
+  | PStr of Parsetree.structure
+  | PSig of Parsetree.signature (* : SIG *)
+  | PTyp of Parsetree.core_type  (* : T *)
+  | PPat of Parsetree.pattern * Parsetree.expression option  (* ? P  or  ? P when E *)
+
+module Lexing = Lexing
+module Parser = Parser
+module Lexer = Lexer
+
 (* type pconstant = Parsetree.constant =
     Pconst_integer of string * char option
   | Pconst_char of char

@@ -11,6 +11,18 @@ let unflatten = (items) => switch (Longident.unflatten(items)) {
   | Some(lident) => lident
 };
 
+let showSource = (source, args) =>
+  Ast_helper.Typ.constr(
+    Location.mknoloc(
+      switch (source) {
+      | TypeMap.DigTypes.NotFound => failwith("Not found type reference")
+      | Builtin(name) => Longident.Lident(name)
+      | Public((moduleName, modulePath, name)) => Longident.Lident(makeLockedTypeName(moduleName, modulePath, name))
+      },
+    ),
+    args,
+  );
+
 let rec outputDeclaration = (~alias, moduleName, modulePath, name, showSource, declaration) => {
   let declarationName: Ast_helper.str = Location.mknoloc(makeLockedTypeName(moduleName, modulePath, name))
   let fullReference = switch alias {

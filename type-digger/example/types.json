@@ -1,13 +1,12 @@
 {
-  "version": 4,
+  "version": 6,
+  "$schemaVersion": 1,
   "output": "src/Serde.ml",
-  "engine": ["Bs_json"],
+  "engine": "Js.Json",
   "entries": [
     {
       "file": "src/Types.re",
-      "type_": "Current.household",
-      "publicName": "household",
-      "history": ["WrappedVersion"]
+      "type": "household"
     }
   ],
   "custom": []
