@@ -153,10 +153,14 @@ module V6 = {
     isClosed: bool,
   };
 
+  type what('a) = Now('a);
+
   [@migrate.visitors household => []]
+  [@migrate.what household => Now("4")]
   type household = {
     people: list(person),
     pets: list(pet),
+    what: what(string),
     visitors: list(person),
     county: named(int)
   };
@@ -164,6 +168,7 @@ module V6 = {
   let example = {
     people: [{name: "Me", age: 10., coords: (5., 6.)}],
     pets: [Dog, Mouse],
+    what: Now("5"),
     visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}],
     county: {name: "Bearland", contents: 5, isClosed: false}
   };

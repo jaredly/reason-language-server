@@ -1301,6 +1301,30 @@
                   "PStr",
                   "let _ = fun household -> []"
                 ]
+              ],
+              [
+                {
+                  "txt": "migrate.what",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = fun household -> ((Now \"4\")[@explicit_arity ])"
+                ]
               ]
             ],
             {
@@ -1351,6 +1375,30 @@
                               [],
                               "pet"
                             ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "what",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          [],
+                          "what"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
                           ],
                           []
                         ]
@@ -1653,6 +1701,40 @@
                   [
                     "Mouse",
                     [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "what"
+          ],
+          [
+            [],
+            {
+              "name": "what",
+              "variables": [
+                [
+                  "Variable",
+                  "a"
+                ]
+              ],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Now",
+                    [
+                      [
+                        "Variable",
+                        "a"
+                      ]
+                    ],
                     null
                   ]
                 ]

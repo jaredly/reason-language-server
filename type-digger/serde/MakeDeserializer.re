@@ -170,7 +170,7 @@ let declInner = (~renames, transformer, typeLident, {variables, body}, fullName)
       Location.mknoloc(
         typeLident,
       ),
-      makeTypArgs(variables)->Belt.List.map(name => Typ.var(name)),
+      makeTypArgs(variables)->Belt.List.map(name => Typ.constr(Location.mknoloc(Lident(name)), [])),
     ),
     body, fullName, variables)
     | [arg, ...rest] =>
@@ -183,7 +183,10 @@ let declInner = (~renames, transformer, typeLident, {variables, body}, fullName)
       )), loop(rest))
   };
 
-  loop(variables)
+  makeTypArgs(variables)
+  ->Belt.List.reduce(loop(variables), (body, arg) =>
+      Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
+    );
 };
 
 let makeResult = t =>

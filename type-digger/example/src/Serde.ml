@@ -1385,7 +1385,7 @@ module Version5 =
       'arg0 .
         (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
           Js.Json.t -> ('arg0 _Types__named, string list) Belt.Result.t
-      =
+      = fun (type arg0) ->
       fun aTransformer ->
         fun record ->
           match Js.Json.classify record with
@@ -1509,6 +1509,7 @@ module Version6 =
       {
       people: _Types__person list ;
       pets: _Types__pet list ;
+      what: string _Types__what ;
       visitors: _Types__person list ;
       county: int _Types__named }
     and 'a _Types__named = 'a Types.named =
@@ -1525,6 +1526,8 @@ module Version6 =
       | Dog 
       | Cat 
       | Mouse 
+    and 'a _Types__what = 'a Types.what =
+      | Now of 'a 
     let rec (deserialize_Types____household :
       Js.Json.t -> (_Types__household, string list) Belt.Result.t) =
       fun record ->
@@ -1606,95 +1609,41 @@ module Version6 =
                                     (("attribute visitors" :: error)))
                                 [@explicit_arity ])
                             | ((Ok (attr_visitors))[@explicit_arity ]) ->
-                                (match Js.Dict.get dict "pets" with
+                                (match Js.Dict.get dict "what" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (["No attribute pets"]))
+                                         (["No attribute what"]))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
-                                     (match (fun list ->
-                                               match Js.Json.classify list
-                                               with
-                                               | ((JSONArray
-                                                   (items))[@explicit_arity ])
-                                                   ->
-                                                   let transformer =
-                                                     deserialize_Types____pet in
-                                                   let rec loop i items =
-                                                     match items with
-                                                     | [] ->
-                                                         ((Belt.Result.Ok
-                                                             ([]))
-                                                         [@explicit_arity ])
-                                                     | one::rest ->
-                                                         (match transformer
-                                                                  one
-                                                          with
-                                                          | ((Belt.Result.Error
-                                                              (error))
-                                                              [@explicit_arity
-                                                                ])
-                                                              ->
-                                                              ((Belt.Result.Error
-                                                                  (((
-                                                                    "list element "
-                                                                    ^
-                                                                    (string_of_int
-                                                                    i)) ::
-                                                                    error)))
-                                                              [@explicit_arity
-                                                                ])
-                                                          | ((Belt.Result.Ok
-                                                              (value))
-                                                              [@explicit_arity
-                                                                ])
-                                                              ->
-                                                              (match 
-                                                                 loop (
-                                                                   i + 1)
-                                                                   rest
-                                                               with
-                                                               | ((Belt.Result.Error
-                                                                   (error))
-                                                                   [@explicit_arity
-                                                                    ])
-                                                                   ->
-                                                                   ((
-                                                                   Belt.Result.Error
-                                                                    (error))
-                                                                   [@explicit_arity
-                                                                    ])
-                                                               | ((Belt.Result.Ok
-                                                                   (rest))
-                                                                   [@explicit_arity
-                                                                    ])
-                                                                   ->
-                                                                   ((
-                                                                   Belt.Result.Ok
-                                                                    ((value
-                                                                    :: rest)))
-                                                                   [@explicit_arity
-                                                                    ]))) in
-                                                   loop 0
-                                                     (Belt.List.fromArray
-                                                        items)
-                                               | _ ->
-                                                   ((Belt.Result.Error
-                                                       (["expected an array"]))
-                                                   [@explicit_arity ])) json
+                                     (match (deserialize_Types____what
+                                               (fun string ->
+                                                  match Js.Json.classify
+                                                          string
+                                                  with
+                                                  | ((JSONString
+                                                      (string))[@explicit_arity
+                                                                 ])
+                                                      ->
+                                                      ((Belt.Result.Ok
+                                                          (string))
+                                                      [@explicit_arity ])
+                                                  | _ ->
+                                                      ((Error
+                                                          (["expected a string"]))
+                                                      [@explicit_arity ])))
+                                              json
                                       with
                                       | ((Belt.Result.Error
                                           (error))[@explicit_arity ]) ->
                                           ((Belt.Result.Error
-                                              (("attribute pets" :: error)))
+                                              (("attribute what" :: error)))
                                           [@explicit_arity ])
-                                      | ((Ok (attr_pets))[@explicit_arity ])
+                                      | ((Ok (attr_what))[@explicit_arity ])
                                           ->
-                                          (match Js.Dict.get dict "people"
-                                           with
+                                          (match Js.Dict.get dict "pets" with
                                            | None ->
                                                ((Belt.Result.Error
-                                                   (["No attribute people"]))
+                                                   (["No attribute pets"]))
                                                [@explicit_arity ])
                                            | ((Some
                                                (json))[@explicit_arity ]) ->
@@ -1709,7 +1658,7 @@ module Version6 =
                                                              ->
                                                              let transformer
                                                                =
-                                                               deserialize_Types____person in
+                                                               deserialize_Types____pet in
                                                              let rec loop i
                                                                items =
                                                                match items
@@ -1782,28 +1731,144 @@ module Version6 =
                                                               ])
                                                     ->
                                                     ((Belt.Result.Error
-                                                        (("attribute people"
-                                                          :: error)))
+                                                        (("attribute pets" ::
+                                                          error)))
                                                     [@explicit_arity ])
                                                 | ((Ok
-                                                    (attr_people))[@explicit_arity
-                                                                    ])
+                                                    (attr_pets))[@explicit_arity
+                                                                  ])
                                                     ->
-                                                    Belt.Result.Ok
-                                                      {
-                                                        people = attr_people;
-                                                        pets = attr_pets;
-                                                        visitors =
-                                                          attr_visitors;
-                                                        county = attr_county
-                                                      }))))))))
+                                                    (match Js.Dict.get dict
+                                                             "people"
+                                                     with
+                                                     | None ->
+                                                         ((Belt.Result.Error
+                                                             (["No attribute people"]))
+                                                         [@explicit_arity ])
+                                                     | ((Some
+                                                         (json))[@explicit_arity
+                                                                  ])
+                                                         ->
+                                                         (match (fun list ->
+                                                                   match 
+                                                                    Js.Json.classify
+                                                                    list
+                                                                   with
+                                                                   | 
+                                                                   ((JSONArray
+                                                                    (items))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    let transformer
+                                                                    =
+                                                                    deserialize_Types____person in
+                                                                    let rec loop
+                                                                    i items =
+                                                                    match items
+                                                                    with
+                                                                    | 
+                                                                    [] ->
+                                                                    ((Belt.Result.Ok
+                                                                    ([]))
+                                                                    [@explicit_arity
+                                                                    ])
+                                                                    | 
+                                                                    one::rest
+                                                                    ->
+                                                                    (match 
+                                                                    transformer
+                                                                    one
+                                                                    with
+                                                                    | 
+                                                                    ((Belt.Result.Error
+                                                                    (error))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    ((Belt.Result.Error
+                                                                    (((
+                                                                    "list element "
+                                                                    ^
+                                                                    (string_of_int
+                                                                    i)) ::
+                                                                    error)))
+                                                                    [@explicit_arity
+                                                                    ])
+                                                                    | 
+                                                                    ((Belt.Result.Ok
+                                                                    (value))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    (match 
+                                                                    loop
+                                                                    (i + 1)
+                                                                    rest
+                                                                    with
+                                                                    | 
+                                                                    ((Belt.Result.Error
+                                                                    (error))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    ((Belt.Result.Error
+                                                                    (error))
+                                                                    [@explicit_arity
+                                                                    ])
+                                                                    | 
+                                                                    ((Belt.Result.Ok
+                                                                    (rest))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    ((Belt.Result.Ok
+                                                                    ((value
+                                                                    :: rest)))
+                                                                    [@explicit_arity
+                                                                    ]))) in
+                                                                    loop 0
+                                                                    (Belt.List.fromArray
+                                                                    items)
+                                                                   | 
+                                                                   _ ->
+                                                                    ((
+                                                                    Belt.Result.Error
+                                                                    (["expected an array"]))
+                                                                    [@explicit_arity
+                                                                    ])) json
+                                                          with
+                                                          | ((Belt.Result.Error
+                                                              (error))
+                                                              [@explicit_arity
+                                                                ])
+                                                              ->
+                                                              ((Belt.Result.Error
+                                                                  (("attribute people"
+                                                                    ::
+                                                                    error)))
+                                                              [@explicit_arity
+                                                                ])
+                                                          | ((Ok
+                                                              (attr_people))
+                                                              [@explicit_arity
+                                                                ])
+                                                              ->
+                                                              Belt.Result.Ok
+                                                                {
+                                                                  people =
+                                                                    attr_people;
+                                                                  pets =
+                                                                    attr_pets;
+                                                                  what =
+                                                                    attr_what;
+                                                                  visitors =
+                                                                    attr_visitors;
+                                                                  county =
+                                                                    attr_county
+                                                                }))))))))))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
     and deserialize_Types____named :
       'arg0 .
         (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
           Js.Json.t -> ('arg0 _Types__named, string list) Belt.Result.t
-      =
+      = fun (type arg0) ->
       fun aTransformer ->
         fun record ->
           match Js.Json.classify record with
@@ -1893,6 +1958,21 @@ module Version6 =
             (Js.Json.JSONString "Mouse") = (Js.Json.classify tag) ->
             Belt.Result.Ok (Mouse : _Types__pet)
         | _ -> Error ["Expected an array"]
+    and deserialize_Types____what :
+      'arg0 .
+        (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
+          Js.Json.t -> ('arg0 _Types__what, string list) Belt.Result.t
+      = fun (type arg0) ->
+      fun aTransformer ->
+        fun constructor ->
+          match Js.Json.classify constructor with
+          | JSONArray [|tag;arg0|] when
+              (Js.Json.JSONString "Now") = (Js.Json.classify tag) ->
+              (match aTransformer arg0 with
+               | Belt.Result.Ok arg0 ->
+                   Belt.Result.Ok (Now (arg0) : arg0 _Types__what)
+               | Error error -> Error ("constructor argument 0" :: error))
+          | _ -> Error ["Expected an array"]
     and (serialize_Types____household : _Types__household -> Js.Json.t) =
       fun record ->
         Js.Json.object_
@@ -1908,18 +1988,21 @@ module Version6 =
                                              (Belt.List.toArray
                                                 (Belt.List.map list
                                                    serialize_Types____pet))))
-                                         record.pets));("visitors",
-                                                         (((fun list ->
-                                                              Js.Json.array
-                                                                (Belt.List.toArray
-                                                                   (Belt.List.map
-                                                                    list
-                                                                    serialize_Types____person))))
-                                                            record.visitors));
-               ("county",
-                 ((serialize_Types____named
-                     (fun int -> Js.Json.number (float_of_int int)))
-                    record.county))|])
+                                         record.pets));("what",
+                                                         ((serialize_Types____what
+                                                             Js.Json.string)
+                                                            record.what));
+               ("visitors",
+                 (((fun list ->
+                      Js.Json.array
+                        (Belt.List.toArray
+                           (Belt.List.map list serialize_Types____person))))
+                    record.visitors));("county",
+                                        ((serialize_Types____named
+                                            (fun int ->
+                                               Js.Json.number
+                                                 (float_of_int int)))
+                                           record.county))|])
     and serialize_Types____named :
       'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 _Types__named -> Js.Json.t =
       fun aTransformer ->
@@ -1948,6 +2031,13 @@ module Version6 =
         | Dog -> Js.Json.array [|(Js.Json.string "a-cat")|]
         | Cat -> Js.Json.array [|(Js.Json.string "Cat")|]
         | Mouse -> Js.Json.array [|(Js.Json.string "Mouse")|]
+    and serialize_Types____what :
+      'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 _Types__what -> Js.Json.t =
+      fun aTransformer ->
+        fun constructor ->
+          match constructor with
+          | Now arg0 ->
+              Js.Json.array [|(Js.Json.string "Now");(aTransformer arg0)|]
     let rec migrate_Types____household =
       (fun _input_data ->
          let _converted_people =
@@ -1956,6 +2046,12 @@ module Version6 =
          let _converted_pets =
            (Belt.List.map _input_data.pets)
              (fun _item -> migrate_Types____pet _item) in
+         let _converted_what =
+           (fun household -> ((Now "4")[@explicit_arity ]) : Version5._Types__household
+                                                               ->
+                                                               string
+                                                                 _Types__what)
+             _input_data in
          let _converted_visitors =
            (fun household -> [] : Version5._Types__household ->
                                     _Types__person list) _input_data in
@@ -1964,6 +2060,7 @@ module Version6 =
          {
            county = _converted_county;
            visitors = _converted_visitors;
+           what = _converted_what;
            pets = _converted_pets;
            people = _converted_people
          } : Version5._Types__household -> _Types__household)
