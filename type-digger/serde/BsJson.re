@@ -272,7 +272,7 @@ let deserializeTransformer = {
           Location.mknoloc(Lident("JSONArray")),
           Some(
             Pat.array([
-              [%pat? JSONString([%p Pat.var(Location.mknoloc("tag"))])],
+              Pat.var(Location.mknoloc("tag")),
               ...MakeDeserializer.range(argCount, index =>
                    Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
                  ),
@@ -281,10 +281,10 @@ let deserializeTransformer = {
         );
       Exp.case(
         if (argCount == 0) {
-          Pat.or_(pat, [%pat? JSONString(tag)])
+          Pat.or_(pat, [%pat? tag])
         } else { pat },
         ~guard=Exp.apply(makeIdent(Lident("=")), [
-          (Nolabel, Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))),
+          (Nolabel, [%expr Js.Json.JSONString([%e Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))])]),
           (Nolabel, makeClassify(makeIdent(Lident("tag"))))
         ]),
         argTransformer
