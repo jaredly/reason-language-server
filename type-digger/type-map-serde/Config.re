@@ -1,4 +1,5 @@
 
+[@rename.module_ "module"]
 type custom = {
   module_: string,
   path: list(string),
@@ -6,12 +7,15 @@ type custom = {
   args: int,
 };
 
+[@rename.type_ "type"]
 type entry = {
   file: string,
   type_: string,
   publicName: option(string),
 };
 
+[@rename.Rex_json "rex-json"]
+[@rename.Bs_json "Js.Json"]
 type engine = Rex_json | Bs_json;
 
 type t = {
