@@ -267,24 +267,29 @@ let deserializeTransformer = {
   },
   variant: (~renames, constructors) => {
     let cases = constructors->Belt.List.map(((name, argCount, argTransformer)) => {
-          Exp.case(
-            Pat.construct(Location.mknoloc(Lident("JSONArray")), Some(
-              Pat.array(
-                [
-                  Pat.var(Location.mknoloc("tag")),
-                  ...MakeDeserializer.range(argCount, index => {
-                    Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
-                  })
-                ]
-              ),
-            )),
-            ~guard=Exp.apply(makeIdent(Lident("=")), [
-              (Nolabel, Exp.construct(Location.mknoloc(Ldot(jsJson, "JSONString")), Some(Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))))),
-              (Nolabel, makeClassify(makeIdent(Lident("tag"))))
+      let pat =
+        Pat.construct(
+          Location.mknoloc(Lident("JSONArray")),
+          Some(
+            Pat.array([
+              [%pat? JSONString([%p Pat.var(Location.mknoloc("tag"))])],
+              ...MakeDeserializer.range(argCount, index =>
+                   Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
+                 ),
             ]),
-            argTransformer
-          )
-        });
+          ),
+        );
+      Exp.case(
+        if (argCount == 0) {
+          Pat.or_(pat, [%pat? JSONString(tag)])
+        } else { pat },
+        ~guard=Exp.apply(makeIdent(Lident("=")), [
+          (Nolabel, Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))),
+          (Nolabel, makeClassify(makeIdent(Lident("tag"))))
+        ]),
+        argTransformer
+      )
+    });
 
     Exp.fun_(
       Nolabel,
