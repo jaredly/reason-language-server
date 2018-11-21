@@ -2448,19 +2448,18 @@ let parseVersion json =
            -> ((Belt.Result.Ok ((int_of_float schemaVersion), json))
            [@implicit_arity ])
        | Some _ ->
-           ((Belt.Result.Error (["Invalid schema version - expected number"]))
+           ((Belt.Result.Error ("Invalid schema version - expected number"))
            [@explicit_arity ])
-       | None -> ((Belt.Result.Error (["No schemaVersion"]))
-           [@explicit_arity ]))
+       | None -> ((Belt.Result.Error ("No schemaVersion"))[@explicit_arity ]))
   | ((Json.Array
       (((Json.Number (version))[@explicit_arity ])::payload::[]))[@explicit_arity
                                                                    ])
       -> ((Belt.Result.Ok ((int_of_float version), payload))
       [@implicit_arity ])
-  | _ -> ((Belt.Result.Error (["Not wrapped in a version"]))
-      [@explicit_arity ])
+  | _ -> ((Belt.Result.Error ("Not wrapped in a version"))[@explicit_arity ])
 let wrapWithVersion version payload =
-  ((Json.Array ([((Json.Number (float_of_int(version)))[@explicit_arity ]); payload]))
+  ((Json.Array
+      ([((Json.Number ((float_of_int version)))[@explicit_arity ]); payload]))
   [@explicit_arity ])
 let serializeSerializableLockfile data =
   wrapWithVersion currentVersion
@@ -2468,7 +2467,7 @@ let serializeSerializableLockfile data =
 and deserializeSerializableLockfile data =
   match parseVersion data with
   | ((Belt.Result.Error (err))[@explicit_arity ]) ->
-      ((Belt.Result.Error (err))[@explicit_arity ])
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
   | ((Ok (version, data))[@implicit_arity ]) ->
       (match version with
        | 1 ->
@@ -2489,7 +2488,7 @@ let serializeT data =
 and deserializeT data =
   match parseVersion data with
   | ((Belt.Result.Error (err))[@explicit_arity ]) ->
-      ((Belt.Result.Error (err))[@explicit_arity ])
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
   | ((Ok (version, data))[@implicit_arity ]) ->
       (match version with
        | 1 ->
