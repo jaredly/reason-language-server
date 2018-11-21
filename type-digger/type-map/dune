@@ -2,7 +2,7 @@
 (library
   (name TypeMap)
   (public_name ReasonLanguageServer.TypeMap)
-  (libraries Analyze Util compiler-libs.common ocaml-migrate-parsetree ppx_tools ppx_tools.metaquot)
+  (libraries Analyze Util Vendor compiler-libs.common ocaml-migrate-parsetree ppx_tools ppx_tools.metaquot)
   (flags :standard -w -26-32-50-9-27-39-33-35-6-3 -open Util)
   (preprocess (pps Belt_ppx Ppx_monads ppx_tools.metaquot))
   )

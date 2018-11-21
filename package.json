@@ -12,7 +12,10 @@
     "zip": "./release.sh",
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess": "(cd process_ocaml; ./build.sh); esy",
-    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod"
+    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
+
+    "types": "./_esy/default/build/install/default/bin/type-digger type-digger/types.json"
+
   },
   "keywords": [
     "Reason",

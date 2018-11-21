@@ -4,7 +4,7 @@ open Util.JsonShort;
 
 let sourceToJson = source => switch source {
   | DigTypes.NotFound => s("NotFound")
-  | Public({uri, modulePath, name, moduleName}) => o([
+  | Public({DigTypes.uri, modulePath, name, moduleName}) => o([
     ("uri", s(uri)),
     ("moduleName", s(moduleName)),
     ("modulePath", l(modulePath->Belt.List.map(s))),

@@ -165,12 +165,12 @@ let rec stringify = (t) =>
   switch t {
   | String(value) => "\"" ++ escape(value) ++ "\""
   | Number(num) => string_of_number(num)
-  | Array(items) => "[" ++ String.concat(", ", List.map(stringify, items)) ++ "]"
+  | Array(items) => "[" ++ String.concat(", ", List.map(items, stringify)) ++ "]"
   | Object(items) =>
     "{"
     ++ String.concat(
          ", ",
-         List.map(((k, v)) => "\"" ++ String.escaped(k) ++ "\": " ++ stringify(v), items)
+         List.map(items, ((k, v)) => "\"" ++ String.escaped(k) ++ "\": " ++ stringify(v))
        )
     ++ "}"
   | True => "true"
@@ -191,16 +191,15 @@ let rec stringifyPretty = (~indent=0, t) =>
   | String(value) => "\"" ++ escape(value) ++ "\""
   | Number(num) => string_of_number(num)
   | Array([]) => "[]"
-  | Array([String(value) as contents]) => "[" ++ stringifyPretty(contents) ++ "]"
-  | Array(items) => "[\n" ++ white(indent) ++ String.concat(",\n" ++ white(indent), List.map(stringifyPretty(~indent=indent + 2), items)) ++ "\n" ++ white(indent - 2) ++ "]"
+  | Array(items) => "[\n" ++ white(indent) ++ String.concat(",\n" ++ white(indent), List.map(items, stringifyPretty(~indent=indent + 2))) ++ "\n" ++ white(indent) ++ "]"
   | Object([]) => "{}"
   | Object(items) =>
     "{\n" ++ white(indent)
     ++ String.concat(
          ",\n" ++ white(indent),
-         List.map(((k, v)) => "\"" ++ String.escaped(k) ++ "\": " ++ stringifyPretty(~indent=indent + 2, v), items)
+         List.map(items, ((k, v)) => "\"" ++ String.escaped(k) ++ "\": " ++ stringifyPretty(~indent=indent + 2, v))
        )
-    ++ "\n" ++ white(indent - 2) ++ "}"
+    ++ "\n" ++ white(indent) ++ "}"
   | True => "true"
   | False => "false"
   | Null => "null"
@@ -241,7 +240,7 @@ module Parser = {
     let pre = String.sub(text, 0, pos);
     let lines = split_by((c) => c == '\n', pre);
     let count = List.length(lines);
-    let last = count > 0 ? List.nth(lines, count - 1) : "";
+    let last = count > 0 ? List.getExn(lines, count - 1) : "";
     let col = String.length(last) + 1;
     let line = List.length(lines);
     let string = Printf.sprintf("Error \"%s\" at %d:%d -> %s\n", message, line, col, last);
@@ -278,27 +277,6 @@ module Parser = {
     } else {
       pos
     };
-
-  /* from https://stackoverflow.com/a/42431362 */
-  let utf8encode = (s) => {
-    let prefs = [|0, 192, 224|];
-    let s1 = (n) => String.make(1, Char.chr(n));
-    let rec ienc = (k, sofar, resid) => {
-      let bct =
-        if (k == 0) {
-          7;
-        } else {
-          6 - k;
-        };
-      if (resid < 1 lsl bct) {
-        s1(prefs[k] + resid) ++ sofar;
-      } else {
-        ienc(k + 1, s1(128 + resid mod 64) ++ sofar, resid / 64);
-      };
-    };
-    ienc(0, "", int_of_string("0x" ++ s));
-  };
-
   let parseString = (text, pos) => {
     /* let i = ref(pos); */
     let buffer = Buffer.create(String.length(text));
@@ -320,9 +298,6 @@ module Parser = {
                 | 'f' =>
                   Buffer.add_char(buffer, '\012');
                   loop(i + 2)
-                | 'u' when i + 6 < ln =>
-                  Buffer.add_string(buffer, utf8encode(String.sub(text, i + 2, 4)));
-                  loop(i + 7)
                 | _ =>
                   Buffer.add_string(buffer, Scanf.unescaped(String.sub(text, i, 2)));
                   loop(i + 2)
@@ -547,9 +522,7 @@ let bind = (v, fn) =>
 let get = (key, t) =>
   switch t {
   | Object(items) =>
-    try (Some(List.assoc(key, items))) {
-    | Not_found => None
-    }
+    List.getAssoc(items, key, (==))
   | _ => None
   };
 
@@ -558,7 +531,7 @@ let nth = (n, t) =>
   switch t {
   | Array(items) =>
     if (n < List.length(items)) {
-      Some(List.nth(items, n))
+      Some(List.getExn(items, n))
     } else {
       None
     }

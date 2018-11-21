@@ -10,21 +10,28 @@ type reference = {
   env: Query.queryEnv,
 };
 
-type typeSource =
+let toShortReference = ({moduleName, modulePath, name}) => (moduleName, modulePath, name);
+
+let showReference = ({moduleName, modulePath, name}) => {
+  String.concat(".", [moduleName] @ modulePath @ [name])
+};
+
+let referenceToLident = ({moduleName, modulePath, name}) => {
+  switch (Longident.unflatten([moduleName] @ modulePath @ [name])) {
+    | None => assert(false)
+    | Some(lident) => lident
+  }
+};
+
+type typeSource('reference) =
   | Builtin(string)
-  | Public(reference)
+  | Public('reference)
   | NotFound;
 
-type lockfile = {
-  version: int,
-  pastVersions: Belt.HashMap.Int.t(
-    list((
-      shortReference,
-      SharedTypes.SimpleType.declaration(typeSource)
-    ))
-  ),
-  current: list((
-    shortReference,
-    SharedTypes.SimpleType.declaration(typeSource)
-  ))
+let toShortSource = source => switch source {
+  | Builtin(s) => Builtin(s)
+  | NotFound => NotFound
+  | Public(r) => Public(toShortReference(r))
 };
+
+type typeMap('reference) = Hashtbl.t(shortReference, (Parsetree.attributes, SharedTypes.SimpleType.declaration(typeSource('reference))));

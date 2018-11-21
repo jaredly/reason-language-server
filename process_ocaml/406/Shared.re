@@ -136,12 +136,43 @@ let rec asSimpleDeclaration = (name, t) => {
   }
 };
 
+let migrateAttributes = t => {
+  t.Types.type_attributes->Belt.List.map((({Asttypes.txt}, payload)) => {
+    (Current.mknoloc(txt), switch payload {
+      | PStr(structure) =>
+        Current.PStr(Current.Parser.implementation(Current.Lexer.token, Stdlib.Lexing.from_string({
+          Pprintast.structure(Stdlib.Format.str_formatter, structure);
+          Stdlib.Format.flush_str_formatter()
+        })))
+      | PPat(pattern, guard) => Current.PPat(Current.Parser.parse_pattern(Current.Lexer.token, Stdlib.Lexing.from_string({
+          Pprintast.pattern(Stdlib.Format.str_formatter, pattern)
+          Stdlib.Format.flush_str_formatter()
+        })), switch guard {
+          | None => None
+          | Some(expr) => Some(Current.Parser.parse_expression(Current.Lexer.token, Stdlib.Lexing.from_string({
+            Pprintast.expression(Stdlib.Format.str_formatter, expr);
+            Stdlib.Format.flush_str_formatter()
+          })))
+        })
+      | PTyp(typ) => Current.PTyp(Current.Parser.parse_core_type(Current.Lexer.token, Stdlib.Lexing.from_string({
+          Pprintast.core_type(Stdlib.Format.str_formatter, typ);
+          Stdlib.Format.flush_str_formatter()
+        })))
+      | PSig(signature) => Current.PSig(Current.Parser.interface(Current.Lexer.token, Stdlib.Lexing.from_string({
+        Pprintast.signature(Stdlib.Format.str_formatter, signature);
+        Stdlib.Format.flush_str_formatter()
+      })))
+    })
+  });
+};
+
 let makeDeclaration = t => {
   SharedTypes.declToString: name =>
 PrintType.default.decl(PrintType.default, name, name, t) |> PrintType.prettyString,
   declarationKind: typeKind(t),
   asSimpleDeclaration: name => asSimpleDeclaration(name, t)
-  |> SharedTypes.SimpleType.declMapSource(mapOldPath)
+  |> SharedTypes.SimpleType.declMapSource(mapOldPath),
+  migrateAttributes: () => migrateAttributes(t),
 }
 
 let labelToString = label => switch label {

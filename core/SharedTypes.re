@@ -24,6 +24,25 @@ module SimpleType = {
     body: body('source)
   };
 
+  let rec usedSourcesExpr = exp => switch exp {
+    | Tuple(items) => items->Belt.List.map(usedSourcesExpr)->List.concat
+    | Reference(source, args) => [source, ...args->Belt.List.map(usedSourcesExpr)->List.concat]
+    | Fn(args, res) => args->Belt.List.map(snd)->Belt.List.map(usedSourcesExpr)->List.concat @ usedSourcesExpr(res)
+    | Variable(_) | AnonVariable | Other => []
+  };
+
+  let usedSources = decl => switch (decl.body) {
+    | Expr(exp) => usedSourcesExpr(exp)
+    | Record(items) => items->Belt.List.map(snd)->Belt.List.map(usedSourcesExpr)->List.concat
+    | Variant(items) => items->Belt.List.map(((_, items, res)) =>
+      items->Belt.List.map(usedSourcesExpr)->List.concat @ switch res {
+        | None => []
+        | Some(res) => usedSourcesExpr(res)
+      }
+    )->List.concat
+    | Open | Abstract => []
+  };
+
   let rec cmp: 'a 'b . (('a, 'b) => bool, expr('a), expr('b)) => bool = (compareSources, one, two) => switch (one, two) {
     | (Variable(one), Variable(two)) => one == two
     | (AnonVariable, AnonVariable) => true
@@ -78,6 +97,7 @@ type flexibleDeclaration = {
   declToString: string => string,
   declarationKind: kinds,
   asSimpleDeclaration: string => SimpleType.declaration(Path.t),
+  migrateAttributes: unit => Parsetree.attributes,
 };
 
 type filePath = string

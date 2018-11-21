@@ -5,41 +5,46 @@ const path = require('path')
 const preprocess = (text, flags) => {
   const lines = text.split('\n')
   const result = []
-  let current = null
-  lines.forEach(line => {
+  let current = []
+  lines.forEach((line, index) => {
     // console.log(current, line)
     let match = line.match(/^#if\s+([A-Za-z0-9_-]+)\s*$/)
     if (match) {
-      // console.log('match')
-      if (current !== null) {
-        throw new Error("Cannot nest ifs")
+      current.push(!!flags[match[1]])
+      return
+    }
+    match = line.match(/^#ifn\s+([A-Za-z0-9_-]+)\s*$/)
+    if (match) {
+      current.push(!flags[match[1]])
+      return
+    }
+    match = line.match(/^#endif\s*$/)
+    if (match) {
+      // console.log('#endif')
+      if (!current.length) {
+        throw new Error("dangling #endif on line " + (index + 1))
       }
-      current = !!flags[match[1]]
-            // console.log(flags, match[1], current)
-    } else {
-      match = line.match(/^#endif\s*$/)
-      if (match) {
-        if (current === null) {
-          throw new Error("dangling #endif")
-        }
-        current = null
-      } else {
-        match = line.match(/^#else/)
-        if (match) {
-          if (current === null) {
-            throw new Error("dangling #else")
-          }
-          current = !current
-        } else {
-          match = line.match(/^#elif\s+([A-Za-z0-9_-]+)\s*$/)
-          if (match) {
-            current = !!flags[match[1]]
-            // console.log(flags, match[1], current)
-          } else if (current === null || current === true) {
-            result.push(line)
-          }
-        }
+      current.pop()
+      return
+    }
+    match = line.match(/^#else/)
+    if (match) {
+      if (!current.length) {
+        throw new Error("dangling #else on line " + (index + 1))
       }
+      current[current.length - 1] = !current[current.length - 1]
+      return
+    }
+    match = line.match(/^#elif\s+([A-Za-z0-9_-]+)\s*$/)
+    if (match) {
+      if (!current.length) {
+        throw new Error("dangling #elif on line " + (index + 1))
+      }
+      current[current.length - 1] = !!flags[match[1]]
+      // console.log(flags, match[1], current)
+      return
+    } else if (current.every(flag => flag)) {
+      result.push(line)
     }
   })
   return result.join('\n')
@@ -62,5 +67,11 @@ if (!fs.existsSync(dest)) {
 }
 files.forEach(name => {
   const out = path.join(dest, path.basename(name))
-  fs.writeFileSync(out, preprocess(fs.readFileSync(name).toString('utf8'), flags))
+  try {
+    fs.writeFileSync(out, preprocess(fs.readFileSync(name).toString('utf8'), flags))
+  } catch (error) {
+    console.error(name)
+    console.error(error.message)
+    process.exit(1)
+  }
 })
