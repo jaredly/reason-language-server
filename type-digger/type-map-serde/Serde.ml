@@ -272,22 +272,26 @@ module Version1 =
       Json.t -> (_Parsetree__payload, string list) Belt.Result.t) =
       fun constructor ->
         match constructor with
-        | Json.Array (tag::arg0::[]) when (Json.String "PStr") = tag ->
+        | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[]) when
+            "PStr" = tag ->
             (match deserialize_Parsetree____structure arg0 with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (PStr (arg0) : _Parsetree__payload)
              | Error error -> Error ("constructor argument 0" :: error))
-        | Json.Array (tag::arg0::[]) when (Json.String "PSig") = tag ->
+        | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[]) when
+            "PSig" = tag ->
             (match deserialize_Parsetree____signature arg0 with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (PSig (arg0) : _Parsetree__payload)
              | Error error -> Error ("constructor argument 0" :: error))
-        | Json.Array (tag::arg0::[]) when (Json.String "PTyp") = tag ->
+        | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[]) when
+            "PTyp" = tag ->
             (match deserialize_Parsetree____core_type arg0 with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (PTyp (arg0) : _Parsetree__payload)
              | Error error -> Error ("constructor argument 0" :: error))
-        | Json.Array (tag::arg0::arg1::[]) when (Json.String "PPat") = tag ->
+        | Json.Array (((Json.String
+            (tag))[@explicit_arity ])::arg0::arg1::[]) when "PPat" = tag ->
             (match ((fun transformer ->
                        fun option ->
                          match option with
@@ -335,11 +339,14 @@ module Version1 =
       fun sourceTransformer ->
         fun constructor ->
           match constructor with
-          | Json.Array (tag::[]) when (Json.String "Open") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+            |((Json.String (tag))[@explicit_arity ]) when "Open" = tag ->
               Belt.Result.Ok (Open : arg0 _SharedTypes__SimpleType__body)
-          | Json.Array (tag::[]) when (Json.String "Abstract") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+            |((Json.String (tag))[@explicit_arity ]) when "Abstract" = tag ->
               Belt.Result.Ok (Abstract : arg0 _SharedTypes__SimpleType__body)
-          | Json.Array (tag::arg0::[]) when (Json.String "Expr") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Expr" = tag ->
               (match (deserialize_SharedTypes__SimpleType__expr
                         sourceTransformer) arg0
                with
@@ -347,7 +354,8 @@ module Version1 =
                    Belt.Result.Ok
                      (Expr (arg0) : arg0 _SharedTypes__SimpleType__body)
                | Error error -> Error ("constructor argument 0" :: error))
-          | Json.Array (tag::arg0::[]) when (Json.String "Record") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Record" = tag ->
               (match (fun list ->
                         match list with
                         | ((Json.Array (items))[@explicit_arity ]) ->
@@ -415,7 +423,8 @@ module Version1 =
                    Belt.Result.Ok
                      (Record (arg0) : arg0 _SharedTypes__SimpleType__body)
                | Error error -> Error ("constructor argument 0" :: error))
-          | Json.Array (tag::arg0::[]) when (Json.String "Variant") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Variant" = tag ->
               (match (fun list ->
                         match list with
                         | ((Json.Array (items))[@explicit_arity ]) ->
@@ -691,7 +700,8 @@ module Version1 =
       fun sourceTransformer ->
         fun constructor ->
           match constructor with
-          | Json.Array (tag::arg0::[]) when (Json.String "Variable") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Variable" = tag ->
               (match (fun string ->
                         match string with
                         | ((Json.String (string))[@explicit_arity ]) ->
@@ -703,11 +713,14 @@ module Version1 =
                    Belt.Result.Ok
                      (Variable (arg0) : arg0 _SharedTypes__SimpleType__expr)
                | Error error -> Error ("constructor argument 0" :: error))
-          | Json.Array (tag::[]) when (Json.String "AnonVariable") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+            |((Json.String (tag))[@explicit_arity ]) when
+              "AnonVariable" = tag ->
               Belt.Result.Ok
                 (AnonVariable : arg0 _SharedTypes__SimpleType__expr)
-          | Json.Array (tag::arg0::arg1::[]) when
-              (Json.String "Reference") = tag ->
+          | Json.Array (((Json.String
+              (tag))[@explicit_arity ])::arg0::arg1::[]) when
+              "Reference" = tag ->
               (match (fun list ->
                         match list with
                         | ((Json.Array (items))[@explicit_arity ]) ->
@@ -750,7 +763,8 @@ module Version1 =
                     | Error error ->
                         Error ("constructor argument 0" :: error))
                | Error error -> Error ("constructor argument 1" :: error))
-          | Json.Array (tag::arg0::[]) when (Json.String "Tuple") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Tuple" = tag ->
               (match (fun list ->
                         match list with
                         | ((Json.Array (items))[@explicit_arity ]) ->
@@ -788,7 +802,8 @@ module Version1 =
                    Belt.Result.Ok
                      (Tuple (arg0) : arg0 _SharedTypes__SimpleType__expr)
                | Error error -> Error ("constructor argument 0" :: error))
-          | Json.Array (tag::arg0::arg1::[]) when (Json.String "Fn") = tag ->
+          | Json.Array (((Json.String
+              (tag))[@explicit_arity ])::arg0::arg1::[]) when "Fn" = tag ->
               (match (deserialize_SharedTypes__SimpleType__expr
                         sourceTransformer) arg1
                with
@@ -907,7 +922,8 @@ module Version1 =
                     | Error error ->
                         Error ("constructor argument 0" :: error))
                | Error error -> Error ("constructor argument 1" :: error))
-          | Json.Array (tag::[]) when (Json.String "Other") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+            |((Json.String (tag))[@explicit_arity ]) when "Other" = tag ->
               Belt.Result.Ok (Other : arg0 _SharedTypes__SimpleType__expr)
           | ((Json.Array
               (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
@@ -1135,9 +1151,11 @@ module Version1 =
       Json.t -> (_TypeMapSerde__Config__engine, string list) Belt.Result.t) =
       fun constructor ->
         match constructor with
-        | Json.Array (tag::[]) when (Json.String "rex-json") = tag ->
+        | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+          |((Json.String (tag))[@explicit_arity ]) when "rex-json" = tag ->
             Belt.Result.Ok (Rex_json : _TypeMapSerde__Config__engine)
-        | Json.Array (tag::[]) when (Json.String "Js.Json") = tag ->
+        | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+          |((Json.String (tag))[@explicit_arity ]) when "Js.Json" = tag ->
             Belt.Result.Ok (Bs_json : _TypeMapSerde__Config__engine)
         | ((Json.Array
             (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])
@@ -1779,7 +1797,8 @@ module Version1 =
       fun referenceTransformer ->
         fun constructor ->
           match constructor with
-          | Json.Array (tag::arg0::[]) when (Json.String "Builtin") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Builtin" = tag ->
               (match (fun string ->
                         match string with
                         | ((Json.String (string))[@explicit_arity ]) ->
@@ -1791,13 +1810,15 @@ module Version1 =
                    Belt.Result.Ok
                      (Builtin (arg0) : arg0 _TypeMap__DigTypes__typeSource)
                | Error error -> Error ("constructor argument 0" :: error))
-          | Json.Array (tag::arg0::[]) when (Json.String "Public") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::arg0::[])
+              when "Public" = tag ->
               (match referenceTransformer arg0 with
                | Belt.Result.Ok arg0 ->
                    Belt.Result.Ok
                      (Public (arg0) : arg0 _TypeMap__DigTypes__typeSource)
                | Error error -> Error ("constructor argument 0" :: error))
-          | Json.Array (tag::[]) when (Json.String "NotFound") = tag ->
+          | Json.Array (((Json.String (tag))[@explicit_arity ])::[])
+            |((Json.String (tag))[@explicit_arity ]) when "NotFound" = tag ->
               Belt.Result.Ok (NotFound : arg0 _TypeMap__DigTypes__typeSource)
           | ((Json.Array
               (((Json.String (tag))[@explicit_arity ])::_))[@explicit_arity ])

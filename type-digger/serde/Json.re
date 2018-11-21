@@ -246,24 +246,42 @@ let deserializeTransformer = {
   },
   variant: (~renames, constructors) => {
 
-    let cases = constructors->Belt.List.map(((name, argCount, argTransformer)) => {
-          let constrName = MakeDeserializer.getRename(~renames, name);
-          Exp.case(
-            Pat.construct(Location.mknoloc(Ldot(Lident("Json"), "Array")), Some(
+    let cases =
+      constructors->Belt.List.map(((name, argCount, argTransformer)) => {
+        let constrName = MakeDeserializer.getRename(~renames, name);
+        let pat =
+          Pat.construct(
+            Location.mknoloc(Ldot(Lident("Json"), "Array")),
+            Some(
               makePatList([
-                Pat.var(Location.mknoloc("tag")),
-                ...MakeDeserializer.range(argCount, index => {
-                  Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
-                })
-              ])
-            )),
-            ~guard=Exp.apply(makeIdent(Lident("=")), [
-              (Nolabel, Exp.construct(Location.mknoloc(Ldot(Lident("Json"), "String")), Some(Exp.constant(Pconst_string(constrName, None))))),
-              (Nolabel, makeIdent(Lident("tag")))
-            ]),
-            argTransformer
-          )
-        });
+                [%pat? Json.String([%p Pat.var(Location.mknoloc("tag"))])],
+                ...MakeDeserializer.range(argCount, index =>
+                     Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
+                   ),
+              ]),
+            ),
+          );
+        Exp.case(
+          if (argCount == 0) {
+            Pat.or_(
+              pat,
+              [%pat? Json.String(tag)]
+            )
+          } else { pat },
+          ~guard=
+            Exp.apply(
+              makeIdent(Lident("=")),
+              [
+                (
+                  Nolabel,
+                  Exp.constant(Pconst_string(constrName, None)),
+                ),
+                (Nolabel, makeIdent(Lident("tag"))),
+              ],
+            ),
+          argTransformer,
+        );
+      });
 
     Exp.fun_(
       Nolabel,
