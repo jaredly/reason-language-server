@@ -176,7 +176,7 @@ let deserializeTransformer = {
         | Some(_) => Belt.Result.Error(["Invalid schema version - expected number"])
         | None => Belt.Result.Error(["No schemaVersion"])
       }
-      | Json.Array([Json.Number(version), payload]) => [@implicit_arity]Belt.Result.Ok((version, payload))
+      | Json.Array([Json.Number(version), payload]) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
       | _ => Belt.Result.Error(["Not wrapped in a version"])
     }
   ],

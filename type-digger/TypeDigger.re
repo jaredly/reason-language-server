@@ -135,7 +135,10 @@ let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
     }
     | Ok(contents) => {
       let json = Json.parse(contents);
-      let%try_force lockfile = TypeMapSerde.lockfileFromJson(json)
+      let%try_force lockfile = switch (TypeMapSerde.lockfileFromJson(json)) {
+        | Error(m) => Error(String.concat("::", m))
+        | Ok(v) => Ok(v)
+      };
       if (lockfile.engine != config.engine) {
         failwith("Config engine does not match lockfile engine.")
       };
@@ -324,7 +327,10 @@ let makeConverters = (~config, ~state) => config.entries->Belt.List.map(({file, 
 
 let main = configPath => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
-  let%try_force config = TypeMapSerde.configFromJson(json);
+  let%try_force config = switch (TypeMapSerde.configFromJson(json)) {
+    | Error(m) => Error(String.concat("::", m))
+    | Ok(v) => Ok(v)
+  };
   let (state, currentTypeMap, lockedEntries) = loadTypeMap(config);
 
   let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
