@@ -54,7 +54,10 @@ let sourceTransformer = source => switch source {
 let serializeTransformer = MakeSerializer.{
   outputType: Typ.constr(Location.mknoloc(Ldot(Lident("Json"), "t")), []),
   wrapWithVersion: [%expr 
-    (version, payload) => Json.Array([Json.Number(float_of_int(version)), payload])
+    (version, payload) => switch payload {
+      | Json.Object(items) => Json.Object([("$schemaVersion", Json.Number(float_of_int(version))), ...items])
+      | _ => Json.Array([Json.Number(float_of_int(version)), payload])
+    }
   ],
   source: sourceTransformer,
   list: jsonArray,
@@ -171,10 +174,10 @@ let deserializeTransformer = {
   source: sourceTransformer,
   parseVersion: [%expr
     json => switch json {
-      | Json.Object(items) => switch (items->Belt.List.getAssoc("schemaVersion", (==))) {
+      | Json.Object(items) => switch (items->Belt.List.getAssoc("$schemaVersion", (==))) {
         | Some(Json.Number(schemaVersion)) => [@implicit_arity]Belt.Result.Ok((int_of_float(schemaVersion), json))
         | Some(_) => Belt.Result.Error("Invalid schema version - expected number")
-        | None => Belt.Result.Error("No schemaVersion")
+        | None => Belt.Result.Error("No $schemaVersion")
       }
       | Json.Array([Json.Number(version), payload]) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
       | _ => Belt.Result.Error("Not wrapped in a version")

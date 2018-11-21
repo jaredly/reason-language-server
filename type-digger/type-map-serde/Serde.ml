@@ -2441,7 +2441,7 @@ let currentVersion = 1
 let parseVersion json =
   match json with
   | ((Json.Object (items))[@explicit_arity ]) ->
-      (match (Belt.List.getAssoc items) "schemaVersion" (=) with
+      (match (Belt.List.getAssoc items) "$schemaVersion" (=) with
        | ((Some
            (((Json.Number (schemaVersion))[@explicit_arity ])))[@explicit_arity
                                                                  ])
@@ -2450,7 +2450,8 @@ let parseVersion json =
        | Some _ ->
            ((Belt.Result.Error ("Invalid schema version - expected number"))
            [@explicit_arity ])
-       | None -> ((Belt.Result.Error ("No schemaVersion"))[@explicit_arity ]))
+       | None -> ((Belt.Result.Error ("No $schemaVersion"))
+           [@explicit_arity ]))
   | ((Json.Array
       (((Json.Number (version))[@explicit_arity ])::payload::[]))[@explicit_arity
                                                                    ])
@@ -2458,9 +2459,18 @@ let parseVersion json =
       [@implicit_arity ])
   | _ -> ((Belt.Result.Error ("Not wrapped in a version"))[@explicit_arity ])
 let wrapWithVersion version payload =
-  ((Json.Array
-      ([((Json.Number ((float_of_int version)))[@explicit_arity ]); payload]))
-  [@explicit_arity ])
+  match payload with
+  | ((Json.Object (items))[@explicit_arity ]) ->
+      ((Json.Object
+          ((("$schemaVersion", ((Json.Number ((float_of_int version)))
+              [@explicit_arity ])) :: items)))
+      [@explicit_arity ])
+  | _ ->
+      ((Json.Array
+          ([((Json.Number ((float_of_int version)))
+           [@explicit_arity ]);
+           payload]))
+      [@explicit_arity ])
 let serializeSerializableLockfile data =
   wrapWithVersion currentVersion
     (Version1.serialize_TypeMapSerde__Config____serializableLockfile data)
