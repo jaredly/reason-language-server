@@ -212,20 +212,32 @@ let deserializeTransformer = {
     let body =
       MakeDeserializer.ok(
         Exp.record(
-          items->Belt.List.map(((label, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
+          items->Belt.List.map(((label, _, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
           None,
         ),
       );
-    let body = items->Belt.List.reduce(body, (body, (label, inner)) => {
+    let body = items->Belt.List.reduce(body, (body, (label, inner, isOptional)) => {
       let attrName = MakeDeserializer.getRename(~renames, label);
-      /* let inner = forExpr(expr); */
-      [%expr switch (Belt.List.getAssoc(items, [%e MakeDeserializer.expString(attrName)], (==))) {
-        | None => Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]])
-        | Some(json) => switch ([%e inner](json)) {
-          | Belt.Result.Error(error) => Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
-          | Belt.Result.Ok([%p Pat.var(Location.mknoloc("attr_" ++ label))]) => [%e body]
-        }
-      }]
+      let pat = Pat.var(Location.mknoloc("attr_" ++ label));
+      {
+        let%expr inner = ([%p pat]) => [%e body];
+        switch (Belt.List.getAssoc(items, [%e MakeDeserializer.expString(attrName)], (==))) {
+        | None =>
+          if%e (isOptional) {
+            %expr
+            inner(None);
+          } else {
+            %expr
+            Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]]);
+          }
+        | Some(json) =>
+          switch ([%e inner](json)) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
+          | Belt.Result.Ok(data) => inner(data)
+          }
+        };
+      };
     });
     [%expr record => switch (record) {
       | Json.Object(items) => [%e body]
