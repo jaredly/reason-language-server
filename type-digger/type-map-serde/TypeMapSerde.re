@@ -1,10 +1,13 @@
 
-let lockfileToJson = Serde.serialize_TypeMap__DigTypes____serializableLockfile;
-let lockfileFromJson = Serde.deserialize_TypeMap__DigTypes____serializableLockfile;
+let lockfileToJson = Serde.serializeSerializableLockfile;
+let lockfileFromJson = Serde.deserializeSerializableLockfile;
 
-let configToJson = Serde.serialize_TypeMapSerde__Config____t;
-let configFromJson = Serde.deserialize_TypeMapSerde__Config____t;
+let configToJson = Serde.serializeT;
+let configFromJson = Serde.deserializeT;
 
-let dumpExpr = Serde.serialize_SharedTypes__SimpleType__expr(Serde.serialize_TypeMap__DigTypes____typeSource(Serde.serialize_TypeMap__DigTypes____shortReference));
+let dumpExpr = (_) => {
+  failwith("a")
+  /* Serde.serialize_SharedTypes__SimpleType__expr(Serde.serialize_TypeMap__DigTypes____typeSource(Serde.serialize_TypeMap__DigTypes____shortReference)); */
+};
 
 module Config = Config;

@@ -139,22 +139,28 @@ module V6 = {
   };
 
   [@migrate.Dog (Dog(dogBreed)) => Dog]
+  [@rename.Dog "a-cat"]
   type pet =
     | Dog
     | Cat
     | Mouse;
-  
+
   [@migrate (contentsMigrator, named) => {name: named.name, contents: contentsMigrator(named.contents), isClosed: false}]
+  [@rename.name "the name"]
   type named('a) = {
     name: string,
     contents: 'a,
     isClosed: bool,
   };
 
+  type what('a) = Now('a);
+
   [@migrate.visitors household => []]
+  [@migrate.what household => Now("4")]
   type household = {
     people: list(person),
     pets: list(pet),
+    what: what(string),
     visitors: list(person),
     county: named(int)
   };
@@ -162,6 +168,7 @@ module V6 = {
   let example = {
     people: [{name: "Me", age: 10., coords: (5., 6.)}],
     pets: [Dog, Mouse],
+    what: Now("5"),
     visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}],
     county: {name: "Bearland", contents: 5, isClosed: false}
   };

@@ -22,6 +22,9 @@ for (i in 1 to Types.v) {
   }
 };
 
+/*
+This was just checking the quality of error messagse.
+
 let rawGood = [%bs.raw {|
 [6,{"people":[{"name":"Me","age":10,"coords":[5,6]}],"pets":[["Dog"],["Mouse"]],"visitors":[{
   "name":"Friend","age":11.5,"coords":[1,6]
@@ -37,4 +40,4 @@ let rawBad = [%bs.raw {|
 switch (Serde.deserializeHousehold(rawBad)) {
   | Ok(_) => assert(false)
   | Error(error) => Js.log2("Error message: ", Belt.List.toArray(error))
-}
+} */
