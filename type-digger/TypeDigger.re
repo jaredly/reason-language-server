@@ -108,18 +108,14 @@ let compareAttributes = (one, two) => {
   one == two
 };
 
-let areHashtblsEqual = (one, two) => {
-  if (Hashtbl.length(one) != Hashtbl.length(two)) {
-    false
-  } else {
-    Hashtbl.fold((k, (attributes, v), good) => {
-      good && Hashtbl.mem(two, k) && {
-        let (attributes2, v2) = Hashtbl.find(two, k);
-        /* TODO compare attributes that affect serializeation */
-        v2 == v && compareAttributes(attributes, attributes2)
-      }
-    }, one, true)
-  }
+/** Checks that all types in the old map are the same in the new map */
+let allTypesPreserved = (oldLockedTypes, newLockedTypes) => {
+  Hashtbl.fold((k, (attributes, v), good) => {
+    good && Hashtbl.mem(newLockedTypes, k) && {
+      let (attributes2, v2) = Hashtbl.find(newLockedTypes, k);
+      v2 == v && compareAttributes(attributes, attributes2)
+    }
+  }, oldLockedTypes, true)
 };
 
 
@@ -145,7 +141,7 @@ let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
       let latestVersion = Locked.getLatestVersion(lockfile);
       if (latestVersion == config.version) {
         /* TODO allow addative type changes... maybe */
-        if (!areHashtblsEqual(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap)) {
+        if (!allTypesPreserved(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap)) {
 
           /* let lockfileJson = TypeMapSerde.lockfileToJson({
             ...lockfile,
@@ -155,7 +151,7 @@ let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
 
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
-          lockfile
+          lockfile->Locked.updateVersion(~typeMap=currentTypeMap, ~entries=lockedEntries, ~engineVersion=1)
         }
       } else if (latestVersion + 1 == config.version) {
         lockfile->Locked.addVersion(~typeMap=currentTypeMap, ~entries=lockedEntries, ~engineVersion=1)
