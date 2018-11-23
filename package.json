@@ -1,21 +1,16 @@
 {
-  "name": "@jaredly/reason-language-server",
-  "version": "1.0.0-alpha.5",
+  "name": "ReasonLanguageServer",
+  "version": "0.0.0-dont-publish",
+  "private": true,
   "scripts": {
-    "start": "bsb -make-world -backend native -w",
-    "build": "bsb -make-world -backend native",
-    "clean": "bsb -clean-world",
     "test": "./_esy/default/build/install/default/bin/AllTests",
-    "watch": "bsb -make-world -backend native -w",
-    "watch:byte": "bsb -make-world -backend bytecode -w",
     "package": "esy build && cp _esy/default/build/default/bin/Bin.exe editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "vsce": "cd editor-extensions/vscode && vsce package",
-    "reprocess": "(cd process_ocaml; ./build.sh); esy",
+    "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",
+
     "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
-
     "types": "./_esy/default/build/install/default/bin/type-digger type-digger/types.json"
-
   },
   "keywords": [
     "Reason",
@@ -37,13 +32,9 @@
     "@esy-ocaml/reason": "*",
     "@opam/ocaml-migrate-parsetree": "*",
     "@opam/ppx_tools_versioned": "*",
+    "@opam/ppx_tools": "*",
+    "@opam/ppxlib": "*",
     "rex-json": "*",
-    "ocaml": "~4.7.1000"
-  },
-  "resolutions": {
-    "@esy-ocaml/esy-installer": "0.0.1"
-  },
-  "devDependencies": {
-    "ocaml": "~4.7.1000"
+    "ocaml": "~4.7.2"
   }
 }
