@@ -32,11 +32,11 @@ let checkExampleProject = (rootPath, sourcePaths) => {
 };
 
 let projects = [
-  /* ("example-project", ["src"], "npm install"), */
-  /* ("example-es6-imports", ["src"], "npm install"), */
-  /* ("example-react", ["src", "__tests__"], "npm install"), */
-  /* ("name_with_underscore", ["src"], "npm install"), */
-  /* ("bs-3.1.5", ["src"], "npm install"), */
+  ("example-project", ["src"], "npm install"),
+  ("example-es6-imports", ["src"], "npm install"),
+  ("example-react", ["src", "__tests__"], "npm install"),
+  ("name_with_underscore", ["src"], "npm install"),
+  ("bs-3.1.5", ["src"], "npm install"),
   ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
 
