@@ -1,4 +1,3 @@
-
 type target =
   | Js
   | Bytecode
@@ -130,10 +129,21 @@ let detect = (rootPath, bsconfig) => {
 let getEsyCompiledBase = (root) => {
   let env = Unix.environment()->Array.to_list;
 
-  switch(Utils.getEnvVar(~env, "cur__original_root"), Utils.getEnvVar(~env, "cur__target_dir")) {
-  | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(projectRoot, targetDir))
-  | (_, _) =>
-    switch (Commands.execResult("esy command-env --json")) {
+  let correctSlashesOnWindows = (p) => {
+      if (Sys.win32) {
+          let slashRegex = Str.regexp("/");
+          Str.global_replace(slashRegex, "\\\\", p);
+      } else {
+          p
+      }
+  };
+
+    let prevCwd = Unix.getcwd();
+    Unix.chdir(root);
+    let res = Commands.execResult("esy command-env --json")
+    Unix.chdir(prevCwd);
+        
+    switch (res) {
     | Ok(commandEnv) =>
       switch (Json.parse(commandEnv)) {
       | exception (Failure(message)) =>
@@ -149,14 +159,13 @@ let getEsyCompiledBase = (root) => {
             Json.get("cur__original_root", json) |?> Json.string,
             Json.get("cur__target_dir", json) |?> Json.string,
           ) {
-          | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(projectRoot, targetDir))
+          | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
           | _ => Error("Couldn't find Esy target directory (missing json entries)")
           }
         )
       }
     | err => err
     }
-  }
 };
 
 let getCompiledBase = (root, buildSystem) => {
@@ -219,7 +228,7 @@ let getStdlib = (base, buildSystem) => {
     switch (Utils.getEnvVar(~env, "OCAMLLIB")) {
     | Some(esy_ocamllib) => Ok([esy_ocamllib])
     | None =>
-      let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
+      let%try_wrap esy_ocamllib = getLine("esy b echo $OCAMLLIB", ~pwd=base);
       [esy_ocamllib];
     };
   | Dune(Opam(switchPrefix)) =>
@@ -234,10 +243,11 @@ let isRunningInEsyNamedSandbox = () => {
 };
 
 let getExecutableInEsyPath = (exeName, ~pwd) => {
+  let whichCommand = Sys.win32 ? "where" : "which"
   if (isRunningInEsyNamedSandbox()) {
-    getLine("which " ++ exeName, ~pwd)
+    getLine(whichCommand ++ " " ++ exeName, ~pwd)
   } else {
-    getLine("esy which " ++ exeName, ~pwd)
+    getLine("esy " ++ whichCommand ++ " " ++ exeName, ~pwd)
   }
 };
 
