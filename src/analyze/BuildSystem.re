@@ -1,3 +1,4 @@
+
 type target =
   | Js
   | Bytecode
@@ -138,34 +139,34 @@ let getEsyCompiledBase = (root) => {
       }
   };
 
-    let prevCwd = Unix.getcwd();
-    Unix.chdir(root);
-    let res = Commands.execResult("esy command-env --json")
-    Unix.chdir(prevCwd);
-        
-    switch (res) {
-    | Ok(commandEnv) =>
-      switch (Json.parse(commandEnv)) {
-      | exception (Failure(message)) =>
-        Log.log("Json response");
-        Log.log(commandEnv);
-        Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message);
-      | exception exn =>
-        Log.log(commandEnv);
-        Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn));
-      | json =>
-        Json.Infix.(
-          switch (
-            Json.get("cur__original_root", json) |?> Json.string,
-            Json.get("cur__target_dir", json) |?> Json.string,
-          ) {
-          | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
-          | _ => Error("Couldn't find Esy target directory (missing json entries)")
-          }
-        )
-      }
-    | err => err
+  let prevCwd = Unix.getcwd();
+  Unix.chdir(root);
+  let res = Commands.execResult("esy command-env --json")
+  Unix.chdir(prevCwd);
+      
+  switch (res) {
+  | Ok(commandEnv) =>
+    switch (Json.parse(commandEnv)) {
+    | exception (Failure(message)) =>
+      Log.log("Json response");
+      Log.log(commandEnv);
+      Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message);
+    | exception exn =>
+      Log.log(commandEnv);
+      Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn));
+    | json =>
+      Json.Infix.(
+        switch (
+          Json.get("cur__original_root", json) |?> Json.string,
+          Json.get("cur__target_dir", json) |?> Json.string,
+        ) {
+        | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
+        | _ => Error("Couldn't find Esy target directory (missing json entries)")
+        }
+      )
     }
+  | err => err
+  }
 };
 
 let getCompiledBase = (root, buildSystem) => {
