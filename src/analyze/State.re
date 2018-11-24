@@ -361,6 +361,8 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     );
   });
 
+
+  /* print_endline("Getting things"); */
   let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] != '/') |> optMap(name => {
     let otherPath = rootPath /+ name;
     let res = {
