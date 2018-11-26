@@ -69,6 +69,37 @@ let g:LanguageClient_serverCommands = {
     \ }
 ```
 
+#### Configuration
+
+[LanguageClient-neovim]() supports configuring language servers via a configuration file. By default the configuration file is `.vim/settings.json` in the root of your project. For example to set the format width the file will contain:
+
+```json
+{
+  "reason_language_server": {
+    "format_width": 100
+}
+```
+
+##### Supported settings
+
+Note that some of these might be VS Code specific and not relevant to vim use.
+
+- `format_width` - defaults to 80 (int)
+- `per_value_codelens` - show the type of each toplevel value in a lens (bool)
+- `dependencies_codelens` - list a files dependencies at the top (bool)
+- `opens_codelens` - show what values are used from an `open` (bool)
+- `autoRebuild` — rebuild project on save (turned on by default) (bool)
+
+##### Debug settings
+
+Useful if you're developing the language server itself.
+
+- `location` - provide a custom binary location for the langauge server (string)
+- `refmt` - provide a custom location for refmt (string)
+- `lispRefmt` - provide a custom location for reason-lisp's refmt (string)
+- `reloadOnChange` - reload the server when the binary is updated (bool)
+- `show_debug_errors` - pipe the server's stderr into the output pane (bool)
+
 ### Emacs
 
 _TODO_ people have gotten it to work with emacs, but I don't know the steps.
