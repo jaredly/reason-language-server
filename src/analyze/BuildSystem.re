@@ -139,10 +139,7 @@ let getEsyCompiledBase = (root) => {
       }
   };
 
-  let prevCwd = Unix.getcwd();
-  Unix.chdir(root);
-  let res = Commands.execResult("esy command-env --json")
-  Unix.chdir(prevCwd);
+  let res = Commands.execResult(~cwd=root, "esy command-env --json")
       
   switch (res) {
   | Ok(commandEnv) =>
@@ -229,7 +226,8 @@ let getStdlib = (base, buildSystem) => {
     switch (Utils.getEnvVar(~env, "OCAMLLIB")) {
     | Some(esy_ocamllib) => Ok([esy_ocamllib])
     | None =>
-      let%try_wrap esy_ocamllib = getLine("esy b echo $OCAMLLIB", ~pwd=base);
+      let echoCommand = Filename.quote("echo $OCAMLLIB");
+      let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c " ++ echoCommand, ~pwd=base);
       [esy_ocamllib];
     };
   | Dune(Opam(switchPrefix)) =>
