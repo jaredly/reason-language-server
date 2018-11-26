@@ -34,7 +34,7 @@ let logIfAbsent = (message, x) => switch x {
 };
 
 let maybeConcat = (a, b) => {
-  if (b != "" && (b.[0] == '/' || b.[1] == ':')) {
+  if (b != "" && (b.[0] == '/' || (String.length(b) > 2 && b.[1] == ':'))) {
     b
   } else {
     fileConcat(a, b)
