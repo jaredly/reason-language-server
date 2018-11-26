@@ -71,7 +71,7 @@ let g:LanguageClient_serverCommands = {
 
 #### Configuration
 
-[LanguageClient-neovim]() supports configuring language servers via a configuration file. By default the configuration file is `.vim/settings.json` in the root of your project. For example to set the format width the file will contain:
+[LanguageClient-neovim](https://github.com/autozimu/LanguageClient-neovim) supports configuring language servers via a configuration file. By default the configuration file is `.vim/settings.json` in the root of your project. For example to set the format width the file will contain:
 
 ```json
 {
