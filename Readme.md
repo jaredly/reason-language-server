@@ -77,6 +77,7 @@ let g:LanguageClient_serverCommands = {
 {
   "reason_language_server": {
     "format_width": 100
+  }
 }
 ```
 
