@@ -46,6 +46,7 @@ type settings = {
   showModulePathOnHover: bool,
   recordAllLocations: bool,
   autoRebuild: bool,
+  buildSystemOverrideByRoot: list((string, BuildSystem.t))
 };
 
 type state = {
@@ -91,6 +92,7 @@ let empty = () => {
     showModulePathOnHover: true,
     recordAllLocations: false,
     autoRebuild: true,
+    buildSystemOverrideByRoot: [],
   },
 };
 

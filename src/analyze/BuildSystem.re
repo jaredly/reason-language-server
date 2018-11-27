@@ -25,6 +25,18 @@ type t =
   | Bsb(string)
   | BsbNative(string, target);
 
+let fromString = string => {
+  switch (Util.Utils.split_on_char(':', string)) {
+    | ["bsb", version] => Some(Bsb(version))
+    | ["dune", "esy"] => Some(Dune(Esy))
+    | ["dune", "opam", basedir] => Some(Dune(Opam(basedir)))
+    | ["bsb-native", version, "js"] => Some(BsbNative(version, Js))
+    | ["bsb-native", version, "native"] => Some(BsbNative(version, Native))
+    | ["bsb-native", version, "bytecode"] => Some(BsbNative(version, Bytecode))
+    | _ => None
+  }
+};
+
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
 
 let getLine = (cmd, ~pwd) => {

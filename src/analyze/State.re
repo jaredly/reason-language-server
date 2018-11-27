@@ -111,12 +111,15 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   /* TODO report notifications here */
 };
 
-let newBsPackage = (~reportDiagnostics, state, rootPath) => {
+let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
   let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
-  let%try buildSystem = BuildSystem.detect(rootPath, config);
+  let%try buildSystem = switch overrideBuildSystem {
+    | None => BuildSystem.detect(rootPath, config)
+    | Some(s) => Ok(s)
+  };
   let bsb = bsPlatform /+ "lib" /+ "bsb.exe";
   let buildCommand = switch buildSystem {
     | Bsb(_) => bsb ++ " -make-world"
@@ -268,7 +271,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   };
 };
 
-let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
+let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath) => {
   let rec findJbuilderProjectRoot = (path) => {
     if (path == "/") {
       RResult.Error("Unable to find project root dir")
@@ -290,9 +293,13 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
   Log.log("=== Project root: " ++ projectRoot);
 
-  let%try pkgMgr = BuildSystem.inferPackageManager(projectRoot);
-
-  let buildSystem = BuildSystem.Dune(pkgMgr);
+  let%try (pkgMgr, buildSystem) = switch overrideBuildSystem {
+    | None =>
+      let%try pkgMgr = BuildSystem.inferPackageManager(projectRoot);
+      Ok((pkgMgr, BuildSystem.Dune(pkgMgr)));
+    | Some(BuildSystem.Dune(mgr)) => Ok((mgr, Dune(mgr)))
+    | Some(_) => failwith("Invalid build system override when creating a new dune package")
+  };
 
   let%try buildDir =
     BuildSystem.getCompiledBase(projectRoot, buildSystem)
@@ -473,26 +480,33 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
 
 
-let findRoot = (uri, packagesByRoot) => {
-  let%opt path = Utils.parseUri(uri);
-  let rec loop = path => {
-    if (path == "/") {
-      None
-    } else if (Hashtbl.mem(packagesByRoot, path)) {
-      Some(`Root(path))
-    } else if (Files.exists(path /+ "bsconfig.json")) {
-      Some(`Bs(path))
-    } else if (Files.exists(path /+ "dune")) {
-      Log.log("Found a `dune` file at " ++ path);
-      Some(`Jbuilder(path))
-    } else if (Files.exists(path /+ ".merlin")) {
-      Log.log("Found a `.merlin` file at " ++ path);
-      Some(`Jbuilder(path))
-    } else {
+let findRoot = (uri, packagesByRoot, overrides) => {
+  let override = overrides->Belt.List.getBy(((prefix, system)) => {
+    Util.Utils.startsWith(uri, prefix)
+  });
+  switch override {
+    | Some((root, system)) => Some(`Override(root, system))
+    | None =>
+      let%opt path = Utils.parseUri(uri);
+      let rec loop = path => {
+        if (path == "/") {
+          None
+        } else if (Hashtbl.mem(packagesByRoot, path)) {
+          Some(`Root(path))
+        } else if (Files.exists(path /+ "bsconfig.json")) {
+          Some(`Bs(path))
+        } else if (Files.exists(path /+ "dune")) {
+          Log.log("Found a `dune` file at " ++ path);
+          Some(`Jbuilder(path))
+        } else if (Files.exists(path /+ ".merlin")) {
+          Log.log("Found a `.merlin` file at " ++ path);
+          Some(`Jbuilder(path))
+        } else {
+          loop(Filename.dirname(path))
+        }
+      };
       loop(Filename.dirname(path))
-    }
-  };
-  loop(Filename.dirname(path))
+  }
 };
 
 let newPackageForRoot = (~reportDiagnostics, state, root) => {
@@ -517,11 +531,22 @@ let getPackage = (~reportDiagnostics, uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {
     RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
   } else {
-    let%try root = findRoot(uri, state.packagesByRoot) |> RResult.orError("No root directory found");
+    let%try root = findRoot(uri, state.packagesByRoot, state.settings.buildSystemOverrideByRoot) |> RResult.orError("No root directory found");
     let%try package = switch root {
     | `Root(rootPath) =>
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
+    | `Override(rootPath, (Bsb(_) | BsbNative(_)) as buildSystem) =>
+      let%try package = newBsPackage(~overrideBuildSystem=buildSystem, ~reportDiagnostics, state, rootPath);
+      Files.mkdirp(package.tmpPath);
+      let package = {
+        ...package,
+        refmtPath: state.settings.refmtLocation |?? package.refmtPath,
+        lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
+      };
+      Hashtbl.replace(state.rootForUri, uri, package.basePath);
+      Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      RResult.Ok(package)
     | `Bs(rootPath) =>
       let%try package = newBsPackage(~reportDiagnostics, state, rootPath);
       Files.mkdirp(package.tmpPath);
@@ -530,6 +555,13 @@ let getPackage = (~reportDiagnostics, uri, state) => {
         refmtPath: state.settings.refmtLocation |?? package.refmtPath,
         lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
       };
+      Hashtbl.replace(state.rootForUri, uri, package.basePath);
+      Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      RResult.Ok(package)
+    | `Override(path, (Dune(_)) as buildSystem) =>
+      Log.log("]] Making a new jbuilder package at " ++ path);
+      let%try package = newJbuilderPackage(~overrideBuildSystem=buildSystem, ~reportDiagnostics, state, path);
+      Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       RResult.Ok(package)
