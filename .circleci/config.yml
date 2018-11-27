@@ -19,7 +19,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-dependencies-{{ checksum "esy.json" }}
+          - v2-dependencies-{{ checksum "package.json" }}
           # fallback to using the latest cache if no exact match is found
           - v2-dependencies-
 
@@ -39,7 +39,7 @@ jobs:
             - examples/example-es6-imports/node_modules/
             - examples/example-react/node_modules/
             - examples/example-esy-dune-project/node_modules/
-          key: v2-dependencies-{{ checksum "esy.json" }}
+          key: v2-dependencies-{{ checksum "package.json" }}
 
       - store_artifacts:
           path: ./_esy/default/build/default/bin/Bin.exe
