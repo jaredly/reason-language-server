@@ -8,5 +8,7 @@ steps:
     displayName: 'npm install -g esy'
 
   - script: 'esy install'
+    displayName: 'esy install'
 
   - script: 'esy build'
+    displayName: 'esy build'

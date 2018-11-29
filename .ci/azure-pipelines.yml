@@ -80,12 +80,16 @@ jobs:
           artifactName: Windows
 
       - script: 'mv $(Build.ArtifactStagingDirectory)/Linux/Bin.exe ./editor-extensions/vscode/bin.native.linux'
+        displayName: 'Move Linux binary to correct place'
 
       - script: 'mv $(Build.ArtifactStagingDirectory)/macOS/Bin.exe ./editor-extensions/vscode/bin.native'
+        displayName: 'Move macOS binary to correct place'
 
       - script: 'mv $(Build.ArtifactStagingDirectory)/Windows/Bin.exe ./editor-extensions/vscode/bin.native.exe'
+        displayName: 'Move Windows binary to correct place'
 
       - script: 'npm run zip'
+        displayName: 'npm run zip'
 
       - task: PublishBuildArtifacts@1
         displayName: 'Publish zip'
