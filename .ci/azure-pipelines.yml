@@ -1,0 +1,82 @@
+name: $(Build.SourceBranchName)-$(Build.SourceVersion)
+
+resources:
+  - repo: self
+
+trigger:
+  - master
+
+jobs:
+  - job: buildMacos
+    displayName: Build macOS
+    condition: succeeded()
+    pool:
+      vmImage: macOS-10.13
+      demands: node.js
+
+    steps:
+      - template './build.yml'
+
+      - task: PublishPipelineArtifact@0
+        displayName: 'Publish Artifact: macOS'
+        inputs:
+          targetPath: './_build/default/src/Bin.exe'
+          artifactName: macOS
+
+  - job: buildWindows
+    displayName: Build Windows
+    condition: succeeded()
+    pool:
+      vmImage: vs2017-win2016
+      demands: node.js
+
+    steps:
+      - template './build.yml'
+
+      - task: PublishPipelineArtifact@0
+        displayName: 'Publish Artifact: Windows'
+        inputs:
+          targetPath: './_build/default/src/Bin.exe'
+          artifactName: Windows
+
+  - job: buildLinux
+    displayName: Build Linux
+    condition: succeeded()
+    pool:
+      vmImage: ubuntu-16.04
+      demands: node.js
+
+    steps:
+      - template './build.yml'
+
+      - task: PublishPipelineArtifact@0
+        displayName: 'Publish Artifact: Linux'
+        inputs:
+          targetPath: './_build/default/src/Bin.exe'
+          artifactName: Linux
+
+  - job: Bundle
+    displayName: Bundle builds
+    dependsOn:
+      - buildLinux
+      - buildMacos
+      - buildWindows
+    condition: succeeded()
+    pool:
+      vmImage: macOS-10.13
+      demands: node.js
+
+    steps:
+    - script: 'mv $(Build.ArtifactStagingDirectory)/Linux/Bin.exe ./editor-extensions/vscode/bin.native.linux'
+
+    - script: 'mv $(Build.ArtifactStagingDirectory)/macOS/Bin.exe ./editor-extensions/vscode/bin.native'
+
+    - script: 'mv $(Build.ArtifactStagingDirectory)/Windows/Bin.exe ./editor-extensions/vscode/bin.native.exe'
+
+    - script: 'npm run zip'
+
+    - task: PublishBuildArtifacts@1
+        displayName: 'Publish zip'
+        inputs:
+          PathtoPublish: './editor-extensions'
+          ArtifactName: editorExtensions
