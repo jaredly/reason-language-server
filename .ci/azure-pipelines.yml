@@ -1,8 +1,5 @@
 name: $(Build.SourceBranchName)-$(Build.SourceVersion)
 
-resources:
-  - repo: self
-
 trigger:
   - master
 
