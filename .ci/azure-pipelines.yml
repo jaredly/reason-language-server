@@ -76,7 +76,7 @@ jobs:
     - script: 'npm run zip'
 
     - task: PublishBuildArtifacts@1
-        displayName: 'Publish zip'
-        inputs:
-          PathtoPublish: './editor-extensions'
-          ArtifactName: editorExtensions
+      displayName: 'Publish zip'
+      inputs:
+        PathtoPublish: './editor-extensions'
+        ArtifactName: editorExtensions
