@@ -15,7 +15,7 @@ jobs:
       demands: node.js
 
     steps:
-      - template './build.yml'
+      - template: build.yml
 
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: macOS'
@@ -31,7 +31,7 @@ jobs:
       demands: node.js
 
     steps:
-      - template './build.yml'
+      - template: build.yml
 
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Windows'
@@ -47,7 +47,7 @@ jobs:
       demands: node.js
 
     steps:
-      - template './build.yml'
+      - template: build.yml
 
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Linux'
