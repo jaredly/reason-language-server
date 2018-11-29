@@ -139,30 +139,32 @@ let getEsyCompiledBase = (root) => {
       }
   };
 
-  let res = Commands.execResult(~cwd=root, "esy command-env --json")
-      
-  switch (res) {
-  | Ok(commandEnv) =>
-    switch (Json.parse(commandEnv)) {
-    | exception (Failure(message)) =>
-      Log.log("Json response");
-      Log.log(commandEnv);
-      Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message);
-    | exception exn =>
-      Log.log(commandEnv);
-      Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn));
-    | json =>
-      Json.Infix.(
-        switch (
-          Json.get("cur__original_root", json) |?> Json.string,
-          Json.get("cur__target_dir", json) |?> Json.string,
-        ) {
-        | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
-        | _ => Error("Couldn't find Esy target directory (missing json entries)")
-        }
-      )
+  switch(Utils.getEnvVar(~env, "cur__original_root"), Utils.getEnvVar(~env, "cur__target_dir")) {
+  | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
+  | (_, _) =>
+    switch (Commands.execResult("esy command-env --json")) {
+    | Ok(commandEnv) =>
+      switch (Json.parse(commandEnv)) {
+      | exception (Failure(message)) =>
+        Log.log("Json response");
+        Log.log(commandEnv);
+        Error("Couldn't find Esy target directory (invalid json response: parse fail): " ++ message);
+      | exception exn =>
+        Log.log(commandEnv);
+        Error("Couldn't find Esy target directory (invalid json response) " ++ Printexc.to_string(exn));
+      | json =>
+        Json.Infix.(
+          switch (
+            Json.get("cur__original_root", json) |?> Json.string,
+            Json.get("cur__target_dir", json) |?> Json.string,
+          ) {
+          | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
+          | _ => Error("Couldn't find Esy target directory (missing json entries)")
+          }
+        )
+      }
+    | err => err
     }
-  | err => err
   }
 };
 
