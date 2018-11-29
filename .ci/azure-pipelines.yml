@@ -64,16 +64,31 @@ jobs:
       demands: node.js
 
     steps:
-    - script: 'mv $(Build.ArtifactStagingDirectory)/Linux/Bin.exe ./editor-extensions/vscode/bin.native.linux'
+      - task: DownloadPipelineArtifact@0
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)
+          artifactName: Linux
 
-    - script: 'mv $(Build.ArtifactStagingDirectory)/macOS/Bin.exe ./editor-extensions/vscode/bin.native'
+      - task: DownloadPipelineArtifact@0
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)
+          artifactName: macOS
 
-    - script: 'mv $(Build.ArtifactStagingDirectory)/Windows/Bin.exe ./editor-extensions/vscode/bin.native.exe'
+      - task: DownloadPipelineArtifact@0
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)
+          artifactName: Windows
 
-    - script: 'npm run zip'
+      - script: 'mv $(Build.ArtifactStagingDirectory)/Linux/Bin.exe ./editor-extensions/vscode/bin.native.linux'
 
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish zip'
-      inputs:
-        PathtoPublish: './editor-extensions'
-        ArtifactName: editorExtensions
+      - script: 'mv $(Build.ArtifactStagingDirectory)/macOS/Bin.exe ./editor-extensions/vscode/bin.native'
+
+      - script: 'mv $(Build.ArtifactStagingDirectory)/Windows/Bin.exe ./editor-extensions/vscode/bin.native.exe'
+
+      - script: 'npm run zip'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish zip'
+        inputs:
+          PathtoPublish: './editor-extensions'
+          ArtifactName: editorExtensions
