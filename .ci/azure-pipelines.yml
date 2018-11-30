@@ -17,7 +17,7 @@ jobs:
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: macOS'
         inputs:
-          targetPath: '_esy/default/build/default/bin/Bin.exe'
+          targetPath: '$(Build.SourcesDirectory)/_esy/default/build/default/bin/Bin.exe'
           artifactName: macOS
 
   - job: buildWindows
@@ -33,7 +33,7 @@ jobs:
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Windows'
         inputs:
-          targetPath: '_esy/default/build/default/bin/Bin.exe'
+          targetPath: '$(Build.SourcesDirectory)/_esy/default/build/default/bin/Bin.exe'
           artifactName: Windows
 
   - job: buildLinux
@@ -49,7 +49,7 @@ jobs:
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Linux'
         inputs:
-          targetPath: '_esy/default/build/default/bin/Bin.exe'
+          targetPath: '$(Build.SourcesDirectory)/_esy/default/build/default/bin/Bin.exe'
           artifactName: Linux
 
   - job: Bundle
@@ -79,13 +79,13 @@ jobs:
           targetPath: $(Build.ArtifactStagingDirectory)
           artifactName: Windows
 
-      - script: 'mv $(Build.ArtifactStagingDirectory)/Linux/Bin.exe ./editor-extensions/vscode/bin.native.linux'
+      - script: 'mv $(Build.ArtifactStagingDirectory)/Linux/Bin.exe $(Build.SourcesDirectory)/editor-extensions/vscode/bin.native.linux'
         displayName: 'Move Linux binary to correct place'
 
-      - script: 'mv $(Build.ArtifactStagingDirectory)/macOS/Bin.exe ./editor-extensions/vscode/bin.native'
+      - script: 'mv $(Build.ArtifactStagingDirectory)/macOS/Bin.exe $(Build.SourcesDirectory)/editor-extensions/vscode/bin.native'
         displayName: 'Move macOS binary to correct place'
 
-      - script: 'mv $(Build.ArtifactStagingDirectory)/Windows/Bin.exe ./editor-extensions/vscode/bin.native.exe'
+      - script: 'mv $(Build.ArtifactStagingDirectory)/Windows/Bin.exe $(Build.SourcesDirectory)/editor-extensions/vscode/bin.native.exe'
         displayName: 'Move Windows binary to correct place'
 
       - script: 'npm run zip'
