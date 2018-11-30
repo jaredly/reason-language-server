@@ -29,6 +29,7 @@ build_script:
     # Validate binary
     - _esy\default\build\default\bin\Bin.exe --help
     # Run tests
+    - esy x which ExamplesTests.exe
     - _esy\default\build\default\bin\ExamplesTests.exe
 
 artifacts:
