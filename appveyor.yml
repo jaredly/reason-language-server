@@ -27,10 +27,11 @@ install:
 build_script:
     - esy build
     # Validate binary
-    - _esy\default\build\default\bin\Bin.exe --help
+    - esy x which Bin.exe
+    - _build\default\bin\Bin.exe --help
     # Run tests
     - esy x which ExamplesTests.exe
-    - _esy\default\build\default\bin\ExamplesTests.exe
+    - _build\install\default\bin\ExamplesTests.exe
 
 artifacts:
     - path: _esy\default\build\default\bin\Bin.exe

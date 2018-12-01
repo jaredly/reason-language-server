@@ -25,7 +25,8 @@
   "author": "Jared Forsyth",
   "license": "ISC",
   "esy": {
-    "build": "dune build -p #{self.name}"
+    "build": "dune build -p #{self.name}",
+    "buildsInSource": "_build"
   },
   "dependencies": {
     "@opam/dune": "*",
