@@ -15,7 +15,7 @@ jobs:
       - template: build.yml
 
       - script: |
-          echo '##vso[task.setvariable binPath="esy x which Bin"]'
+          echo '##vso[task.setvariable variable=binPath]esy x which Bin'
         displayName: "Save binPath variable"
 
       - task: PublishPipelineArtifact@0
@@ -35,7 +35,7 @@ jobs:
       - template: build.yml
 
       - script: |
-          echo '##vso[task.setvariable binPath="esy x which Bin.exe"]'
+          echo '##vso[task.setvariable variable=binPath]esy x which Bin.exe'
         displayName: "Save binPath variable"
 
       - task: PublishPipelineArtifact@0
@@ -55,7 +55,7 @@ jobs:
       - template: build.yml
 
       - script: |
-          echo '##vso[task.setvariable binPath="esy x which Bin"]'
+          echo '##vso[task.setvariable variable=binPath]esy x which Bin'
         displayName: "Save binPath variable"
 
       - task: PublishPipelineArtifact@0
