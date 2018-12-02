@@ -11,9 +11,11 @@ let rec show = item => switch item {
 let rec getNamedIdent = items => switch items {
   | [] => None
   | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
-  | [`List([`Ident("name"), ..._]), ...rest] => {
+  | [`List([`Ident("name"), ..._]), ...rest] =>
     getNamedIdent(rest)
-  }
+  | [`List([`Ident("public_name"), `Ident(s)]), ..._] => Some(s)
+  | [`List([`Ident("public_name"), ..._]), ...rest] =>
+    getNamedIdent(rest)
   | [_, ...rest] => getNamedIdent(rest)
 };
 
