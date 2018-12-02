@@ -21,7 +21,7 @@ jobs:
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: macOS'
         inputs:
-          targetPath: '$(setvariable)'
+          targetPath: $(binPath)
           artifactName: macOS
 
   - job: buildWindows
@@ -41,7 +41,7 @@ jobs:
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Windows'
         inputs:
-          targetPath: '$(setvariable)'
+          targetPath: $(binPath)
           artifactName: Windows
 
   - job: buildLinux
@@ -61,7 +61,7 @@ jobs:
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Linux'
         inputs:
-          targetPath: '$(setvariable)'
+          targetPath: $(binPath)
           artifactName: Linux
 
   - job: Bundle
