@@ -14,10 +14,14 @@ jobs:
     steps:
       - template: build.yml
 
+      - script: |
+          echo '##vso[task.setvariable binPath="esy x which Bin"]'
+        displayName: "Save binPath variable"
+
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: macOS'
         inputs:
-          targetPath: '$(Build.SourcesDirectory)/_esy/default/build/default/bin/Bin.exe'
+          targetPath: '$(setvariable)'
           artifactName: macOS
 
   - job: buildWindows
@@ -30,10 +34,14 @@ jobs:
     steps:
       - template: build.yml
 
+      - script: |
+          echo '##vso[task.setvariable binPath="esy x which Bin.exe"]'
+        displayName: "Save binPath variable"
+
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Windows'
         inputs:
-          targetPath: '$(Build.SourcesDirectory)/_esy/default/build/default/bin/Bin.exe'
+          targetPath: '$(setvariable)'
           artifactName: Windows
 
   - job: buildLinux
@@ -46,10 +54,14 @@ jobs:
     steps:
       - template: build.yml
 
+      - script: |
+          echo '##vso[task.setvariable binPath="esy x which Bin"]'
+        displayName: "Save binPath variable"
+
       - task: PublishPipelineArtifact@0
         displayName: 'Publish Artifact: Linux'
         inputs:
-          targetPath: '$(Build.SourcesDirectory)/_esy/default/build/default/bin/Bin.exe'
+          targetPath: '$(setvariable)'
           artifactName: Linux
 
   - job: Bundle
