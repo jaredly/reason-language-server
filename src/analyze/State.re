@@ -226,13 +226,17 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
         };
         spec |?> Json.get("module") |?> Json.string
       } |? "commonjs";
-      let flags = [
-        "-bs-package-name",
-        config |> Json.get("name") |?> Json.string |? "unnamed",
-        ...jsPackageMode == "es6"
-          ? ["-bs-package-output", "es6:node_modules/.lsp", ...flags]
-          : flags,
-      ];
+      let flags = switch (jsPackageMode) {
+        | "es6" as packageMode
+        | "es6-global" as packageMode => [
+            "-bs-package-name",
+            config |> Json.get("name") |?> Json.string |? "unnamed",
+            ...packageMode == "es6"
+              ? ["-bs-package-output", "es6:node_modules/.lsp", ...flags]
+              : flags
+          ]
+        | _ => flags;
+      };
       /* flags */
       ["-bs-no-builtin-ppx-ml", ...flags];
     }
