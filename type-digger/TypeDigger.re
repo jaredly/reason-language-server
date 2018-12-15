@@ -346,7 +346,9 @@ let main = configPath => {
     /* loop(config.version) */
   };
 
-  let body = makeAllModules() @ Parsetree.[
+  let body = Parsetree.[
+      [%stri [@ocaml.warning "-34"]; ],
+    ] @ makeAllModules() @ Parsetree.[
     [%stri
       let currentVersion = [%e Ast_helper.Exp.constant(Parsetree.Pconst_integer(string_of_int(config.version), None))]
     ],
