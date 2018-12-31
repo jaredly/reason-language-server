@@ -1,12 +1,11 @@
 
-open Infix;
 open SharedTypes;
 
 /* Log.spamError := true; */
 
 let getOutput = (files, text) => {
   /* let (text, offset, pos) = TestUtils.extractPosition(text); */
-  let (state, package, cmt, full) = TestUtils.setUp(files, text);
+  let (_state, _package, _cmt, full) = TestUtils.setUp(files, text);
 
   let opens = CodeLens.forOpens(full.extra);
 

@@ -6,7 +6,6 @@ open Compiler_libs_406;
 #elif 402
 open Compiler_libs_402;
 #endif
-open Typedtree;
 open SharedTypes;
 open Infix;
 
@@ -21,7 +20,7 @@ let rec findDocAttribute = (attributes) => {
 #else
     Pconst_string
 #endif
-    (doc, _))}, _)}])), ...rest] => Some(PrepareUtils.cleanOffStars(doc))
+    (doc, _))}, _)}])), ..._] => Some(PrepareUtils.cleanOffStars(doc))
   | [_, ...rest] => findDocAttribute(rest)
   }
 };
@@ -37,7 +36,7 @@ let rec findDeprecatedAttribute = (attributes) => {
 #else
     Pconst_string
 #endif
-    (message, _))}, _)}])), ...rest] => Some(message)
+    (message, _))}, _)}])), ..._] => Some(message)
   | [_, ...rest] => findDeprecatedAttribute(rest)
   }
 };

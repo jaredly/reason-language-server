@@ -176,7 +176,6 @@ module Type = {
       args: list((flexibleType, Location.t)),
       res: option(flexibleType),
     };
-    open Infix;
   };
 
   type kind =
@@ -374,7 +373,7 @@ let initFull = (moduleName, uri) => {file: emptyFile(moduleName, uri), extra: in
 
 let hashList = h => Hashtbl.fold((a, b, c) => [(a, b), ...c], h, []);
 
-let showExtra = ({internalReferences, locations, externalReferences, opens}) => {
+let showExtra = ({internalReferences, externalReferences, opens}) => {
   let refs = hashList(internalReferences) |> List.map(((stamp, locs)) => {
     "Stamp: " ++ string_of_int(stamp) ++ "\n - "
     ++ String.concat("\n - ", List.map(Utils.showLocation, locs))
@@ -382,7 +381,7 @@ let showExtra = ({internalReferences, locations, externalReferences, opens}) => 
   let erefs = hashList(externalReferences) |> List.map(((moduleName, refs)) => {
     "External " ++ moduleName ++ ":\n - "
     ++ String.concat("\n - ",
-    List.map(((path, tip, loc)) => 
+    List.map(((path, tip, loc)) =>
       Utils.showLocation(loc)
       ++ " : " ++ pathToString(path) ++ " : " ++ tipToString(tip)
     , refs)
@@ -395,7 +394,7 @@ let showExtra = ({internalReferences, locations, externalReferences, opens}) => 
     "Open at " ++ Utils.showLocation(loc) ++
     "\n  path: " ++ Path.name(tracker.path) ++
     "\n  ident: " ++ String.concat(".", Longident.flatten(tracker.ident.txt)) ++
-    "\n  used:" ++ String.concat("", tracker.used |> List.map(((path, tip, loc)) => {
+    "\n  used:" ++ String.concat("", tracker.used |> List.map(((path, tip, _loc)) => {
       "\n    " ++ pathToString(path) ++ " : " ++ tipToString(tip)
     }))
 

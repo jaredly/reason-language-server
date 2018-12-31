@@ -23,7 +23,6 @@ let findInScope = (pos, name, stamps) => {
   /* Log.log("Find " ++ name ++ " with " ++ string_of_int(Hashtbl.length(stamps)) ++ " stamps"); */
   Hashtbl.fold((_stamp, declared, result) => {
     if (declared.name.txt == name) {
-      let (l, c) = pos;
       /* Log.log("a stamp " ++ Utils.showLocation(declared.scopeLoc) ++ " " ++ string_of_int(l) ++ "," ++ string_of_int(c)); */
       if (locationIsBefore(declared.scopeLoc, pos)) {
         switch result {
@@ -62,7 +61,7 @@ let rec makePath = (modulePath) => {
   }
 };
 
-let rec makeRelativePath = (basePath, otherPath) => {
+let makeRelativePath = (basePath, otherPath) => {
   let rec loop = (base, other, tip) => {
     if (Path.same(base, other)) {
       Some(tip)
@@ -140,7 +139,7 @@ let fromCompilerPath = (~env, path) => {
     | `Stamp(stamp) => `Stamp(stamp)
     | `Path((0, moduleName, path)) => `Global(moduleName, path)
     | `GlobalMod(name) => `GlobalMod(name)
-    | `Path((stamp, moduleName, path)) => {
+    | `Path((stamp, _moduleName, path)) => {
       let res = {
         let%opt {contents: kind} = hashFind(env.file.stamps.modules, stamp);
         let%opt_wrap res = findInModule(~env, kind, path);
@@ -261,11 +260,11 @@ let rec showVisibilityPath = (~env, ~getModule, path) => switch path {
     | Some((file, path)) => Some((file, path @ [name]))
   }
   | HiddenModule(_) => None
-  | Expression(inner) => None
+  | Expression(_) => None
 };
 
 let rec getSourceUri = (~env, ~getModule, path) => switch path {
-  | File(uri, moduleName) => uri
+  | File(uri, _moduleName) => uri
   | NotVisible => env.file.uri
   | IncludedModule(path, inner) =>
   Log.log("INCLUDED MODULE");

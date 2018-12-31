@@ -3,7 +3,6 @@ open Longident;
 open Parsetree;
 open Ast_helper;
 open Asttypes;
-open SharedTypes.SimpleType;
 open TypeMap;
 
 let makeIdent = MakeSerializer.makeIdent;

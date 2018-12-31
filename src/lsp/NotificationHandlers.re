@@ -1,7 +1,6 @@
 
 open Infix;
 open RResult;
-open Log;
 open TopTypes;
 
 let recompileDebounceTime = 0.5; /* seconds */
@@ -181,7 +180,6 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let%try changes = RJson.array(changes);
     open InfixResult;
     let shouldReload = Belt.List.some(changes, change => {
-      let%try t = RJson.get("type", change) |?> RJson.number;
       let%try uri = RJson.get("uri", change) |?> RJson.string;
       let isRelevant =
         Utils.endsWith(uri, "/bsconfig.json") ||

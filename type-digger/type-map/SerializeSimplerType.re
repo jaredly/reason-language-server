@@ -36,7 +36,7 @@ let rec toJson = (sourceToJson, t) => switch t {
   | Other => s("*other*")
 };
 
-let rec exprToJson = (sourceToJson, body) => {
+let exprToJson = (sourceToJson, body) => {
 switch body {
     | Open => s("Open")
     | Abstract => s("Abstract")
@@ -57,7 +57,7 @@ switch body {
   }
 };
 
-let rec declToJson = (sourceToJson, {name, variables, body}) => o([
+let declToJson = (sourceToJson, {name, variables, body}) => o([
   ("name", s(name)),
   ("variables", l(variables->Belt.List.map(toJson(sourceToJson)))),
   ("body", exprToJson(sourceToJson, body))

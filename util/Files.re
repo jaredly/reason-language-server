@@ -237,7 +237,7 @@ let rec collectDirs = (path) => {
   }
 };
 
-let rec collect = (~checkDir=x => true, path, test) =>
+let rec collect = (~checkDir=_ => true, path, test) =>
   switch (maybeStat(path)) {
   | None => []
   | Some({Unix.st_kind: Unix.S_DIR}) =>

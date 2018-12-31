@@ -1,5 +1,4 @@
 
-open Infix;
 open SharedTypes;
 
 let name = "TestHover";
@@ -45,7 +44,7 @@ let getOutput = (files, mainFile) => {
   });
 
   let process = i => {
-      let (curi, cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
+      let (curi, _cursor, cpos) = List.assoc("c" ++ string_of_int(i), waypoints);
       /* Log.log("Curi " ++ curi);
       let (turi, target, tpos) = List.assoc("t" ++ string_of_int(i), waypoints); */
       /* let%opt_force (_, moduleData) = Hashtbl.find(state.compiledDocuments, curi) |> AsYouType.getResult; */
@@ -56,7 +55,6 @@ let getOutput = (files, mainFile) => {
           Hover.newHover(
             ~rootUri=state.rootUri,
             ~file,
-            ~extra,
             ~getModule=State.fileForModule(state, ~package),
             ~markdown=false,
             ~showPath=true,

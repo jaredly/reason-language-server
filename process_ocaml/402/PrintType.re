@@ -1,6 +1,5 @@
 
 open Compiler_libs_402;
-open Outcometree;
 
 let rec dig = (typ) =>
   switch typ.Types.desc {
@@ -209,7 +208,7 @@ let print_decl = (stringifier, realName, name, decl) => {
   switch decl.type_kind {
   | Type_abstract => Pretty.empty
   | Type_open => str(" = ..")
-  | Type_record(labels, representation) => {
+  | Type_record(labels, _representation) => {
     str(" = {") @! indentGroup(break @!
     commad_list(print_attr(stringifier), labels)
      @! dedent) @! str("}")
@@ -247,7 +246,7 @@ let prettyString = (~width=60, doc) => {
   let buffer = Buffer.create(100);
   Pretty.print(~width, ~output=(text => Buffer.add_string(buffer, text)), ~indent=(num => {
     Buffer.add_string(buffer, "\n");
-    for (i in 1 to num) { Buffer.add_string(buffer, " ") }
+    for (_ in 1 to num) { Buffer.add_string(buffer, " ") }
   }), doc);
   Buffer.to_bytes(buffer) |> Bytes.to_string
 };

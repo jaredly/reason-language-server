@@ -80,7 +80,7 @@ let getDependencyDirs = (base, config, ~buildSystem) => {
           Log.log("Skipping nonexistent dependency: " ++ name);
           []
       }
-    | None => 
+    | None =>
         Log.log("Skipping nonexistent dependency: " ++ name);
         []
     }
@@ -101,7 +101,7 @@ let isSourceFile = name =>
 
 let compiledNameSpace = name =>
   Str.split(Str.regexp_string("-"), name)
-  |> List.map(String.capitalize)
+  |> List.map(String.capitalize_ascii)
   |> String.concat("")
   /* Remove underscores??? Whyyy bucklescript, whyyyy */
   |> Str.split(Str.regexp_string("_"))
@@ -119,7 +119,7 @@ let cmtName = (~namespace, name) =>
 let cmiName = (~namespace, name) =>
   compiledBaseName(~namespace, name) ++ ".cmi";
 
-let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize;
+let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize_ascii;
 let namespacedName = (~namespace, x) => getName(x) ++ switch namespace { | None => "" | Some(n) => "-" ++ n};
 
 let filterDuplicates = cmts => {
@@ -143,7 +143,7 @@ let filterDuplicates = cmts => {
   });
 };
 
-let nameSpaceToName = n => n |> Str.split(Str.regexp_string("-")) |> List.map(String.capitalize) |> String.concat("");
+let nameSpaceToName = n => n |> Str.split(Str.regexp_string("-")) |> List.map(String.capitalize_ascii) |> String.concat("");
 
 let getNamespace = config => {
   let isNamespaced = Json.get("namespace", config) |?> Json.bool |? false;
