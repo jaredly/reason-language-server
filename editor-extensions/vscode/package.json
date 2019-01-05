@@ -112,6 +112,16 @@
 				"language": "reason_lisp",
 				"scopeName": "source.reason_lisp",
 				"path": "./reason-lisp.json"
+			},
+			{
+				"scopeName": "markdown.reason.codeblock",
+				"path": "./reason-markdown-codeblock.json",
+				"injectTo": [
+					"text.html.markdown"
+				],
+				"embeddedLanguages": {
+					"meta.embedded.block.reason": "reason"
+				}
 			}
 		],
 		"languages": [
