@@ -177,6 +177,7 @@ let findProjectFiles = (~debug, namespace, root, sourceDirectories, compiledBase
   |> ifDebug(debug, "Source directories", String.concat(" - "))
   |> List.map(name => Files.collect(name, isSourceFile))
   |> List.concat
+  |> Utils.dedup
   |> ifDebug(debug, "Source files found", String.concat(" : "));
 
   /* |> filterDuplicates
