@@ -25,6 +25,13 @@ type t =
   | Bsb(string)
   | BsbNative(string, target);
 
+let show = t => switch t {
+  | Dune(Esy) => "dune & esy"
+  | Dune(Opam(loc)) => "dune & opam (switch at " ++ loc ++ ")"
+  | Bsb(v) => "bsb version " ++ v
+  | BsbNative(v, target) => "bsb-native version " ++ v ++ " targetting " ++ targetName(target)
+}
+
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
 
 let getLine = (cmd, ~pwd) => {
@@ -199,11 +206,11 @@ let getStdlib = (base, buildSystem) => {
   | Bsb(_) =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml"]
-  | BsbNative("3.2.0", Native) =>
+  | BsbNative(v, Native) when v >= "3.2.0" =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml" /+ "native",
     bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
-  | BsbNative("3.2.0", Bytecode) =>
+  | BsbNative(v, Bytecode) when v >= "3.2.0" =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml" /+ "bytecode",
     bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]

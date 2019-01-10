@@ -49,7 +49,7 @@ let getInitialState = (params) => {
 
   Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
   Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
-  Log.log("Hello from " ++ Sys.executable_name);
+  Log.log("Hello - from " ++ Sys.executable_name);
   Log.log("Previous log location: " ++ Log.initial_dest);
 
   Rpc.sendNotification(
@@ -139,7 +139,7 @@ let main = () => {
       out^ |?< close_out;
     | [|_, "-h" | "--help"|] | _ =>
       print_endline({|
-## Reason Language Server ##
+🎉 Reason Language Server 🎉 
 
 Usage: run without arguments, and communicate over stdin/stdout,
 following the language server protocol as defined in

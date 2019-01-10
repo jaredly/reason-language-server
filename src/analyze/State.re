@@ -115,12 +115,19 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
 
   let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
   let%try buildSystem = BuildSystem.detect(rootPath, config);
-  let bsb = bsPlatform /+ "lib" /+ "bsb.exe";
+  let%try bsb = Files.ifExists(bsPlatform /+ "lib" /+ "bsb.exe") |> RResult.orError(bsPlatform /+ "lib" /+ "bsb.exe not found. aborting");
   let buildCommand = switch buildSystem {
     | Bsb(_) => bsb ++ " -make-world"
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune(_) => assert(false)
   };
+
+  Log.log({|📣 📣 NEW BSB PACKAGE 📣 📣|});
+  /* failwith("Wat"); */
+  Log.log("- location: " ++ rootPath);
+  Log.log("- bsPlatform: " ++ bsPlatform);
+  Log.log("- buildSystem: " ++ BuildSystem.show(buildSystem));
+  Log.log("- build command: " ++ buildCommand);
 
   if (state.settings.autoRebuild) {
     runBuildCommand(~reportDiagnostics, state, rootPath, Some((buildCommand, rootPath)));
