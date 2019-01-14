@@ -104,7 +104,7 @@ let rec forExpr = (transformer, t) => switch t {
   | _ => failer("not impl expr")
 };
 
-let forBody = (~renames, transformer, coreType, body, fullName, variables) => switch body {
+let forBody = (~renames, transformer, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
     let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
@@ -156,13 +156,13 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
       /* ), */
       Exp.match(
         makeIdent(Lident("constructor")),
-        constructors->Belt.List.map(((name, args, result)) => {
+        constructors->Belt.List.map(((name, args, _result)) => {
           Exp.case(
             Pat.construct(
               Location.mknoloc(Lident(name)),
               switch args {
                 | [] => None
-                | [one] => Some(Pat.var(Location.mknoloc("arg0")))
+                | [_] => Some(Pat.var(Location.mknoloc("arg0")))
                 | many => Some(Pat.tuple(
                   many->Belt.List.mapWithIndex((index, _) => (
                     Pat.var(Location.mknoloc("arg" ++ string_of_int(index)))
@@ -185,20 +185,13 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
 };
 
 let makeTypArgs = variables =>
-      variables->Belt.List.mapWithIndex((index, arg) => {
+      variables->Belt.List.mapWithIndex((index, _arg) => {
         "arg" ++ string_of_int(index)
       });
 
-let declInner = (~renames, transformer, typeLident, {variables, body}, fullName) => {
+let declInner = (~renames, transformer, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(~renames, transformer,
-    Typ.constr(
-      Location.mknoloc(
-        typeLident,
-      ),
-      makeTypArgs(variables)->Belt.List.map(name => Typ.var(name)),
-    ),
-    body, fullName, variables)
+    | [] => forBody(~renames, transformer, body, fullName, variables)
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {
@@ -233,7 +226,7 @@ let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
   let typ = loop(0, decl.variables);
   let typ = switch (decl.variables) {
     | [] => typ
-    | args => Typ.poly(
+    | _ => Typ.poly(
       makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc),
       typ
     )
@@ -245,8 +238,6 @@ let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(~renames, transformer,
-        lident
-    , decl, fullName)
+    declInner(~renames, transformer, decl, fullName)
   )
 };

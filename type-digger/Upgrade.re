@@ -28,7 +28,7 @@ let rec mapAll = (items, fn) => switch items {
   }
 };
 
-let rec mapAllWithIndex = (items, fn) => {
+let mapAllWithIndex = (items, fn) => {
   let rec loop = (i, items) =>
     switch (items) {
     | [] => Some([])
@@ -91,7 +91,7 @@ let orLog = (what, message) => {
   what
 };
 
-let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName) => {
+let migrateBetween = (~version as _, ~lockedDeep as _, variable, _name, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName) => {
   switch (thisType.body, prevType.body) {
   | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
   | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
@@ -129,7 +129,7 @@ let rec migrateBetween = (~version, ~lockedDeep, variable, name, thisType, prevT
       | Some({pexp_desc: Pexp_fun(Nolabel, None, pattern, body)}) =>
         Some(Exp.case(pattern, body))
       | Some(_) => failwith("Variant constructor migrator must have the form (pattern) => expression")
-      | None => 
+      | None =>
         let%opt_wrap migraters = args->mapAllWithIndex((i, arg) => {
           let name = "arg" ++ string_of_int(i)
           let%opt migrater = migrateExpr(expIdent(Lident(name)), arg);
@@ -165,17 +165,17 @@ let getExpr = payload => switch payload {
   | _ => None
 };
 
-let makeUpgrader = (version, prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
+let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, (attributes, decl), (_pastAttributes, pastDecl)) => {
   let source = (moduleName, modulePath, name);
   let boundName = migrateName(~moduleName, ~modulePath, ~name);
 
   let migrateAttribute = attributes |> Util.Utils.find((({Asttypes.txt}, payload)) => {
     if (txt == "migrate") {
       switch (getExpr(payload)) {
-        | Some(expr) => 
+        | Some(expr) =>
         print_endline("Have migrate attr");
         Some(expr)
-        | None => 
+        | None =>
           /* Printast.structure(0, Stdlib.Format.str_formatter, items);
           print_endline(Stdlib.Format.flush_str_formatter()); */
           failwith("migrate attribute must be an expression")

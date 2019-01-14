@@ -81,7 +81,7 @@ let text ?len string =
 
 let print_indentation n =
   print_char '\n';
-  for i = 1 to n do
+  for _ = 1 to n do
   print_char ' ';
   done
 

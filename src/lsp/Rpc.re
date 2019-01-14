@@ -50,7 +50,6 @@ let send = (output, content) => {
 };
 
 let sendMessage = (log, output, id, result) => {
-  open Json;
   open Util.JsonShort;
   let content = Json.stringify(o([
     ("id", id),
@@ -61,7 +60,6 @@ let sendMessage = (log, output, id, result) => {
 };
 
 let sendError = (log, output, id, error) => {
-  open Json;
   open Util.JsonShort;
   let content = Json.stringify(o([
     ("id", id),
@@ -85,7 +83,6 @@ let sendNotification = (log, output, method, params) => {
 let serverReqNum = ref(0);
 
 let sendRequest = (log, output, method, params) => {
-  open Json;
   open Util.JsonShort;
   serverReqNum := serverReqNum^ + 1;
   let content = Json.stringify(o([

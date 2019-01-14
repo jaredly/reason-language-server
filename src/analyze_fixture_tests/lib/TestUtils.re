@@ -42,7 +42,7 @@ let offsetToPos = (text, offset) => {
 };
 
 let extractPosition = text => {
-  let clean = Str.substitute_first(Str.regexp_string("<*>"), x => "", text);
+  let clean = Str.substitute_first(Str.regexp_string("<*>"), _ => "", text);
   let char = Str.match_beginning();
   (clean, char, offsetToPos(text, char))
 };

@@ -3,14 +3,13 @@ open Longident;
 open Parsetree;
 open Ast_helper;
 open Asttypes;
-open SharedTypes.SimpleType;
 open TypeMap;
 
 let loc = Location.none;
 
 let makeIdent = MakeSerializer.makeIdent;
 
-let failer = message => Exp.fun_(Nolabel, None, Pat.any(), 
+let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
 Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
   (Nolabel, Exp.constant(Pconst_string(message, None)))
 ]));
@@ -53,7 +52,7 @@ let sourceTransformer = source => switch source {
 
 let serializeTransformer = MakeSerializer.{
   outputType: Typ.constr(Location.mknoloc(Ldot(Lident("Json"), "t")), []),
-  wrapWithVersion: [%expr 
+  wrapWithVersion: [%expr
     (version, payload) => switch payload {
       | Json.Object(items) => Json.Object([("$schemaVersion", Json.Number(float_of_int(version))), ...items])
       | _ => Json.Array([Json.Number(float_of_int(version)), payload])
@@ -68,7 +67,7 @@ let serializeTransformer = MakeSerializer.{
           expr
         ])
        )),
-  constructor: (~renames, name, args) => 
+  constructor: (~renames, name, args) =>
             makeJson("Array", Some(makeList([
                 makeJson("String", Some(Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None)))),
               ] @ args
@@ -91,7 +90,7 @@ let sourceTransformer = source => switch source {
   | Public((moduleName, modulePath, name)) =>
     makeIdent(Lident(MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
-    [%expr 
+    [%expr
       (transformer, array) => switch (array) {
         | Json.Array(items) =>
           let rec loop = items => switch items {
@@ -112,7 +111,7 @@ let sourceTransformer = source => switch source {
       }
     ];
   | Builtin("list") =>
-    [%expr 
+    [%expr
       (transformer, list) => switch (list) {
         | Json.Array(items) =>
           let rec loop = items => switch items {
@@ -148,7 +147,7 @@ let sourceTransformer = source => switch source {
     | Json.Number(number) => Belt.Result.Ok(number)
     | _ => Error(["Expected a float"])
   }]
-  | Builtin("option") => 
+  | Builtin("option") =>
     [%expr (transformer, option) => switch (option) {
       | Json.Null => Belt.Result.Ok(None)
       | _ => switch (transformer(option)) {
@@ -188,7 +187,7 @@ let deserializeTransformer = {
     | _ => Belt.Result.Error(["Expected array"])
   }],
   list: (transformer, list) => {
-    [%expr 
+    [%expr
       switch ([%e list]) {
         | Json.Array(items) =>
           let transformer = [%e transformer];

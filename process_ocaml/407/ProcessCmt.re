@@ -94,7 +94,7 @@ let addItem = (~name, ~extent, ~stamp, ~env, ~contents, attributes, exported, st
 let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item) => {
   open Types;
   switch item {
-  | Sig_value(ident, {val_type, val_kind, val_attributes, val_loc: loc}) => {
+  | Sig_value(ident, {val_type, val_attributes, val_loc: loc}) => {
     let contents = {
       Value.recursive: false,
       typ: Shared.makeFlexible(val_type),
@@ -192,7 +192,6 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
 }
 
 and forSignatureType = (env, signature) => {
-  open Types;
   let exported = Module.initExported();
   let topLevel = List.fold_right((item, items) => {
     forSignatureTypeItem(env, exported, item) @ items
@@ -206,10 +205,10 @@ and forSignatureType = (env, signature) => {
   | Mty_signature(signature) => {
     Module.Structure(forSignatureType(env, signature))
   }
-  | Mty_functor(argIdent, argType, resultType) => forModuleType(env, resultType)
+  | Mty_functor(_argIdent, _argType, resultType) => forModuleType(env, resultType)
 };
 
-let rec getModuleTypePath = (mod_desc) => switch mod_desc {
+let getModuleTypePath = (mod_desc) => switch mod_desc {
   | Tmty_ident(path, _)
   | Tmty_alias(path, _) => Some(path)
   | Tmty_signature(_)
@@ -226,7 +225,7 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id, typ_loc, ty
     kind: switch typ_kind {
       | Ttype_abstract =>
         switch (typ_manifest) {
-          | Some({ctyp_desc: Ttyp_constr(path, lident, args)}) => Abstract(Some((
+          | Some({ctyp_desc: Ttyp_constr(path, _lident, args)}) => Abstract(Some((
             Shared.mapOldPath(path),
             args |> List.map(t => Shared.makeFlexible(t.ctyp_type))
           )))
@@ -235,7 +234,7 @@ let forTypeDeclaration = (~env, ~exported: Module.exported, {typ_id, typ_loc, ty
           | _ => Abstract(None)
         }
       | Ttype_open => Open
-      | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id, cd_name: name, cd_args, cd_res, cd_attributes}) => {
+      | Ttype_variant(constructors) => Variant(constructors |> List.map(({cd_id, cd_name: name, cd_args, cd_res}) => {
         let stamp = Ident.binding_time(cd_id);
       {
         Type.Constructor.stamp,
@@ -276,12 +275,12 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
   | Tsig_type(_/*402*/, decls) => {
     decls |. Belt.List.map(forTypeDeclaration(~env, ~exported))
   }
-  | Tsig_module({md_id, md_attributes, md_loc, md_name: name, md_type: {mty_desc, mty_type}}) => {
+  | Tsig_module({md_id, md_attributes, md_loc, md_name: name, md_type: {mty_type}}) => {
     let contents = forModuleType(env, mty_type);
     let declared = addItem(~contents, ~name, ~extent=md_loc, ~stamp=Ident.binding_time(md_id), ~env, md_attributes, exported.modules, env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}]
   }
-  | Tsig_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
+  | Tsig_include({incl_mod, incl_type}) =>
     let env = switch (getModuleTypePath(incl_mod.mty_desc)) {
       | None => env
       | Some(path) => {
@@ -299,29 +298,29 @@ let forSignatureItem = (~env, ~exported: Module.exported, item) => {
   }
 };
 
-let rec forSignature = (~env, items) => {
+let forSignature = (~env, items) => {
   let (doc, items) = getTopSigDoc(items);
   let exported = Module.initExported();
   let topLevel = Belt.List.map(items, forSignatureItem(~env, ~exported)) |> Belt.List.flatten;
   (doc, {Module.exported, topLevel})
 };
 
-let rec forTreeModuleType = (~env, {mty_desc, mty_loc, mty_attributes}) => switch mty_desc {
+let forTreeModuleType = (~env, {mty_desc}) => switch mty_desc {
   | Tmty_ident(_) => None
   | Tmty_signature({sig_items}) => {
-    let (doc, contents) = forSignature(~env, sig_items);
+    let (_doc, contents) = forSignature(~env, sig_items);
     Some(Module.Structure(contents))
   }
   | _ => None
 };
 
 let rec getModulePath = (mod_desc) => switch mod_desc {
-  | Tmod_ident(path, lident) => Some(path)
-  | Tmod_structure(structure) => None
-  | Tmod_functor(ident, argName, maybeType, resultExpr) => None
-  | Tmod_apply(functor_, arg, coersion) => getModulePath(functor_.mod_desc)
-  | Tmod_unpack(expr, moduleType) => None
-  | Tmod_constraint(expr, typ, constraint_, coersion) => getModulePath(expr.mod_desc)
+  | Tmod_ident(path, _lident) => Some(path)
+  | Tmod_structure(_) => None
+  | Tmod_functor(_ident, _argName, _maybeType, _resultExpr) => None
+  | Tmod_apply(functor_, _arg, _coercion) => getModulePath(functor_.mod_desc)
+  | Tmod_unpack(_expr, _moduleType) => None
+  | Tmod_constraint(expr, _typ, _constraint, _coercion) => getModulePath(expr.mod_desc)
 };
 
 let rec forItem = (
@@ -329,11 +328,11 @@ let rec forItem = (
   ~exported: Module.exported,
   item
 ) => switch (item.str_desc) {
-| Tstr_value(isRec, bindings) =>
-  optMap(({vb_loc, vb_expr, vb_pat: {pat_desc, pat_type}, vb_attributes}) =>
+| Tstr_value(_isRec, bindings) =>
+  optMap(({vb_loc, vb_pat: {pat_desc, pat_type}, vb_attributes}) =>
     /* TODO get all the things out of the var. */
     switch (pat_desc) {
-      | Tpat_var(ident, {txt, loc} as name) =>
+      | Tpat_var(ident, name) =>
         let contents = {
           Value.recursive: false,
           typ: Shared.makeFlexible(pat_type),
@@ -348,7 +347,7 @@ let rec forItem = (
   let declared = addItem(~contents, ~name, ~extent=mb_loc, ~stamp=Ident.binding_time(mb_id), ~env, mb_attributes, exported.modules, env.stamps.modules);
   [{...declared, contents: Module.Module(declared.contents)}]
 }
-| Tstr_include({incl_loc, incl_mod, incl_attributes, incl_type}) =>
+| Tstr_include({incl_mod, incl_type}) =>
   let env = switch (getModulePath(incl_mod.mod_desc)) {
     | None => env
     | Some(path) => {
@@ -372,10 +371,10 @@ let rec forItem = (
 }
 
 and forModule = (env, mod_desc, moduleName) => switch mod_desc {
-  | Tmod_ident(path, lident) => Module.Ident(Shared.mapOldPath(path))
+  | Tmod_ident(path, _lident) => Module.Ident(Shared.mapOldPath(path))
   | Tmod_structure(structure) => {
     let env = {...env, scope: itemsExtent(structure.str_items), modulePath: ExportedModule(moduleName, env.modulePath)};
-    let (doc, contents) = forStructure(~env, structure.str_items);
+    let (_doc, contents) = forStructure(~env, structure.str_items);
     Module.Structure(contents)
   }
   | Tmod_functor(ident, argName, maybeType, resultExpr) => {
@@ -400,11 +399,11 @@ and forModule = (env, mod_desc, moduleName) => switch mod_desc {
     };
     forModule(env, resultExpr.mod_desc, moduleName)
   }
-  | Tmod_apply(functor_, arg, coersion) => forModule(env, functor_.mod_desc, moduleName)
-  | Tmod_unpack(expr, moduleType) =>
+  | Tmod_apply(functor_, _arg, _coercion) => forModule(env, functor_.mod_desc, moduleName)
+  | Tmod_unpack(_expr, moduleType) =>
     let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
     forModuleType(env, moduleType)
-  | Tmod_constraint(expr, typ, constraint_, coersion) => {
+  | Tmod_constraint(_expr, typ, _constraint, _coercion) => {
     /* TODO do this better I think */
     let env = {...env, modulePath: ExportedModule(moduleName, env.modulePath)};
     forModuleType(env, typ)

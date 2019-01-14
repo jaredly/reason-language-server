@@ -11,9 +11,11 @@ let rec show = item => switch item {
 let rec getNamedIdent = items => switch items {
   | [] => None
   | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
-  | [`List([`Ident("name"), ..._]), ...rest] => {
+  | [`List([`Ident("name"), ..._]), ...rest] =>
     getNamedIdent(rest)
-  }
+  | [`List([`Ident("public_name"), `Ident(s)]), ..._] => Some(s)
+  | [`List([`Ident("public_name"), ..._]), ...rest] =>
+    getNamedIdent(rest)
   | [_, ...rest] => getNamedIdent(rest)
 };
 
@@ -25,7 +27,7 @@ let findLibraryName = jbuildConfig => {
       /* Log.log("Found a library!");
       Log.log(String.concat("\n", List.map(show, items))); */
       getNamedIdent(items)
-    | [item, ...rest] => {
+    | [_, ...rest] => {
       loop(rest)
     }
   };
@@ -48,7 +50,7 @@ let findExecutableName = jbuildConfig => {
     | [`List([`Ident("executable"), `List(items)]), ..._]
     | [`List([`Ident("executable"), ...items]), ..._] =>
       getNamedIdent(items)
-    | [item, ...rest] => {
+    | [_, ...rest] => {
       loop(rest)
     }
   };
@@ -75,7 +77,7 @@ let findName = jbuildConfig => {
 
 */
 
-let fail = (text, i, msg) => failwith(msg);
+let fail = (msg) => failwith(msg);
 
 let parseString = (text, pos) => {
   /* let i = ref(pos); */
@@ -83,13 +85,13 @@ let parseString = (text, pos) => {
   let ln = String.length(text);
   let rec loop = (i) =>
     i >= ln ?
-      fail(text, i, "Unterminated string") :
+      fail("Unterminated string") :
       (
         switch text.[i] {
         | '"' => i + 1
         | '\\' =>
           i + 1 >= ln ?
-            fail(text, i, "Unterminated string") :
+            fail("Unterminated string") :
             (
               switch text.[i + 1] {
               | '/' =>
@@ -133,7 +135,7 @@ let rec parseInt = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
   | _ => i
 };
 
-let rec parseNumber = (raw, ln, i) => i >= ln ? i : {
+let parseNumber = (raw, ln, i) => i >= ln ? i : {
   let i = parseInt(raw, ln, i);
   if (i < ln && raw.[i] == '.') {
     parseInt(raw, ln, i + 1)

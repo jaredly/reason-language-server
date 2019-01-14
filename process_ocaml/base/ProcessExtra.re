@@ -13,7 +13,7 @@ open Infix;
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
-    | Path.Pdot(path, typename, _) => typename
+    | Path.Pdot(_path, typename, _) => typename
     | Pident(ident) => Ident.name(ident)
     | _ => assert false
     };
@@ -21,7 +21,7 @@ let handleConstructor = (path, txt) => {
     switch txt {
     | Longident.Lident(name) => (name, Lident(typeName))
     | Ldot(left, name) => (name, Ldot(left, typeName))
-    | Lapply(left, _) => assert false
+    | Lapply(_, _) => assert false
     }
   )
 };
@@ -42,7 +42,7 @@ let addOpen = (extra, path, loc, extent, ident) => {
 let findClosestMatchingOpen = (opens, path, ident, loc) => {
   let%opt openNeedle = relative(ident, path);
 
-  let matching = Hashtbl.fold((l, op, res) => {
+  let matching = Hashtbl.fold((_, op, res) => {
     if (Utils.locWithinLoc(loc, op.extent) && Current.samePath(op.path, Shared.mapOldPath(openNeedle))) {
       [op, ...res]
     } else {
@@ -135,7 +135,7 @@ module F = (Collector: {
     addLocation(loc, Loc.Typed(typ, locType));
   };
 
-  let addForPathParent = (path, lident, loc) => {
+  let addForPathParent = (path, loc) => {
     let locType = switch (Query.fromCompilerPath(~env, path)) {
       | `GlobalMod(name) =>
         /* TODO track external references to filenames to handle renames well */
@@ -165,8 +165,7 @@ module F = (Collector: {
     switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(Shared.mapOldPath(path));
-        let {Types.lbl_loc, lbl_res} = item;
-        let name = Longident.last(txt);
+        let {Types.lbl_res} = item;
 
         let (name, typeLident) = handleConstructor(path, txt);
         maybeAddUse(path, typeLident, loc, Attribute(name));
@@ -195,7 +194,7 @@ module F = (Collector: {
     switch (Shared.dig(recordType).desc) {
       | Tconstr(path, _args, _memo) => {
         let t = getTypeAtPath(Shared.mapOldPath(path));
-        items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_loc, lbl_res}, _)) => {
+        items |> List.iter((({Asttypes.txt, loc}, {Types.lbl_res}, _)) => {
           /* let name = Longident.last(txt); */
 
           let (name, typeLident) = handleConstructor(path, txt);
@@ -222,7 +221,7 @@ module F = (Collector: {
     }
   };
 
-  let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name, cstr_loc}) => {
+  let addForConstructor = (constructorType, {Asttypes.txt, loc}, {Types.cstr_name}) => {
     switch (Shared.dig(constructorType).desc) {
       | Tconstr(path, _args, _memo) => {
         /* let name = Longident.last(txt); */
@@ -268,13 +267,13 @@ module F = (Collector: {
       let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
       switch (top) {
         | Some((t, tip)) => addForPath(path, txt, l, t, tip)
-        | None => addForPathParent(Shared.mapOldPath(path), txt, l)
+        | None => addForPathParent(Shared.mapOldPath(path), l)
       };
       switch (path, txt) {
-        | (Pdot(pinner, pname, _), Ldot(inner, name)) => {
+        | (Pdot(pinner, _pname, _), Ldot(inner, name)) => {
           addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
         }
-        | (Pident(_), Lident(name)) => ()
+        | (Pident(_), Lident(_)) => ()
         | _ => ()
       };
     }
@@ -286,7 +285,7 @@ module F = (Collector: {
       Log.log("Ident!! " ++ String.concat(".", Longident.flatten(txt)));
       maybeAddUse(path, txt, loc, Module);
       addForLongident(None, path, txt, loc);
-    | Tmod_functor(ident, argName, maybeType, resultExpr) =>
+    | Tmod_functor(_ident, _argName, _maybeType, resultExpr) =>
       handle_module_expr(resultExpr.mod_desc)
     | Tmod_apply(obj, arg, _) =>
       handle_module_expr(obj.mod_desc);
@@ -306,10 +305,10 @@ module F = (Collector: {
       (doc, _))}, _)}]))) => {
     addLocation(loc, Loc.Explanation(doc))
   }
-  | Tstr_include({incl_mod: expr, incl_type, incl_loc}) => {
+  | Tstr_include({incl_mod: expr}) => {
     handle_module_expr(expr.mod_desc)
   }
-  | Tstr_module({mb_name, mb_expr}) =>
+  | Tstr_module({mb_expr}) =>
     handle_module_expr(mb_expr.mod_desc)
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
     /* Log.log("Have an open here"); */
@@ -378,9 +377,9 @@ module F = (Collector: {
   | _ => ()
   };
 
-  let enter_core_type = ({ctyp_loc, ctyp_type, ctyp_desc}) => {
+  let enter_core_type = ({ctyp_type, ctyp_desc}) => {
     switch (ctyp_desc) {
-      | Ttyp_constr(path, {txt, loc}, args) => {
+      | Ttyp_constr(path, {txt, loc}, _args) => {
         /* addForPath(path, txt, loc, Shared.makeFlexible(ctyp_type), Type) */
         addForLongident(
           Some((Shared.makeFlexible(ctyp_type), Type)),
@@ -392,7 +391,7 @@ module F = (Collector: {
   };
 
 
-  let rec enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
+  let enter_pattern = ({pat_desc, pat_loc, pat_type, pat_attributes}) => {
     let addForPattern = (stamp, name) => {
         if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
           let declared = ProcessAttributes.newDeclared(
@@ -423,7 +422,7 @@ module F = (Collector: {
       | Tpat_construct(lident, constructor, _) => {
         addForConstructor(pat_type, lident, constructor)
       }
-      | Tpat_alias(inner, ident, name) => {
+      | Tpat_alias(_inner, ident, name) => {
         let stamp = Ident.binding_time(ident);
         addForPattern(stamp, name);
       }
@@ -479,7 +478,7 @@ module F = (Collector: {
       addLocation(expression.exp_loc, Loc.Constant(constant));
     }
     /* Skip unit and list literals */
-    | Texp_construct({txt: Lident("()" | "::"), loc}, _, args) when loc.loc_end.pos_cnum - loc.loc_start.pos_cnum != 2 =>
+    | Texp_construct({txt: Lident("()" | "::"), loc}, _, _args) when loc.loc_end.pos_cnum - loc.loc_start.pos_cnum != 2 =>
       ()
     | Texp_construct(lident, constructor, _args) => {
       addForConstructor(expression.exp_type, lident, constructor);
@@ -519,7 +518,7 @@ module F = (Collector: {
     | Texp_function({cases}) => {
 #endif
       switch cases {
-        | [{c_rhs}] => popScopeExtent()
+        | [_] => popScopeExtent()
         | _ => ()
       }
     }
@@ -545,7 +544,7 @@ let forFile = (~file) => {
     addLocation(d.name.loc, Loc.TypeDefinition(d.name.txt, d.contents.Type.typ, stamp));
     addReference(stamp, d.name.loc);
     switch (d.contents.Type.kind) {
-      | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ, typLoc}) => {
+      | Record(labels) => labels |> List.iter(({Type.Attribute.stamp, name, typ}) => {
         addReference(stamp, name.loc);
         addLocation(name.loc, Loc.Typed(typ, Loc.Definition(d.stamp, Attribute(name.txt))))
       });
@@ -612,7 +611,7 @@ let forItems = (~file, ~allLocations, items, parts) => {
 };
 
 open RResult;
-let forCmt = (~file, ~allLocations, {cmt_modname, cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
+let forCmt = (~file, ~allLocations, {cmt_annots}: Cmt_format.cmt_infos) => switch cmt_annots {
 | Partial_implementation(parts) => {
   let items = parts |. Array.to_list |. Belt.List.keepMap(p => switch p {
     | Partial_structure(str) => Some(str.str_items)

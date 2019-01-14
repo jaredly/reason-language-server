@@ -17,7 +17,7 @@ let hashList = tbl => Hashtbl.fold((key, value, result) => [(key, value), ...res
 let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
   hashList(typeMap)
   ->Belt.List.sort(compare)
-  ->Belt.List.map((((moduleName, modulePath, name) as ref, (attributes, decl))) => {
+  ->Belt.List.map((((moduleName, modulePath, name) as ref, (_attributes, decl))) => {
     let alias = if (currentVersion == version ||
       lockedDeep[currentVersion]->Upgrade.hashFind(ref) == lockedDeep[version]->Upgrade.hashFind(ref)
     ) {
@@ -33,7 +33,7 @@ let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
   });
 };
 
-let optimiseLater = (timeout, closure) => {
+let optimiseLater = (_timeout, closure) => {
   let start = Unix.gettimeofday();
   let result = closure();
   let time = Unix.gettimeofday() -. start;
@@ -51,8 +51,6 @@ let loadTypeMap = config => {
   let tbl = Hashtbl.create(10);
 
   config.custom->Belt.List.forEach(({path, name, module_, args}) => {
-    open Util.RResult.InfixResult;
-    open Util.Infix;
     Hashtbl.replace(
       tbl,
       (
@@ -165,7 +163,7 @@ let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
 let makeFns = (maker, tbl) => {
     hashList(tbl)
     ->Belt.List.sort(compare)
-    ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) => 
+    ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) =>
         maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, decl)
     );
 };
@@ -203,7 +201,7 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
   );
 };
 
-let makeFullModule = (~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap, engineVersion}) => {
+let makeFullModule = (~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
   /* TODO respect engineVersion */
   let fns =
     switch (config.engine) {
@@ -245,7 +243,7 @@ let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
 
 let capitalize = s =>
   s == "" ?
-    "" : String.uppercase(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
+    "" : String.uppercase_ascii(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
 
 
 let makeConverters = (~config, ~state) => config.entries->Belt.List.map(({file, type_, publicName}) => {
@@ -288,7 +286,7 @@ let makeConverters = (~config, ~state) => config.entries->Belt.List.map(({file, 
           [%expr
             data => switch (parseVersion(data)) {
               | Belt.Result.Error(err) => Belt.Result.Error([err])
-              | [@implicit_arity]Ok((version, data)) => [%e 
+              | [@implicit_arity]Ok((version, data)) => [%e
                 Ast_helper.Exp.match(
                   [%expr version],
                   {
@@ -333,7 +331,7 @@ let main = configPath => {
 
   let lockfile = parseLockfile(config, lockedEntries, currentTypeMap, lockFilePath)
 
-  let lockedDeep = Belt.Array.concat([|Hashtbl.create(0)|], lockfile.versions->Belt.Array.mapWithIndex((index, config) => {
+  let lockedDeep = Belt.Array.concat([|Hashtbl.create(0)|], lockfile.versions->Belt.Array.mapWithIndex((_index, config) => {
     Lockdown.typesAndDependencies(config.typeMap)
   }));
 
@@ -346,7 +344,9 @@ let main = configPath => {
     /* loop(config.version) */
   };
 
-  let body = makeAllModules() @ Parsetree.[
+  let body = Parsetree.[
+      [%stri [@ocaml.warning "-34"]; ],
+    ] @ makeAllModules() @ Parsetree.[
     [%stri
       let currentVersion = [%e Ast_helper.Exp.constant(Parsetree.Pconst_integer(string_of_int(config.version), None))]
     ],

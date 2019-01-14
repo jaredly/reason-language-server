@@ -3,7 +3,7 @@
   (name TypeDigger)
   (public_name type-digger)
   (libraries Util TypeMap Serde TypeMapSerde compiler-libs.common ocaml-migrate-parsetree ppx_tools.metaquot)
-  (flags :standard -open Util -w -26-32-50-9-27-39-33-35-6-3)
+  (flags :standard -open Util -w -9)
   (preprocess (pps Belt_ppx Ppx_monads ppxlib.metaquot))
   )
 

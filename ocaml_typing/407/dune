@@ -3,4 +3,4 @@
   (name Compiler_libs_407)
   (public_name ReasonLanguageServer.Compiler_libs_407)
   (libraries compiler-libs.common Compiler_libs_406)
-  (flags :standard -w -A))
+  (flags :standard -w -9))

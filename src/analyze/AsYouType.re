@@ -84,7 +84,6 @@ let parseLoc = text => {
     let line = Str.matched_group(1, text) |> int_of_string;
     let c0 = Str.matched_group(2, text) |> int_of_string;
     let c1 = Str.matched_group(3, text) |> int_of_string;
-    let final = Str.match_end();
     Some((line - 1, c0, c1))
   } else {
     /* Log.log("Cannot parse type error: " ++ text); */
@@ -113,14 +112,13 @@ let parseDependencyError = text => {
   let rx = Str.regexp({|Error: The files \(.+\)\.cmi
        and \(.+\)\.cmi
        make inconsistent assumptions over interface \([A-Za-z_-]+\)|});
-  
+
   switch (Str.search_forward(rx, text, 0)) {
   | exception Not_found => None
-  | x =>
-    let dep = Str.matched_group(1, text) |> Filename.basename |> String.capitalize;
-    let base = Str.matched_group(2, text) |> Filename.basename |> String.capitalize;
+  | _ =>
+    let dep = Str.matched_group(1, text) |> Filename.basename |> String.capitalize_ascii;
+    let base = Str.matched_group(2, text) |> Filename.basename |> String.capitalize_ascii;
     let interface = Str.matched_group(3, text);
-    let final = Str.match_end();
     Some((dep, base, interface))
   }
 };
@@ -149,9 +147,9 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sour
   }
 };
 
-let getInterface = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
+let getInterface = (~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   let interface = false;
-  let%try (syntaxError, astFile) = switch (refmtPath) {
+  let%try (_syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
       let astFile = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
@@ -163,7 +161,7 @@ let getInterface = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLoc
     | Error(lines) => {
       Error("Failed to generate interface file\n\n" ++ String.concat("\n", lines))
     }
-    | Ok((lines, errlines)) =>
+    | Ok((lines, _errlines)) =>
     let text = String.concat("\n", lines);
     Log.log("GOT ITNERFACE");
     Log.log(text);
@@ -204,7 +202,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
             SyntaxError(String.concat("\n", s), errorText, {file, extra})
           | None => {
             let errorText = switch (parseDependencyError(errorText)) {
-              | Some((name, oname, iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
+              | Some((name, _oname, _iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
               | None => errorText
             };
             TypeError(errorText, {file, extra})
