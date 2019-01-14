@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - checkout
-      - run: sudo npm install -g esy@0.3.4
+      - run: sudo npm install -g esy@0.4.9
 
       # Download and cache dependencies
       - restore_cache:
@@ -24,11 +24,12 @@ jobs:
           - v2-dependencies-
 
       # build
-      - run: esy install
+      - run: esy
 
       # run tests!
-      - run: esy b
-      - run: esy dune exec ExamplesTests
+      - run: esy dune exec Bin -- --help
+      - run: npm test
+      - run: npm run cp-bin
 
       - save_cache:
           paths:
@@ -42,7 +43,7 @@ jobs:
           key: v2-dependencies-{{ checksum "package.json" }}
 
       - store_artifacts:
-          path: ./_esy/default/build/default/bin/Bin.exe
+          path: ./bin.exe
           destination: bin.native.linux
 
   publish-github-release:
