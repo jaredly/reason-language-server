@@ -494,7 +494,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
 
 
 let findRoot = (uri, packagesByRoot, overrides) => {
-  let override = overrides->Belt.List.getBy(((prefix, system)) => {
+  let override = overrides->Belt.List.getBy(((prefix, _system)) => {
     Util.Utils.startsWith(uri, prefix)
   });
   switch override {
