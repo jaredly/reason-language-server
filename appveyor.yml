@@ -27,7 +27,7 @@ install:
 build_script:
     - esy build
     # Validate binary
-    - esy dune exec Bin -- --help
+    # - esy dune exec Bin -- --help
     - npm test
     - npm run cp-bin
 

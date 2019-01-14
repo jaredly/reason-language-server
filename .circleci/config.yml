@@ -27,7 +27,7 @@ jobs:
       - run: esy
 
       # run tests!
-      - run: esy dune exec Bin -- --help
+      # - run: esy dune exec Bin -- --help
       - run: npm test
       - run: npm run cp-bin
 
