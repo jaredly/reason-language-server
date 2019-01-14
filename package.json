@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "test": "esy exec-command --include-build-env ReasonLanguageServer dune exec ExamplesTests",
-    "package": "esy build && esy cp #{self.target_dir}/install/default/bin/Bin editor-extensions/vscode/bin.native",
+    "package": "esy build && esy cp '#{self.target_dir}/install/default/bin/Bin' editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",
     "symlink": "esy ln -s #{self.target_dir}/install/default/bin/Bin bin.exe",
-    "cp-bin": "esy cp #{self.target_dir}/install/default/bin/Bin bin.exe",
+    "cp-bin": "esy cp '#{self.target_dir}/install/default/bin/Bin' bin.exe",
     "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
     "types": "./_esy/default/build/install/default/bin/type-digger type-digger/types.json"
   },
