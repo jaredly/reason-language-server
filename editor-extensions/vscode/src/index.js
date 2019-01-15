@@ -159,6 +159,10 @@ function activate(context) {
     });
 
     class PpxedSourceProvider {
+        constructor() {
+            this.privateOnDidChange = new vscode.EventEmitter()
+            this.onDidChange = this.privateOnDidChange.event;
+        }
         provideTextDocumentContent(uri, token) {
             if (!client) {
                 return Promise.reject("No language client running")
@@ -174,9 +178,18 @@ function activate(context) {
         }
     }
 
+    const provider = new PpxedSourceProvider()
+
+    context.subscriptions.push(
+        vscode.workspace.onDidSaveTextDocument((document) => {
+            const uri = document.uri;
+            provider.privateOnDidChange.fire(uri.with({scheme: 'ppxed-source'}))
+        }),
+    );
+
     const contentProviderRegistration = vscode.workspace.registerTextDocumentContentProvider(
         "ppxed-source",
-        new PpxedSourceProvider(),
+        provider,
     );
 
     const showPpxedSource = () => {
