@@ -28,8 +28,9 @@ jobs:
 
       # run tests!
       # - run: esy dune exec Bin -- --help
-      - run: npm test
-      - run: npm run cp-bin
+      - run: esy cp-test
+      - run: ./ExamplesTests.exe
+      - run: esy cp-bin
 
       - save_cache:
           paths:
