@@ -28,7 +28,7 @@ jobs:
 
       # run tests!
       # - run: esy dune exec Bin -- --help
-      - run: esy cp-test
+      - run: esy cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
       - run: ./ExamplesTests.exe
       - run: esy cp-bin
 

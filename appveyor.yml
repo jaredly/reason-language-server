@@ -28,7 +28,7 @@ build_script:
     - esy build
     # Validate binary
     # - esy dune exec Bin -- --help
-    - esy cp-test
+    - esy cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
     - ./ExamplesTests.exe
     - esy cp-bin
 
