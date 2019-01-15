@@ -13,6 +13,7 @@ cache:
     - examples/example-project/node_modules/
     - examples/example-es6-imports/node_modules/
     - examples/example-react/node_modules/
+    - examples/name_with_underscore/node_modules/
     - examples/example-esy-dune-project/node_modules/
     - _esy
     - node_modules
@@ -30,7 +31,7 @@ build_script:
     # - esy dune exec Bin -- --help
     - esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
     - ./ExamplesTests.exe
-    - esy cp-bin
+    - esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
 artifacts:
     - path: bin.exe

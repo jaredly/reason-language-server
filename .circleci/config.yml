@@ -30,7 +30,7 @@ jobs:
       # - run: esy dune exec Bin -- --help
       - run: esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
       - run: ./ExamplesTests.exe
-      - run: esy cp-bin
+      - run: esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
       - save_cache:
           paths:
@@ -41,6 +41,7 @@ jobs:
             - examples/example-es6-imports/node_modules/
             - examples/example-react/node_modules/
             - examples/example-esy-dune-project/node_modules/
+            - examples/name_with_underscore/node_modules/
           key: v2-dependencies-{{ checksum "package.json" }}
 
       - store_artifacts:
