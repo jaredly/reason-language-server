@@ -646,4 +646,26 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     /* let interfaceUri = uri ++ "i"; */
     Ok((state, Json.Null))
   }),
+
+  ("custom:reasonLanguageServer/showPpxedSource", (state, params) => {
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try package = getPackage(uri, state);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try source = AsYouType.getSource(
+      ~uri,
+      ~moduleName=file.moduleName,
+      ~cacheLocation=package.tmpPath,
+      ~compilerVersion=package.compilerVersion,
+      );
+    let source = State.isMl(uri) ? source : switch (package.refmtPath) {
+      | None => source
+      | Some(refmt) =>
+        let interface = Utils.endsWith(uri, "i");
+        switch (AsYouType.convertToRe(~formatWidth=None, ~interface, source, refmt)) {
+          | RResult.Error(_) => source
+          | Ok(s) => s
+        }
+    };
+    Ok((state, Json.String(source)))
+  }),
 ];

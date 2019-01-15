@@ -4,7 +4,9 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 const vscode = require("vscode");
+const {Uri} = vscode;
 const {LanguageClient, RevealOutputChannelOn} = require("vscode-languageclient");
+const {TextDocument} = require('vscode-languageserver-types');
 const path = require('path')
 const fs = require('fs')
 
@@ -154,6 +156,47 @@ function activate(context) {
 
     vscode.commands.registerCommand('reason-language-server.create_interface', () => {
         createInterface(false)
+    });
+
+    class PpxedSourceProvider {
+        provideTextDocumentContent(uri, token) {
+            if (!client) {
+                return Promise.reject("No language client running")
+            }
+
+            return client.sendRequest("custom:reasonLanguageServer/showPpxedSource", {
+                "textDocument": {
+                    "uri": uri.with({scheme: 'file'}).toString(),
+                },
+                // unused currently
+                "position": {character: 0, line: 0},
+            })
+        }
+    }
+
+    const contentProviderRegistration = vscode.workspace.registerTextDocumentContentProvider(
+        "ppxed-source",
+        new PpxedSourceProvider(),
+    );
+
+    const showPpxedSource = () => {
+        if (!client) {
+            return vscode.window.showInformationMessage('Language server not running');
+        }
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return vscode.window.showInformationMessage('No active editor');
+        }
+        if (editor.document.languageId !== 'ocaml' && editor.document.languageId !== 'reason') {
+            return vscode.window.showInformationMessage('Not an OCaml or Reason file');
+        }
+
+        const document = TextDocument.create(editor.document.uri.with({scheme: 'ppxed-source'}), editor.document.languageId, 1, '');
+        vscode.window.showTextDocument(document);
+    };
+
+    vscode.commands.registerCommand('reason-language-server.show_ppxed_source', () => {
+        showPpxedSource()
     });
 
     // vscode.commands.registerCommand('reason-language-server.create_interface_minimal', () => {

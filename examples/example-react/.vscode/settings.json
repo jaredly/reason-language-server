@@ -1,4 +1,4 @@
 {
-    // "reason_language_server.location": "../../_build/default/bin/Bin.exe",
+    "reason_language_server.location": "../../bin.exe",
     "reason_language_server.per_value_codelens": false
 }

@@ -19,11 +19,12 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   {file, extra}
 };
 
-let parseTreeForCmt = cmt => {
+let sourceForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) => {
-    Ok(Untypeast.untype_structure(structure));
+    Pprintast.structure(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
+    Ok(Format.flush_str_formatter());
   }
   | _ => Error("Not a well-typed implementation")
   }

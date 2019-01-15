@@ -173,6 +173,20 @@ let getInterface = (~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation,
   }
 };
 
+let cmtPath = (~cacheLocation, ~moduleName, ~uri) => {
+  let interface = Utils.endsWith(uri, "i");
+  cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
+};
+
+let getSource = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
+  (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.sourceForCmt
+    | V406 => Process_406.sourceForCmt
+    | V407 => Process_407.sourceForCmt
+  })(cmt);
+};
+
 let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
