@@ -3,13 +3,13 @@
   "version": "0.0.0-dont-publish",
   "private": true,
   "scripts": {
-    "cp-test": "esy exec-command --include-build-env ReasonLanguageServer cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
+    "cp-test": "cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
     "package": "esy build && esy cp '#{self.target_dir}/default/bin/Bin.exe' editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",
     "symlink": "esy ln -s #{self.target_dir}/install/default/bin/Bin bin.exe",
-    "cp-bin": "esy exec-command --include-build-env ReasonLanguageServer cp #{self.target_dir}/default/bin/Bin.exe bin.exe",
+    "cp-bin": "cp #{self.target_dir}/default/bin/Bin.exe bin.exe",
     "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
     "types": "./_esy/default/build/install/default/bin/type-digger type-digger/types.json"
   },

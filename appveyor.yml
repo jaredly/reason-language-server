@@ -28,9 +28,9 @@ build_script:
     - esy build
     # Validate binary
     # - esy dune exec Bin -- --help
-    - npm run cp-test
+    - esy cp-test
     - ./ExamplesTests.exe
-    - npm run cp-bin
+    - esy cp-bin
 
 artifacts:
     - path: bin.exe
