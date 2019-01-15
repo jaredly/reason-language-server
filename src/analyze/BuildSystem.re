@@ -200,18 +200,38 @@ let getCompiledBase = (root, buildSystem) => {
   };
 };
 
-let getOpamLibOrBinPath = (root, opamSwitchPrefix, path) => {
-  let maybeLibOrBinPath = opamSwitchPrefix /+ path;
-  if (Files.exists(maybeLibOrBinPath)) {
-    Ok(maybeLibOrBinPath);
-  } else {
+type opamPathKind =
+  | Lib
+  | Bin
+
+let getOpamLibOrBinPath = (root, ~kind, path) => {
+  let localSwitchPath = () => {
+    let kindPath = switch kind {
+      | Lib => "lib"
+      | Bin => "bin"
+    }
     /* in local switches that share the sys-ocaml-version, the ocaml library and
      * binaries are apparently in the global (system) switch ¯\_(ツ)_/¯.
      */
+    /* TODO: guard against `sys-ocaml-version` being `#undefined` */
     let%try sysOCamlVersion = getLine("opam config var sys-ocaml-version", ~pwd=root);
     let%try opamRoot = getLine("opam config var root", ~pwd=root);
-    Ok(opamRoot /+ sysOCamlVersion /+ path);
-  };
+    Ok(opamRoot /+ sysOCamlVersion /+ kindPath /+ path);
+  }
+  let maybeLibOrBinPath = switch kind {
+    | Lib => getLine("opam config var lib", ~pwd=root)
+    | Bin => getLine("opam config var bin", ~pwd=root)
+  }
+  switch maybeLibOrBinPath {
+    | Ok(libOrBinPath) =>
+      let pathToTry = libOrBinPath /+ path;
+      if (Files.exists(pathToTry)) {
+        Ok(pathToTry);
+      } else {
+        localSwitchPath();
+      }
+    | Error(_) => localSwitchPath();
+  }
 };
 
 let getStdlib = (base, buildSystem) => {
@@ -240,11 +260,11 @@ let getStdlib = (base, buildSystem) => {
     switch (Utils.getEnvVar(~env, "OCAMLLIB")) {
     | Some(esy_ocamllib) => Ok([esy_ocamllib])
     | None =>
-      let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c 'echo $OCAMLLIB'", ~pwd=base);
+      let%try_wrap esy_ocamllib = getLine("esy -q sh -c 'echo $OCAMLLIB'", ~pwd=base);
       [esy_ocamllib];
     };
   | Dune(Opam(switchPrefix)) =>
-    let%try libPath = getOpamLibOrBinPath(base, switchPrefix, "lib" /+ "ocaml")
+    let%try libPath = getOpamLibOrBinPath(base, ~kind=Lib, "ocaml")
     Ok([libPath])
   };
 };
@@ -276,7 +296,7 @@ let getCompiler = (rootPath, buildSystem) => {
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
     | Dune(Esy) => getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
-      let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt");
+      let%try_wrap binPath = getOpamLibOrBinPath(rootPath, ~kind=Bin, "ocamlopt.opt");
       binPath
   };
 };
