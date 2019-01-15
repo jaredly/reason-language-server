@@ -26,7 +26,10 @@ let sourceForCmt = cmt => {
     Pprintast.structure(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
     Ok(Format.flush_str_formatter());
   }
-  | _ => Error("Not a well-typed implementation")
+  | Interface(signature) =>
+    Pprintast.signature(Stdlib.Format.str_formatter, Untypeast.untype_signature(structure));
+    Ok(Format.flush_str_formatter());
+  | _ => Error("Cannot show ppxed source for files with type errors at the moment")
   }
 };
 

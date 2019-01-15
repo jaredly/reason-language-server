@@ -7,7 +7,7 @@ module Awesome = {
 
 /* awesome */
 
-let x = (12 |. string_of_int) ++ "HI folks. It's great";
+let x = (10 |. string_of_int) ++ "HI folks. It's great";
 
 let er = <Awesome />;
 
