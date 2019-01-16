@@ -9,11 +9,15 @@ let rec show = item => switch item {
 };
 
 let rec getNamedIdent = items => switch items {
-  | [] => None
-  | [`List([`Ident("name"), `Ident(s)]), ..._] => Some(s)
+  | [] => (None, None)
+  | [`List([`Ident("name"), `Ident(s)]), ...rest] =>
+    let (public, _) = getNamedIdent(rest);
+    (public, Some(s))
   | [`List([`Ident("name"), ..._]), ...rest] =>
     getNamedIdent(rest)
-  | [`List([`Ident("public_name"), `Ident(s)]), ..._] => Some(s)
+  | [`List([`Ident("public_name"), `Ident(s)]), ...rest] =>
+    let (_, private) = getNamedIdent(rest);
+    (Some(s), private)
   | [`List([`Ident("public_name"), ..._]), ...rest] =>
     getNamedIdent(rest)
   | [_, ...rest] => getNamedIdent(rest)
@@ -26,7 +30,10 @@ let findLibraryName = jbuildConfig => {
     | [`List([`Ident("library"), ...items]), ..._] =>
       /* Log.log("Found a library!");
       Log.log(String.concat("\n", List.map(show, items))); */
-      getNamedIdent(items)
+      switch (getNamedIdent(items)) {
+        | (_, Some(priv)) => Some(priv)
+        | (public, _) => public
+      }
     | [_, ...rest] => {
       loop(rest)
     }
@@ -49,7 +56,10 @@ let findExecutableName = jbuildConfig => {
     | [] => None
     | [`List([`Ident("executable"), `List(items)]), ..._]
     | [`List([`Ident("executable"), ...items]), ..._] =>
-      getNamedIdent(items)
+      switch (getNamedIdent(items)) {
+        | (_, Some(priv)) => Some(priv)
+        | (public, _) => public
+      }
     | [_, ...rest] => {
       loop(rest)
     }

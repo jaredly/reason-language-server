@@ -397,7 +397,8 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       };
       let rel = Files.relpath(projectRoot, otherPath);
       let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
-      Log.log("Other directory: " ++ compiledBase);
+      Log.log("Found " ++ libraryName ++ " defined in " ++ jbuildPath);
+      Log.log("Compiled base: " ++ compiledBase);
       Ok((compiledBase, FindFiles.collectFiles(~compiledTransform=modName => {
         if (modName == libraryName) {
           modName
