@@ -208,7 +208,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
       let ppxs = config |> Json.get("ppx-flags") |?> Json.array |?>> Utils.filterMap(Json.string) |? [];
       Log.log("Getting hte ppxs yall");
       let flags = flags @ (Belt.List.map(ppxs, name => {
-        MerlinFile.fixPpx("-ppx " ++ Fielname.quote(name), rootPath)
+        MerlinFile.fixPpx("-ppx " ++ Filename.quote(name), rootPath)
       }));
       let flags = switch (config |> Json.get("warnings") |?> Json.get("number") |?> Json.string) {
         | None => flags
