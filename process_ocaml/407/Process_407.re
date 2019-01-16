@@ -27,7 +27,7 @@ let sourceForCmt = cmt => {
     Ok(Format.flush_str_formatter());
   }
   | Interface(signature) =>
-    Pprintast.signature(Stdlib.Format.str_formatter, Untypeast.untype_signature(structure));
+    Pprintast.signature(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
     Ok(Format.flush_str_formatter());
   | _ => Error("Cannot show ppxed source for files with type errors at the moment")
   }

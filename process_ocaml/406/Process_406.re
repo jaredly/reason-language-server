@@ -27,6 +27,9 @@ let sourceForCmt = cmt => {
     Pprintast.structure(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
     Ok(Format.flush_str_formatter());
   }
+  | Interface(signature) =>
+    Pprintast.signature(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
+    Ok(Format.flush_str_formatter());
   | _ => Error("Not a well-typed implementation")
   }
 };
