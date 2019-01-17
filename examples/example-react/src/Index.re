@@ -1,9 +1,12 @@
-ReactDOMRe.renderToElementWithId(<Component1 message="Hello!" />, "index1");
 
 module Awesome = {
+  let x = 10;
+  1+3;
+  let y = 10;
   let make = _ => ReasonReact.statelessComponent("hi");
-  3+3+20
 };
+
+ReactDOMRe.renderToElementWithId(<Component1 message="Hello!" />, "index1");
 
 /* awesome */
 

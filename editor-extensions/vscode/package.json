@@ -33,6 +33,10 @@
 				"title": "Reason: Show the fully ppxed source for this file."
 			},
 			{
+				"command": "reason-language-server.show_ast",
+				"title": "Reason: Show the abstract syntax tree (AST) for this file."
+			},
+			{
 				"command": "reason-language-server.create_interface",
 				"title": "Reason: Create an interface file for this implementation file."
 			}

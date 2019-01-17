@@ -668,4 +668,17 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     };
     Ok((state, Json.String(source)))
   }),
+
+  ("custom:reasonLanguageServer/showAst", (state, params) => {
+    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try package = getPackage(uri, state);
+    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try source = AsYouType.getAst(
+      ~uri,
+      ~moduleName=file.moduleName,
+      ~cacheLocation=package.tmpPath,
+      ~compilerVersion=package.compilerVersion,
+      );
+    Ok((state, Json.String(source)))
+  }),
 ];

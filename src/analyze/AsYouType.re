@@ -187,6 +187,15 @@ let getSource = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
   })(cmt);
 };
 
+let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
+  (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.astForCmt
+    | V406 => Process_406.astForCmt
+    | V407 => Process_407.astForCmt
+  })(cmt);
+};
+
 let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
   let%try (syntaxError, astFile) = switch (refmtPath) {
