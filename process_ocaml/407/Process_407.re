@@ -19,7 +19,7 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   {file, extra}
 };
 
-let sourceForCmt = cmt => {
+/* let sourceForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) => {
@@ -31,18 +31,20 @@ let sourceForCmt = cmt => {
     Ok(Format.flush_str_formatter());
   | _ => Error("Cannot show ppxed source for files with type errors at the moment")
   }
-};
+}; */
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) => {
-    Printast.implementation(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
-    Ok(Format.flush_str_formatter());
+    Ok(`Implementation(Untypeast.untype_structure(structure)))
+    /* Printast.implementation(Stdlib.Format.str_formatter, );
+    Ok(Format.flush_str_formatter()); */
   }
   | Interface(signature) =>
-    Printast.interface(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
-    Ok(Format.flush_str_formatter());
+    Ok(`Interface(Untypeast.untype_signature(signature)))
+    /* Printast.interface(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
+    Ok(Format.flush_str_formatter()); */
   | _ => Error("Cannot show ppxed source for files with type errors at the moment")
   }
 };

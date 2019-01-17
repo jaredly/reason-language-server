@@ -178,16 +178,9 @@ let cmtPath = (~cacheLocation, ~moduleName, ~uri) => {
   cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
 };
 
-let getSource = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
-  let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
-  (switch compilerVersion {
-    | BuildSystem.V402 => Process_402.sourceForCmt
-    | V406 => Process_406.sourceForCmt
-    | V407 => Process_407.sourceForCmt
-  })(cmt);
-};
+let isMl = (uri) =>Utils.endsWith(uri, "ml") || Utils.endsWith(uri, "mli");
 
-let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+let getParsetree = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
   let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
   (switch compilerVersion {
     | BuildSystem.V402 => Process_402.astForCmt
@@ -195,6 +188,35 @@ let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
     | V407 => Process_407.astForCmt
   })(cmt);
 };
+
+/* let getSource = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let%try parsetree = getParsetree(~cacheLocation, ~compilerVersion, ~moduleName, ~uri);
+  if (isMl(uri)) {
+    switch (parsetree) {
+      | `Implementation(str) => Pprintast.structure(Format.str_formatter, str)
+      | `Interface(int) => Pprintast.signature(Format.str_formatter, int)
+    };
+    Ok(Format.flush_str_formatter())
+  } else {
+    switch (parsetree) {
+      | `Implementation(str) =>
+        Reason_toolchain.RE.print_implementation(Format.str_formatter, structure);
+      | `Interface(int) =>
+      ()
+    };
+    Ok("")
+  }
+};
+
+let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
+  /* (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.astForCmt
+    | V406 => Process_406.astForCmt
+    | V407 => Process_407.astForCmt
+  })(cmt); */
+  Ok("NVM")
+}; */
 
 let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");

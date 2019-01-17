@@ -47,6 +47,7 @@ type payload = Parsetree.payload =
   | PTyp of Parsetree.core_type  (* : T *)
   | PPat of Parsetree.pattern * Parsetree.expression option  (* ? P  or  ? P when E *)
 
+(* module Parsetree = Parsetree *)
 module Lexing = Lexing
 module Parser = Parser
 module Lexer = Lexer

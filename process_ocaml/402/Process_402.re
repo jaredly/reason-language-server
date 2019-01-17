@@ -20,7 +20,7 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   {file, extra}
 };
 
-let sourceForCmt = cmt => {
+/* let sourceForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) => {
@@ -32,18 +32,24 @@ let sourceForCmt = cmt => {
     Ok(Format.flush_str_formatter());
   | _ => Error("Not a well-typed implementation")
   }
-};
+}; */
+
+let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_402, Migrate_parsetree.OCaml_407);
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) => {
-    Printast.implementation(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
-    Ok(Format.flush_str_formatter());
+    let structure: Migrate_parsetree.OCaml_402.Ast.Parsetree.structure = Obj.magic(Untypeast.untype_structure(structure));
+    Ok(`Implementation(Convert.copy_structure(structure)))
+    /* Printast.implementation(Stdlib.Format.str_formatter, Convert.copy_structure(structure));
+    Ok(Format.flush_str_formatter()); */
   }
   | Interface(signature) =>
-    Printast.interface(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
-    Ok(Format.flush_str_formatter());
+    let signature: Migrate_parsetree.OCaml_402.Ast.Parsetree.signature = Obj.magic(Untypeast.untype_signature(signature));
+    Ok(`Interface(Convert.copy_signature(signature)))
+    /* Printast.interface(Stdlib.Format.str_formatter, signature);
+    Ok(Format.flush_str_formatter()); */
   | _ => Error("Not a well-typed implementation")
   }
 };

@@ -651,13 +651,35 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
-    let%try source = AsYouType.getSource(
+    let%try parsetree = AsYouType.getParsetree(
       ~uri,
       ~moduleName=file.moduleName,
       ~cacheLocation=package.tmpPath,
       ~compilerVersion=package.compilerVersion,
       );
-    let source = State.isMl(uri) ? source : switch (package.refmtPath) {
+    if (State.isMl(uri)) {
+      switch (parsetree) {
+        | `Implementation(str) => Pprintast.structure(Format.str_formatter, str)
+        | `Interface(int) => Pprintast.signature(Format.str_formatter, int)
+      };
+    } else {
+      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_404);
+      switch (parsetree) {
+      | `Implementation(str) =>
+        Reason_toolchain.RE.print_implementation_with_comments(
+          Format.str_formatter,
+          (Convert.copy_structure(str), []),
+        )
+      | `Interface(int) =>
+        Reason_toolchain.RE.print_interface_with_comments(
+          Format.str_formatter,
+          (Convert.copy_signature(int), []),
+        )
+      };
+    };
+    let source = Format.flush_str_formatter();
+    
+    /* let source = State.isMl(uri) ? source : switch (package.refmtPath) {
       | None => source
       | Some(refmt) =>
         let interface = Utils.endsWith(uri, "i");
@@ -665,7 +687,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           | RResult.Error(_) => source
           | Ok(s) => s
         }
-    };
+    }; */
     Ok((state, Json.String(source)))
   }),
 
@@ -673,12 +695,16 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (uri, pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
     let%try (file, extra) = State.fileForUri(state, ~package, uri);
-    let%try source = AsYouType.getAst(
+    let%try parsetree = AsYouType.getParsetree(
       ~uri,
       ~moduleName=file.moduleName,
       ~cacheLocation=package.tmpPath,
       ~compilerVersion=package.compilerVersion,
       );
-    Ok((state, Json.String(source)))
+      switch (parsetree) {
+        | `Implementation(str) => Printast.implementation(Format.str_formatter, str)
+        | `Interface(int) => Printast.interface(Format.str_formatter, int)
+      };
+    Ok((state, Json.String(Format.flush_str_formatter())))
   }),
 ];
