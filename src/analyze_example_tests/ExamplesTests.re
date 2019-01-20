@@ -23,9 +23,12 @@ let checkExampleProject = (rootPath, sourcePaths) => {
         | Error(message) =>
           print_endline("  Invalid compilation result: " ++ message);
           [`FileFail(uri, message), ...failures]
-        | Ok(_) =>
+        | Ok(Success(_)) =>
           print_endline("  Good: " ++ uri);
           failures
+        | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
+          print_endline("  Error compiling: " ++ uri);
+          [`FileFail(uri, message)]
       }
     }
   })

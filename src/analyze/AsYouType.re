@@ -233,9 +233,10 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     | V406 => Process_406.fullForCmt
     | V407 => Process_407.fullForCmt
   })(~moduleName, ~allLocations);
+  let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
+  try (Unix.unlink(cmtPath)) { | _ => ()};
   switch (runBsc(~basePath, ~interface, ~reasonFormat, ~command="-c", compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
-      let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
@@ -256,8 +257,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       }
     }
     | Ok((lines, error)) => {
-      let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
-      let%try_wrap full = fullForCmt(cmt, uri, x => x);
+      let%try_wrap full = fullForCmt(cmtPath, uri, x => x);
       Success(String.concat("\n", lines @ error), full)
     }
   }
