@@ -454,7 +454,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
   let buildCommand = switch (pkgMgr) {
-    | Esy =>
+    | Esy(_) =>
       Some(("esy", projectRoot))
     | Opam(switchPrefix) =>
       if (Files.exists(switchPrefix /+ "bin" /+ "dune")) {
