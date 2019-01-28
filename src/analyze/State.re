@@ -110,10 +110,15 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
 };
 
 let escapePpxFlag = flag => {
-  let parts = Utils.split_on_char(' ', flag);
-  switch(parts) {
-    | ["-ppx", ...ppx] => "-ppx " ++ (String.concat(" ", ppx) |> Filename.quote)
-    | _ => flag
+  /* ppx escaping not supported on windows yet */
+  if (Sys.os_type == "Win32") {
+    flag
+  } else {
+    let parts = Utils.split_on_char(' ', flag);
+    switch(parts) {
+      | ["-ppx", ...ppx] => "-ppx " ++ (String.concat(" ", ppx) |> Filename.quote)
+      | _ => flag
+    }
   }
 };
 
