@@ -315,7 +315,13 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
     }
   };
 
-  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
+  /* `Filename.dirname` strips the current path segment even if it's a
+   * directory, which means it would disallow projects where the source files
+   * are at the toplevel, i.e. co-located with the e.g. `dune-project` file.
+   */
+  let%try projectRoot = findJbuilderProjectRoot(
+    Sys.is_directory(rootPath) ? rootPath : Filename.dirname(rootPath)
+  );
   Log.log("=== Project root: " ++ projectRoot);
 
   let%try (pkgMgr, buildSystem) = switch overrideBuildSystem {
