@@ -362,7 +362,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   let rel = Files.relpath(projectRoot, rootPath);
   let compiledBase = switch packageName {
     | `NoName => buildDir /+ "default" /+ rel
-    | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs"
+    | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte"
     | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs"
   };
   let libraryName = switch packageName {
@@ -414,7 +414,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
         | _ => Error("Not a library")
       };
       let rel = Files.relpath(projectRoot, otherPath);
-      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
+      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte";
       Log.log("Found " ++ libraryName ++ " defined in " ++ jbuildPath);
       Log.log("Compiled base: " ++ compiledBase);
       Ok((compiledBase, FindFiles.collectFiles(~compiledTransform=modName => {

@@ -3,7 +3,7 @@
 	"description": "IDE & Syntax support for Reason/OCaml",
 	"author": "Jared Forsyth",
 	"license": "ISC",
-	"version": "1.5.1",
+	"version": "1.5.2",
 	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
