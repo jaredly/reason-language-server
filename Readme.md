@@ -101,6 +101,10 @@ Useful if you're developing the language server itself.
 - `reloadOnChange` - reload the server when the binary is updated (bool)
 - `show_debug_errors` - pipe the server's stderr into the output pane (bool)
 
+### Atom
+
+Install https://atom.io/packages/ide-reason
+
 ### Emacs
 
 _TODO_ people have gotten it to work with emacs, but I don't know the steps.
