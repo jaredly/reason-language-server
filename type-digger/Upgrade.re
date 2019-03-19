@@ -223,7 +223,11 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
     | Some(expr) => expr
     | None =>
       let body =
-        if (lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)) {
+        if (
+          lockedDeep[version - 1]->Hashtbl.find(source) == lockedDeep[version]->Hashtbl.find(source)
+          &&
+          argNames == []
+        ) {
           %expr
           _input_data;
         } else {
@@ -255,6 +259,13 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
       inner
     )
   );
+  /* TODO  */
+  let functionType = argNames == [] ? functionType : {
+    Typ.poly(
+      argNames->Belt.List.map(name => [name, name ++ "_migrated"])->Belt.List.toArray->Belt.List.concatMany->Belt.List.map(Location.mknoloc),
+      functionType
+    )
+  };
 
   Vb.mk(
     Pat.var(mknoloc(boundName)),

@@ -1,3 +1,4 @@
+[@@@ocaml.warning "-34"]
 module Version1 =
   struct
     type _Analyze__TopTypes__moduleName = string
@@ -240,23 +241,18 @@ module Version1 =
            match list with
            | ((Json.Array (items))[@explicit_arity ]) ->
                let transformer = deserialize_Parsetree____attribute in
-               let rec loop items =
+               let rec loop collected items =
                  match items with
-                 | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                 | [] -> ((Belt.Result.Ok ((Belt.List.reverse collected)))
+                     [@explicit_arity ])
                  | one::rest ->
                      (match transformer one with
                       | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                           ((Belt.Result.Error (("list item" :: error)))
                           [@explicit_arity ])
                       | ((Belt.Result.Ok (value))[@explicit_arity ]) ->
-                          (match loop rest with
-                           | ((Belt.Result.Error (error))[@explicit_arity ])
-                               -> ((Belt.Result.Error (error))
-                               [@explicit_arity ])
-                           | ((Belt.Result.Ok (rest))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok ((value :: rest)))
-                               [@explicit_arity ]))) in
-               loop items
+                          loop (value :: collected) rest) in
+               loop [] items
            | _ -> ((Belt.Result.Error (["expected an array"]))
                [@explicit_arity ])) value
     and (deserialize_Parsetree____core_type :
@@ -392,9 +388,11 @@ module Version1 =
                               | _ ->
                                   ((Belt.Result.Error (["Expected array"]))
                                   [@explicit_arity ]) in
-                            let rec loop items =
+                            let rec loop collected items =
                               match items with
-                              | [] -> ((Belt.Result.Ok ([]))
+                              | [] ->
+                                  ((Belt.Result.Ok
+                                      ((Belt.List.reverse collected)))
                                   [@explicit_arity ])
                               | one::rest ->
                                   (match transformer one with
@@ -405,17 +403,8 @@ module Version1 =
                                        [@explicit_arity ])
                                    | ((Belt.Result.Ok
                                        (value))[@explicit_arity ]) ->
-                                       (match loop rest with
-                                        | ((Belt.Result.Error
-                                            (error))[@explicit_arity ]) ->
-                                            ((Belt.Result.Error (error))
-                                            [@explicit_arity ])
-                                        | ((Belt.Result.Ok
-                                            (rest))[@explicit_arity ]) ->
-                                            ((Belt.Result.Ok
-                                                ((value :: rest)))
-                                            [@explicit_arity ]))) in
-                            loop items
+                                       loop (value :: collected) rest) in
+                            loop [] items
                         | _ -> ((Belt.Result.Error (["expected an array"]))
                             [@explicit_arity ])) arg0
                with
@@ -472,11 +461,13 @@ module Version1 =
                                                      let transformer =
                                                        deserialize_SharedTypes__SimpleType__expr
                                                          sourceTransformer in
-                                                     let rec loop items =
+                                                     let rec loop collected
+                                                       items =
                                                        match items with
                                                        | [] ->
                                                            ((Belt.Result.Ok
-                                                               ([]))
+                                                               ((Belt.List.reverse
+                                                                   collected)))
                                                            [@explicit_arity ])
                                                        | one::rest ->
                                                            (match transformer
@@ -498,29 +489,11 @@ module Version1 =
                                                                 [@explicit_arity
                                                                   ])
                                                                 ->
-                                                                (match 
-                                                                   loop rest
-                                                                 with
-                                                                 | ((Belt.Result.Error
-                                                                    (error))
-                                                                    [@explicit_arity
-                                                                    ]) ->
-                                                                    ((
-                                                                    Belt.Result.Error
-                                                                    (error))
-                                                                    [@explicit_arity
-                                                                    ])
-                                                                 | ((Belt.Result.Ok
-                                                                    (rest))
-                                                                    [@explicit_arity
-                                                                    ]) ->
-                                                                    ((
-                                                                    Belt.Result.Ok
-                                                                    ((value
-                                                                    :: rest)))
-                                                                    [@explicit_arity
-                                                                    ]))) in
-                                                     loop items
+                                                                loop (value
+                                                                  ::
+                                                                  collected)
+                                                                  rest) in
+                                                     loop [] items
                                                  | _ ->
                                                      ((Belt.Result.Error
                                                          (["expected an array"]))
@@ -557,9 +530,11 @@ module Version1 =
                               | _ ->
                                   ((Belt.Result.Error (["Expected array"]))
                                   [@explicit_arity ]) in
-                            let rec loop items =
+                            let rec loop collected items =
                               match items with
-                              | [] -> ((Belt.Result.Ok ([]))
+                              | [] ->
+                                  ((Belt.Result.Ok
+                                      ((Belt.List.reverse collected)))
                                   [@explicit_arity ])
                               | one::rest ->
                                   (match transformer one with
@@ -570,17 +545,8 @@ module Version1 =
                                        [@explicit_arity ])
                                    | ((Belt.Result.Ok
                                        (value))[@explicit_arity ]) ->
-                                       (match loop rest with
-                                        | ((Belt.Result.Error
-                                            (error))[@explicit_arity ]) ->
-                                            ((Belt.Result.Error (error))
-                                            [@explicit_arity ])
-                                        | ((Belt.Result.Ok
-                                            (rest))[@explicit_arity ]) ->
-                                            ((Belt.Result.Ok
-                                                ((value :: rest)))
-                                            [@explicit_arity ]))) in
-                            loop items
+                                       loop (value :: collected) rest) in
+                            loop [] items
                         | _ -> ((Belt.Result.Error (["expected an array"]))
                             [@explicit_arity ])) arg0
                with
@@ -641,9 +607,11 @@ module Version1 =
                                   let transformer =
                                     deserialize_SharedTypes__SimpleType__expr
                                       sourceTransformer in
-                                  let rec loop items =
+                                  let rec loop collected items =
                                     match items with
-                                    | [] -> ((Belt.Result.Ok ([]))
+                                    | [] ->
+                                        ((Belt.Result.Ok
+                                            ((Belt.List.reverse collected)))
                                         [@explicit_arity ])
                                     | one::rest ->
                                         (match transformer one with
@@ -654,19 +622,8 @@ module Version1 =
                                              [@explicit_arity ])
                                          | ((Belt.Result.Ok
                                              (value))[@explicit_arity ]) ->
-                                             (match loop rest with
-                                              | ((Belt.Result.Error
-                                                  (error))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Error (error))
-                                                  [@explicit_arity ])
-                                              | ((Belt.Result.Ok
-                                                  (rest))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Ok
-                                                      ((value :: rest)))
-                                                  [@explicit_arity ]))) in
-                                  loop items
+                                             loop (value :: collected) rest) in
+                                  loop [] items
                               | _ ->
                                   ((Belt.Result.Error (["expected an array"]))
                                   [@explicit_arity ])) json
@@ -727,9 +684,11 @@ module Version1 =
                             let transformer =
                               deserialize_SharedTypes__SimpleType__expr
                                 sourceTransformer in
-                            let rec loop items =
+                            let rec loop collected items =
                               match items with
-                              | [] -> ((Belt.Result.Ok ([]))
+                              | [] ->
+                                  ((Belt.Result.Ok
+                                      ((Belt.List.reverse collected)))
                                   [@explicit_arity ])
                               | one::rest ->
                                   (match transformer one with
@@ -740,17 +699,8 @@ module Version1 =
                                        [@explicit_arity ])
                                    | ((Belt.Result.Ok
                                        (value))[@explicit_arity ]) ->
-                                       (match loop rest with
-                                        | ((Belt.Result.Error
-                                            (error))[@explicit_arity ]) ->
-                                            ((Belt.Result.Error (error))
-                                            [@explicit_arity ])
-                                        | ((Belt.Result.Ok
-                                            (rest))[@explicit_arity ]) ->
-                                            ((Belt.Result.Ok
-                                                ((value :: rest)))
-                                            [@explicit_arity ]))) in
-                            loop items
+                                       loop (value :: collected) rest) in
+                            loop [] items
                         | _ -> ((Belt.Result.Error (["expected an array"]))
                             [@explicit_arity ])) arg1
                with
@@ -771,9 +721,11 @@ module Version1 =
                             let transformer =
                               deserialize_SharedTypes__SimpleType__expr
                                 sourceTransformer in
-                            let rec loop items =
+                            let rec loop collected items =
                               match items with
-                              | [] -> ((Belt.Result.Ok ([]))
+                              | [] ->
+                                  ((Belt.Result.Ok
+                                      ((Belt.List.reverse collected)))
                                   [@explicit_arity ])
                               | one::rest ->
                                   (match transformer one with
@@ -784,17 +736,8 @@ module Version1 =
                                        [@explicit_arity ])
                                    | ((Belt.Result.Ok
                                        (value))[@explicit_arity ]) ->
-                                       (match loop rest with
-                                        | ((Belt.Result.Error
-                                            (error))[@explicit_arity ]) ->
-                                            ((Belt.Result.Error (error))
-                                            [@explicit_arity ])
-                                        | ((Belt.Result.Ok
-                                            (rest))[@explicit_arity ]) ->
-                                            ((Belt.Result.Ok
-                                                ((value :: rest)))
-                                            [@explicit_arity ]))) in
-                            loop items
+                                       loop (value :: collected) rest) in
+                            loop [] items
                         | _ -> ((Belt.Result.Error (["expected an array"]))
                             [@explicit_arity ])) arg0
                with
@@ -885,9 +828,11 @@ module Version1 =
                                        ((Belt.Result.Error
                                            (["Expected array"]))
                                        [@explicit_arity ]) in
-                                 let rec loop items =
+                                 let rec loop collected items =
                                    match items with
-                                   | [] -> ((Belt.Result.Ok ([]))
+                                   | [] ->
+                                       ((Belt.Result.Ok
+                                           ((Belt.List.reverse collected)))
                                        [@explicit_arity ])
                                    | one::rest ->
                                        (match transformer one with
@@ -898,19 +843,8 @@ module Version1 =
                                             [@explicit_arity ])
                                         | ((Belt.Result.Ok
                                             (value))[@explicit_arity ]) ->
-                                            (match loop rest with
-                                             | ((Belt.Result.Error
-                                                 (error))[@explicit_arity ])
-                                                 ->
-                                                 ((Belt.Result.Error (error))
-                                                 [@explicit_arity ])
-                                             | ((Belt.Result.Ok
-                                                 (rest))[@explicit_arity ])
-                                                 ->
-                                                 ((Belt.Result.Ok
-                                                     ((value :: rest)))
-                                                 [@explicit_arity ]))) in
-                                 loop items
+                                            loop (value :: collected) rest) in
+                                 loop [] items
                              | _ ->
                                  ((Belt.Result.Error (["expected an array"]))
                                  [@explicit_arity ])) arg0
@@ -1078,9 +1012,11 @@ module Version1 =
                                         [@explicit_arity ])
                                     | _ -> ((Error (["epected a string"]))
                                         [@explicit_arity ]) in
-                                  let rec loop items =
+                                  let rec loop collected items =
                                     match items with
-                                    | [] -> ((Belt.Result.Ok ([]))
+                                    | [] ->
+                                        ((Belt.Result.Ok
+                                            ((Belt.List.reverse collected)))
                                         [@explicit_arity ])
                                     | one::rest ->
                                         (match transformer one with
@@ -1091,19 +1027,8 @@ module Version1 =
                                              [@explicit_arity ])
                                          | ((Belt.Result.Ok
                                              (value))[@explicit_arity ]) ->
-                                             (match loop rest with
-                                              | ((Belt.Result.Error
-                                                  (error))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Error (error))
-                                                  [@explicit_arity ])
-                                              | ((Belt.Result.Ok
-                                                  (rest))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Ok
-                                                      ((value :: rest)))
-                                                  [@explicit_arity ]))) in
-                                  loop items
+                                             loop (value :: collected) rest) in
+                                  loop [] items
                               | _ ->
                                   ((Belt.Result.Error (["expected an array"]))
                                   [@explicit_arity ])) json
@@ -1329,9 +1254,11 @@ module Version1 =
                             | ((Json.Array (items))[@explicit_arity ]) ->
                                 let transformer =
                                   deserialize_TypeMapSerde__Config____entry in
-                                let rec loop items =
+                                let rec loop collected items =
                                   match items with
-                                  | [] -> ((Belt.Result.Ok ([]))
+                                  | [] ->
+                                      ((Belt.Result.Ok
+                                          ((Belt.List.reverse collected)))
                                       [@explicit_arity ])
                                   | one::rest ->
                                       (match transformer one with
@@ -1342,18 +1269,8 @@ module Version1 =
                                            [@explicit_arity ])
                                        | ((Belt.Result.Ok
                                            (value))[@explicit_arity ]) ->
-                                           (match loop rest with
-                                            | ((Belt.Result.Error
-                                                (error))[@explicit_arity ])
-                                                ->
-                                                ((Belt.Result.Error (error))
-                                                [@explicit_arity ])
-                                            | ((Belt.Result.Ok
-                                                (rest))[@explicit_arity ]) ->
-                                                ((Belt.Result.Ok
-                                                    ((value :: rest)))
-                                                [@explicit_arity ]))) in
-                                loop items
+                                           loop (value :: collected) rest) in
+                                loop [] items
                             | _ ->
                                 ((Belt.Result.Error (["expected an array"]))
                                 [@explicit_arity ])) json
@@ -1372,9 +1289,11 @@ module Version1 =
                            | ((Json.Array (items))[@explicit_arity ]) ->
                                let transformer =
                                  deserialize_TypeMapSerde__Config____custom in
-                               let rec loop items =
+                               let rec loop collected items =
                                  match items with
-                                 | [] -> ((Belt.Result.Ok ([]))
+                                 | [] ->
+                                     ((Belt.Result.Ok
+                                         ((Belt.List.reverse collected)))
                                      [@explicit_arity ])
                                  | one::rest ->
                                      (match transformer one with
@@ -1385,17 +1304,8 @@ module Version1 =
                                           [@explicit_arity ])
                                       | ((Belt.Result.Ok
                                           (value))[@explicit_arity ]) ->
-                                          (match loop rest with
-                                           | ((Belt.Result.Error
-                                               (error))[@explicit_arity ]) ->
-                                               ((Belt.Result.Error (error))
-                                               [@explicit_arity ])
-                                           | ((Belt.Result.Ok
-                                               (rest))[@explicit_arity ]) ->
-                                               ((Belt.Result.Ok
-                                                   ((value :: rest)))
-                                               [@explicit_arity ]))) in
-                               loop items
+                                          loop (value :: collected) rest) in
+                               loop [] items
                            | _ ->
                                ((Belt.Result.Error (["expected an array"]))
                                [@explicit_arity ])) json
@@ -1435,9 +1345,11 @@ module Version1 =
                                 | ((Json.Array (items))[@explicit_arity ]) ->
                                     let transformer =
                                       deserialize_TypeMapSerde__Config__Locked__lockedEntry in
-                                    let rec loop items =
+                                    let rec loop collected items =
                                       match items with
-                                      | [] -> ((Belt.Result.Ok ([]))
+                                      | [] ->
+                                          ((Belt.Result.Ok
+                                              ((Belt.List.reverse collected)))
                                           [@explicit_arity ])
                                       | one::rest ->
                                           (match transformer one with
@@ -1448,21 +1360,8 @@ module Version1 =
                                                [@explicit_arity ])
                                            | ((Belt.Result.Ok
                                                (value))[@explicit_arity ]) ->
-                                               (match loop rest with
-                                                | ((Belt.Result.Error
-                                                    (error))[@explicit_arity
-                                                              ])
-                                                    ->
-                                                    ((Belt.Result.Error
-                                                        (error))
-                                                    [@explicit_arity ])
-                                                | ((Belt.Result.Ok
-                                                    (rest))[@explicit_arity ])
-                                                    ->
-                                                    ((Belt.Result.Ok
-                                                        ((value :: rest)))
-                                                    [@explicit_arity ]))) in
-                                    loop items
+                                               loop (value :: collected) rest) in
+                                    loop [] items
                                 | _ ->
                                     ((Belt.Result.Error
                                         (["expected an array"]))
@@ -1557,9 +1456,11 @@ module Version1 =
                                       [@explicit_arity ])
                                   | _ -> ((Error (["epected a string"]))
                                       [@explicit_arity ]) in
-                                let rec loop items =
+                                let rec loop collected items =
                                   match items with
-                                  | [] -> ((Belt.Result.Ok ([]))
+                                  | [] ->
+                                      ((Belt.Result.Ok
+                                          ((Belt.List.reverse collected)))
                                       [@explicit_arity ])
                                   | one::rest ->
                                       (match transformer one with
@@ -1570,18 +1471,8 @@ module Version1 =
                                            [@explicit_arity ])
                                        | ((Belt.Result.Ok
                                            (value))[@explicit_arity ]) ->
-                                           (match loop rest with
-                                            | ((Belt.Result.Error
-                                                (error))[@explicit_arity ])
-                                                ->
-                                                ((Belt.Result.Error (error))
-                                                [@explicit_arity ])
-                                            | ((Belt.Result.Ok
-                                                (rest))[@explicit_arity ]) ->
-                                                ((Belt.Result.Ok
-                                                    ((value :: rest)))
-                                                [@explicit_arity ]))) in
-                                loop items
+                                           loop (value :: collected) rest) in
+                                loop [] items
                             | _ ->
                                 ((Belt.Result.Error (["expected an array"]))
                                 [@explicit_arity ])) json
@@ -1643,9 +1534,11 @@ module Version1 =
                               fun array ->
                                 match array with
                                 | ((Json.Array (items))[@explicit_arity ]) ->
-                                    let rec loop items =
+                                    let rec loop collected items =
                                       match items with
-                                      | [] -> ((Belt.Result.Ok ([]))
+                                      | [] ->
+                                          ((Belt.Result.Ok
+                                              ((Belt.List.reverse collected)))
                                           [@explicit_arity ])
                                       | one::rest ->
                                           (match transformer one with
@@ -1657,21 +1550,8 @@ module Version1 =
                                                [@explicit_arity ])
                                            | ((Belt.Result.Ok
                                                (value))[@explicit_arity ]) ->
-                                               (match loop rest with
-                                                | ((Belt.Result.Error
-                                                    (error))[@explicit_arity
-                                                              ])
-                                                    ->
-                                                    ((Belt.Result.Error
-                                                        (error))
-                                                    [@explicit_arity ])
-                                                | ((Belt.Result.Ok
-                                                    (rest))[@explicit_arity ])
-                                                    ->
-                                                    ((Belt.Result.Ok
-                                                        ((value :: rest)))
-                                                    [@explicit_arity ]))) in
-                                    (match loop items with
+                                               loop (value :: collected) rest) in
+                                    (match loop [] items with
                                      | ((Belt.Result.Error
                                          (error))[@explicit_arity ]) ->
                                          ((Belt.Result.Error (error))
@@ -1722,9 +1602,11 @@ module Version1 =
                                         [@explicit_arity ])
                                     | _ -> ((Error (["epected a string"]))
                                         [@explicit_arity ]) in
-                                  let rec loop items =
+                                  let rec loop collected items =
                                     match items with
-                                    | [] -> ((Belt.Result.Ok ([]))
+                                    | [] ->
+                                        ((Belt.Result.Ok
+                                            ((Belt.List.reverse collected)))
                                         [@explicit_arity ])
                                     | one::rest ->
                                         (match transformer one with
@@ -1735,19 +1617,8 @@ module Version1 =
                                              [@explicit_arity ])
                                          | ((Belt.Result.Ok
                                              (value))[@explicit_arity ]) ->
-                                             (match loop rest with
-                                              | ((Belt.Result.Error
-                                                  (error))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Error (error))
-                                                  [@explicit_arity ])
-                                              | ((Belt.Result.Ok
-                                                  (rest))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Ok
-                                                      ((value :: rest)))
-                                                  [@explicit_arity ]))) in
-                                  loop items
+                                             loop (value :: collected) rest) in
+                                  loop [] items
                               | _ ->
                                   ((Belt.Result.Error (["expected an array"]))
                                   [@explicit_arity ])) arg1
@@ -2202,6 +2073,7 @@ module Version1 =
           | NotFound -> Json.Array [Json.String "NotFound"]
   end
 let currentVersion = 1
+module Current = Version1
 let parseVersion json =
   match json with
   | ((Json.Object (items))[@explicit_arity ]) ->
