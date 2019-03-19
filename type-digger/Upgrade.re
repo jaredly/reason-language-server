@@ -50,12 +50,12 @@ let rec migrateExpr = (variable, expr) => {
   switch expr {
   | Reference(TypeMap.DigTypes.Public((moduleName, modulePath, name)), args) =>
     let%opt argMappers = args->mapAll(arg => {
-    let%opt mapper = migrateExpr([%expr arg], arg);
+      let%opt mapper = migrateExpr([%expr arg], arg);
       Some((Nolabel, [%expr arg => [%e mapper]]))
     });
     Some(Exp.apply(
       expIdent(Lident(migrateName(~moduleName, ~modulePath, ~name))),
-      argMappers @ [(Nolabel, variable)]
+      argMappers->Belt.List.reverse @ [(Nolabel, variable)]
     ))
   | Reference(Builtin("list"), [arg]) =>
     let%opt converter = migrateExpr([%expr _item], arg);
