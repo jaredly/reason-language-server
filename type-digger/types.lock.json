@@ -17,6 +17,11 @@
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "name": "simpleDeclaration"
+        },
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
           "name": "simpleExpr"
         }
       ],
@@ -1339,6 +1344,61 @@
                         ]
                       ],
                       []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "simpleDeclaration"
+          ],
+          [
+            [],
+            {
+              "name": "simpleDeclaration",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "SharedTypes",
+                      ["SimpleType"],
+                      "declaration"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "typeSource"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMap__DigTypes",
+                              [],
+                              "shortReference"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
                     ]
                   ]
                 ]

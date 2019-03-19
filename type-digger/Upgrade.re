@@ -93,7 +93,7 @@ let orLog = (what, message) => {
   what
 };
 
-let migrateBetween = (~version as _, ~lockedDeep as _, variable, _name, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName) => {
+let migrateBetween = (~version as _, ~lockedDeep as _, variable, _name, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName, ~modulePath) => {
   switch (thisType.body, prevType.body) {
   | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
   | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
@@ -149,8 +149,11 @@ let migrateBetween = (~version as _, ~lockedDeep as _, variable, _name, thisType
     });
     Some(Exp.match(variable, cases));
   }
+  | (Abstract, Abstract) => Some(variable)
   | _ => {
-    print_endline("Bailed out");
+    print_endline("Bailed out migrating between " ++ String.concat("-", modulePath));
+    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpDecl(thisType)));
+    print_endline(Vendor.Json.stringify(TypeMapSerde.dumpDecl(prevType)));
     None
   }
   };
@@ -243,6 +246,7 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
               pastDecl,
               ~namedMigrateAttributes,
               ~prevTypeName,
+              ~modulePath,
             )
           ) {
           | None => failwith("Must provide migrater. Cannot migrate automatically: " ++ name)

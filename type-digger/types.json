@@ -16,6 +16,11 @@
     },
     {
       "file": "type-digger/type-map-serde/Config.re",
+      "type": "simpleDeclaration",
+      "history": false
+    },
+    {
+      "file": "type-digger/type-map-serde/Config.re",
       "type": "simpleExpr",
       "history": false
     }

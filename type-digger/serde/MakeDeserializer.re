@@ -205,8 +205,25 @@ let makeResult = t =>
     ],
   );
 
+let rec makeFunctionType = (base, inputType, vbls) =>
+  switch (vbls) {
+  | [] => base
+  | [vbl, ...rest] =>
+    Typ.arrow(
+      Nolabel,
+      Typ.arrow(
+        Nolabel,
+        inputType,
+        makeResult(vbl),
+      ),
+      makeFunctionType(base, inputType, rest),
+    )
+  };
+
 let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
+  let asTypeVariables = 
+          decl.variables->makeTypArgs->Belt.List.map(Typ.var);
   let typ =
     Typ.arrow(
       Nolabel,
@@ -214,25 +231,11 @@ let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
       makeResult(
         Typ.constr(
           Location.mknoloc(lident),
-          decl.variables->makeTypArgs->Belt.List.map(Typ.var),
+          asTypeVariables
         ),
       ),
     );
-  let rec makeFunctionType = (i, vbls) =>
-    switch (vbls) {
-    | [] => typ
-    | [_, ...rest] =>
-      Typ.arrow(
-        Nolabel,
-        Typ.arrow(
-          Nolabel,
-          transformer.inputType,
-          makeResult(Typ.var("arg" ++ string_of_int(i))),
-        ),
-        makeFunctionType(i + 1, rest),
-      )
-    };
-  let typ = makeFunctionType(0, decl.variables);
+  let typ = makeFunctionType(typ, transformer.inputType, asTypeVariables);
   let typ =
     switch (decl.variables) {
     | [] => typ
