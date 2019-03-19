@@ -1134,11 +1134,10 @@ module Version5 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____named:
-    'arg0.
-    (Js.Json.t => Belt.Result.t('arg0, list(string)), Js.Json.t) =>
-    Belt.Result.t(_Types__named('arg0), list(string))
-   =
-    (type arg0, aTransformer, record) =>
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Types__named(arg0), list(string)) =
+    (aTransformer, record) =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
         let inner = attr_contents => {
@@ -1458,11 +1457,10 @@ module Version6 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____named:
-    'arg0.
-    (Js.Json.t => Belt.Result.t('arg0, list(string)), Js.Json.t) =>
-    Belt.Result.t(_Types__named('arg0), list(string))
-   =
-    (type arg0, aTransformer, record) =>
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Types__named(arg0), list(string)) =
+    (aTransformer, record) =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
         let inner = attr_isClosed => {
@@ -1542,11 +1540,10 @@ module Version6 = {
       | _ => Belt.Result.Error(["Expected an array"])
       }
   and deserialize_Types____what:
-    'arg0.
-    (Js.Json.t => Belt.Result.t('arg0, list(string)), Js.Json.t) =>
-    Belt.Result.t(_Types__what('arg0), list(string))
-   =
-    (type arg0, aTransformer, constructor) =>
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Types__what(arg0), list(string)) =
+    (aTransformer, constructor) =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag, arg0|])
           when Js.Json.JSONString("Now") == Js.Json.classify(tag) =>
@@ -1806,11 +1803,10 @@ module Version7 = {
   and deserialize_Types____person = Version6.deserialize_Types____person
   and deserialize_Types____pet = Version6.deserialize_Types____pet
   and deserialize_Types____what:
-    'arg0.
-    (Js.Json.t => Belt.Result.t('arg0, list(string)), Js.Json.t) =>
-    Belt.Result.t(_Types__what('arg0), list(string))
-   =
-    (type arg0, aTransformer, constructor) =>
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Types__what(arg0), list(string)) =
+    (aTransformer, constructor) =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag, arg0, arg1|])
           when Js.Json.JSONString("Now") == Js.Json.classify(tag) =>

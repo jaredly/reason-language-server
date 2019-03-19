@@ -187,10 +187,7 @@ let declInner = (~renames, transformer, typeLident, {variables, body}, fullName)
       )), loop(rest))
   };
 
-  makeTypArgs(variables)
-  ->Belt.List.reduce(loop(variables), (body, arg) =>
-      Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
-    );
+    loop(variables)
 };
 
 let makeResult = t =>
@@ -220,21 +217,24 @@ let rec makeFunctionType = (base, inputType, vbls) =>
     )
   };
 
+let makeArrow = (inputType, lident, variables) => {
+  Typ.arrow(
+    Nolabel,
+    inputType,
+    makeResult(
+      Typ.constr(
+        Location.mknoloc(lident),
+        variables
+      ),
+    ),
+  );
+};
+
 let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let asTypeVariables = 
           decl.variables->makeTypArgs->Belt.List.map(Typ.var);
-  let typ =
-    Typ.arrow(
-      Nolabel,
-      transformer.inputType,
-      makeResult(
-        Typ.constr(
-          Location.mknoloc(lident),
-          asTypeVariables
-        ),
-      ),
-    );
+  let typ = makeArrow(transformer.inputType, lident, asTypeVariables);
   let typ = makeFunctionType(typ, transformer.inputType, asTypeVariables);
   let typ =
     switch (decl.variables) {
@@ -243,9 +243,32 @@ let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
     };
   let fullName = transformerName(~moduleName, ~modulePath, ~name);
 
+  let inner = declInner(~renames, transformer, lident, decl, fullName);
+
+  let inner = decl.variables == [] ? inner : {
+    let asTypeConstrs =
+      decl.variables
+      ->makeTypArgs
+      ->Belt.List.map(name => Typ.constr(Location.mknoloc(Lident(name)), []));
+
+    let inner = Ast_helper.Exp.constraint_(
+      inner,
+      makeFunctionType(
+        makeArrow(transformer.inputType, lident, asTypeConstrs),
+        transformer.inputType, asTypeConstrs
+      )
+    );
+
+    makeTypArgs(decl.variables)
+    ->Belt.List.reduce(
+      inner, (body, arg) =>
+        Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
+      );
+  };
+
   Vb.mk(
     Pat.constraint_(Pat.var(Location.mknoloc(fullName)), typ),
-    declInner(~renames, transformer, lident, decl, fullName),
+    inner,
   );
 };
 
