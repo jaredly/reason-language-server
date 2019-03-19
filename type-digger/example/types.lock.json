@@ -1749,6 +1749,426 @@
           ]
         ]
       ]
+    },
+    {
+      "entries": [
+        {
+          "moduleName": "Types",
+          "modulePath": [],
+          "name": "household"
+        }
+      ],
+      "engineVersion": 1,
+      "typeMap": [
+        [
+          [
+            "Types",
+            [],
+            "household"
+          ],
+          [
+            [],
+            {
+              "name": "household",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "people",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              [],
+                              "person"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "pets",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              [],
+                              "pet"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "what",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          [],
+                          "what"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "visitors",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              [],
+                              "person"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "county",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          [],
+                          "named"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "int"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "named"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "rename.name",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = \"the name\""
+                ]
+              ]
+            ],
+            {
+              "name": "named",
+              "variables": [
+                [
+                  "Variable",
+                  "a"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "contents",
+                    [
+                      "Variable",
+                      "a"
+                    ]
+                  ],
+                  [
+                    "isClosed",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "bool"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "person"
+          ],
+          [
+            [],
+            {
+              "name": "person",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "age",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "coords",
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "float"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "pet"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "rename.Dog",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = \"a-cat\""
+                ]
+              ]
+            ],
+            {
+              "name": "pet",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Dog",
+                    [],
+                    null
+                  ],
+                  [
+                    "Cat",
+                    [],
+                    null
+                  ],
+                  [
+                    "Mouse",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "what"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "migrate.Now",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ =\n  fun ((Now a)[@explicit_arity ]) -> ((Now ((_migrator_a a), 5))\n    [@explicit_arity ])"
+                ]
+              ]
+            ],
+            {
+              "name": "what",
+              "variables": [
+                [
+                  "Variable",
+                  "a"
+                ]
+              ],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Now",
+                    [
+                      [
+                        "Variable",
+                        "a"
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "int"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ]
+      ]
     }
   ]
 }

@@ -70,6 +70,9 @@ module Version1 =
     and _TypeMapSerde__Config__serializableLockfile =
       _TypeMap__DigTypes__shortReference
         _TypeMapSerde__Config__Locked__lockfile
+    and _TypeMapSerde__Config__simpleExpr =
+      _TypeMap__DigTypes__shortReference _TypeMap__DigTypes__typeSource
+        _SharedTypes__SimpleType__expr
     and _TypeMapSerde__Config__t = TypeMapSerde__Config.t =
       {
       version: int ;
@@ -1178,6 +1181,14 @@ module Version1 =
       fun value ->
         (deserialize_TypeMapSerde__Config__Locked__lockfile
            deserialize_TypeMap__DigTypes____shortReference) value
+    and (deserialize_TypeMapSerde__Config____simpleExpr :
+      Json.t ->
+        (_TypeMapSerde__Config__simpleExpr, string list) Belt.Result.t)
+      =
+      fun value ->
+        (deserialize_SharedTypes__SimpleType__expr
+           (deserialize_TypeMap__DigTypes____typeSource
+              deserialize_TypeMap__DigTypes____shortReference)) value
     and (deserialize_TypeMapSerde__Config____t :
       Json.t -> (_TypeMapSerde__Config__t, string list) Belt.Result.t) =
       fun record ->
@@ -1954,6 +1965,12 @@ module Version1 =
       fun value ->
         (serialize_TypeMapSerde__Config__Locked__lockfile
            serialize_TypeMap__DigTypes____shortReference) value
+    and (serialize_TypeMapSerde__Config____simpleExpr :
+      _TypeMapSerde__Config__simpleExpr -> Json.t) =
+      fun value ->
+        (serialize_SharedTypes__SimpleType__expr
+           (serialize_TypeMap__DigTypes____typeSource
+              serialize_TypeMap__DigTypes____shortReference)) value
     and (serialize_TypeMapSerde__Config____t :
       _TypeMapSerde__Config__t -> Json.t) =
       fun record ->
@@ -2139,6 +2156,27 @@ and deserializeT data =
       (match version with
        | 1 ->
            (match Version1.deserialize_TypeMapSerde__Config____t data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
+let serializeSimpleExpr data =
+  wrapWithVersion currentVersion
+    (Version1.serialize_TypeMapSerde__Config____simpleExpr data)
+and deserializeSimpleExpr data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_TypeMapSerde__Config____simpleExpr
+                    data
+            with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))

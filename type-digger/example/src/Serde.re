@@ -1265,14 +1265,13 @@ module Version5 = {
       };
 };
 module Version6 = {
-  type _Types__household =
-    Types.household = {
-      people: list(_Types__person),
-      pets: list(_Types__pet),
-      what: _Types__what(string),
-      visitors: list(_Types__person),
-      county: _Types__named(int),
-    }
+  type _Types__household = {
+    people: list(_Types__person),
+    pets: list(_Types__pet),
+    what: _Types__what(string),
+    visitors: list(_Types__person),
+    county: _Types__named(int),
+  }
   and _Types__named('a) =
     Types.named('a) = {
       name: string,
@@ -1286,7 +1285,8 @@ module Version6 = {
       coords: (float, float),
     }
   and _Types__pet = Types.pet = | Dog | Cat | Mouse
-  and _Types__what('a) = Types.what('a) = | Now('a);
+  and _Types__what('a) =
+    | Now('a);
   let rec deserialize_Types____household:
     Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
     record =>
@@ -1556,6 +1556,286 @@ module Version6 = {
         | Error(error) => Error(["constructor argument 0", ...error])
         }
       | _ => Belt.Result.Error(["Expected an array"])
+      };
+  let rec migrate_Types____household:
+    Version5._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      let _converted_what =
+        (
+          household => Now("4"):
+            Version5._Types__household => _Types__what(string)
+        )(
+          _input_data,
+        );
+      let _converted_visitors =
+        (household => []: Version5._Types__household => list(_Types__person))(
+          _input_data,
+        );
+      let _converted_county =
+        migrate_Types____named(arg => arg, _input_data.county);
+      {
+        county: _converted_county,
+        visitors: _converted_visitors,
+        what: _converted_what,
+        pets: _converted_pets,
+        people: _converted_people,
+      };
+    }
+  and migrate_Types____named:
+    'a 'a_migrated.
+    ('a => 'a_migrated, Version5._Types__named('a)) =>
+    _Types__named('a_migrated)
+   =
+    (contentsMigrator, named) => {
+      name: named.name,
+      contents: contentsMigrator(named.contents),
+      isClosed: false,
+    }
+  and migrate_Types____person: Version5._Types__person => _Types__person =
+    _input_data => _input_data
+  and migrate_Types____pet: Version5._Types__pet => _Types__pet =
+    _input_data =>
+      switch (_input_data) {
+      | Dog(dogBreed) => Dog
+      | Cat => Cat
+      | Mouse => Mouse
+      };
+};
+module Version7 = {
+  type _Types__household =
+    Types.household = {
+      people: list(_Types__person),
+      pets: list(_Types__pet),
+      what: _Types__what(string),
+      visitors: list(_Types__person),
+      county: _Types__named(int),
+    }
+  and _Types__named('a) =
+    Types.named('a) = {
+      name: string,
+      contents: 'a,
+      isClosed: bool,
+    }
+  and _Types__person =
+    Types.person = {
+      name: string,
+      age: float,
+      coords: (float, float),
+    }
+  and _Types__pet = Types.pet = | Dog | Cat | Mouse
+  and _Types__what('a) = Types.what('a) = | Now('a, int);
+  let rec deserialize_Types____household:
+    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    record =>
+      switch (Js.Json.classify(record)) {
+      | JSONObject(dict) =>
+        let inner = attr_county => {
+          let inner = attr_visitors => {
+            let inner = attr_what => {
+              let inner = attr_pets => {
+                let inner = attr_people =>
+                  Belt.Result.Ok({
+                    people: attr_people,
+                    pets: attr_pets,
+                    what: attr_what,
+                    visitors: attr_visitors,
+                    county: attr_county,
+                  });
+                switch (Js.Dict.get(dict, "people")) {
+                | None => Belt.Result.Error(["No attribute people"])
+                | Some(json) =>
+                  switch (
+                    (
+                      list =>
+                        switch (Js.Json.classify(list)) {
+                        | JSONArray(items) =>
+                          let transformer = deserialize_Types____person;
+                          let rec loop = (i, collected, items) =>
+                            switch (items) {
+                            | [] =>
+                              Belt.Result.Ok(Belt.List.reverse(collected))
+                            | [one, ...rest] =>
+                              switch (transformer(one)) {
+                              | Belt.Result.Error(error) =>
+                                Belt.Result.Error([
+                                  "list element " ++ string_of_int(i),
+                                  ...error,
+                                ])
+                              | Belt.Result.Ok(value) =>
+                                loop(i + 1, [value, ...collected], rest)
+                              }
+                            };
+                          loop(0, [], Belt.List.fromArray(items));
+                        | _ => Belt.Result.Error(["expected an array"])
+                        }
+                    )(
+                      json,
+                    )
+                  ) {
+                  | Belt.Result.Error(error) =>
+                    Belt.Result.Error(["attribute people", ...error])
+                  | Ok(data) => inner(data)
+                  }
+                };
+              };
+              switch (Js.Dict.get(dict, "pets")) {
+              | None => Belt.Result.Error(["No attribute pets"])
+              | Some(json) =>
+                switch (
+                  (
+                    list =>
+                      switch (Js.Json.classify(list)) {
+                      | JSONArray(items) =>
+                        let transformer = deserialize_Types____pet;
+                        let rec loop = (i, collected, items) =>
+                          switch (items) {
+                          | [] =>
+                            Belt.Result.Ok(Belt.List.reverse(collected))
+                          | [one, ...rest] =>
+                            switch (transformer(one)) {
+                            | Belt.Result.Error(error) =>
+                              Belt.Result.Error([
+                                "list element " ++ string_of_int(i),
+                                ...error,
+                              ])
+                            | Belt.Result.Ok(value) =>
+                              loop(i + 1, [value, ...collected], rest)
+                            }
+                          };
+                        loop(0, [], Belt.List.fromArray(items));
+                      | _ => Belt.Result.Error(["expected an array"])
+                      }
+                  )(
+                    json,
+                  )
+                ) {
+                | Belt.Result.Error(error) =>
+                  Belt.Result.Error(["attribute pets", ...error])
+                | Ok(data) => inner(data)
+                }
+              };
+            };
+            switch (Js.Dict.get(dict, "what")) {
+            | None => Belt.Result.Error(["No attribute what"])
+            | Some(json) =>
+              switch (
+                (
+                  deserialize_Types____what(string =>
+                    switch (Js.Json.classify(string)) {
+                    | JSONString(string) => Belt.Result.Ok(string)
+                    | _ => Error(["expected a string"])
+                    }
+                  )
+                )(
+                  json,
+                )
+              ) {
+              | Belt.Result.Error(error) =>
+                Belt.Result.Error(["attribute what", ...error])
+              | Ok(data) => inner(data)
+              }
+            };
+          };
+          switch (Js.Dict.get(dict, "visitors")) {
+          | None => Belt.Result.Error(["No attribute visitors"])
+          | Some(json) =>
+            switch (
+              (
+                list =>
+                  switch (Js.Json.classify(list)) {
+                  | JSONArray(items) =>
+                    let transformer = deserialize_Types____person;
+                    let rec loop = (i, collected, items) =>
+                      switch (items) {
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
+                      | [one, ...rest] =>
+                        switch (transformer(one)) {
+                        | Belt.Result.Error(error) =>
+                          Belt.Result.Error([
+                            "list element " ++ string_of_int(i),
+                            ...error,
+                          ])
+                        | Belt.Result.Ok(value) =>
+                          loop(i + 1, [value, ...collected], rest)
+                        }
+                      };
+                    loop(0, [], Belt.List.fromArray(items));
+                  | _ => Belt.Result.Error(["expected an array"])
+                  }
+              )(
+                json,
+              )
+            ) {
+            | Belt.Result.Error(error) =>
+              Belt.Result.Error(["attribute visitors", ...error])
+            | Ok(data) => inner(data)
+            }
+          };
+        };
+        switch (Js.Dict.get(dict, "county")) {
+        | None => Belt.Result.Error(["No attribute county"])
+        | Some(json) =>
+          switch (
+            (
+              deserialize_Types____named(number =>
+                switch (Js.Json.classify(number)) {
+                | JSONNumber(number) => Belt.Result.Ok(int_of_float(number))
+                | _ => Error(["Expected a float"])
+                }
+              )
+            )(
+              json,
+            )
+          ) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error(["attribute county", ...error])
+          | Ok(data) => inner(data)
+          }
+        };
+      | _ => Belt.Result.Error(["Expected an object"])
+      }
+  and deserialize_Types____named = Version6.deserialize_Types____named
+  and deserialize_Types____person = Version6.deserialize_Types____person
+  and deserialize_Types____pet = Version6.deserialize_Types____pet
+  and deserialize_Types____what:
+    'arg0.
+    (Js.Json.t => Belt.Result.t('arg0, list(string)), Js.Json.t) =>
+    Belt.Result.t(_Types__what('arg0), list(string))
+   =
+    (type arg0, aTransformer, constructor) =>
+      switch (Js.Json.classify(constructor)) {
+      | JSONArray([|tag, arg0, arg1|])
+          when Js.Json.JSONString("Now") == Js.Json.classify(tag) =>
+        switch (
+          (
+            number =>
+              switch (Js.Json.classify(number)) {
+              | JSONNumber(number) => Belt.Result.Ok(int_of_float(number))
+              | _ => Error(["Expected a float"])
+              }
+          )(
+            arg1,
+          )
+        ) {
+        | Belt.Result.Ok(arg1) =>
+          switch (aTransformer(arg0)) {
+          | Belt.Result.Ok(arg0) =>
+            Belt.Result.Ok(
+              [@implicit_arity] Now(arg0, arg1): _Types__what(arg0),
+            )
+          | Error(error) => Error(["constructor argument 0", ...error])
+          }
+        | Error(error) => Error(["constructor argument 1", ...error])
+        }
+      | _ => Belt.Result.Error(["Expected an array"])
       }
   and serialize_Types____household: _Types__household => Js.Json.t =
     record =>
@@ -1658,11 +1938,15 @@ module Version6 = {
    =
     (aTransformer, constructor) =>
       switch (constructor) {
-      | Now(arg0) =>
-        Js.Json.array([|Js.Json.string("Now"), aTransformer(arg0)|])
+      | [@implicit_arity] Now(arg0, arg1) =>
+        Js.Json.array([|
+          Js.Json.string("Now"),
+          aTransformer(arg0),
+          (int => Js.Json.number(float_of_int(int)))(arg1),
+        |])
       };
   let rec migrate_Types____household:
-    Version5._Types__household => _Types__household =
+    Version6._Types__household => _Types__household =
     _input_data => {
       let _converted_people =
         (Belt.List.map(_input_data.people))(_item =>
@@ -1673,15 +1957,10 @@ module Version6 = {
           migrate_Types____pet(_item)
         );
       let _converted_what =
-        (
-          household => Now("4"):
-            Version5._Types__household => _Types__what(string)
-        )(
-          _input_data,
-        );
+        migrate_Types____what(arg => arg, _input_data.what);
       let _converted_visitors =
-        (household => []: Version5._Types__household => list(_Types__person))(
-          _input_data,
+        (Belt.List.map(_input_data.visitors))(_item =>
+          migrate_Types____person(_item)
         );
       let _converted_county =
         migrate_Types____named(arg => arg, _input_data.county);
@@ -1695,26 +1974,35 @@ module Version6 = {
     }
   and migrate_Types____named:
     'a 'a_migrated.
-    ('a => 'a_migrated, Version5._Types__named('a)) =>
+    ('a => 'a_migrated, Version6._Types__named('a)) =>
     _Types__named('a_migrated)
    =
-    (contentsMigrator, named) => {
-      name: named.name,
-      contents: contentsMigrator(named.contents),
-      isClosed: false,
+    (_migrator_a, _input_data) => {
+      let _converted_name = _input_data.name;
+      let _converted_contents = _migrator_a(_input_data.contents);
+      let _converted_isClosed = _input_data.isClosed;
+      {
+        isClosed: _converted_isClosed,
+        contents: _converted_contents,
+        name: _converted_name,
+      };
     }
-  and migrate_Types____person: Version5._Types__person => _Types__person =
+  and migrate_Types____person: Version6._Types__person => _Types__person =
     _input_data => _input_data
-  and migrate_Types____pet: Version5._Types__pet => _Types__pet =
-    _input_data =>
+  and migrate_Types____pet: Version6._Types__pet => _Types__pet =
+    _input_data => _input_data
+  and migrate_Types____what:
+    'a 'a_migrated.
+    ('a => 'a_migrated, Version6._Types__what('a)) =>
+    _Types__what('a_migrated)
+   =
+    (_migrator_a, _input_data) =>
       switch (_input_data) {
-      | Dog(dogBreed) => Dog
-      | Cat => Cat
-      | Mouse => Mouse
+      | Now(a) => Now(_migrator_a(a), 5)
       };
 };
-let currentVersion = 6;
-module Current = Version6;
+let currentVersion = 7;
+module Current = Version7;
 let parseVersion = json =>
   switch (Js.Json.classify(json)) {
   | JSONObject(dict) =>
@@ -1749,23 +2037,31 @@ let wrapWithVersion = (version, payload) =>
 let serializeHousehold = data =>
   wrapWithVersion(
     currentVersion,
-    Version6.serialize_Types____household(data),
+    Version7.serialize_Types____household(data),
   )
 and deserializeHousehold = data =>
   switch (parseVersion(data)) {
   | Belt.Result.Error(err) => Belt.Result.Error([err])
   | [@implicit_arity] Ok(version, data) =>
     switch (version) {
+    | 7 =>
+      switch (Version7.deserialize_Types____household(data)) {
+      | Belt.Result.Error(error) => Belt.Result.Error(error)
+      | Ok(data) => Belt.Result.Ok(data)
+      }
     | 6 =>
       switch (Version6.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
-      | Ok(data) => Belt.Result.Ok(data)
+      | Ok(data) =>
+        let data = Version7.migrate_Types____household(data);
+        Belt.Result.Ok(data);
       }
     | 5 =>
       switch (Version5.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
         let data = Version6.migrate_Types____household(data);
+        let data = Version7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 4 =>
@@ -1774,6 +2070,7 @@ and deserializeHousehold = data =>
       | Ok(data) =>
         let data = Version5.migrate_Types____household(data);
         let data = Version6.migrate_Types____household(data);
+        let data = Version7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 3 =>
@@ -1783,6 +2080,7 @@ and deserializeHousehold = data =>
         let data = Version4.migrate_Types____household(data);
         let data = Version5.migrate_Types____household(data);
         let data = Version6.migrate_Types____household(data);
+        let data = Version7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 2 =>
@@ -1793,6 +2091,7 @@ and deserializeHousehold = data =>
         let data = Version4.migrate_Types____household(data);
         let data = Version5.migrate_Types____household(data);
         let data = Version6.migrate_Types____household(data);
+        let data = Version7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 1 =>
@@ -1804,6 +2103,7 @@ and deserializeHousehold = data =>
         let data = Version4.migrate_Types____household(data);
         let data = Version5.migrate_Types____household(data);
         let data = Version6.migrate_Types____household(data);
+        let data = Version7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | _ =>

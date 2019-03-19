@@ -190,7 +190,13 @@ module V6 = {
   };
 };
 
-/* module V7 = {
+/*
+Issues
+- can't export parameterized types
+
+ */
+
+module V7 = {
   type person = {
     name: string,
     age: float,
@@ -229,4 +235,3 @@ module V6 = {
     county: {name: "Bearland", contents: 5, isClosed: false}
   };
 };
-*/

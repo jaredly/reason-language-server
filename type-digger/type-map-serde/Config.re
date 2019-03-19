@@ -1,4 +1,8 @@
 
+type simpleExpr = SharedTypes.SimpleType.expr(TypeMap.DigTypes.typeSource(
+  TypeMap.DigTypes.shortReference
+));
+
 [@rename.module_ "module"]
 type custom = {
   module_: string,

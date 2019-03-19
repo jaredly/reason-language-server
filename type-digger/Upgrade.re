@@ -76,6 +76,8 @@ let rec migrateExpr = (variable, expr) => {
       let [%p pat] = [%e variable];
       [%e Exp.tuple(migrators)]
     }])
+  | Variable(name) =>
+    Some(Exp.apply(expIdent(Lident("_migrator_" ++ name)), [(Nolabel, variable)]))
   | _ => {
     print_endline("Cannot automatically migrate this expression");
     print_endline(Vendor.Json.stringify(TypeMapSerde.dumpExpr(expr)));

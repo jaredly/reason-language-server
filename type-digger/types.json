@@ -13,6 +13,11 @@
       "file": "type-digger/type-map-serde/Config.re",
       "type": "t",
       "history": false
+    },
+    {
+      "file": "type-digger/type-map-serde/Config.re",
+      "type": "simpleExpr",
+      "history": false
     }
   ],
   "//": { "file": "core/SharedTypes.re", "type": "SimpleType.expr", "publicName": "simpleExpr" },
