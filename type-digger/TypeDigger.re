@@ -337,8 +337,7 @@ let makeLockfilePath = configPath => {
   let name = Filename.basename(configPath);
   let parts = String.split_on_char('.', name);
   let newName = switch (parts) {
-    | [single, ..._]
-    | [single] => single ++ ".lock.json"
+    | [single, ..._] => single ++ ".lock.json"
     | [] => "lockfile.json"
   };
   Filename.concat(base, newName)

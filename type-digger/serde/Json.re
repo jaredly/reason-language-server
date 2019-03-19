@@ -93,17 +93,14 @@ let sourceTransformer = source => switch source {
     [%expr
       (transformer, array) => switch (array) {
         | Json.Array(items) =>
-          let rec loop = items => switch items {
-            | [] => Belt.Result.Ok([])
+          let rec loop = (collected, items) => switch items {
+            | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
               | Belt.Result.Error(error) => Belt.Result.Error(["array element", ...error])
-              | Belt.Result.Ok(value) => switch (loop(rest)) {
-                | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Belt.Result.Ok(rest) => Belt.Result.Ok([value, ...rest])
-              }
+              | Belt.Result.Ok(value) => loop([value, ...collected], rest)
             }
           };
-          switch (loop(items)) {
+          switch (loop([], items)) {
             | Belt.Result.Error(error) => Belt.Result.Error(error)
             | Belt.Result.Ok(value) => Belt.Result.Ok(Belt.List.toArray(value))
           }
@@ -114,17 +111,14 @@ let sourceTransformer = source => switch source {
     [%expr
       (transformer, list) => switch (list) {
         | Json.Array(items) =>
-          let rec loop = items => switch items {
-            | [] => Belt.Result.Ok([])
+          let rec loop = (collected, items) => switch items {
+            | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
               | Belt.Result.Error(error) => Belt.Result.Error(["list element", ...error])
-              | Belt.Result.Ok(value) => switch (loop(rest)) {
-                | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Belt.Result.Ok(rest) => Belt.Result.Ok([value, ...rest])
-              }
+              | Belt.Result.Ok(value) => loop([value, ...collected], rest)
             }
           };
-          loop(items)
+          loop([], items)
         | _ => Belt.Result.Error(["expected an array"])
       }
     ];
@@ -191,17 +185,14 @@ let deserializeTransformer = {
       switch ([%e list]) {
         | Json.Array(items) =>
           let transformer = [%e transformer];
-          let rec loop = items => switch items {
-            | [] => Belt.Result.Ok([])
+          let rec loop = (collected, items) => switch items {
+            | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
               | Belt.Result.Error(error) => Belt.Result.Error(["list item", ...error])
-              | Belt.Result.Ok(value) => switch (loop(rest)) {
-                | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Belt.Result.Ok(rest) => Belt.Result.Ok([value, ...rest])
-              }
+              | Belt.Result.Ok(value) => loop([value, ...collected], rest)
             }
           };
-          loop(items)
+          loop([], items)
         | _ => Belt.Result.Error(["expected an array"])
       }
     ];

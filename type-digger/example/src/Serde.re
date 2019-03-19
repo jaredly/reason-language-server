@@ -30,9 +30,9 @@ module Version1 = {
                   switch (Js.Json.classify(list)) {
                   | JSONArray(items) =>
                     let transformer = deserialize_Types____person;
-                    let rec loop = (i, items) =>
+                    let rec loop = (i, collected, items) =>
                       switch (items) {
-                      | [] => Belt.Result.Ok([])
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                       | [one, ...rest] =>
                         switch (transformer(one)) {
                         | Belt.Result.Error(error) =>
@@ -41,15 +41,10 @@ module Version1 = {
                             ...error,
                           ])
                         | Belt.Result.Ok(value) =>
-                          switch (loop(i + 1, rest)) {
-                          | Belt.Result.Error(error) =>
-                            Belt.Result.Error(error)
-                          | Belt.Result.Ok(rest) =>
-                            Belt.Result.Ok([value, ...rest])
-                          }
+                          loop(i + 1, [value, ...collected], rest)
                         }
                       };
-                    loop(0, Belt.List.fromArray(items));
+                    loop(0, [], Belt.List.fromArray(items));
                   | _ => Belt.Result.Error(["expected an array"])
                   }
               )(
@@ -71,9 +66,9 @@ module Version1 = {
                 switch (Js.Json.classify(list)) {
                 | JSONArray(items) =>
                   let transformer = deserialize_Types____pet;
-                  let rec loop = (i, items) =>
+                  let rec loop = (i, collected, items) =>
                     switch (items) {
-                    | [] => Belt.Result.Ok([])
+                    | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                     | [one, ...rest] =>
                       switch (transformer(one)) {
                       | Belt.Result.Error(error) =>
@@ -82,15 +77,10 @@ module Version1 = {
                           ...error,
                         ])
                       | Belt.Result.Ok(value) =>
-                        switch (loop(i + 1, rest)) {
-                        | Belt.Result.Error(error) =>
-                          Belt.Result.Error(error)
-                        | Belt.Result.Ok(rest) =>
-                          Belt.Result.Ok([value, ...rest])
-                        }
+                        loop(i + 1, [value, ...collected], rest)
                       }
                     };
-                  loop(0, Belt.List.fromArray(items));
+                  loop(0, [], Belt.List.fromArray(items));
                 | _ => Belt.Result.Error(["expected an array"])
                 }
             )(
@@ -294,9 +284,9 @@ module Version2 = {
                   switch (Js.Json.classify(list)) {
                   | JSONArray(items) =>
                     let transformer = deserialize_Types____person;
-                    let rec loop = (i, items) =>
+                    let rec loop = (i, collected, items) =>
                       switch (items) {
-                      | [] => Belt.Result.Ok([])
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                       | [one, ...rest] =>
                         switch (transformer(one)) {
                         | Belt.Result.Error(error) =>
@@ -305,15 +295,10 @@ module Version2 = {
                             ...error,
                           ])
                         | Belt.Result.Ok(value) =>
-                          switch (loop(i + 1, rest)) {
-                          | Belt.Result.Error(error) =>
-                            Belt.Result.Error(error)
-                          | Belt.Result.Ok(rest) =>
-                            Belt.Result.Ok([value, ...rest])
-                          }
+                          loop(i + 1, [value, ...collected], rest)
                         }
                       };
-                    loop(0, Belt.List.fromArray(items));
+                    loop(0, [], Belt.List.fromArray(items));
                   | _ => Belt.Result.Error(["expected an array"])
                   }
               )(
@@ -335,9 +320,9 @@ module Version2 = {
                 switch (Js.Json.classify(list)) {
                 | JSONArray(items) =>
                   let transformer = deserialize_Types____pet;
-                  let rec loop = (i, items) =>
+                  let rec loop = (i, collected, items) =>
                     switch (items) {
-                    | [] => Belt.Result.Ok([])
+                    | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                     | [one, ...rest] =>
                       switch (transformer(one)) {
                       | Belt.Result.Error(error) =>
@@ -346,15 +331,10 @@ module Version2 = {
                           ...error,
                         ])
                       | Belt.Result.Ok(value) =>
-                        switch (loop(i + 1, rest)) {
-                        | Belt.Result.Error(error) =>
-                          Belt.Result.Error(error)
-                        | Belt.Result.Ok(rest) =>
-                          Belt.Result.Ok([value, ...rest])
-                        }
+                        loop(i + 1, [value, ...collected], rest)
                       }
                     };
-                  loop(0, Belt.List.fromArray(items));
+                  loop(0, [], Belt.List.fromArray(items));
                 | _ => Belt.Result.Error(["expected an array"])
                 }
             )(
@@ -614,9 +594,9 @@ module Version3 = {
                   switch (Js.Json.classify(list)) {
                   | JSONArray(items) =>
                     let transformer = deserialize_Types____person;
-                    let rec loop = (i, items) =>
+                    let rec loop = (i, collected, items) =>
                       switch (items) {
-                      | [] => Belt.Result.Ok([])
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                       | [one, ...rest] =>
                         switch (transformer(one)) {
                         | Belt.Result.Error(error) =>
@@ -625,15 +605,10 @@ module Version3 = {
                             ...error,
                           ])
                         | Belt.Result.Ok(value) =>
-                          switch (loop(i + 1, rest)) {
-                          | Belt.Result.Error(error) =>
-                            Belt.Result.Error(error)
-                          | Belt.Result.Ok(rest) =>
-                            Belt.Result.Ok([value, ...rest])
-                          }
+                          loop(i + 1, [value, ...collected], rest)
                         }
                       };
-                    loop(0, Belt.List.fromArray(items));
+                    loop(0, [], Belt.List.fromArray(items));
                   | _ => Belt.Result.Error(["expected an array"])
                   }
               )(
@@ -655,9 +630,9 @@ module Version3 = {
                 switch (Js.Json.classify(list)) {
                 | JSONArray(items) =>
                   let transformer = deserialize_Types____pet;
-                  let rec loop = (i, items) =>
+                  let rec loop = (i, collected, items) =>
                     switch (items) {
-                    | [] => Belt.Result.Ok([])
+                    | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                     | [one, ...rest] =>
                       switch (transformer(one)) {
                       | Belt.Result.Error(error) =>
@@ -666,15 +641,10 @@ module Version3 = {
                           ...error,
                         ])
                       | Belt.Result.Ok(value) =>
-                        switch (loop(i + 1, rest)) {
-                        | Belt.Result.Error(error) =>
-                          Belt.Result.Error(error)
-                        | Belt.Result.Ok(rest) =>
-                          Belt.Result.Ok([value, ...rest])
-                        }
+                        loop(i + 1, [value, ...collected], rest)
                       }
                     };
-                  loop(0, Belt.List.fromArray(items));
+                  loop(0, [], Belt.List.fromArray(items));
                 | _ => Belt.Result.Error(["expected an array"])
                 }
             )(
@@ -873,9 +843,9 @@ module Version4 = {
                   switch (Js.Json.classify(list)) {
                   | JSONArray(items) =>
                     let transformer = deserialize_Types____person;
-                    let rec loop = (i, items) =>
+                    let rec loop = (i, collected, items) =>
                       switch (items) {
-                      | [] => Belt.Result.Ok([])
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                       | [one, ...rest] =>
                         switch (transformer(one)) {
                         | Belt.Result.Error(error) =>
@@ -884,15 +854,10 @@ module Version4 = {
                             ...error,
                           ])
                         | Belt.Result.Ok(value) =>
-                          switch (loop(i + 1, rest)) {
-                          | Belt.Result.Error(error) =>
-                            Belt.Result.Error(error)
-                          | Belt.Result.Ok(rest) =>
-                            Belt.Result.Ok([value, ...rest])
-                          }
+                          loop(i + 1, [value, ...collected], rest)
                         }
                       };
-                    loop(0, Belt.List.fromArray(items));
+                    loop(0, [], Belt.List.fromArray(items));
                   | _ => Belt.Result.Error(["expected an array"])
                   }
               )(
@@ -914,9 +879,9 @@ module Version4 = {
                 switch (Js.Json.classify(list)) {
                 | JSONArray(items) =>
                   let transformer = deserialize_Types____pet;
-                  let rec loop = (i, items) =>
+                  let rec loop = (i, collected, items) =>
                     switch (items) {
-                    | [] => Belt.Result.Ok([])
+                    | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                     | [one, ...rest] =>
                       switch (transformer(one)) {
                       | Belt.Result.Error(error) =>
@@ -925,15 +890,10 @@ module Version4 = {
                           ...error,
                         ])
                       | Belt.Result.Ok(value) =>
-                        switch (loop(i + 1, rest)) {
-                        | Belt.Result.Error(error) =>
-                          Belt.Result.Error(error)
-                        | Belt.Result.Ok(rest) =>
-                          Belt.Result.Ok([value, ...rest])
-                        }
+                        loop(i + 1, [value, ...collected], rest)
                       }
                     };
-                  loop(0, Belt.List.fromArray(items));
+                  loop(0, [], Belt.List.fromArray(items));
                 | _ => Belt.Result.Error(["expected an array"])
                 }
             )(
@@ -1088,9 +1048,9 @@ module Version5 = {
                     switch (Js.Json.classify(list)) {
                     | JSONArray(items) =>
                       let transformer = deserialize_Types____person;
-                      let rec loop = (i, items) =>
+                      let rec loop = (i, collected, items) =>
                         switch (items) {
-                        | [] => Belt.Result.Ok([])
+                        | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                         | [one, ...rest] =>
                           switch (transformer(one)) {
                           | Belt.Result.Error(error) =>
@@ -1099,15 +1059,10 @@ module Version5 = {
                               ...error,
                             ])
                           | Belt.Result.Ok(value) =>
-                            switch (loop(i + 1, rest)) {
-                            | Belt.Result.Error(error) =>
-                              Belt.Result.Error(error)
-                            | Belt.Result.Ok(rest) =>
-                              Belt.Result.Ok([value, ...rest])
-                            }
+                            loop(i + 1, [value, ...collected], rest)
                           }
                         };
-                      loop(0, Belt.List.fromArray(items));
+                      loop(0, [], Belt.List.fromArray(items));
                     | _ => Belt.Result.Error(["expected an array"])
                     }
                 )(
@@ -1129,9 +1084,9 @@ module Version5 = {
                   switch (Js.Json.classify(list)) {
                   | JSONArray(items) =>
                     let transformer = deserialize_Types____pet;
-                    let rec loop = (i, items) =>
+                    let rec loop = (i, collected, items) =>
                       switch (items) {
-                      | [] => Belt.Result.Ok([])
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                       | [one, ...rest] =>
                         switch (transformer(one)) {
                         | Belt.Result.Error(error) =>
@@ -1140,15 +1095,10 @@ module Version5 = {
                             ...error,
                           ])
                         | Belt.Result.Ok(value) =>
-                          switch (loop(i + 1, rest)) {
-                          | Belt.Result.Error(error) =>
-                            Belt.Result.Error(error)
-                          | Belt.Result.Ok(rest) =>
-                            Belt.Result.Ok([value, ...rest])
-                          }
+                          loop(i + 1, [value, ...collected], rest)
                         }
                       };
-                    loop(0, Belt.List.fromArray(items));
+                    loop(0, [], Belt.List.fromArray(items));
                   | _ => Belt.Result.Error(["expected an array"])
                   }
               )(
@@ -1363,9 +1313,10 @@ module Version6 = {
                         switch (Js.Json.classify(list)) {
                         | JSONArray(items) =>
                           let transformer = deserialize_Types____person;
-                          let rec loop = (i, items) =>
+                          let rec loop = (i, collected, items) =>
                             switch (items) {
-                            | [] => Belt.Result.Ok([])
+                            | [] =>
+                              Belt.Result.Ok(Belt.List.reverse(collected))
                             | [one, ...rest] =>
                               switch (transformer(one)) {
                               | Belt.Result.Error(error) =>
@@ -1374,15 +1325,10 @@ module Version6 = {
                                   ...error,
                                 ])
                               | Belt.Result.Ok(value) =>
-                                switch (loop(i + 1, rest)) {
-                                | Belt.Result.Error(error) =>
-                                  Belt.Result.Error(error)
-                                | Belt.Result.Ok(rest) =>
-                                  Belt.Result.Ok([value, ...rest])
-                                }
+                                loop(i + 1, [value, ...collected], rest)
                               }
                             };
-                          loop(0, Belt.List.fromArray(items));
+                          loop(0, [], Belt.List.fromArray(items));
                         | _ => Belt.Result.Error(["expected an array"])
                         }
                     )(
@@ -1404,9 +1350,10 @@ module Version6 = {
                       switch (Js.Json.classify(list)) {
                       | JSONArray(items) =>
                         let transformer = deserialize_Types____pet;
-                        let rec loop = (i, items) =>
+                        let rec loop = (i, collected, items) =>
                           switch (items) {
-                          | [] => Belt.Result.Ok([])
+                          | [] =>
+                            Belt.Result.Ok(Belt.List.reverse(collected))
                           | [one, ...rest] =>
                             switch (transformer(one)) {
                             | Belt.Result.Error(error) =>
@@ -1415,15 +1362,10 @@ module Version6 = {
                                 ...error,
                               ])
                             | Belt.Result.Ok(value) =>
-                              switch (loop(i + 1, rest)) {
-                              | Belt.Result.Error(error) =>
-                                Belt.Result.Error(error)
-                              | Belt.Result.Ok(rest) =>
-                                Belt.Result.Ok([value, ...rest])
-                              }
+                              loop(i + 1, [value, ...collected], rest)
                             }
                           };
-                        loop(0, Belt.List.fromArray(items));
+                        loop(0, [], Belt.List.fromArray(items));
                       | _ => Belt.Result.Error(["expected an array"])
                       }
                   )(
@@ -1466,9 +1408,9 @@ module Version6 = {
                   switch (Js.Json.classify(list)) {
                   | JSONArray(items) =>
                     let transformer = deserialize_Types____person;
-                    let rec loop = (i, items) =>
+                    let rec loop = (i, collected, items) =>
                       switch (items) {
-                      | [] => Belt.Result.Ok([])
+                      | [] => Belt.Result.Ok(Belt.List.reverse(collected))
                       | [one, ...rest] =>
                         switch (transformer(one)) {
                         | Belt.Result.Error(error) =>
@@ -1477,15 +1419,10 @@ module Version6 = {
                             ...error,
                           ])
                         | Belt.Result.Ok(value) =>
-                          switch (loop(i + 1, rest)) {
-                          | Belt.Result.Error(error) =>
-                            Belt.Result.Error(error)
-                          | Belt.Result.Ok(rest) =>
-                            Belt.Result.Ok([value, ...rest])
-                          }
+                          loop(i + 1, [value, ...collected], rest)
                         }
                       };
-                    loop(0, Belt.List.fromArray(items));
+                    loop(0, [], Belt.List.fromArray(items));
                   | _ => Belt.Result.Error(["expected an array"])
                   }
               )(

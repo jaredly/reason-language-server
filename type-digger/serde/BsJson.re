@@ -126,17 +126,14 @@ let list = (transformer, list) => {
       switch (Js.Json.classify([%e list])) {
         | JSONArray(items) =>
           let transformer = [%e transformer];
-          let rec loop = (i, items) => switch items {
-            | [] => Belt.Result.Ok([])
+          let rec loop = (i, collected, items) => switch items {
+            | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
               | Belt.Result.Error(error) => Belt.Result.Error(["list element " ++ string_of_int(i), ...error])
-              | Belt.Result.Ok(value) => switch (loop(i + 1, rest)) {
-                | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Belt.Result.Ok(rest) => Belt.Result.Ok([value, ...rest])
-              }
+              | Belt.Result.Ok(value) => loop(i + 1, [value, ...collected], rest)
             }
           };
-          loop(0, Belt.List.fromArray(items))
+          loop(0, [], Belt.List.fromArray(items))
         | _ => Belt.Result.Error(["expected an array"])
       }
     ];
@@ -151,17 +148,14 @@ let sourceTransformer = source => switch source {
     [%expr 
       (transformer, array) => switch (Js.Json.classify(array)) {
         | JSONArray(items) =>
-          let rec loop = (i, items) => switch items {
-            | [] => Belt.Result.Ok([])
+          let rec loop = (i, collected, items) => switch items {
+            | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
               | Belt.Result.Error(error) => Belt.Result.Error(["list element " ++ string_of_int(i), ...error])
-              | Ok(value) => switch (loop(i + 1, rest)) {
-                | Belt.Result.Error(error) => Belt.Result.Error(error)
-                | Ok(rest) => Ok([value, ...rest])
-              }
+              | Ok(value) => loop(i + 1, [value, ...collected], rest)
             }
           };
-          switch (loop(0, items->Belt.List.fromArray)) {
+          switch (loop(0, [], items->Belt.List.fromArray)) {
             | Belt.Result.Error(error) => Belt.Result.Error(error)
             | Ok(value) => Ok(Belt.List.toArray(value))
           }
