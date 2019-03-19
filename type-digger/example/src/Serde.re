@@ -1274,12 +1274,11 @@ module Version6 = {
     visitors: list(_Types__person),
     county: _Types__named(int),
   }
-  and _Types__named('a) =
-    Types.named('a) = {
-      name: string,
-      contents: 'a,
-      isClosed: bool,
-    }
+  and _Types__named('a) = {
+    name: string,
+    contents: 'a,
+    isClosed: bool,
+  }
   and _Types__person =
     Types.person = {
       name: string,
@@ -1624,6 +1623,7 @@ module Version7 = {
       name: string,
       contents: 'a,
       isClosed: bool,
+      other: option('a),
     }
   and _Types__person =
     Types.person = {
@@ -1806,7 +1806,101 @@ module Version7 = {
   and deserialize_Types____named:
     type arg0.
       (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
-      Belt.Result.t(_Types__named(arg0), list(string)) = Version6.deserialize_Types____named
+      Belt.Result.t(_Types__named(arg0), list(string)) =
+    (aTransformer, record) =>
+      switch (Js.Json.classify(record)) {
+      | JSONObject(dict) =>
+        let inner = attr_other => {
+          let inner = attr_isClosed => {
+            let inner = attr_contents => {
+              let inner = attr_name =>
+                Belt.Result.Ok({
+                  name: attr_name,
+                  contents: attr_contents,
+                  isClosed: attr_isClosed,
+                  other: attr_other,
+                });
+              switch (Js.Dict.get(dict, "the name")) {
+              | None => Belt.Result.Error(["No attribute the name"])
+              | Some(json) =>
+                switch (
+                  (
+                    string =>
+                      switch (Js.Json.classify(string)) {
+                      | JSONString(string) => Belt.Result.Ok(string)
+                      | _ => Error(["expected a string"])
+                      }
+                  )(
+                    json,
+                  )
+                ) {
+                | Belt.Result.Error(error) =>
+                  Belt.Result.Error(["attribute the name", ...error])
+                | Ok(data) => inner(data)
+                }
+              };
+            };
+            switch (Js.Dict.get(dict, "contents")) {
+            | None => Belt.Result.Error(["No attribute contents"])
+            | Some(json) =>
+              switch (aTransformer(json)) {
+              | Belt.Result.Error(error) =>
+                Belt.Result.Error(["attribute contents", ...error])
+              | Ok(data) => inner(data)
+              }
+            };
+          };
+          switch (Js.Dict.get(dict, "isClosed")) {
+          | None => Belt.Result.Error(["No attribute isClosed"])
+          | Some(json) =>
+            switch (
+              (
+                bool =>
+                  switch (Js.Json.classify(bool)) {
+                  | JSONTrue => Belt.Result.Ok(true)
+                  | JSONFalse => Belt.Result.Ok(false)
+                  | _ => Belt.Result.Error(["Expected a bool"])
+                  }
+              )(
+                json,
+              )
+            ) {
+            | Belt.Result.Error(error) =>
+              Belt.Result.Error(["attribute isClosed", ...error])
+            | Ok(data) => inner(data)
+            }
+          };
+        };
+        switch (Js.Dict.get(dict, "other")) {
+        | None => inner(None)
+        | Some(json) =>
+          switch (
+            (
+              (
+                (transformer, option) =>
+                  switch (Js.Json.classify(option)) {
+                  | JSONNull => Belt.Result.Ok(None)
+                  | _ =>
+                    switch (transformer(option)) {
+                    | Belt.Result.Error(error) =>
+                      Belt.Result.Error(["optional value", ...error])
+                    | Ok(value) => Ok(Some(value))
+                    }
+                  }
+              )(
+                aTransformer,
+              )
+            )(
+              json,
+            )
+          ) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error(["attribute other", ...error])
+          | Ok(data) => inner(data)
+          }
+        };
+      | _ => Belt.Result.Error(["Expected an object"])
+      }
   and deserialize_Types____person:
     Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version6.deserialize_Types____person
   and deserialize_Types____pet:
@@ -1908,6 +2002,21 @@ module Version7 = {
           ("the name", Js.Json.string(record.name)),
           ("contents", aTransformer(record.contents)),
           ("isClosed", Js.Json.boolean(record.isClosed)),
+          (
+            "other",
+            (
+              (
+                transformer =>
+                  fun
+                  | Some(inner) => transformer(inner)
+                  | None => Js.Json.null
+              )(
+                aTransformer,
+              )
+            )(
+              record.other,
+            ),
+          ),
         |]),
       )
   and serialize_Types____person: _Types__person => Js.Json.t =
@@ -1978,15 +2087,18 @@ module Version7 = {
       };
     }
   and migrate_Types____named:
-    'a 'a_migrated.
-    ('a => 'a_migrated, Version6._Types__named('a)) =>
-    _Types__named('a_migrated)
+    type a a_migrated.
+    (a => a_migrated, Version6._Types__named(a)) =>
+    _Types__named(a_migrated)
    =
     (_migrator_a, _input_data) => {
       let _converted_name = _input_data.name;
       let _converted_contents = _migrator_a(_input_data.contents);
       let _converted_isClosed = _input_data.isClosed;
+      let _converted_other =
+        (_ => None: Version6._Types__named(a) => option(a_migrated))(_input_data);
       {
+        other: _converted_other,
         isClosed: _converted_isClosed,
         contents: _converted_contents,
         name: _converted_name,

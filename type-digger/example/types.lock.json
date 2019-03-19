@@ -1930,6 +1930,30 @@
                   "PStr",
                   "let _ = \"the name\""
                 ]
+              ],
+              [
+                {
+                  "txt": "migrate.other",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = fun _ -> None"
+                ]
               ]
             ],
             {
@@ -1970,6 +1994,22 @@
                         "bool"
                       ],
                       []
+                    ]
+                  ],
+                  [
+                    "other",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Variable",
+                          "a"
+                        ]
+                      ]
                     ]
                   ]
                 ]

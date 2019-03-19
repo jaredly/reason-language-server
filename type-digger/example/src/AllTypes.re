@@ -210,10 +210,12 @@ module V7 = {
     | Mouse;
 
   [@rename.name "the name"]
+  [@migrate.other (_) => None]
   type named('a) = {
     name: string,
     contents: 'a,
     isClosed: bool,
+    other: option('a)
   };
 
   [@migrate.Now (Now(a)) => Now(_migrator_a(a), 5)]
@@ -232,6 +234,6 @@ module V7 = {
     pets: [Dog, Mouse],
     what: Now("5", 5),
     visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}],
-    county: {name: "Bearland", contents: 5, isClosed: false}
+    county: {name: "Bearland", contents: 5, isClosed: false, other: None}
   };
 };
