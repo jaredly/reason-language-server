@@ -1,1 +1,1 @@
-include AllTypes.V7; let version = "7"; let all_versions = ["1", "2", "2_1", "3", "4", "5", "6", "7"]
+include AllTypes.V6; let version = "6"; let all_versions = ["1", "2", "2_1", "3", "4", "5", "6"]
