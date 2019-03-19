@@ -1594,11 +1594,15 @@ module Version6 = {
     ('a => 'a_migrated, Version5._Types__named('a)) =>
     _Types__named('a_migrated)
    =
-    (contentsMigrator, named) => {
-      name: named.name,
-      contents: contentsMigrator(named.contents),
-      isClosed: false,
-    }
+    (type a, type a_migrated) => (
+      (contentsMigrator, named) => {
+        name: named.name,
+        contents: contentsMigrator(named.contents),
+        isClosed: false,
+      }:
+        (a => a_migrated, Version5._Types__named(a)) =>
+        _Types__named(a_migrated)
+    )
   and migrate_Types____person: Version5._Types__person => _Types__person =
     _input_data => _input_data
   and migrate_Types____pet: Version5._Types__pet => _Types__pet =
@@ -2087,23 +2091,29 @@ module Version7 = {
       };
     }
   and migrate_Types____named:
-    type a a_migrated.
-    (a => a_migrated, Version6._Types__named(a)) =>
-    _Types__named(a_migrated)
+    'a 'a_migrated.
+    ('a => 'a_migrated, Version6._Types__named('a)) =>
+    _Types__named('a_migrated)
    =
-    (_migrator_a, _input_data) => {
-      let _converted_name = _input_data.name;
-      let _converted_contents = _migrator_a(_input_data.contents);
-      let _converted_isClosed = _input_data.isClosed;
-      let _converted_other =
-        (_ => None: Version6._Types__named(a) => option(a_migrated))(_input_data);
-      {
-        other: _converted_other,
-        isClosed: _converted_isClosed,
-        contents: _converted_contents,
-        name: _converted_name,
-      };
-    }
+    (type a, type a_migrated) => (
+      (_migrator_a, _input_data) => {
+        let _converted_name = _input_data.name;
+        let _converted_contents = _migrator_a(_input_data.contents);
+        let _converted_isClosed = _input_data.isClosed;
+        let _converted_other =
+          (_ => None: Version6._Types__named(a) => option(a_migrated))(
+            _input_data,
+          );
+        {
+          other: _converted_other,
+          isClosed: _converted_isClosed,
+          contents: _converted_contents,
+          name: _converted_name,
+        };
+      }:
+        (a => a_migrated, Version6._Types__named(a)) =>
+        _Types__named(a_migrated)
+    )
   and migrate_Types____person: Version6._Types__person => _Types__person =
     _input_data => _input_data
   and migrate_Types____pet: Version6._Types__pet => _Types__pet =
@@ -2113,10 +2123,14 @@ module Version7 = {
     ('a => 'a_migrated, Version6._Types__what('a)) =>
     _Types__what('a_migrated)
    =
-    (_migrator_a, _input_data) =>
-      switch (_input_data) {
-      | Now(a) => Now(_migrator_a(a), 5)
-      };
+    (type a, type a_migrated) => (
+      (_migrator_a, _input_data) =>
+        switch (_input_data) {
+        | Now(a) => Now(_migrator_a(a), 5)
+        }:
+        (a => a_migrated, Version6._Types__what(a)) =>
+        _Types__what(a_migrated)
+    );
 };
 let currentVersion = 7;
 module Current = Version7;

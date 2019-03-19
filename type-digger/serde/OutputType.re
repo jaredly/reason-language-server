@@ -66,17 +66,17 @@ let rec outputDeclaration = (~alias, moduleName, modulePath, name, showSource, d
   };
 }
 
-and outputExpr = (showSource, expr) => {
+and outputExpr = (~mapVariable=name => Ast_helper.Typ.var(name), showSource, expr) => {
   open Ast_helper.Typ;
   switch (expr) {
-  | Variable(name) => var(name)
+  | Variable(name) => mapVariable(name)
   | AnonVariable => any()
-  | Reference(source, args) => showSource(source, args->List.map(outputExpr(showSource)))
-  | Tuple(items) => tuple(items->List.map(outputExpr(showSource)))
+  | Reference(source, args) => showSource(source, args->List.map(outputExpr(~mapVariable, showSource)))
+  | Tuple(items) => tuple(items->List.map(outputExpr(~mapVariable, showSource)))
   | Fn(args, result) =>
     let rec loop = (args) => switch args {
-      | [] => outputExpr(showSource, result)
-      | [(_label, arg), ...rest] => arrow(Nolabel, outputExpr(showSource, arg), loop(rest))
+      | [] => outputExpr(~mapVariable, showSource, result)
+      | [(_label, arg), ...rest] => arrow(Nolabel, outputExpr(~mapVariable, showSource, arg), loop(rest))
     };
     loop(args)
   | Other => failwith("unhandled expr type")

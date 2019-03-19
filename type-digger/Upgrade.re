@@ -109,7 +109,14 @@ let migrateBetween = (~version as _, ~lockedDeep as _, variable, fullName, thisT
           | Some(migrateExpr) => Some(Exp.apply(
             Exp.constraint_(
               migrateExpr,
-              Typ.arrow(Nolabel, prevTypeName, Serde.OutputType.outputExpr(Serde.OutputType.showSource, expr))
+              Typ.arrow(Nolabel, prevTypeName, 
+              Serde.OutputType.outputExpr(
+                ~mapVariable=
+                // name => Typ.var(name ++ "_migrated"),
+                name => Typ.constr(Location.mknoloc(Lident(name ++ "_migrated")), []),
+                Serde.OutputType.showSource, expr)
+              // Typ.var("FIXME")
+              )
             )
             , [(Nolabel, variable)]))
           | None => migrateExpr(Exp.field(variable, mknoloc(Lident(name))), expr);
@@ -236,16 +243,27 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
 
   let typeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
 
+  let concreteArgs = decl.variables->Belt.List.map(Serde.OutputType.outputExpr(
+    ~mapVariable=name => Typ.constr(mknoloc(Lident(name)), []),
+    Serde.OutputType.showSource));
+
   let args = decl.variables->Belt.List.map(Serde.OutputType.outputExpr(Serde.OutputType.showSource));
+
   let argNames = decl.variables->Belt.List.map(expr => switch expr {
     | Variable(name) => name
     | _ => failwith("Unnamed variable in type " ++ name)
   });
 
+  let prevTypeConcrete = Typ.constr(
+    mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
+    concreteArgs
+  );
+
   let prevTypeName = Typ.constr(
     mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
     args
   );
+
 
   let migratorFunction =
     switch (migrateAttribute) {
@@ -269,7 +287,7 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
               decl,
               pastDecl,
               ~namedMigrateAttributes,
-              ~prevTypeName,
+              ~prevTypeName=prevTypeConcrete,
               ~modulePath,
             )
           ) {
@@ -289,6 +307,17 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
       inner
     )
   );
+
+  let varConstr = name => Typ.constr(mknoloc(Lident(name)), []);
+
+  let concreteFunctionType = argNames->Belt.List.reduce(
+    Typ.arrow(Nolabel, prevTypeConcrete, Typ.constr(mknoloc(Lident(typeName)), argNames->Belt.List.map(arg => varConstr(arg ++ "_migrated")))),
+    (inner, arg) => Typ.arrow(Nolabel,
+      Typ.arrow(Nolabel, varConstr(arg), varConstr(arg ++ "_migrated")),
+      inner
+    )
+  );
+
   /* TODO  */
   let functionType = argNames == [] ? functionType : {
     Typ.poly(
@@ -299,7 +328,22 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
 
   Vb.mk(
     Pat.var(mknoloc(boundName)),
-    Exp.constraint_(migratorFunction, functionType,
+    Exp.constraint_(
+      argNames == []
+        ? migratorFunction
+        : {
+          let body = migratorFunction;
+          let body = Exp.constraint_(
+            body,
+            concreteFunctionType
+          );
+          let body =
+            argNames->Belt.List.reduce(body, (body, arg) =>
+              Exp.newtype(Location.mknoloc(arg), Exp.newtype(mknoloc(arg ++ "_migrated"), body))
+            );
+          body;
+        },
+      functionType,
     ),
   );
 };
