@@ -761,7 +761,8 @@ module Version3 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
-  and deserialize_Types____pet = Version2.deserialize_Types____pet;
+  and deserialize_Types____pet:
+    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) = Version2.deserialize_Types____pet;
   let rec migrate_Types____household:
     Version2._Types__household => _Types__household =
     _input_data => {
@@ -907,7 +908,8 @@ module Version4 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
-  and deserialize_Types____person = Version3.deserialize_Types____person
+  and deserialize_Types____person:
+    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version3.deserialize_Types____person
   and deserialize_Types____pet:
     Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
@@ -1174,7 +1176,8 @@ module Version5 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
-  and deserialize_Types____person = Version4.deserialize_Types____person
+  and deserialize_Types____person:
+    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version4.deserialize_Types____person
   and deserialize_Types____pet:
     Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
@@ -1523,7 +1526,8 @@ module Version6 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
-  and deserialize_Types____person = Version5.deserialize_Types____person
+  and deserialize_Types____person:
+    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version5.deserialize_Types____person
   and deserialize_Types____pet:
     Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
@@ -1799,9 +1803,14 @@ module Version7 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
-  and deserialize_Types____named = Version6.deserialize_Types____named
-  and deserialize_Types____person = Version6.deserialize_Types____person
-  and deserialize_Types____pet = Version6.deserialize_Types____pet
+  and deserialize_Types____named:
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Types__named(arg0), list(string)) = Version6.deserialize_Types____named
+  and deserialize_Types____person:
+    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version6.deserialize_Types____person
+  and deserialize_Types____pet:
+    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) = Version6.deserialize_Types____pet
   and deserialize_Types____what:
     type arg0.
       (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>

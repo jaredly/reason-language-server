@@ -192,11 +192,10 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
         }
       }
       switch (prevVersion) {
-        | None => maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, decl)
+        | None => maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, ~inner=None, decl)
         | Some(prevVersion) =>
           let tname = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
-          Ast_helper.Vb.mk(
-            Ast_helper.Pat.var(Location.mknoloc(tname)),
+          let inner = 
             Ast_helper.Exp.ident(
               Location.mknoloc(
                 Longident.Ldot(
@@ -206,8 +205,13 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
                   tname
                 )
               )
-            )
-          )
+            );
+          maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, ~inner=Some(inner), decl)
+
+          // Ast_helper.Vb.mk(
+          //   Ast_helper.Pat.var(Location.mknoloc(tname)),
+          //   inner
+          // )
       }
     }
   );

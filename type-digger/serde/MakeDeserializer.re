@@ -230,36 +230,34 @@ let makeArrow = (inputType, lident, variables) => {
   );
 };
 
-let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
+let declOuter = (inputType, variables, ~moduleName, ~modulePath, ~name, inner) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let asTypeVariables = 
-          decl.variables->makeTypArgs->Belt.List.map(Typ.var);
-  let typ = makeArrow(transformer.inputType, lident, asTypeVariables);
-  let typ = makeFunctionType(typ, transformer.inputType, asTypeVariables);
+          variables->makeTypArgs->Belt.List.map(Typ.var);
+  let typ = makeArrow(inputType, lident, asTypeVariables);
+  let typ = makeFunctionType(typ, inputType, asTypeVariables);
   let typ =
-    switch (decl.variables) {
+    switch (variables) {
     | [] => typ
-    | _args => Typ.poly(makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc), typ)
+    | _args => Typ.poly(makeTypArgs(variables)->Belt.List.map(Location.mknoloc), typ)
     };
   let fullName = transformerName(~moduleName, ~modulePath, ~name);
 
-  let inner = declInner(~renames, transformer, lident, decl, fullName);
-
-  let inner = decl.variables == [] ? inner : {
+  let inner = variables == [] ? inner : {
     let asTypeConstrs =
-      decl.variables
+      variables
       ->makeTypArgs
       ->Belt.List.map(name => Typ.constr(Location.mknoloc(Lident(name)), []));
 
     let inner = Ast_helper.Exp.constraint_(
       inner,
       makeFunctionType(
-        makeArrow(transformer.inputType, lident, asTypeConstrs),
-        transformer.inputType, asTypeConstrs
+        makeArrow(inputType, lident, asTypeConstrs),
+        inputType, asTypeConstrs
       )
     );
 
-    makeTypArgs(decl.variables)
+    makeTypArgs(variables)
     ->Belt.List.reduce(
       inner, (body, arg) =>
         Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
@@ -270,6 +268,62 @@ let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
     Pat.constraint_(Pat.var(Location.mknoloc(fullName)), typ),
     inner,
   );
+};
+
+let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, ~inner, decl) => {
+  let lident = makeLident(~moduleName, ~modulePath, ~name);
+  let fullName = transformerName(~moduleName, ~modulePath, ~name);
+  declOuter(
+    transformer.inputType,
+    decl.variables,
+    ~moduleName,
+    ~modulePath,
+    ~name,
+    switch inner {
+      | None => declInner(~renames, transformer, lident, decl, fullName)
+      | Some(inner) => inner
+    }
+  )
+
+  // let lident = makeLident(~moduleName, ~modulePath, ~name);
+  // let asTypeVariables = 
+  //         decl.variables->makeTypArgs->Belt.List.map(Typ.var);
+  // let typ = makeArrow(transformer.inputType, lident, asTypeVariables);
+  // let typ = makeFunctionType(typ, transformer.inputType, asTypeVariables);
+  // let typ =
+  //   switch (decl.variables) {
+  //   | [] => typ
+  //   | _args => Typ.poly(makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc), typ)
+  //   };
+  // let fullName = transformerName(~moduleName, ~modulePath, ~name);
+
+  // let inner = 
+
+  // let inner = decl.variables == [] ? inner : {
+  //   let asTypeConstrs =
+  //     decl.variables
+  //     ->makeTypArgs
+  //     ->Belt.List.map(name => Typ.constr(Location.mknoloc(Lident(name)), []));
+
+  //   let inner = Ast_helper.Exp.constraint_(
+  //     inner,
+  //     makeFunctionType(
+  //       makeArrow(transformer.inputType, lident, asTypeConstrs),
+  //       transformer.inputType, asTypeConstrs
+  //     )
+  //   );
+
+  //   makeTypArgs(decl.variables)
+  //   ->Belt.List.reduce(
+  //     inner, (body, arg) =>
+  //       Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
+  //     );
+  // };
+
+  // Vb.mk(
+  //   Pat.constraint_(Pat.var(Location.mknoloc(fullName)), typ),
+  //   inner,
+  // );
 };
 
 

@@ -15,6 +15,7 @@ open SharedTypes.SimpleType;
 open Parsetree;
 let loc = Location.none;
 
+let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
 let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
 
 let rec mapAll = (items, fn) => switch items {
@@ -93,7 +94,7 @@ let orLog = (what, message) => {
   what
 };
 
-let migrateBetween = (~version as _, ~lockedDeep as _, variable, _name, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName, ~modulePath) => {
+let migrateBetween = (~version as _, ~lockedDeep as _, variable, fullName, thisType, prevType, ~namedMigrateAttributes, ~prevTypeName, ~modulePath) => {
   switch (thisType.body, prevType.body) {
   | (Expr(current), Expr(prev)) when current == prev => migrateExpr(variable, current)
   | (Record(items), Record(prevItems)) when items->Belt.List.every(item => {
@@ -149,7 +150,30 @@ let migrateBetween = (~version as _, ~lockedDeep as _, variable, _name, thisType
     });
     Some(Exp.match(variable, cases));
   }
-  | (Abstract, Abstract) => Some(variable)
+  | (Abstract, Abstract) => 
+      let body = makeIdent(Ldot(Lident("TransformHelpers"), "migrate" ++ fullName));
+      switch (thisType.variables) {
+      | [] => Some(variable)
+      | args =>
+        Some(Exp.apply(
+          body,
+          args->Belt.List.map(arg =>
+            (
+              Nolabel,
+              makeIdent(
+                Lident(
+                  switch (arg) {
+                  | Variable(string) => "_migrator_" ++ string
+                  | AnonVariable => "ANON"
+                  | _ => "OTHER"
+                  },
+                ),
+              ),
+            )
+          )->Belt.List.concat([(Nolabel, variable)]),
+        ))
+      };
+    // Some(variable)
   | _ => {
     print_endline("Bailed out migrating between " ++ String.concat("-", modulePath));
     print_endline(Vendor.Json.stringify(TypeMapSerde.dumpDecl(thisType)));
@@ -241,7 +265,7 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
               ~version,
               ~lockedDeep,
               [%expr _input_data],
-              name,
+              typeName,
               decl,
               pastDecl,
               ~namedMigrateAttributes,
