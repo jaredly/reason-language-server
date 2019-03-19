@@ -189,3 +189,44 @@ module V6 = {
     county: {name: "Bearland", contents: 5, isClosed: false}
   };
 };
+
+module V7 = {
+  type person = {
+    name: string,
+    age: float,
+    coords: (float, float)
+  };
+
+  [@rename.Dog "a-cat"]
+  type pet =
+    | Dog
+    | Cat
+    | Mouse;
+
+  [@rename.name "the name"]
+  type named('a) = {
+    name: string,
+    contents: 'a,
+    isClosed: bool,
+  };
+
+  [@migrate.Now (Now(a)) => Now(_migrator_a(a), 5)]
+  type what('a) = Now('a, int);
+
+  type household = {
+    people: list(person),
+    pets: list(pet),
+    what: what(string),
+    visitors: list(person),
+    county: named(int)
+  };
+
+  let example = {
+    people: [{name: "Me", age: 10., coords: (5., 6.)}],
+    pets: [Dog, Mouse],
+    what: Now("5", 5),
+    visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}],
+    county: {name: "Bearland", contents: 5, isClosed: false}
+  };
+};
+
