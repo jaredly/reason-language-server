@@ -395,12 +395,14 @@ let main = configPath => {
 
   let structure = body @ converters;
 
-  let reason_structure = Reason_toolchain.From_current.copy_structure(structure);
-  Reason_toolchain.RE.print_implementation_with_comments(
-    Format.str_formatter, (reason_structure, [])
-  );
-
-  // Pprintast.structure(Format.str_formatter, body @ converters);
+  if (config.output->Filename.check_suffix(".re")) {
+    let reason_structure = Reason_toolchain.From_current.copy_structure(structure);
+    Reason_toolchain.RE.print_implementation_with_comments(
+      Format.str_formatter, (reason_structure, [])
+    );
+  } else {
+    Pprintast.structure(Format.str_formatter, structure);
+  };
   let ml = Format.flush_str_formatter();
 
   let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
