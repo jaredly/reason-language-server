@@ -106,12 +106,24 @@ let compareAttributes = (one, two) => {
   one == two
 };
 
+let compareTypes = (oldType: SharedTypes.SimpleType.declaration('source), newType: SharedTypes.SimpleType.declaration('source)) => {
+  oldType.name == newType.name &&
+  oldType.variables == newType.variables && {
+    print_endline("Comparing");
+    switch (oldType.body, newType.body) {
+      | (Variant(olds), Variant(news)) =>
+        olds->Belt.List.every(one => news->Belt.List.has(one, (==)))
+      | _ => oldType.body == newType.body
+    }
+  }
+};
+
 /** Checks that all types in the old map are the same in the new map */
 let allTypesPreserved = (oldLockedTypes, newLockedTypes) => {
   Hashtbl.fold((k, (attributes, v), good) => {
     good && Hashtbl.mem(newLockedTypes, k) && {
       let (attributes2, v2) = Hashtbl.find(newLockedTypes, k);
-      v2 == v && compareAttributes(attributes, attributes2)
+      compareTypes(v, v2) && compareAttributes(attributes, attributes2)
     }
   }, oldLockedTypes, true)
 };
@@ -319,6 +331,19 @@ let makeConverters = (~config, ~state) => config.entries->Belt.List.map(({file, 
   }
 );
 
+
+let makeLockfilePath = configPath => {
+  let base = Filename.dirname(configPath);
+  let name = Filename.basename(configPath);
+  let parts = String.split_on_char('.', name);
+  let newName = switch (parts) {
+    | [single, ..._]
+    | [single] => single ++ ".lock.json"
+    | [] => "lockfile.json"
+  };
+  Filename.concat(base, newName)
+};
+
 let main = configPath => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config = switch (TypeMapSerde.configFromJson(json)) {
@@ -327,7 +352,7 @@ let main = configPath => {
   };
   let (state, currentTypeMap, lockedEntries) = loadTypeMap(config);
 
-  let lockFilePath = Filename.dirname(configPath)->Filename.concat("types.lock.json");
+  let lockFilePath = makeLockfilePath(configPath);
 
   let lockfile = parseLockfile(config, lockedEntries, currentTypeMap, lockFilePath)
 
@@ -368,7 +393,14 @@ let main = configPath => {
 
   let converters = makeConverters(~config, ~state);
 
-  Pprintast.structure(Format.str_formatter, body @ converters);
+  let structure = body @ converters;
+
+  let reason_structure = Reason_toolchain.From_current.copy_structure(structure);
+  Reason_toolchain.RE.print_implementation_with_comments(
+    Format.str_formatter, (reason_structure, [])
+  );
+
+  // Pprintast.structure(Format.str_formatter, body @ converters);
   let ml = Format.flush_str_formatter();
 
   let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);

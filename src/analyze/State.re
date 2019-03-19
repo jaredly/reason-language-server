@@ -367,7 +367,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   let compiledBase = switch packageName {
     | `NoName => buildDir /+ "default" /+ rel
     | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte"
-    | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs"
+    | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs/byte"
   };
   let libraryName = switch packageName {
     | `Library(n) => Some(n)

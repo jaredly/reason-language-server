@@ -3,8 +3,9 @@
 [@bs.module "fs"] external readFileSync: string => string = "";
 [@bs.module "fs"] external writeFileSync: (string, string) => unit = "";
 
+/* TODO check to see if a previous _version is parseable */
 writeFileSync(
-  "data." ++ string_of_int(Types.v) ++ ".json",
+  "data." ++ Types.version ++ ".json",
   Js.Json.stringify(Serde.serializeHousehold(Types.example)),
 );
 
@@ -13,14 +14,14 @@ assert(
   == Ok(Types.example),
 );
 
-for (i in 1 to Types.v) {
-  let raw = readFileSync("data." ++ string_of_int(i) ++ ".json");
+Types.all_versions->List.forEach(version => {
+  let raw = readFileSync("data." ++ version ++ ".json");
   let json = Js.Json.parseExn(raw);
   switch (Serde.deserializeHousehold(json)) {
-    | Ok(result) => Js.log3(i, "Good", Js.Json.stringifyAny(result))
-    | Error(error) => Js.log3(i, "Failed", error)
+    | Ok(result) => Js.log3(version, "Good", Js.Json.stringifyAny(result))
+    | Error(error) => Js.log3(version, "Failed", error)
   }
-};
+})
 
 /*
 This was just checking the quality of error messagse.

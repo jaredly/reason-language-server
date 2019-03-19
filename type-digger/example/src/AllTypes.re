@@ -1,6 +1,5 @@
 
 module V1 = {
-  let v = 1;
   type person = {
     name: string,
     age: int,
@@ -21,7 +20,6 @@ module V1 = {
 };
 
 module V2 = {
-  let v = 2;
   [@migrate.age person => float_of_int(person.age * 7)]
   type person = {
     name: string,
@@ -42,8 +40,29 @@ module V2 = {
   let example = {people: [{name: "Me", age: 10., coords: (1., 3.), parents: None}], pets: [Dog]}
 };
 
+module V2_1 = {
+  [@migrate.age person => float_of_int(person.age * 7)]
+  type person = {
+    name: string,
+    age: float,
+    coords: (float, float),
+    parents: option((person, person))
+  };
+
+  type pet =
+    | Dog
+    | Cat
+    | Mouse
+
+  type household = {
+    people: list(person),
+    pets: list(pet),
+  };
+
+  let example = {people: [{name: "Me", age: 10., coords: (1., 3.), parents: None}], pets: [Dog]}
+};
+
 module V3 = {
-  let v = 3;
   type person = {
     name: string,
     age: float,
@@ -64,7 +83,6 @@ module V3 = {
 };
 
 module V4 = {
-  let v = 4;
   type person = V3.person = {
     name: string,
     age: float,
@@ -92,7 +110,6 @@ module V4 = {
 };
 
 module V5 = {
-  let v = 5;
   type person = V3.person = {
     name: string,
     age: float,
@@ -131,7 +148,6 @@ module V5 = {
 };
 
 module V6 = {
-  let v = 6;
   type person = {
     name: string,
     age: float,

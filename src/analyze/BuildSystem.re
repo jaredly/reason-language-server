@@ -277,7 +277,7 @@ let getCompiler = (rootPath, buildSystem) => {
     | BsbNative(_, Bytecode) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
-    | Dune(Esy(_)) => getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
+    | Dune(Esy(_)) => getExecutableInEsyPath("ocamlc.opt", ~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt");
       binPath
