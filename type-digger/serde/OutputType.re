@@ -72,13 +72,13 @@ and outputExpr = (~mapVariable=name => Ast_helper.Typ.var(name), showSource, exp
   | Variable(name) => mapVariable(name)
   | AnonVariable => any()
   | RowVariant(rows, closed) =>
-  print_endline("output " ++ Vendor.Json.stringify(TypeMap.SerializeSimplerType.toJson(x => Vendor.Json.String("<external>"), expr)));
+  // print_endline("output " ++ Vendor.Json.stringify(TypeMap.SerializeSimplerType.toJson(x => Vendor.Json.String("<external>"), expr)));
   variant(rows->Belt.List.map(((label, expr)) => {
-    Parsetree.Rtag(Location.mknoloc(label), [], closed, switch expr {
+    Parsetree.Rtag(Location.mknoloc(label), [], false, switch expr {
       | None => []
       | Some(expr) => [outputExpr(~mapVariable, showSource, expr)]
     })
-  }), Closed, None)
+  }), closed ? Closed: Open, None)
   | Reference(source, args) => showSource(source, args->List.map(outputExpr(~mapVariable, showSource)))
   | Tuple(items) => tuple(items->List.map(outputExpr(~mapVariable, showSource)))
   | Fn(args, result) =>

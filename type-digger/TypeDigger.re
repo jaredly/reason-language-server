@@ -109,7 +109,7 @@ let compareAttributes = (one, two) => {
 let compareTypes = (oldType: SharedTypes.SimpleType.declaration('source), newType: SharedTypes.SimpleType.declaration('source)) => {
   oldType.name == newType.name &&
   oldType.variables == newType.variables && {
-    print_endline("Comparing");
+    // print_endline("Comparing");
     switch (oldType.body, newType.body) {
       | (Variant(olds), Variant(news)) =>
         olds->Belt.List.every(one => news->Belt.List.has(one, (==)))

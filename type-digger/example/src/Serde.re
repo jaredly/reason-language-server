@@ -22,7 +22,7 @@ module Version1 = {
           let inner = attr_people =>
             Belt.Result.Ok({people: attr_people, pets: attr_pets});
           switch (Js.Dict.get(dict, "people")) {
-          | None => Belt.Result.Error(["No attribute people"])
+          | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
             switch (
               (
@@ -52,13 +52,13 @@ module Version1 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute people", ...error])
+              Belt.Result.Error(["attribute 'people'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "pets")) {
-        | None => Belt.Result.Error(["No attribute pets"])
+        | None => Belt.Result.Error(["No attribute 'pets'"])
         | Some(json) =>
           switch (
             (
@@ -88,7 +88,7 @@ module Version1 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute pets", ...error])
+            Belt.Result.Error(["attribute 'pets'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -110,7 +110,7 @@ module Version1 = {
                   parents: attr_parents,
                 });
               switch (Js.Dict.get(dict, "name")) {
-              | None => Belt.Result.Error(["No attribute name"])
+              | None => Belt.Result.Error(["No attribute 'name'"])
               | Some(json) =>
                 switch (
                   (
@@ -124,13 +124,13 @@ module Version1 = {
                   )
                 ) {
                 | Belt.Result.Error(error) =>
-                  Belt.Result.Error(["attribute name", ...error])
+                  Belt.Result.Error(["attribute 'name'", ...error])
                 | Ok(data) => inner(data)
                 }
               };
             };
             switch (Js.Dict.get(dict, "age")) {
-            | None => Belt.Result.Error(["No attribute age"])
+            | None => Belt.Result.Error(["No attribute 'age'"])
             | Some(json) =>
               switch (
                 (
@@ -145,13 +145,13 @@ module Version1 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute age", ...error])
+                Belt.Result.Error(["attribute 'age'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "coords")) {
-          | None => Belt.Result.Error(["No attribute coords"])
+          | None => Belt.Result.Error(["No attribute 'coords'"])
           | Some(json) =>
             switch (
               (
@@ -194,7 +194,7 @@ module Version1 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute coords", ...error])
+              Belt.Result.Error(["attribute 'coords'", ...error])
             | Ok(data) => inner(data)
             }
           };
@@ -236,7 +236,7 @@ module Version1 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute parents", ...error])
+            Belt.Result.Error(["attribute 'parents'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -276,7 +276,7 @@ module Version2 = {
           let inner = attr_people =>
             Belt.Result.Ok({people: attr_people, pets: attr_pets});
           switch (Js.Dict.get(dict, "people")) {
-          | None => Belt.Result.Error(["No attribute people"])
+          | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
             switch (
               (
@@ -306,13 +306,13 @@ module Version2 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute people", ...error])
+              Belt.Result.Error(["attribute 'people'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "pets")) {
-        | None => Belt.Result.Error(["No attribute pets"])
+        | None => Belt.Result.Error(["No attribute 'pets'"])
         | Some(json) =>
           switch (
             (
@@ -342,7 +342,7 @@ module Version2 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute pets", ...error])
+            Belt.Result.Error(["attribute 'pets'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -364,7 +364,7 @@ module Version2 = {
                   parents: attr_parents,
                 });
               switch (Js.Dict.get(dict, "name")) {
-              | None => Belt.Result.Error(["No attribute name"])
+              | None => Belt.Result.Error(["No attribute 'name'"])
               | Some(json) =>
                 switch (
                   (
@@ -378,13 +378,13 @@ module Version2 = {
                   )
                 ) {
                 | Belt.Result.Error(error) =>
-                  Belt.Result.Error(["attribute name", ...error])
+                  Belt.Result.Error(["attribute 'name'", ...error])
                 | Ok(data) => inner(data)
                 }
               };
             };
             switch (Js.Dict.get(dict, "age")) {
-            | None => Belt.Result.Error(["No attribute age"])
+            | None => Belt.Result.Error(["No attribute 'age'"])
             | Some(json) =>
               switch (
                 (
@@ -398,13 +398,13 @@ module Version2 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute age", ...error])
+                Belt.Result.Error(["attribute 'age'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "coords")) {
-          | None => Belt.Result.Error(["No attribute coords"])
+          | None => Belt.Result.Error(["No attribute 'coords'"])
           | Some(json) =>
             switch (
               (
@@ -447,7 +447,7 @@ module Version2 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute coords", ...error])
+              Belt.Result.Error(["attribute 'coords'", ...error])
             | Ok(data) => inner(data)
             }
           };
@@ -489,7 +489,7 @@ module Version2 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute parents", ...error])
+            Belt.Result.Error(["attribute 'parents'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -585,7 +585,7 @@ module Version3 = {
           let inner = attr_people =>
             Belt.Result.Ok({people: attr_people, pets: attr_pets});
           switch (Js.Dict.get(dict, "people")) {
-          | None => Belt.Result.Error(["No attribute people"])
+          | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
             switch (
               (
@@ -615,13 +615,13 @@ module Version3 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute people", ...error])
+              Belt.Result.Error(["attribute 'people'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "pets")) {
-        | None => Belt.Result.Error(["No attribute pets"])
+        | None => Belt.Result.Error(["No attribute 'pets'"])
         | Some(json) =>
           switch (
             (
@@ -651,7 +651,7 @@ module Version3 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute pets", ...error])
+            Belt.Result.Error(["attribute 'pets'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -671,7 +671,7 @@ module Version3 = {
                 coords: attr_coords,
               });
             switch (Js.Dict.get(dict, "name")) {
-            | None => Belt.Result.Error(["No attribute name"])
+            | None => Belt.Result.Error(["No attribute 'name'"])
             | Some(json) =>
               switch (
                 (
@@ -685,13 +685,13 @@ module Version3 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute name", ...error])
+                Belt.Result.Error(["attribute 'name'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "age")) {
-          | None => Belt.Result.Error(["No attribute age"])
+          | None => Belt.Result.Error(["No attribute 'age'"])
           | Some(json) =>
             switch (
               (
@@ -705,13 +705,13 @@ module Version3 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute age", ...error])
+              Belt.Result.Error(["attribute 'age'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "coords")) {
-        | None => Belt.Result.Error(["No attribute coords"])
+        | None => Belt.Result.Error(["No attribute 'coords'"])
         | Some(json) =>
           switch (
             (
@@ -754,7 +754,7 @@ module Version3 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute coords", ...error])
+            Belt.Result.Error(["attribute 'coords'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -835,7 +835,7 @@ module Version4 = {
           let inner = attr_people =>
             Belt.Result.Ok({people: attr_people, pets: attr_pets});
           switch (Js.Dict.get(dict, "people")) {
-          | None => Belt.Result.Error(["No attribute people"])
+          | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
             switch (
               (
@@ -865,13 +865,13 @@ module Version4 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute people", ...error])
+              Belt.Result.Error(["attribute 'people'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "pets")) {
-        | None => Belt.Result.Error(["No attribute pets"])
+        | None => Belt.Result.Error(["No attribute 'pets'"])
         | Some(json) =>
           switch (
             (
@@ -901,7 +901,7 @@ module Version4 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute pets", ...error])
+            Belt.Result.Error(["attribute 'pets'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1041,7 +1041,7 @@ module Version5 = {
                 county: attr_county,
               });
             switch (Js.Dict.get(dict, "people")) {
-            | None => Belt.Result.Error(["No attribute people"])
+            | None => Belt.Result.Error(["No attribute 'people'"])
             | Some(json) =>
               switch (
                 (
@@ -1071,13 +1071,13 @@ module Version5 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute people", ...error])
+                Belt.Result.Error(["attribute 'people'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "pets")) {
-          | None => Belt.Result.Error(["No attribute pets"])
+          | None => Belt.Result.Error(["No attribute 'pets'"])
           | Some(json) =>
             switch (
               (
@@ -1107,13 +1107,13 @@ module Version5 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute pets", ...error])
+              Belt.Result.Error(["attribute 'pets'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "county")) {
-        | None => Belt.Result.Error(["No attribute county"])
+        | None => Belt.Result.Error(["No attribute 'county'"])
         | Some(json) =>
           switch (
             (
@@ -1128,7 +1128,7 @@ module Version5 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute county", ...error])
+            Belt.Result.Error(["attribute 'county'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1145,7 +1145,7 @@ module Version5 = {
           let inner = attr_name =>
             Belt.Result.Ok({name: attr_name, contents: attr_contents});
           switch (Js.Dict.get(dict, "name")) {
-          | None => Belt.Result.Error(["No attribute name"])
+          | None => Belt.Result.Error(["No attribute 'name'"])
           | Some(json) =>
             switch (
               (
@@ -1159,17 +1159,17 @@ module Version5 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute name", ...error])
+              Belt.Result.Error(["attribute 'name'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "contents")) {
-        | None => Belt.Result.Error(["No attribute contents"])
+        | None => Belt.Result.Error(["No attribute 'contents'"])
         | Some(json) =>
           switch (aTransformer(json)) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute contents", ...error])
+            Belt.Result.Error(["attribute 'contents'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1305,7 +1305,7 @@ module Version6 = {
                     county: attr_county,
                   });
                 switch (Js.Dict.get(dict, "people")) {
-                | None => Belt.Result.Error(["No attribute people"])
+                | None => Belt.Result.Error(["No attribute 'people'"])
                 | Some(json) =>
                   switch (
                     (
@@ -1336,13 +1336,13 @@ module Version6 = {
                     )
                   ) {
                   | Belt.Result.Error(error) =>
-                    Belt.Result.Error(["attribute people", ...error])
+                    Belt.Result.Error(["attribute 'people'", ...error])
                   | Ok(data) => inner(data)
                   }
                 };
               };
               switch (Js.Dict.get(dict, "pets")) {
-              | None => Belt.Result.Error(["No attribute pets"])
+              | None => Belt.Result.Error(["No attribute 'pets'"])
               | Some(json) =>
                 switch (
                   (
@@ -1373,13 +1373,13 @@ module Version6 = {
                   )
                 ) {
                 | Belt.Result.Error(error) =>
-                  Belt.Result.Error(["attribute pets", ...error])
+                  Belt.Result.Error(["attribute 'pets'", ...error])
                 | Ok(data) => inner(data)
                 }
               };
             };
             switch (Js.Dict.get(dict, "what")) {
-            | None => Belt.Result.Error(["No attribute what"])
+            | None => Belt.Result.Error(["No attribute 'what'"])
             | Some(json) =>
               switch (
                 (
@@ -1394,13 +1394,13 @@ module Version6 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute what", ...error])
+                Belt.Result.Error(["attribute 'what'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "visitors")) {
-          | None => Belt.Result.Error(["No attribute visitors"])
+          | None => Belt.Result.Error(["No attribute 'visitors'"])
           | Some(json) =>
             switch (
               (
@@ -1430,13 +1430,13 @@ module Version6 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute visitors", ...error])
+              Belt.Result.Error(["attribute 'visitors'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "county")) {
-        | None => Belt.Result.Error(["No attribute county"])
+        | None => Belt.Result.Error(["No attribute 'county'"])
         | Some(json) =>
           switch (
             (
@@ -1451,7 +1451,7 @@ module Version6 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute county", ...error])
+            Belt.Result.Error(["attribute 'county'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1473,7 +1473,7 @@ module Version6 = {
                 isClosed: attr_isClosed,
               });
             switch (Js.Dict.get(dict, "the name")) {
-            | None => Belt.Result.Error(["No attribute the name"])
+            | None => Belt.Result.Error(["No attribute 'the name'"])
             | Some(json) =>
               switch (
                 (
@@ -1487,23 +1487,23 @@ module Version6 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute the name", ...error])
+                Belt.Result.Error(["attribute 'the name'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "contents")) {
-          | None => Belt.Result.Error(["No attribute contents"])
+          | None => Belt.Result.Error(["No attribute 'contents'"])
           | Some(json) =>
             switch (aTransformer(json)) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute contents", ...error])
+              Belt.Result.Error(["attribute 'contents'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "isClosed")) {
-        | None => Belt.Result.Error(["No attribute isClosed"])
+        | None => Belt.Result.Error(["No attribute 'isClosed'"])
         | Some(json) =>
           switch (
             (
@@ -1518,7 +1518,7 @@ module Version6 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute isClosed", ...error])
+            Belt.Result.Error(["attribute 'isClosed'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1632,7 +1632,7 @@ module Version7 = {
     Types.person = {
       name: string,
       age: float,
-      thing: [ | `one | `two | `three],
+      thing: [ | `one | `two(int) | `three(float, string)],
       coords: (float, float),
     }
   and _Types__pet = Types.pet = | Dog | Cat | Mouse
@@ -1655,7 +1655,7 @@ module Version7 = {
                     county: attr_county,
                   });
                 switch (Js.Dict.get(dict, "people")) {
-                | None => Belt.Result.Error(["No attribute people"])
+                | None => Belt.Result.Error(["No attribute 'people'"])
                 | Some(json) =>
                   switch (
                     (
@@ -1686,13 +1686,13 @@ module Version7 = {
                     )
                   ) {
                   | Belt.Result.Error(error) =>
-                    Belt.Result.Error(["attribute people", ...error])
+                    Belt.Result.Error(["attribute 'people'", ...error])
                   | Ok(data) => inner(data)
                   }
                 };
               };
               switch (Js.Dict.get(dict, "pets")) {
-              | None => Belt.Result.Error(["No attribute pets"])
+              | None => Belt.Result.Error(["No attribute 'pets'"])
               | Some(json) =>
                 switch (
                   (
@@ -1723,13 +1723,13 @@ module Version7 = {
                   )
                 ) {
                 | Belt.Result.Error(error) =>
-                  Belt.Result.Error(["attribute pets", ...error])
+                  Belt.Result.Error(["attribute 'pets'", ...error])
                 | Ok(data) => inner(data)
                 }
               };
             };
             switch (Js.Dict.get(dict, "what")) {
-            | None => Belt.Result.Error(["No attribute what"])
+            | None => Belt.Result.Error(["No attribute 'what'"])
             | Some(json) =>
               switch (
                 (
@@ -1744,13 +1744,13 @@ module Version7 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute what", ...error])
+                Belt.Result.Error(["attribute 'what'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "visitors")) {
-          | None => Belt.Result.Error(["No attribute visitors"])
+          | None => Belt.Result.Error(["No attribute 'visitors'"])
           | Some(json) =>
             switch (
               (
@@ -1780,13 +1780,13 @@ module Version7 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute visitors", ...error])
+              Belt.Result.Error(["attribute 'visitors'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "county")) {
-        | None => Belt.Result.Error(["No attribute county"])
+        | None => Belt.Result.Error(["No attribute 'county'"])
         | Some(json) =>
           switch (
             (
@@ -1801,7 +1801,7 @@ module Version7 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute county", ...error])
+            Belt.Result.Error(["attribute 'county'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1825,7 +1825,7 @@ module Version7 = {
                   other: attr_other,
                 });
               switch (Js.Dict.get(dict, "the name")) {
-              | None => Belt.Result.Error(["No attribute the name"])
+              | None => Belt.Result.Error(["No attribute 'the name'"])
               | Some(json) =>
                 switch (
                   (
@@ -1839,23 +1839,23 @@ module Version7 = {
                   )
                 ) {
                 | Belt.Result.Error(error) =>
-                  Belt.Result.Error(["attribute the name", ...error])
+                  Belt.Result.Error(["attribute 'the name'", ...error])
                 | Ok(data) => inner(data)
                 }
               };
             };
             switch (Js.Dict.get(dict, "contents")) {
-            | None => Belt.Result.Error(["No attribute contents"])
+            | None => Belt.Result.Error(["No attribute 'contents'"])
             | Some(json) =>
               switch (aTransformer(json)) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute contents", ...error])
+                Belt.Result.Error(["attribute 'contents'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "isClosed")) {
-          | None => Belt.Result.Error(["No attribute isClosed"])
+          | None => Belt.Result.Error(["No attribute 'isClosed'"])
           | Some(json) =>
             switch (
               (
@@ -1870,7 +1870,7 @@ module Version7 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute isClosed", ...error])
+              Belt.Result.Error(["attribute 'isClosed'", ...error])
             | Ok(data) => inner(data)
             }
           };
@@ -1899,7 +1899,7 @@ module Version7 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute other", ...error])
+            Belt.Result.Error(["attribute 'other'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -1921,7 +1921,7 @@ module Version7 = {
                   coords: attr_coords,
                 });
               switch (Js.Dict.get(dict, "name")) {
-              | None => Belt.Result.Error(["No attribute name"])
+              | None => Belt.Result.Error(["No attribute 'name'"])
               | Some(json) =>
                 switch (
                   (
@@ -1935,13 +1935,13 @@ module Version7 = {
                   )
                 ) {
                 | Belt.Result.Error(error) =>
-                  Belt.Result.Error(["attribute name", ...error])
+                  Belt.Result.Error(["attribute 'name'", ...error])
                 | Ok(data) => inner(data)
                 }
               };
             };
             switch (Js.Dict.get(dict, "age")) {
-            | None => Belt.Result.Error(["No attribute age"])
+            | None => Belt.Result.Error(["No attribute 'age'"])
             | Some(json) =>
               switch (
                 (
@@ -1955,13 +1955,13 @@ module Version7 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute age", ...error])
+                Belt.Result.Error(["attribute 'age'", ...error])
               | Ok(data) => inner(data)
               }
             };
           };
           switch (Js.Dict.get(dict, "thing")) {
-          | None => Belt.Result.Error(["No attribute thing"])
+          | None => Belt.Result.Error(["No attribute 'thing'"])
           | Some(json) =>
             switch (
               (
@@ -1970,13 +1970,13 @@ module Version7 = {
                   | JSONArray([|tag|])
                       when Js.Json.JSONString("one") == Js.Json.classify(tag) =>
                     Belt.Result.Ok(`one)
-                  | JSONArray([|tag|])
+                  | JSONArray([|tag, arg0|])
                       when Js.Json.JSONString("two") == Js.Json.classify(tag) =>
-                    Belt.Result.Ok(`two)
-                  | JSONArray([|tag|])
+                    Belt.Result.Ok(`two(arg0))
+                  | JSONArray([|tag, arg0|])
                       when
                         Js.Json.JSONString("three") == Js.Json.classify(tag) =>
-                    Belt.Result.Ok(`three)
+                    Belt.Result.Ok(`three(arg0))
                   | _ => Belt.Result.Error(["Expected an array"])
                   }
               )(
@@ -1984,13 +1984,13 @@ module Version7 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute thing", ...error])
+              Belt.Result.Error(["attribute 'thing'", ...error])
             | Ok(data) => inner(data)
             }
           };
         };
         switch (Js.Dict.get(dict, "coords")) {
-        | None => Belt.Result.Error(["No attribute coords"])
+        | None => Belt.Result.Error(["No attribute 'coords'"])
         | Some(json) =>
           switch (
             (
@@ -2033,7 +2033,7 @@ module Version7 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute coords", ...error])
+            Belt.Result.Error(["attribute 'coords'", ...error])
           | Ok(data) => inner(data)
           }
         };
@@ -2167,8 +2167,24 @@ module Version7 = {
               constructor =>
                 switch (constructor) {
                 | `one => Js.Json.array([|Js.Json.string("one")|])
-                | `two => Js.Json.array([|Js.Json.string("two")|])
-                | `three => Js.Json.array([|Js.Json.string("three")|])
+                | `two(arg) =>
+                  Js.Json.array([|
+                    Js.Json.string("two"),
+                    (int => Js.Json.number(float_of_int(int)))(arg),
+                  |])
+                | `three(arg) =>
+                  Js.Json.array([|
+                    Js.Json.string("three"),
+                    (
+                      ((arg0, arg1)) =>
+                        Js.Json.array([|
+                          Js.Json.number(arg0),
+                          Js.Json.string(arg1),
+                        |])
+                    )(
+                      arg,
+                    ),
+                  |])
                 }
             )(
               record.thing,
@@ -2264,7 +2280,11 @@ module Version7 = {
       let _converted_name = _input_data.name;
       let _converted_age = _input_data.age;
       let _converted_thing =
-        (_ => `one: Version6._Types__person => [ | `one | `two | `three])(
+        (
+          _ => `one:
+            Version6._Types__person =>
+            [ | `one | `two(int) | `three(float, string)]
+        )(
           _input_data,
         );
       let _converted_coords = {

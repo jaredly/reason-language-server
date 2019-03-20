@@ -243,10 +243,10 @@ let deserializeTransformer = {
           if%e (isOptional) {
             [%expr inner(None)]
           } else {
-            [%expr Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]])]
+            [%expr Belt.Result.Error([[%e MakeDeserializer.expString("No attribute '" ++ attrName ++ "'")]])]
           }
         | Some(json) => switch ([%e inner](json)) {
-          | Belt.Result.Error(error) => Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
+          | Belt.Result.Error(error) => Belt.Result.Error([[%e MakeDeserializer.expString("attribute '" ++ attrName ++ "'")], ...error])
           | Ok(data) => inner(data)
         }
       }

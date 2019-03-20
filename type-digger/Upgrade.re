@@ -209,7 +209,7 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
     if (txt == "migrate") {
       switch (getExpr(payload)) {
         | Some(expr) =>
-        print_endline("Have migrate attr");
+        // print_endline("Have migrate attr");
         Some(expr)
         | None =>
           /* Printast.structure(0, Stdlib.Format.str_formatter, items);
