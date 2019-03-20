@@ -1972,11 +1972,71 @@ module Version7 = {
                     Belt.Result.Ok(`one)
                   | JSONArray([|tag, arg0|])
                       when Js.Json.JSONString("two") == Js.Json.classify(tag) =>
-                    Belt.Result.Ok(`two(arg0))
+                    switch (
+                      (
+                        number =>
+                          switch (Js.Json.classify(number)) {
+                          | JSONNumber(number) =>
+                            Belt.Result.Ok(int_of_float(number))
+                          | _ => Error(["Expected a float"])
+                          }
+                      )(
+                        arg0,
+                      )
+                    ) {
+                    | Belt.Result.Ok(arg) => Belt.Result.Ok(`two(arg))
+                    | Error(error) => Belt.Result.Error(error)
+                    }
                   | JSONArray([|tag, arg0|])
                       when
                         Js.Json.JSONString("three") == Js.Json.classify(tag) =>
-                    Belt.Result.Ok(`three(arg0))
+                    switch (
+                      (
+                        json =>
+                          switch (Js.Json.classify(json)) {
+                          | JSONArray([|arg0, arg1|]) =>
+                            switch (
+                              (
+                                string =>
+                                  switch (Js.Json.classify(string)) {
+                                  | JSONString(string) =>
+                                    Belt.Result.Ok(string)
+                                  | _ => Error(["expected a string"])
+                                  }
+                              )(
+                                arg1,
+                              )
+                            ) {
+                            | Belt.Result.Ok(arg1) =>
+                              switch (
+                                (
+                                  number =>
+                                    switch (Js.Json.classify(number)) {
+                                    | JSONNumber(number) =>
+                                      Belt.Result.Ok(number)
+                                    | _ => Error(["Expected a float"])
+                                    }
+                                )(
+                                  arg0,
+                                )
+                              ) {
+                              | Belt.Result.Ok(arg0) =>
+                                [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                              | Error(error) =>
+                                Error(["tuple element 0", ...error])
+                              }
+                            | Error(error) =>
+                              Error(["tuple element 1", ...error])
+                            }
+                          | _ => Belt.Result.Error(["Expected an array"])
+                          }
+                      )(
+                        arg0,
+                      )
+                    ) {
+                    | Belt.Result.Ok(arg) => Belt.Result.Ok(`three(arg))
+                    | Error(error) => Belt.Result.Error(error)
+                    }
                   | _ => Belt.Result.Error(["Expected an array"])
                   }
               )(

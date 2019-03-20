@@ -18,7 +18,7 @@ Types.all_versions->List.forEach(version => {
   let raw = readFileSync("data." ++ version ++ ".json");
   let json = Js.Json.parseExn(raw);
   switch (Serde.deserializeHousehold(json)) {
-    | Ok(result) => Js.log3(version, "Good", Js.Json.stringifyAny(result))
+    | Ok(result) => Js.log4(version, "Good", Js.Json.stringifyAny(result), Js.Json.stringify(json))
     | Error(error) => Js.log3(version, "Failed", error)
   }
 })

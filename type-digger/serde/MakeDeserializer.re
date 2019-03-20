@@ -109,17 +109,15 @@ let rec forArgs = (~renames, transformer, args, body, errorName) => {
   | RowVariant(rows, closed) =>
     let rows =
       rows->Belt.List.map(((name, arg)) => {
-        let body =
-          ok(
-              Exp.variant(
-                name,
-                switch (arg) {
-                | None => None
-                | Some(arg) =>
-                  Some(makeIdent(Lident("arg0")))
-                },
-              ),
-          );
+        let body = switch arg {
+          | None => ok(Exp.variant(name, None))
+          | Some(arg) => {
+            [%expr switch ([%e forExpr(~renames, transformer, arg)](arg0)) {
+              | Belt.Result.Ok(arg) => Belt.Result.Ok([%e Exp.variant(name, Some([%expr arg]))])
+              | Error(error) => Belt.Result.Error(error)
+            }]
+          }
+        };
         (name, arg == None ? 0 : 1, body);
       });
 
