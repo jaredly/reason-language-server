@@ -129,7 +129,7 @@ let allTypesPreserved = (oldLockedTypes, newLockedTypes) => {
 };
 
 
-let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
+let parseLockfile = (~override, config, lockedEntries, currentTypeMap, lockFilePath) => {
   switch (Files.readFileResult(lockFilePath)) {
     | Error(_) => {
       Locked.versions: [|{
@@ -151,7 +151,10 @@ let parseLockfile = (config, lockedEntries, currentTypeMap, lockFilePath) => {
       let latestVersion = Locked.getLatestVersion(lockfile);
       if (latestVersion == config.version) {
         /* TODO allow addative type changes... maybe */
-        if (!allTypesPreserved(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap)) {
+        if (
+          !allTypesPreserved(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap) &&
+          !override
+        ) {
 
           /* let lockfileJson = TypeMapSerde.lockfileToJson({
             ...lockfile,
@@ -347,7 +350,7 @@ let makeLockfilePath = configPath => {
   Filename.concat(base, newName)
 };
 
-let main = configPath => {
+let main = (~override=false, configPath) => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config = switch (TypeMapSerde.configFromJson(json)) {
     | Error(m) => Error(String.concat("::", m))
@@ -357,7 +360,7 @@ let main = configPath => {
 
   let lockFilePath = makeLockfilePath(configPath);
 
-  let lockfile = parseLockfile(config, lockedEntries, currentTypeMap, lockFilePath)
+  let lockfile = parseLockfile(~override, config, lockedEntries, currentTypeMap, lockFilePath)
 
   let lockedDeep = Belt.Array.concat([|Hashtbl.create(0)|], lockfile.versions->Belt.Array.mapWithIndex((_index, config) => {
     Lockdown.typesAndDependencies(config.typeMap)
@@ -416,5 +419,6 @@ let main = configPath => {
 
 switch (Sys.argv->Belt.List.fromArray) {
   | [_, config] => main(config)
+  | [_, config, "--override"] => main(~override=true, config)
   | _ => failwith("Bad args")
 }
