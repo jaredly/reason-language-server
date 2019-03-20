@@ -71,6 +71,12 @@ and outputExpr = (~mapVariable=name => Ast_helper.Typ.var(name), showSource, exp
   switch (expr) {
   | Variable(name) => mapVariable(name)
   | AnonVariable => any()
+  | RowVariant(rows, closed) => variant(rows->Belt.List.map(((label, expr)) => {
+    Parsetree.Rtag(Location.mknoloc(label), [], closed, switch expr {
+      | None => []
+      | Some(expr) => [outputExpr(~mapVariable, showSource, expr)]
+    })
+  }), Closed, None)
   | Reference(source, args) => showSource(source, args->List.map(outputExpr(~mapVariable, showSource)))
   | Tuple(items) => tuple(items->List.map(outputExpr(~mapVariable, showSource)))
   | Fn(args, result) =>

@@ -4,7 +4,7 @@ const path = require('path')
 const {spawnSync} = require('child_process')
 
 const allTypesRaw = fs.readFileSync(__dirname + '/src/AllTypes.re', 'utf8')
-const versions = allTypesRaw.split('\n').filter(line => line.match(/^module V/))
+const versions = allTypesRaw.split('\n').filter(line => line.match(/^module V\d+/))
 .map(line => {
   const [_, major, __, minor] = line.match(/^module V(\d+)(_(\d+))?/);
   return {major: parseInt(major), minor: parseInt(minor)}

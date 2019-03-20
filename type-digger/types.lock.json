@@ -763,6 +763,68 @@
                     null
                   ],
                   [
+                    "RowVariant",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Tuple",
+                            [
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "string"
+                                ],
+                                []
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "option"
+                                ],
+                                [
+                                  [
+                                    "Reference",
+                                    [
+                                      "Public",
+                                      [
+                                        "SharedTypes",
+                                        ["SimpleType"],
+                                        "expr"
+                                      ]
+                                    ],
+                                    [
+                                      [
+                                        "Variable",
+                                        "source"
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "bool"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
                     "Reference",
                     [
                       [

@@ -197,9 +197,11 @@ Issues
  */
 
 module V7 = {
+  [@migrate.thing (_) => `one]
   type person = {
     name: string,
     age: float,
+    thing: [`one | `two],
     coords: (float, float)
   };
 
@@ -230,10 +232,35 @@ module V7 = {
   };
 
   let example = {
-    people: [{name: "Me", age: 10., coords: (5., 6.)}],
+    people: [{name: "Me", age: 10., coords: (5., 6.), thing: `one}],
     pets: [Dog, Mouse],
     what: Now("5", 5),
-    visitors: [{name: "Friend", age: 11.5, coords: (1., 6.)}],
+    visitors: [{name: "Friend", age: 11.5, coords: (1., 6.), thing: `one}],
     county: {name: "Bearland", contents: 5, isClosed: false, other: None}
   };
+};
+
+module All = {
+  type normalRecord = {
+    a: int,
+    b: string,
+    c: (int, (string, float)),
+    d: array(int),
+    e: list(float),
+    f: option(int)
+  };
+  type recursive = A | B(recursive);
+  type parameterizedRecord('a, 'b) = {
+    a: 'a,
+    b: 'b,
+    c: (int, float),
+    d: recursive,
+  };
+  type normalVariant = A | B | C(int) | D(normalRecord);
+  type parameterizedVariant('a, 'b) = PA | PB('a) | PC('a, 'b) | PD(parameterizedRecord('a, 'b)) | PE(normalVariant) | PF(normalRecord);
+  type top = {
+    contents: parameterizedVariant(int, array(float)),
+    title: string,
+  };
+  type rename = top;
 };

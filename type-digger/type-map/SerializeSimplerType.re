@@ -16,6 +16,7 @@ let sourceToJson = source => switch source {
 let rec toJson = (sourceToJson, t) => switch t {
   | Variable(string) => l([s("Variable"), s(string)])
   | AnonVariable => s("AnonVariable")
+  | RowVariant(rows, closed) => l([s("RowVariant"), s("FIXME")])
   | Reference(source, args) => l([
     s("Reference"),
     sourceToJson(source),
