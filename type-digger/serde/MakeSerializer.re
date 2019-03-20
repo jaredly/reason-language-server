@@ -51,7 +51,7 @@ let rec makeList = items => switch items {
   ])))
 }
 
-let rec forExpr = (transformer, t) => switch t {
+let rec forExpr = (~renames, transformer, t) => switch t {
   | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
   | AnonVariable => failer("Non variable")
   | Reference(source, args) =>
@@ -66,7 +66,7 @@ let rec forExpr = (transformer, t) => switch t {
                 makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
                 [
                   (Nolabel, makeIdent(Lident("list"))),
-                  (Nolabel, forExpr(transformer, arg)),
+                  (Nolabel, forExpr(~renames, transformer, arg)),
                 ]
               )
           )
@@ -77,7 +77,7 @@ let rec forExpr = (transformer, t) => switch t {
           | [] => transformer.source(source)
           | args => Exp.apply(
             transformer.source(source),
-            args->Belt.List.map(arg => (Nolabel, forExpr(transformer, arg)))
+            args->Belt.List.map(arg => (Nolabel, forExpr(~renames, transformer, arg)))
           )
         }
     }
@@ -91,7 +91,7 @@ let rec forExpr = (transformer, t) => switch t {
           Pat.var(Location.mknoloc(name)),
           ...pats
         ], [
-          Exp.apply(forExpr(transformer, arg), [
+          Exp.apply(forExpr(~renames, transformer, arg), [
             (Nolabel, Exp.ident(Location.mknoloc(Lident(name))))
           ]),
           ...exps
@@ -100,6 +100,38 @@ let rec forExpr = (transformer, t) => switch t {
     let (pats, exps) = loop(0, items);
     Exp.fun_(Nolabel, None, Pat.tuple(pats),
       transformer.tuple(exps)
+    )
+  | RowVariant(rows, _closed) =>
+    Exp.fun_(
+      Nolabel,
+      None,
+      Pat.var(Location.mknoloc("constructor")),
+      Exp.match(
+        makeIdent(Lident("constructor")),
+        rows->Belt.List.map(((name, arg)) => {
+          Exp.case(
+            Pat.variant(
+              name,
+              switch arg {
+                | None => None
+                | Some(arg) => Some(Pat.var(Location.mknoloc("arg")))
+              }
+            ),
+            transformer.constructor(
+              ~renames, name,
+              switch arg {
+                | None => []
+                | Some(arg) =>
+                  [Exp.apply(
+                    forExpr(~renames, transformer, arg),
+                    [(Nolabel, makeIdent(Lident("arg")))],
+                  )]
+              }
+            )
+          )
+
+        })
+      )
     )
   | _ => failer("not impl expr")
 };
@@ -123,7 +155,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
       Nolabel,
       None,
       Pat.var(Location.mknoloc("value")),
-      Exp.apply(forExpr(transformer, e), [
+      Exp.apply(forExpr(~renames, transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) =>
@@ -137,7 +169,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
       transformer.record(~renames, items->Belt.List.map(((label, expr)) => {
         (label,
           Exp.apply(
-            forExpr(transformer, expr),
+            forExpr(~renames, transformer, expr),
             [(Nolabel, Exp.field(makeIdent(Lident("record")),
             Location.mknoloc(Lident(label))
             ))]
@@ -173,7 +205,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
             transformer.constructor(
               ~renames, name,
               args->Belt.List.mapWithIndex((index, arg) => {
-                Exp.apply(forExpr(transformer, arg),
+                Exp.apply(forExpr(~renames, transformer, arg),
                 [(Nolabel, makeIdent(Lident("arg" ++ string_of_int(index))))])
               })
             )

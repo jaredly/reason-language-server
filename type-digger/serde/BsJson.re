@@ -293,7 +293,7 @@ let deserializeTransformer = {
         ])
       )
     )
-  }
+  },
 };
 
 

@@ -63,11 +63,11 @@ let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))
   (Nolabel, expString(message))
 ]);
 
-let rec forArgs = (transformer, args, body, errorName) => {
+let rec forArgs = (~renames, transformer, args, body, errorName) => {
   let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
     let argname = "arg" ++ string_of_int(index);
     (Exp.match(
-      Exp.apply(forExpr(transformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
+      Exp.apply(forExpr(~renames, transformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
       [
         Exp.case(
           Pat.construct(Location.mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(Pat.var(Location.mknoloc(argname)))),
@@ -81,7 +81,7 @@ let rec forArgs = (transformer, args, body, errorName) => {
     ), index + 1)
   });
   res
-} and forExpr = (transformer, t) => switch t {
+} and forExpr = (~renames, transformer, t) => switch t {
   | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
   | AnonVariable => failer("Non variable")
   | Reference(source, args) =>
@@ -89,23 +89,41 @@ let rec forArgs = (transformer, args, body, errorName) => {
       | (DigTypes.Builtin("list"), [arg]) =>
         let loc = Location.none;
         [%expr
-          (list) => [%e transformer.list(forExpr(transformer, arg), [%expr list])]
+          (list) => [%e transformer.list(forExpr(~renames, transformer, arg), [%expr list])]
         ]
       | _ =>
         switch args {
           | [] => transformer.source(source)
           | args => Exp.apply(
             transformer.source(source),
-            args->Belt.List.map(arg => (Nolabel, forExpr(transformer, arg)))
+            args->Belt.List.map(arg => (Nolabel, forExpr(~renames, transformer, arg)))
           )
         }
     }
   | Tuple(items) =>
     let patArgs = makeTypArgs(items)->Belt.List.map(name => Pat.var(mknoloc(name)));
     let body = ok(Exp.tuple(makeTypArgs(items)->Belt.List.map(name => makeIdent(Lident(name)))));
-    let body = forArgs(transformer, items, body, "tuple element");
+    let body = forArgs(~renames, transformer, items, body, "tuple element");
     let loc = Location.none;
     transformer.tuple([%expr json], patArgs, body)
+  | RowVariant(rows, closed) =>
+    let rows =
+      rows->Belt.List.map(((name, arg)) => {
+        let body =
+          ok(
+              Exp.variant(
+                name,
+                switch (arg) {
+                | None => None
+                | Some(arg) =>
+                  Some(makeIdent(Lident("arg0")))
+                },
+              ),
+          );
+        (name, arg == None ? 0 : 1, body);
+      });
+
+    transformer.variant(~renames, rows)
   | _ => failer("not impl expr")
 };
 
@@ -128,11 +146,11 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
       Nolabel,
       None,
       Pat.var(Location.mknoloc("value")),
-      Exp.apply(forExpr(transformer, e), [
+      Exp.apply(forExpr(~renames, transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) =>
-    transformer.record(~renames, items->Belt.List.map(((label, expr)) => (label, forExpr(transformer, expr), {
+    transformer.record(~renames, items->Belt.List.map(((label, expr)) => (label, forExpr(~renames, transformer, expr), {
       switch expr {
         | Reference(Builtin("option"), [_]) => true
         | _ => false
@@ -161,7 +179,7 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
               coreType,
             ),
           );
-        (name, List.length(args), forArgs(transformer, args, body, "constructor argument"));
+        (name, List.length(args), forArgs(~renames, transformer, args, body, "constructor argument"));
       });
 
     transformer.variant(~renames, constructors)

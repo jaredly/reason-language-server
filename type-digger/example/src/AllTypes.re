@@ -201,7 +201,7 @@ module V7 = {
   type person = {
     name: string,
     age: float,
-    thing: [`one | `two],
+    thing: [`one | `two(int) | `three(float, string)],
     coords: (float, float)
   };
 
