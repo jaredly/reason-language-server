@@ -146,8 +146,16 @@ let filterDuplicates = cmts => {
 let nameSpaceToName = n => n |> Str.split(Str.regexp_string("-")) |> List.map(String.capitalize_ascii) |> String.concat("");
 
 let getNamespace = config => {
-  let isNamespaced = Json.get("namespace", config) |?> Json.bool |? false;
-  isNamespaced ? (config |> Json.get("name") |?> Json.string |! "name is required if namespace is true" |> nameSpaceToName |> s => Some(s)) : None;
+  let ns = Json.get("namespace", config);
+  let isNamespaced =
+    ns |?> Json.bool
+    |? (ns |?> Json.string |?> (_ => Some(true)) |? false);
+  isNamespaced ? (
+    ns |?> Json.string
+    |?? (Json.get("name", config) |?> Json.string)
+    |! "name is required if namespace is true"
+    |> nameSpaceToName |> s => Some(s)
+  ) : None;
 };
 
 let collectFiles = (~compiledTransform=x => x, ~sourceDirectory=?, directory) => {
