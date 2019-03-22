@@ -12,7 +12,9 @@ Runtime options:
 {
   "version": 1,
   "engines": {
-    "bs.json": "./src/Serde.re"
+    "bs.json": {
+      "output": "./src/Serde.re"
+    }
   },
   "entries": [
     {
@@ -36,8 +38,12 @@ Runtime options:
   // optional if there's only one engine (the types get inlined into the engine output file)
   "typesOutput": "./path/to/typesoutput.re",
   "engines": {
-    "rex-json": "./path/to/outfile.re",
-    "bs.json": "./path/to/outfile_bs.re",
+    "rex-json": {
+      "output": "./path/to/outfile.re",
+    },
+    "bs.json": {
+      "output": "./path/to/outfile_bs.re",
+    }
   },
   "entries": [
     {
@@ -98,6 +104,8 @@ When you run type-digger, it
 - *adding* a constructor to a variant type
 - *adding* a row to a polymorphic variant type (TODO not yet supported)
 - *adding* a new "entry" type
+- *adding* an optional attribute for a record (will default to None)
+- *removing* an attribute from a record
 
 # How upgrading and configuration and compatability works.
 

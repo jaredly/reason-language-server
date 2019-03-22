@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "$schemaVersion": 1,
-  "output": "type-digger/type-map-serde/Serde.ml",
+  "output": "type-digger/type-map-serde/Serde.re",
   "engine": ["rex-json"],
   "entries": [
     {
