@@ -28,9 +28,9 @@ jobs:
 
       # run tests!
       # - run: esy dune exec Bin -- --help
-      - run: esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
+      - run: esy exec-command --include-build-env cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
       - run: ./ExamplesTests.exe
-      - run: esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
+      - run: esy exec-command --include-build-env cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
       - save_cache:
           paths:
