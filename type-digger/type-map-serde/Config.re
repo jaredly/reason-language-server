@@ -55,6 +55,20 @@ type engines = {
   bs_json: option(engineConfig),
 };
 
+let engineConfigs = engines => switch engines {
+  | {rex_json: None, bs_json: Some(config)} => [(Bs_json, config)]
+  | {rex_json: Some(config), bs_json: None} => [(Rex_json, config)]
+  | {rex_json: Some(rex), bs_json: Some(bs)} => [(Rex_json, rex), (Bs_json, bs)]
+  | {rex_json: None, bs_json: None} => []
+};
+
+let activeEngines = engines => switch engines {
+  | {rex_json: None, bs_json: Some(_)} => [Bs_json]
+  | {rex_json: Some(_), bs_json: None} => [Rex_json]
+  | {rex_json: Some(_), bs_json: Some(_)} => [Rex_json, Bs_json]
+  | {rex_json: None, bs_json: None} => []
+};
+
 [@migrate.engines ({engine, output}) => switch engine {
   | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None})}
   | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None})}

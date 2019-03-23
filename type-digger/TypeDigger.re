@@ -4,34 +4,7 @@ open Analyze;
 module Json = Vendor.Json;
 module Locked = TypeMapSerde.Config.Locked;
 let loc = Location.none;
-
-let makeModule = (moduleName, contents) =>
-  Ast_helper.Str.module_(
-    Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
-  );
-
-let versionModuleName = version => "Version" ++ string_of_int(version);
-
-let hashList = tbl => Hashtbl.fold((key, value, result) => [(key, value), ...result], tbl, []);
-
-let lockTypes = (~currentVersion, version, typeMap, lockedDeep) => {
-  hashList(typeMap)
-  ->Belt.List.sort(compare)
-  ->Belt.List.map((((moduleName, modulePath, name) as ref, (_attributes, decl))) => {
-    let alias = if (currentVersion == version ||
-      lockedDeep[currentVersion]->Upgrade.hashFind(ref) == lockedDeep[version]->Upgrade.hashFind(ref)
-    ) {
-      Some(Serde.OutputType.unflatten([moduleName] @ modulePath @ [name]));
-    } else if (version > 1 &&
-      lockedDeep[version - 1]->Upgrade.hashFind(ref) == lockedDeep[version]->Upgrade.hashFind(ref)
-    ) {
-      Some(Ldot(Lident(versionModuleName(version - 1)), Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name)))
-    } else {
-      None
-    }
-    Serde.OutputType.outputDeclaration(~alias, moduleName, modulePath, name, Serde.OutputType.showSource, decl)
-  });
-};
+open DigUtils;
 
 let optimiseLater = (_timeout, closure) => {
   let start = Unix.gettimeofday();
@@ -80,11 +53,9 @@ let loadTypeMap = config => {
   });
 
   let globalEngines = switch (config.globalEngines) {
-    | None => switch (config.engines) {
-      | {rex_json: None, bs_json: Some(_)} => [Bs_json]
-      | {rex_json: Some(_), bs_json: None} => [Rex_json]
-      | {rex_json: Some(_), bs_json: Some(_)} => [Rex_json, Bs_json]
-      | {rex_json: None, bs_json: None} => failwith("Must define at least one engine")
+    | None => switch (config.engines->activeEngines) {
+      | [] => failwith("No engines specified")
+      | engines => engines
     }
     | Some(engines) => engines
   };
@@ -164,23 +135,12 @@ let parseLockfile = (~override, config, lockedEntries, currentTypeMap, lockFileP
         | Error(m) => Error(String.concat("::", m))
         | Ok(v) => Ok(v)
       };
-      // if (lockfile.engine != config.engine) {
-      //   failwith("Config engine does not match lockfile engine.")
-      // };
       let latestVersion = Locked.getLatestVersion(lockfile);
       if (latestVersion == config.version) {
-        /* TODO allow addative type changes... maybe */
         if (
           !allTypesPreserved(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap) &&
           !override
         ) {
-
-          /* let lockfileJson = TypeMapSerde.lockfileToJson({
-            ...lockfile,
-            current: currentTypeMap
-          });
-          Files.writeFileExn(lockFilePath ++ ".new", Json.stringifyPretty(~indent=2, lockfileJson)); */
-
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
           lockfile->Locked.updateVersion(~typeMap=currentTypeMap, ~entries=lockedEntries)
@@ -239,6 +199,11 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
   );
 };
 
+let makeModule = (moduleName, contents) =>
+  Ast_helper.Str.module_(
+    Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
+  );
+
 let makeFullModule = (~engine, ~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
   /* TODO respect engineVersion */
   module Engine = (val engine: Serde.Engine.T);
@@ -256,7 +221,7 @@ let makeFullModule = (~engine, ~config, ~lockedDeep, ~lockfile, version, {Locked
   //   };
 
   makeModule(versionModuleName(version), [
-    Ast_helper.Str.type_(Recursive, lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
+    Ast_helper.Str.type_(Recursive, TypesFile.lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
     Ast_helper.Str.value(Recursive, fns),
     ...(if (version > 1) {
       let pastTypeMap = lockfile->Locked.getVersion(version - 1).typeMap;
@@ -384,6 +349,7 @@ let main = (~override=false, configPath) => {
   let (engine, outfile) = switch (config.engines) {
     | {bs_json: Some({output})} => ((module Serde.BsJson: Serde.Engine.T), output)
     | {rex_json: Some({output})} => ((module Serde.Json: Serde.Engine.T), output)
+    | _ => failwith("No engine espcified")
   };
 
   let lockFilePath = makeLockfilePath(configPath);
