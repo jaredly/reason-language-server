@@ -1,7 +1,7 @@
 {
   "version": 1,
   "$schemaVersion": 2,
-  "outputTypes": "src/KitchenTypes.re",
+  "lockedTypes": "src/KitchenTypes.re",
   "engines": {
     "Js.Json": {
       "output": "src/KitchenSerde.re"

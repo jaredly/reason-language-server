@@ -3951,7 +3951,7 @@
               ],
               [
                 {
-                  "txt": "migrate.outputTypes",
+                  "txt": "migrate.lockedTypes",
                   "loc": {
                     "loc_start": {
                       "pos_fname": "_none_",
@@ -4036,7 +4036,7 @@
                     ]
                   ],
                   [
-                    "outputTypes",
+                    "lockedTypes",
                     [
                       "Reference",
                       [

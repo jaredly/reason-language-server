@@ -220,7 +220,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
     ];
   let warning = Parsetree.[[%stri [@ocaml.warning "-34"]]]
 
-  switch (engines, config.outputTypes) {
+  switch (engines, config.lockedTypes) {
     | ([(engine, {output, helpers})], None) =>
       let body =
         warning

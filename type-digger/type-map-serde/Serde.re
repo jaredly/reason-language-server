@@ -248,7 +248,7 @@ module Types2 = {
     TypeMapSerde__Config.t = {
       version: int,
       minVersion: option(int),
-      outputTypes: option(string),
+      lockedTypes: option(string),
       engines: _TypeMapSerde__Config__engines,
       globalEngines: option(list(_TypeMapSerde__Config__engine)),
       entries: list(_TypeMapSerde__Config__entry),
@@ -627,7 +627,7 @@ module Types2 = {
         (t => None: Types1._TypeMapSerde__Config__t => option(int))(
           _input_data,
         );
-      let _converted_outputTypes =
+      let _converted_lockedTypes =
         (t => None: Types1._TypeMapSerde__Config__t => option(string))(
           _input_data,
         );
@@ -669,7 +669,7 @@ module Types2 = {
         entries: _converted_entries,
         globalEngines: _converted_globalEngines,
         engines: _converted_engines,
-        outputTypes: _converted_outputTypes,
+        lockedTypes: _converted_lockedTypes,
         minVersion: _converted_minVersion,
         version: _converted_version,
       };
@@ -3089,13 +3089,13 @@ module Version2 = {
           let inner = attr_entries => {
             let inner = attr_globalEngines => {
               let inner = attr_engines => {
-                let inner = attr_outputTypes => {
+                let inner = attr_lockedTypes => {
                   let inner = attr_minVersion => {
                     let inner = attr_version =>
                       Belt.Result.Ok({
                         version: attr_version,
                         minVersion: attr_minVersion,
-                        outputTypes: attr_outputTypes,
+                        lockedTypes: attr_lockedTypes,
                         engines: attr_engines,
                         globalEngines: attr_globalEngines,
                         entries: attr_entries,
@@ -3160,7 +3160,7 @@ module Version2 = {
                     }
                   };
                 };
-                switch (Belt.List.getAssoc(items, "outputTypes", (==))) {
+                switch (Belt.List.getAssoc(items, "lockedTypes", (==))) {
                 | None => inner(None)
                 | Some(json) =>
                   switch (
@@ -3189,7 +3189,7 @@ module Version2 = {
                     )
                   ) {
                   | Belt.Result.Error(error) =>
-                    Belt.Result.Error(["attribute 'outputTypes'", ...error])
+                    Belt.Result.Error(["attribute 'lockedTypes'", ...error])
                   | Belt.Result.Ok(data) => inner(data)
                   }
                 };
@@ -4137,7 +4137,7 @@ module Version2 = {
           ),
         ),
         (
-          "outputTypes",
+          "lockedTypes",
           (
             (
               transformer =>
@@ -4149,7 +4149,7 @@ module Version2 = {
               Json.String(s)
             )
           )(
-            record.outputTypes,
+            record.lockedTypes,
           ),
         ),
         (

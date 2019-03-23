@@ -79,13 +79,13 @@ let activeEngines = engines => switch engines {
   | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None})}
 }]
 [@migrate.globalEngines t => None]
-[@migrate.outputTypes t => None]
+[@migrate.lockedTypes t => None]
 [@migrate.minVersion t => None]
 type t = {
   version: int,
   // TODO: support this attribute
   minVersion: option(int),
-  outputTypes: option(string),
+  lockedTypes: option(string),
   engines,
   globalEngines: option(list(engine)),
   entries: list(entry),
