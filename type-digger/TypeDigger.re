@@ -6,15 +6,15 @@ module Locked = TypeMapSerde.Config.Locked;
 let loc = Location.none;
 open DigUtils;
 
-let optimiseLater = (_timeout, closure) => {
-  let start = Unix.gettimeofday();
-  let result = closure();
-  let time = Unix.gettimeofday() -. start;
-  if (time > 1.) {
-    print_endline("This took too long! " ++ string_of_float(time))
-  };
-  result
-};
+// let optimiseLater = (timeout, closure) => {
+//   let start = Unix.gettimeofday();
+//   let result = closure();
+//   let time = Unix.gettimeofday() -. start;
+//   if (time > timeout) {
+//     print_endline("This took too long! " ++ string_of_float(time))
+//   };
+//   result
+// };
 
 open TypeMapSerde.Config;
 
@@ -60,6 +60,7 @@ let loadTypeMap = config => {
     | Some(engines) => engines
   };
 
+
   let lockedEntries = config.entries->Belt.List.map(({file, type_, engines}) => {
     let%try_force ((moduleName, modulePath, name)) =
       TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), type_);
@@ -74,228 +75,7 @@ let loadTypeMap = config => {
   (state, TypeMap.GetTypeMap.toSimpleMap(tbl), lockedEntries);
 };
 
-let isSerializationAttribute = (({Location.txt}, _)) => Util.Utils.startsWith(txt, "rename.");
-let getStringPayload = payload => switch (Upgrade.getExpr(payload)) {
-  | Some({Parsetree.pexp_desc: Pexp_constant(Pconst_string(text, _))}) => Some(text)
-  | _ => None
-};
-
-let getRenames = attributes =>
-  attributes->Belt.List.keepMap((({Location.txt}, payload)) =>
-    switch (Util.Utils.split_on_char('.', txt)) {
-    | ["rename", name] =>
-      switch (getStringPayload(payload)) {
-      | None => None
-      | Some(string) => Some((name, string))
-      }
-    | _ => None
-    }
-  );
-
-let compareAttributes = (one, two) => {
-  let one = one->getRenames->Belt.List.sort(compare);
-  let two = two->getRenames->Belt.List.sort(compare)
-  one == two
-};
-
-let compareTypes = (oldType: SharedTypes.SimpleType.declaration('source), newType: SharedTypes.SimpleType.declaration('source)) => {
-  oldType.name == newType.name &&
-  oldType.variables == newType.variables && {
-    // print_endline("Comparing");
-    switch (oldType.body, newType.body) {
-      | (Variant(olds), Variant(news)) =>
-        olds->Belt.List.every(one => news->Belt.List.has(one, (==)))
-      | _ => oldType.body == newType.body
-    }
-  }
-};
-
-/** Checks that all types in the old map are the same in the new map */
-let allTypesPreserved = (oldLockedTypes, newLockedTypes) => {
-  Hashtbl.fold((k, (attributes, v), good) => {
-    good && Hashtbl.mem(newLockedTypes, k) && {
-      let (attributes2, v2) = Hashtbl.find(newLockedTypes, k);
-      compareTypes(v, v2) && compareAttributes(attributes, attributes2)
-    }
-  }, oldLockedTypes, true)
-};
-
-
-let parseLockfile = (~override, config, lockedEntries, currentTypeMap, lockFilePath) => {
-  switch (Files.readFileResult(lockFilePath)) {
-    | Error(_) => {
-      Locked.versions: [|{
-        typeMap: currentTypeMap,
-        entries: lockedEntries,
-      }|],
-    }
-    | Ok(contents) => {
-      let json = Json.parse(contents);
-      let%try_force lockfile = switch (TypeMapSerde.lockfileFromJson(json)) {
-        | Error(m) => Error(String.concat("::", m))
-        | Ok(v) => Ok(v)
-      };
-      let latestVersion = Locked.getLatestVersion(lockfile);
-      if (latestVersion == config.version) {
-        if (
-          !allTypesPreserved(lockfile->Locked.getVersion(config.version).typeMap, currentTypeMap) &&
-          !override
-        ) {
-          failwith("Types do not match lockfile! You must increment the version number in your types.json")
-        } else {
-          lockfile->Locked.updateVersion(~typeMap=currentTypeMap, ~entries=lockedEntries)
-        }
-      } else if (latestVersion + 1 == config.version) {
-        lockfile->Locked.addVersion(~typeMap=currentTypeMap, ~entries=lockedEntries)
-      } else {
-        failwith("Version must be incremented by one")
-      }
-    }
-  };
-};
-
-let makeFns = (maker, tbl) => {
-    hashList(tbl)
-    ->Belt.List.sort(compare)
-    ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) =>
-        maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, decl)
-    );
-};
-
-let makeDeserializers = (maker, tbl, lockedDeep, version) => {
-    hashList(tbl)
-    ->Belt.List.sort(compare)
-    ->Belt.List.map((((moduleName, modulePath, name) as ref, (attributes, decl))) => {
-      let mine = lockedDeep[version]->Hashtbl.find(ref);
-      let prevVersion = version == 1 ? None : {
-        switch (lockedDeep[version - 1]->Upgrade.hashFind(ref)) {
-          | Some(prev) when prev == mine => Some(version - 1)
-          | _ => None
-        }
-      }
-      switch (prevVersion) {
-        | None => maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, ~inner=None, decl)
-        | Some(prevVersion) =>
-          let tname = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
-          let inner = 
-            Ast_helper.Exp.ident(
-              Location.mknoloc(
-                Longident.Ldot(
-                  Longident.Lident(
-                    versionModuleName(prevVersion)
-                  ),
-                  tname
-                )
-              )
-            );
-          maker(~renames=attributes->getRenames, ~moduleName, ~modulePath, ~name, ~inner=Some(inner), decl)
-
-          // Ast_helper.Vb.mk(
-          //   Ast_helper.Pat.var(Location.mknoloc(tname)),
-          //   inner
-          // )
-      }
-    }
-  );
-};
-
-let makeModule = (moduleName, contents) =>
-  Ast_helper.Str.module_(
-    Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
-  );
-
-let makeFullModule = (~engine, ~currentVersion, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
-  /* TODO respect engineVersion */
-  module Engine = (val engine: Serde.Engine.T);
-  let fns = makeDeserializers(Engine.declDeserializer, typeMap, lockedDeep, version);
-  let fns = version == currentVersion ? fns @ makeFns(Engine.declSerializer, typeMap) : fns;
-
-  makeModule(versionModuleName(version), [
-    Ast_helper.Str.open_(Ast_helper.Opn.mk(Location.mknoloc(Longident.Lident(typesModuleName(version))))),
-    Ast_helper.Str.value(Recursive, fns),
-  ]);
-};
-
-let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
-
-let capitalize = s =>
-  s == "" ?
-    "" : String.uppercase_ascii(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
-
-
-let makeConverters = (~config, ~state) => config.entries->Belt.List.map(({file, type_, publicName}) => {
-    let publicName = switch publicName {
-      | None => type_
-      | Some(name) => name
-    };
-    let uri = Utils.toUri(Filename.concat(Sys.getcwd(), file));
-    let%try_force (moduleName, modulePath, name) = TypeMap.GetTypeMap.fileToReference(~state, uri, type_);
-    let des = Serde.MakeDeserializer.transformerName(~moduleName, ~modulePath, ~name);
-    let ser = Serde.MakeSerializer.transformerName(~moduleName, ~modulePath, ~name);
-    let fullName = Serde.MakeDeserializer.fullName(~moduleName, ~modulePath, ~name);
-
-    open Longident;
-
-    let makeUpgrader = (current, target) => {
-      open Parsetree;
-      let rec loop = current => if (current === target) {
-        [%expr Belt.Result.Ok(data)]
-      } else {
-        [%expr {
-          let data = [%e expIdent(Ldot(Lident(typesModuleName(current + 1)), "migrate_" ++ fullName))](data);
-          [%e loop(current + 1)]
-        }]
-      };
-      loop(current)
-    };
-
-    Ast_helper.Str.value(
-      Asttypes.Nonrecursive,
-      [
-        Ast_helper.Vb.mk(
-          Ast_helper.Pat.var(Location.mknoloc("serialize" ++ capitalize(publicName))),
-          [%expr data => wrapWithVersion(currentVersion, [%e
-            Ast_helper.Exp.ident(Location.mknoloc(Longident.Ldot(Longident.Lident(versionModuleName(config.version)), ser)))
-          ](data))]
-        ),
-        Ast_helper.Vb.mk(
-          Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ capitalize(publicName))),
-          [%expr
-            data => switch (parseVersion(data)) {
-              | Belt.Result.Error(err) => Belt.Result.Error([err])
-              | [@implicit_arity]Ok((version, data)) => [%e
-                Ast_helper.Exp.match(
-                  [%expr version],
-                  {
-                    let rec loop = n =>
-                      if (n < 1) {
-                        [Ast_helper.Exp.case([%pat? _], [%expr Belt.Result.Error(["Unexpected version " ++ string_of_int(version)])])];
-                      } else {
-                        [
-                          Ast_helper.Exp.case(
-                            Ast_helper.Pat.constant(Parsetree.Pconst_integer(string_of_int(n), None)),
-                            switch%expr ([%e expIdent(Ldot(Lident(versionModuleName(n)), des))](data)) {
-                            | Belt.Result.Error(error) => Belt.Result.Error(error)
-                            | Ok(data) =>
-                              %e
-                              makeUpgrader(n, config.version)
-                            },
-                          ),
-                          ...loop(n - 1),
-                        ];
-                      };
-                    loop(config.version)
-                  }
-                )
-              ]
-            }
-          ],
-        ),
-      ],
-    );
-  }
-);
-
+// let isSerializationAttribute = (({Location.txt}, _)) => Util.Utils.startsWith(txt, "rename.");
 
 let makeLockfilePath = configPath => {
   let base = Filename.dirname(configPath);
@@ -324,7 +104,7 @@ let main = (~override=false, configPath) => {
 
   let lockFilePath = makeLockfilePath(configPath);
 
-  let lockfile = parseLockfile(~override, config, lockedEntries, currentTypeMap, lockFilePath)
+  let lockfile = Lockfile.parseLockfile(~override, config, lockedEntries, currentTypeMap, lockFilePath)
 
   let lockedDeep = Belt.Array.concat([|Hashtbl.create(0)|], lockfile.versions->Belt.Array.mapWithIndex((_index, config) => {
     Lockdown.typesAndDependencies(config.typeMap)
@@ -339,10 +119,9 @@ let main = (~override=false, configPath) => {
 
   let makeAllModules = () => {
     let rec loop = version => version > config.version ? [] : {
-      [makeFullModule(~engine, ~currentVersion=config.version, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version)), ...loop(version + 1)]
+      [SerdeFile.makeFullModule(~engine, ~currentVersion=config.version, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version)), ...loop(version + 1)]
     };
     loop(1)
-    /* loop(config.version) */
   };
 
   module Engine = (val engine: Serde.Engine.T);
@@ -365,7 +144,7 @@ let main = (~override=false, configPath) => {
     ]
   ];
 
-  let converters = makeConverters(~config, ~state);
+  let converters = SerdeFile.makeConverters(~config, ~state);
 
   let structure = body @ converters;
 
