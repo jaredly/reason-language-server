@@ -1,16 +1,20 @@
 {
-  "$schemaVersion": 1,
-  "engine": ["Js.Json"],
+  "$schemaVersion": 2,
   "versions": [
     {
       "entries": [
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -221,10 +225,15 @@
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -465,10 +474,15 @@
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -643,10 +657,15 @@
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -907,10 +926,15 @@
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -1271,10 +1295,15 @@
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -1755,10 +1784,15 @@
         {
           "moduleName": "Types",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "household"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [

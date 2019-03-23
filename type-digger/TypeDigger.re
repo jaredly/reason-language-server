@@ -63,9 +63,15 @@ let loadTypeMap = config => {
       SharedTypes.SimpleType.{
         name,
         variables: {
-          let rec loop = n =>
-            n <= 0 ? [] : [SharedTypes.SimpleType.Variable("arg" ++ string_of_int(args - n)), ...loop(n - 1)];
-          loop(args);
+          switch args {
+            | None => []
+            | Some(0) => []
+            | Some(args) =>
+              let rec loop = n =>
+                n <= 0
+                  ? [] : [SharedTypes.SimpleType.Variable("arg" ++ string_of_int(args - n)), ...loop(n - 1)];
+              loop(args);
+          }
         },
         body: Abstract,
       },
@@ -73,10 +79,25 @@ let loadTypeMap = config => {
     );
   });
 
-  let lockedEntries = config.entries->Belt.List.map(({file, type_}) => {
+  let globalEngines = switch (config.globalEngines) {
+    | None => switch (config.engines) {
+      | {rex_json: None, bs_json: Some(_)} => [Bs_json]
+      | {rex_json: Some(_), bs_json: None} => [Rex_json]
+      | {rex_json: Some(_), bs_json: Some(_)} => [Rex_json, Bs_json]
+      | {rex_json: None, bs_json: None} => failwith("Must define at least one engine")
+    }
+    | Some(engines) => engines
+  };
+
+  let lockedEntries = config.entries->Belt.List.map(({file, type_, engines}) => {
     let%try_force ((moduleName, modulePath, name)) =
       TypeMap.GetTypeMap.forInitialType(~tbl, ~state, Utils.toUri(Filename.concat(Sys.getcwd(), file)), type_);
-    {Locked.moduleName, modulePath, name};
+    {Locked.moduleName, modulePath, name, engines: (switch engines {
+    | None => globalEngines
+    | Some(engines) => engines
+    // TODO: use the real engine version
+    })->Belt.List.map(engine => (engine, 1))
+    };
   });
 
   (state, TypeMap.GetTypeMap.toSimpleMap(tbl), lockedEntries);
@@ -134,10 +155,8 @@ let parseLockfile = (~override, config, lockedEntries, currentTypeMap, lockFileP
     | Error(_) => {
       Locked.versions: [|{
         typeMap: currentTypeMap,
-        engineVersion: 1,
         entries: lockedEntries,
       }|],
-      engine: config.engine,
     }
     | Ok(contents) => {
       let json = Json.parse(contents);
@@ -145,9 +164,9 @@ let parseLockfile = (~override, config, lockedEntries, currentTypeMap, lockFileP
         | Error(m) => Error(String.concat("::", m))
         | Ok(v) => Ok(v)
       };
-      if (lockfile.engine != config.engine) {
-        failwith("Config engine does not match lockfile engine.")
-      };
+      // if (lockfile.engine != config.engine) {
+      //   failwith("Config engine does not match lockfile engine.")
+      // };
       let latestVersion = Locked.getLatestVersion(lockfile);
       if (latestVersion == config.version) {
         /* TODO allow addative type changes... maybe */
@@ -164,10 +183,10 @@ let parseLockfile = (~override, config, lockedEntries, currentTypeMap, lockFileP
 
           failwith("Types do not match lockfile! You must increment the version number in your types.json")
         } else {
-          lockfile->Locked.updateVersion(~typeMap=currentTypeMap, ~entries=lockedEntries, ~engineVersion=1)
+          lockfile->Locked.updateVersion(~typeMap=currentTypeMap, ~entries=lockedEntries)
         }
       } else if (latestVersion + 1 == config.version) {
-        lockfile->Locked.addVersion(~typeMap=currentTypeMap, ~entries=lockedEntries, ~engineVersion=1)
+        lockfile->Locked.addVersion(~typeMap=currentTypeMap, ~entries=lockedEntries)
       } else {
         failwith("Version must be incremented by one")
       }
@@ -220,17 +239,21 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
   );
 };
 
-let makeFullModule = (~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
+let makeFullModule = (~engine, ~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
   /* TODO respect engineVersion */
-  let fns =
-    switch (config.engine) {
-    | Bs_json =>
-      let fns = makeDeserializers(Serde.BsJson.declDeserializer, typeMap, lockedDeep, version);
-      version == config.version ? fns @ makeFns(Serde.BsJson.declSerializer, typeMap) : fns;
-    | Rex_json =>
-      let fns = makeDeserializers(Serde.Json.declDeserializer, typeMap, lockedDeep, version);
-      version == config.version ? fns @ makeFns(Serde.Json.declSerializer, typeMap) : fns;
-    };
+  module Engine = (val engine: Serde.Engine.T);
+  let fns = makeDeserializers(Engine.declDeserializer, typeMap, lockedDeep, version);
+  let fns = version == config.version ? fns @ makeFns(Engine.declSerializer, typeMap) : fns;
+  // let (fns, outfile) =
+  //   switch (config.engines) {
+  //   | {bs_json: Some({output}), rex_json: None} =>
+  //     let fns = makeDeserializers(Serde.BsJson.declDeserializer, typeMap, lockedDeep, version);
+  //     (version == config.version ? fns @ makeFns(Serde.BsJson.declSerializer, typeMap) : fns, output);
+  //   | {rex_json: Some({output}), bs_json: None} =>
+  //     let fns = makeDeserializers(Serde.Json.declDeserializer, typeMap, lockedDeep, version);
+  //     (version == config.version ? fns @ makeFns(Serde.Json.declSerializer, typeMap) : fns, output);
+  //   | _ => failwith("multiple engines not yet supported")
+  //   };
 
   makeModule(versionModuleName(version), [
     Ast_helper.Str.type_(Recursive, lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
@@ -358,6 +381,11 @@ let main = (~override=false, configPath) => {
   };
   let (state, currentTypeMap, lockedEntries) = loadTypeMap(config);
 
+  let (engine, outfile) = switch (config.engines) {
+    | {bs_json: Some({output})} => ((module Serde.BsJson: Serde.Engine.T), output)
+    | {rex_json: Some({output})} => ((module Serde.Json: Serde.Engine.T), output)
+  };
+
   let lockFilePath = makeLockfilePath(configPath);
 
   let lockfile = parseLockfile(~override, config, lockedEntries, currentTypeMap, lockFilePath)
@@ -369,11 +397,13 @@ let main = (~override=false, configPath) => {
 
   let makeAllModules = () => {
     let rec loop = version => version > config.version ? [] : {
-      [makeFullModule(~config, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version)), ...loop(version + 1)]
+      [makeFullModule(~engine, ~config, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version)), ...loop(version + 1)]
     };
     loop(1)
     /* loop(config.version) */
   };
+
+  module Engine = (val engine: Serde.Engine.T);
 
   let body = Parsetree.[
       [%stri [@ocaml.warning "-34"]; ],
@@ -385,23 +415,17 @@ let main = (~override=false, configPath) => {
       module Current = [%m Ast_helper.Mod.ident(Location.mknoloc(Longident.Lident(versionModuleName(config.version))))]
     ],
     /* body, */
-    ...switch (config.engine) {
-       | Bs_json => [%str
-           let parseVersion = [%e Serde.BsJson.deserializeTransformer.parseVersion];
-           let wrapWithVersion = [%e Serde.BsJson.serializeTransformer.wrapWithVersion]
-         ]
-       | Rex_json => [%str
-           let parseVersion = [%e Serde.Json.deserializeTransformer.parseVersion];
-           let wrapWithVersion = [%e Serde.Json.serializeTransformer.wrapWithVersion]
-         ]
-       },
+    ...[%str
+      let parseVersion = [%e Engine.deserializeTransformer.parseVersion];
+      let wrapWithVersion = [%e Engine.serializeTransformer.wrapWithVersion]
+    ]
   ];
 
   let converters = makeConverters(~config, ~state);
 
   let structure = body @ converters;
 
-  if (config.output->Filename.check_suffix(".re")) {
+  if (outfile->Filename.check_suffix(".re")) {
     let reason_structure = Reason_toolchain.From_current.copy_structure(structure);
     Reason_toolchain.RE.print_implementation_with_comments(
       Format.str_formatter, (reason_structure, [])
@@ -414,7 +438,7 @@ let main = (~override=false, configPath) => {
   let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
   Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
 
-  Files.writeFile(config.output, ml) |> ignore;
+  Files.writeFile(outfile, ml) |> ignore;
 };
 
 switch (Sys.argv->Belt.List.fromArray) {

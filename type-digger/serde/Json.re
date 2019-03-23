@@ -218,12 +218,12 @@ let deserializeTransformer = {
             inner(None);
           } else {
             %expr
-            Belt.Result.Error([[%e MakeDeserializer.expString("No attribute " ++ attrName)]]);
+            Belt.Result.Error([[%e MakeDeserializer.expString("No attribute '" ++ attrName ++ "'")]]);
           }
         | Some(json) =>
           switch ([%e inner](json)) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error([[%e MakeDeserializer.expString("attribute " ++ attrName)], ...error])
+            Belt.Result.Error([[%e MakeDeserializer.expString("attribute '" ++ attrName ++ "'")], ...error])
           | Belt.Result.Ok(data) => inner(data)
           }
         };
