@@ -249,7 +249,6 @@ let main = (~upvert=false, ~override=false, configPath) => {
     }
   };
 
-
   let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
   Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
 };

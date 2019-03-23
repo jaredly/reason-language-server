@@ -4,13 +4,6 @@ open TypeMap;
 
 let makeLident = (~moduleName, ~modulePath, ~name) => {
   Lident(OutputType.makeLockedTypeName(moduleName, modulePath, name))
-  /* let base = switch (Str.split(Str.regexp_string("-"), moduleName)) {
-    | [one, two] => Ldot(Lident(two), one)
-    | [one] => Lident(one)
-    | _ => failwith("Bad modulename")
-  };
-  let base = modulePath->Belt.List.reduce(base, (base, item) => Ldot(base, item));
-  Ldot(base, name) */
 };
 
 let transformerName = (~moduleName, ~modulePath, ~name) =>
@@ -28,6 +21,7 @@ open SharedTypes.SimpleType;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
 
+let variableTransformerName = name => name ++ "Transformer";
 
 type transformer('source) = {
   outputType: Parsetree.core_type,
@@ -40,7 +34,7 @@ type transformer('source) = {
 };
 
 let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
-Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
+Exp.apply(Exp.ident(Location.mknoloc(Lident("print_endline"))), [
   (Nolabel, Exp.constant(Pconst_string(message, None)))
 ]));
 
@@ -52,8 +46,8 @@ let rec makeList = items => switch items {
 }
 
 let rec forExpr = (~renames, transformer, t) => switch t {
-  | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
-  | AnonVariable => failer("Non variable")
+  | Variable(string) => makeIdent(Lident(variableTransformerName(string)))
+  | AnonVariable => failer("Anon variable")
   | Reference(source, args) =>
     switch (source, args) {
       | (DigTypes.Builtin("list"), [arg]) =>
@@ -148,7 +142,7 @@ let forBody = (~helpers, ~renames, transformer, body, fullName, variables) => sw
       | [] => body
       | args => Exp.apply(body, args->Belt.List.map(
         arg => (Nolabel, makeIdent(Lident(switch arg {
-          | Variable(string) => string ++ "Transformer"
+          | Variable(string) => variableTransformerName(string)
           | AnonVariable => "ANON"
           | _ => "OTHER"
         })))
@@ -231,7 +225,7 @@ let declInner = (~helpers, ~renames, transformer, {variables, body}, fullName) =
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {
-          | Variable(string) => string ++ "Transformer"
+          | Variable(string) => variableTransformerName(string)
           | AnonVariable => "ANON"
           | _ => "OTHER"
         }

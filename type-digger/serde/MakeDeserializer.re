@@ -59,7 +59,7 @@ let expPassError = text => [%expr Belt.Result.Error([[%e expString(text)], ...er
 let patPassError = [%pat? Error(error)];
 
 
-let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
+let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("print_endline"))), [
   (Nolabel, expString(message))
 ]);
 

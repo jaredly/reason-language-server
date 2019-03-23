@@ -5,30 +5,11 @@ open Ast_helper;
 open Asttypes;
 open TypeMap;
 
-let loc = Location.none;
-
-let makeIdent = MakeSerializer.makeIdent;
-
-let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
-Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
-  (Nolabel, Exp.constant(Pconst_string(message, None)))
-]));
-
-let rec makeList = items => switch items {
-  | [] => Exp.construct(Location.mknoloc(Lident("[]")), None)
-  | [one, ...rest] => Exp.construct(Location.mknoloc(Lident("::")), Some(Exp.tuple([
-    one, makeList(rest)
-  ])))
-}
+open Helpers;
 
 let makeJson = (kind, contents) => Exp.construct(Location.mknoloc(Ldot(Lident("Json"), kind)), contents);
-
 let jsonObject = items => makeJson("Object", Some(makeList(items)));
-
-let jsonArray = items => makeJson(
-  "Array",
-  Some(items)
-);
+let jsonArray = items => makeJson("Array", Some(items));
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => MakeSerializer.failer("Not found")
@@ -50,29 +31,47 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
-let serializeTransformer = MakeSerializer.{
-  outputType: Typ.constr(Location.mknoloc(Ldot(Lident("Json"), "t")), []),
-  wrapWithVersion: [%expr
-    (version, payload) => switch payload {
-      | Json.Object(items) => Json.Object([("$schemaVersion", Json.Number(float_of_int(version))), ...items])
-      | _ => Json.Array([Json.Number(float_of_int(version)), payload])
-    }
-  ],
-  source: sourceTransformer,
-  list: jsonArray,
-  tuple: exps => makeJson("Array", Some(makeList(exps))),
-  record: (~renames, items) => jsonObject(items->Belt.List.map(((label, expr)) =>
-        Exp.tuple([
-          Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, label), None)),
-          expr
-        ])
-       )),
-  constructor: (~renames, name, args) =>
-            makeJson("Array", Some(makeList([
-                makeJson("String", Some(Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None)))),
-              ] @ args
-            )))
-};
+let serializeTransformer =
+  MakeSerializer.{
+    outputType: [%type: Json.t],
+    wrapWithVersion: [%expr
+      (version, payload) =>
+        switch (payload) {
+        | Json.Object(items) =>
+          Json.Object([("$schemaVersion", Json.Number(float_of_int(version))), ...items])
+        | _ => Json.Array([Json.Number(float_of_int(version)), payload])
+        }
+    ],
+    source: sourceTransformer,
+    list: jsonArray,
+    tuple: exps => makeJson("Array", Some(makeList(exps))),
+    record: (~renames, items) =>
+      jsonObject(
+        items->Belt.List.map(((label, expr)) =>
+          Exp.tuple([
+            Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, label), None)),
+            expr,
+          ])
+        ),
+      ),
+    constructor: (~renames, name, args) =>
+      makeJson(
+        "Array",
+        Some(
+          makeList(
+            [
+              makeJson(
+                "String",
+                Some(
+                  Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None)),
+                ),
+              ),
+            ]
+            @ args,
+          ),
+        ),
+      ),
+  };
 
 let declSerializer = MakeSerializer.decl(serializeTransformer);
 
