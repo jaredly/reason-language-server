@@ -63,6 +63,12 @@ let serialize_Parsetree____expression = data => {
   Json.String(Stdlib.Format.flush_str_formatter());
 };
 
+let migrate_Stdlib__hashtbl__t = (keyMigrator, valueMigrator, data) => {
+  let result = Hashtbl.create(10);
+  data |> Stdlib.Hashtbl.iter((key, value) => Hashtbl.replace(result, keyMigrator(key), valueMigrator(value)));
+  result
+};
+
 let deserialize_Belt__Belt_HashMapInt____t = (valueTransform, json) => {
   let map = Belt.HashMap.Int.make(~hintSize=10);
   let%try items = RJson.obj(json) |> wrapError;

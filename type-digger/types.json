@@ -27,7 +27,6 @@
   ],
   "//": { "file": "core/SharedTypes.re", "type": "SimpleType.expr", "publicName": "simpleExpr" },
   "custom": [
-    {"module": "Belt__Belt_HashMapInt", "path": [], "name": "t", "args": 1},
     {"module": "Parsetree", "path": [], "name": "signature", "args": 0},
     {"module": "Parsetree", "path": [], "name": "structure", "args": 0},
     {"module": "Parsetree", "path": [], "name": "core_type", "args": 0},

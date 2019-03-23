@@ -33,31 +33,31 @@ type entry = {
   minVersion: option(int),
 };
 
-type rexJsonConfig = {
-  tailCall: bool,
-};
+// type rexJsonConfig = {
+//   tailCall: bool,
+// };
 
-type bsJsonConfig = {
-  tailCall: bool,
-};
+// type bsJsonConfig = {
+//   tailCall: bool,
+// };
 
-type engineConfig('options) = {
+type engineConfig = {
   output: string,
   // a module name
   helpers: option(string),
-  options: option('options),
+  // options: option('options),
 };
 
 [@rename.rex_json "rex-json"]
 [@rename.bs_json "Js.Json"]
 type engines = {
-  rex_json: option(engineConfig(rexJsonConfig)),
-  bs_json: option(engineConfig(bsJsonConfig)),
+  rex_json: option(engineConfig),
+  bs_json: option(engineConfig),
 };
 
 [@migrate.engines ({engine, output}) => switch engine {
-  | Rex_json => {bs_json: None, rex_json: Some({output, options: None, helpers: None})}
-  | Bs_json => {res_json: None, bs_json: Some({output, options: None, helpers: None})}
+  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None})}
+  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None})}
 }]
 [@migrate.globalEngines t => None]
 [@migrate.outputTypes t => None]
