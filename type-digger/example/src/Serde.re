@@ -1,5 +1,5 @@
 [@ocaml.warning "-34"];
-module Version1 = {
+module Types1 = {
   type _Types__household = {
     people: list(_Types__person),
     pets: list(_Types__pet),
@@ -13,6 +13,421 @@ module Version1 = {
   and _Types__pet =
     | Dog
     | Cat;
+};
+module Types2 = {
+  type _Types__household = {
+    people: list(_Types__person),
+    pets: list(_Types__pet),
+  }
+  and _Types__person = {
+    name: string,
+    age: float,
+    coords: (float, float),
+    parents: option((_Types__person, _Types__person)),
+  }
+  and _Types__pet = Types.pet = | Dog | Cat | Mouse;
+  let rec migrate_Types____household:
+    Types1._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      {pets: _converted_pets, people: _converted_people};
+    }
+  and migrate_Types____person: Types1._Types__person => _Types__person =
+    _input_data => {
+      let _converted_name = _input_data.name;
+      let _converted_age =
+        (
+          person => float_of_int(person.age * 7):
+            Types1._Types__person => float
+        )(
+          _input_data,
+        );
+      let _converted_coords = {
+        let (arg0, arg1) = _input_data.coords;
+        (arg0, arg1);
+      };
+      let _converted_parents =
+        switch (_input_data.parents) {
+        | None => None
+        | Some(_item) =>
+          Some(
+            {
+              let (arg0, arg1) = _item;
+              (
+                migrate_Types____person(arg0),
+                migrate_Types____person(arg1),
+              );
+            },
+          )
+        };
+      {
+        parents: _converted_parents,
+        coords: _converted_coords,
+        age: _converted_age,
+        name: _converted_name,
+      };
+    }
+  and migrate_Types____pet: Types1._Types__pet => _Types__pet =
+    _input_data =>
+      switch (_input_data) {
+      | Dog => Dog
+      | Cat => Cat
+      };
+};
+module Types3 = {
+  type _Types__household = {
+    people: list(_Types__person),
+    pets: list(_Types__pet),
+  }
+  and _Types__person = {
+    name: string,
+    age: float,
+    coords: (float, float),
+  }
+  and _Types__pet = Types.pet = | Dog | Cat | Mouse;
+  let rec migrate_Types____household:
+    Types2._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      {pets: _converted_pets, people: _converted_people};
+    }
+  and migrate_Types____person: Types2._Types__person => _Types__person =
+    _input_data => {
+      let _converted_name = _input_data.name;
+      let _converted_age = _input_data.age;
+      let _converted_coords = {
+        let (arg0, arg1) = _input_data.coords;
+        (arg0, arg1);
+      };
+      {coords: _converted_coords, age: _converted_age, name: _converted_name};
+    }
+  and migrate_Types____pet: Types2._Types__pet => _Types__pet =
+    _input_data => _input_data;
+};
+module Types4 = {
+  type _Types__dogBreed =
+    | Schnouser
+    | Lab
+    | Retriever
+    | Poodle
+  and _Types__household = {
+    people: list(_Types__person),
+    pets: list(_Types__pet),
+  }
+  and _Types__person =
+    Types3._Types__person = {
+      name: string,
+      age: float,
+      coords: (float, float),
+    }
+  and _Types__pet =
+    | Dog(option(_Types__dogBreed))
+    | Cat
+    | Mouse;
+  let rec migrate_Types____household:
+    Types3._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      {pets: _converted_pets, people: _converted_people};
+    }
+  and migrate_Types____person: Types3._Types__person => _Types__person =
+    _input_data => _input_data
+  and migrate_Types____pet: Types3._Types__pet => _Types__pet =
+    _input_data =>
+      switch (_input_data) {
+      | Dog => Dog(None)
+      | Cat => Cat
+      | Mouse => Mouse
+      };
+};
+module Types5 = {
+  type _Types__dogBreed =
+    | Schnouser(string)
+    | Lab
+    | Retriever
+    | Poodle
+  and _Types__household = {
+    people: list(_Types__person),
+    pets: list(_Types__pet),
+    county: _Types__named(int),
+  }
+  and _Types__named('a) = {
+    name: string,
+    contents: 'a,
+  }
+  and _Types__person =
+    Types4._Types__person = {
+      name: string,
+      age: float,
+      coords: (float, float),
+    }
+  and _Types__pet =
+    | Dog(option(_Types__dogBreed))
+    | Cat
+    | Mouse;
+  let rec migrate_Types____dogBreed:
+    Types4._Types__dogBreed => _Types__dogBreed =
+    _input_data =>
+      switch (_input_data) {
+      | Schnouser => Schnouser("white")
+      | Lab => Lab
+      | Retriever => Retriever
+      | Poodle => Poodle
+      }
+  and migrate_Types____household: Types4._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      let _converted_county =
+        (
+          household => {name: "Nowhere", contents: 0}:
+            Types4._Types__household => _Types__named(int)
+        )(
+          _input_data,
+        );
+      {
+        county: _converted_county,
+        pets: _converted_pets,
+        people: _converted_people,
+      };
+    }
+  and migrate_Types____person: Types4._Types__person => _Types__person =
+    _input_data => _input_data
+  and migrate_Types____pet: Types4._Types__pet => _Types__pet =
+    _input_data =>
+      switch (_input_data) {
+      | Dog(arg0) =>
+        [@implicit_arity]
+        Dog(
+          switch (arg0) {
+          | None => None
+          | Some(_item) => Some(migrate_Types____dogBreed(_item))
+          },
+        )
+      | Cat => Cat
+      | Mouse => Mouse
+      };
+};
+module Types6 = {
+  type _Types__household = {
+    people: list(_Types__person),
+    pets: list(_Types__pet),
+    what: _Types__what(string),
+    visitors: list(_Types__person),
+    county: _Types__named(int),
+  }
+  and _Types__named('a) = {
+    name: string,
+    contents: 'a,
+    isClosed: bool,
+  }
+  and _Types__person =
+    Types5._Types__person = {
+      name: string,
+      age: float,
+      coords: (float, float),
+    }
+  and _Types__pet = Types.pet = | Dog | Cat | Mouse
+  and _Types__what('a) =
+    | Now('a);
+  let rec migrate_Types____household:
+    Types5._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      let _converted_what =
+        (
+          household => Now("4"):
+            Types5._Types__household => _Types__what(string)
+        )(
+          _input_data,
+        );
+      let _converted_visitors =
+        (household => []: Types5._Types__household => list(_Types__person))(
+          _input_data,
+        );
+      let _converted_county =
+        migrate_Types____named(arg => arg, _input_data.county);
+      {
+        county: _converted_county,
+        visitors: _converted_visitors,
+        what: _converted_what,
+        pets: _converted_pets,
+        people: _converted_people,
+      };
+    }
+  and migrate_Types____named:
+    'a 'a_migrated.
+    ('a => 'a_migrated, Types5._Types__named('a)) =>
+    _Types__named('a_migrated)
+   =
+    (type a, type a_migrated) => (
+      (contentsMigrator, named) => {
+        name: named.name,
+        contents: contentsMigrator(named.contents),
+        isClosed: false,
+      }:
+        (a => a_migrated, Types5._Types__named(a)) =>
+        _Types__named(a_migrated)
+    )
+  and migrate_Types____person: Types5._Types__person => _Types__person =
+    _input_data => _input_data
+  and migrate_Types____pet: Types5._Types__pet => _Types__pet =
+    _input_data =>
+      switch (_input_data) {
+      | Dog(dogBreed) => Dog
+      | Cat => Cat
+      | Mouse => Mouse
+      };
+};
+module Types7 = {
+  type _Types__household =
+    Types.household = {
+      people: list(_Types__person),
+      pets: list(_Types__pet),
+      what: _Types__what(string),
+      visitors: list(_Types__person),
+      county: _Types__named(int),
+    }
+  and _Types__named('a) =
+    Types.named('a) = {
+      name: string,
+      contents: 'a,
+      isClosed: bool,
+      other: option('a),
+    }
+  and _Types__person =
+    Types.person = {
+      name: string,
+      age: float,
+      thing: [ | `one | `two(int) | `three(float, string)],
+      coords: (float, float),
+    }
+  and _Types__pet = Types.pet = | Dog | Cat | Mouse
+  and _Types__what('a) = Types.what('a) = | Now('a, int);
+  let rec migrate_Types____household:
+    Types6._Types__household => _Types__household =
+    _input_data => {
+      let _converted_people =
+        (Belt.List.map(_input_data.people))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_pets =
+        (Belt.List.map(_input_data.pets))(_item =>
+          migrate_Types____pet(_item)
+        );
+      let _converted_what =
+        migrate_Types____what(arg => arg, _input_data.what);
+      let _converted_visitors =
+        (Belt.List.map(_input_data.visitors))(_item =>
+          migrate_Types____person(_item)
+        );
+      let _converted_county =
+        migrate_Types____named(arg => arg, _input_data.county);
+      {
+        county: _converted_county,
+        visitors: _converted_visitors,
+        what: _converted_what,
+        pets: _converted_pets,
+        people: _converted_people,
+      };
+    }
+  and migrate_Types____named:
+    'a 'a_migrated.
+    ('a => 'a_migrated, Types6._Types__named('a)) =>
+    _Types__named('a_migrated)
+   =
+    (type a, type a_migrated) => (
+      (_migrator_a, _input_data) => {
+        let _converted_name = _input_data.name;
+        let _converted_contents = _migrator_a(_input_data.contents);
+        let _converted_isClosed = _input_data.isClosed;
+        let _converted_other =
+          (_ => None: Types6._Types__named(a) => option(a_migrated))(
+            _input_data,
+          );
+        {
+          other: _converted_other,
+          isClosed: _converted_isClosed,
+          contents: _converted_contents,
+          name: _converted_name,
+        };
+      }:
+        (a => a_migrated, Types6._Types__named(a)) =>
+        _Types__named(a_migrated)
+    )
+  and migrate_Types____person: Types6._Types__person => _Types__person =
+    _input_data => {
+      let _converted_name = _input_data.name;
+      let _converted_age = _input_data.age;
+      let _converted_thing =
+        (
+          _ => `one:
+            Types6._Types__person =>
+            [ | `one | `two(int) | `three(float, string)]
+        )(
+          _input_data,
+        );
+      let _converted_coords = {
+        let (arg0, arg1) = _input_data.coords;
+        (arg0, arg1);
+      };
+      {
+        coords: _converted_coords,
+        thing: _converted_thing,
+        age: _converted_age,
+        name: _converted_name,
+      };
+    }
+  and migrate_Types____pet: Types6._Types__pet => _Types__pet =
+    _input_data => _input_data
+  and migrate_Types____what:
+    'a 'a_migrated.
+    ('a => 'a_migrated, Types6._Types__what('a)) => _Types__what('a_migrated)
+   =
+    (type a, type a_migrated) => (
+      (_migrator_a, _input_data) =>
+        switch (_input_data) {
+        | Now(a) => Now(_migrator_a(a), 5)
+        }:
+        (a => a_migrated, Types6._Types__what(a)) => _Types__what(a_migrated)
+    );
+};
+module Version1 = {
+  open Types1;
   let rec deserialize_Types____household:
     Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
     record =>
@@ -256,17 +671,7 @@ module Version1 = {
       };
 };
 module Version2 = {
-  type _Types__household = {
-    people: list(_Types__person),
-    pets: list(_Types__pet),
-  }
-  and _Types__person = {
-    name: string,
-    age: float,
-    coords: (float, float),
-    parents: option((_Types__person, _Types__person)),
-  }
-  and _Types__pet = Types.pet = | Dog | Cat | Mouse;
+  open Types2;
   let rec deserialize_Types____household:
     Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
     record =>
@@ -510,72 +915,9 @@ module Version2 = {
         Belt.Result.Ok(Mouse: _Types__pet)
       | _ => Belt.Result.Error(["Expected an array"])
       };
-  let rec migrate_Types____household:
-    Version1._Types__household => _Types__household =
-    _input_data => {
-      let _converted_people =
-        (Belt.List.map(_input_data.people))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_pets =
-        (Belt.List.map(_input_data.pets))(_item =>
-          migrate_Types____pet(_item)
-        );
-      {pets: _converted_pets, people: _converted_people};
-    }
-  and migrate_Types____person: Version1._Types__person => _Types__person =
-    _input_data => {
-      let _converted_name = _input_data.name;
-      let _converted_age =
-        (
-          person => float_of_int(person.age * 7):
-            Version1._Types__person => float
-        )(
-          _input_data,
-        );
-      let _converted_coords = {
-        let (arg0, arg1) = _input_data.coords;
-        (arg0, arg1);
-      };
-      let _converted_parents =
-        switch (_input_data.parents) {
-        | None => None
-        | Some(_item) =>
-          Some(
-            {
-              let (arg0, arg1) = _item;
-              (
-                migrate_Types____person(arg0),
-                migrate_Types____person(arg1),
-              );
-            },
-          )
-        };
-      {
-        parents: _converted_parents,
-        coords: _converted_coords,
-        age: _converted_age,
-        name: _converted_name,
-      };
-    }
-  and migrate_Types____pet: Version1._Types__pet => _Types__pet =
-    _input_data =>
-      switch (_input_data) {
-      | Dog => Dog
-      | Cat => Cat
-      };
 };
 module Version3 = {
-  type _Types__household = {
-    people: list(_Types__person),
-    pets: list(_Types__pet),
-  }
-  and _Types__person = {
-    name: string,
-    age: float,
-    coords: (float, float),
-  }
-  and _Types__pet = Types.pet = | Dog | Cat | Mouse;
+  open Types3;
   let rec deserialize_Types____household:
     Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
     record =>
@@ -762,52 +1104,9 @@ module Version3 = {
       }
   and deserialize_Types____pet:
     Js.Json.t => Belt.Result.t(_Types__pet, list(string)) = Version2.deserialize_Types____pet;
-  let rec migrate_Types____household:
-    Version2._Types__household => _Types__household =
-    _input_data => {
-      let _converted_people =
-        (Belt.List.map(_input_data.people))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_pets =
-        (Belt.List.map(_input_data.pets))(_item =>
-          migrate_Types____pet(_item)
-        );
-      {pets: _converted_pets, people: _converted_people};
-    }
-  and migrate_Types____person: Version2._Types__person => _Types__person =
-    _input_data => {
-      let _converted_name = _input_data.name;
-      let _converted_age = _input_data.age;
-      let _converted_coords = {
-        let (arg0, arg1) = _input_data.coords;
-        (arg0, arg1);
-      };
-      {coords: _converted_coords, age: _converted_age, name: _converted_name};
-    }
-  and migrate_Types____pet: Version2._Types__pet => _Types__pet =
-    _input_data => _input_data;
 };
 module Version4 = {
-  type _Types__dogBreed =
-    | Schnouser
-    | Lab
-    | Retriever
-    | Poodle
-  and _Types__household = {
-    people: list(_Types__person),
-    pets: list(_Types__pet),
-  }
-  and _Types__person =
-    Version3._Types__person = {
-      name: string,
-      age: float,
-      coords: (float, float),
-    }
-  and _Types__pet =
-    | Dog(option(_Types__dogBreed))
-    | Cat
-    | Mouse;
+  open Types4;
   let rec deserialize_Types____dogBreed:
     Js.Json.t => Belt.Result.t(_Types__dogBreed, list(string)) =
     constructor =>
@@ -947,54 +1246,9 @@ module Version4 = {
         Belt.Result.Ok(Mouse: _Types__pet)
       | _ => Belt.Result.Error(["Expected an array"])
       };
-  let rec migrate_Types____household:
-    Version3._Types__household => _Types__household =
-    _input_data => {
-      let _converted_people =
-        (Belt.List.map(_input_data.people))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_pets =
-        (Belt.List.map(_input_data.pets))(_item =>
-          migrate_Types____pet(_item)
-        );
-      {pets: _converted_pets, people: _converted_people};
-    }
-  and migrate_Types____person: Version3._Types__person => _Types__person =
-    _input_data => _input_data
-  and migrate_Types____pet: Version3._Types__pet => _Types__pet =
-    _input_data =>
-      switch (_input_data) {
-      | Dog => Dog(None)
-      | Cat => Cat
-      | Mouse => Mouse
-      };
 };
 module Version5 = {
-  type _Types__dogBreed =
-    | Schnouser(string)
-    | Lab
-    | Retriever
-    | Poodle
-  and _Types__household = {
-    people: list(_Types__person),
-    pets: list(_Types__pet),
-    county: _Types__named(int),
-  }
-  and _Types__named('a) = {
-    name: string,
-    contents: 'a,
-  }
-  and _Types__person =
-    Version4._Types__person = {
-      name: string,
-      age: float,
-      coords: (float, float),
-    }
-  and _Types__pet =
-    | Dog(option(_Types__dogBreed))
-    | Cat
-    | Mouse;
+  open Types5;
   let rec deserialize_Types____dogBreed:
     Js.Json.t => Belt.Result.t(_Types__dogBreed, list(string)) =
     constructor =>
@@ -1215,78 +1469,9 @@ module Version5 = {
         Belt.Result.Ok(Mouse: _Types__pet)
       | _ => Belt.Result.Error(["Expected an array"])
       };
-  let rec migrate_Types____dogBreed:
-    Version4._Types__dogBreed => _Types__dogBreed =
-    _input_data =>
-      switch (_input_data) {
-      | Schnouser => Schnouser("white")
-      | Lab => Lab
-      | Retriever => Retriever
-      | Poodle => Poodle
-      }
-  and migrate_Types____household:
-    Version4._Types__household => _Types__household =
-    _input_data => {
-      let _converted_people =
-        (Belt.List.map(_input_data.people))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_pets =
-        (Belt.List.map(_input_data.pets))(_item =>
-          migrate_Types____pet(_item)
-        );
-      let _converted_county =
-        (
-          household => {name: "Nowhere", contents: 0}:
-            Version4._Types__household => _Types__named(int)
-        )(
-          _input_data,
-        );
-      {
-        county: _converted_county,
-        pets: _converted_pets,
-        people: _converted_people,
-      };
-    }
-  and migrate_Types____person: Version4._Types__person => _Types__person =
-    _input_data => _input_data
-  and migrate_Types____pet: Version4._Types__pet => _Types__pet =
-    _input_data =>
-      switch (_input_data) {
-      | Dog(arg0) =>
-        [@implicit_arity]
-        Dog(
-          switch (arg0) {
-          | None => None
-          | Some(_item) => Some(migrate_Types____dogBreed(_item))
-          },
-        )
-      | Cat => Cat
-      | Mouse => Mouse
-      };
 };
 module Version6 = {
-  type _Types__household = {
-    people: list(_Types__person),
-    pets: list(_Types__pet),
-    what: _Types__what(string),
-    visitors: list(_Types__person),
-    county: _Types__named(int),
-  }
-  and _Types__named('a) = {
-    name: string,
-    contents: 'a,
-    isClosed: bool,
-  }
-  and _Types__person =
-    Version5._Types__person = {
-      name: string,
-      age: float,
-      coords: (float, float),
-    }
-  and _Types__pet = Types.pet = | Dog | Cat | Mouse
-  and _Types__what('a) =
-    | Now('a);
+  open Types6;
   let rec deserialize_Types____household:
     Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
     record =>
@@ -1556,87 +1741,9 @@ module Version6 = {
         }
       | _ => Belt.Result.Error(["Expected an array"])
       };
-  let rec migrate_Types____household:
-    Version5._Types__household => _Types__household =
-    _input_data => {
-      let _converted_people =
-        (Belt.List.map(_input_data.people))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_pets =
-        (Belt.List.map(_input_data.pets))(_item =>
-          migrate_Types____pet(_item)
-        );
-      let _converted_what =
-        (
-          household => Now("4"):
-            Version5._Types__household => _Types__what(string)
-        )(
-          _input_data,
-        );
-      let _converted_visitors =
-        (household => []: Version5._Types__household => list(_Types__person))(
-          _input_data,
-        );
-      let _converted_county =
-        migrate_Types____named(arg => arg, _input_data.county);
-      {
-        county: _converted_county,
-        visitors: _converted_visitors,
-        what: _converted_what,
-        pets: _converted_pets,
-        people: _converted_people,
-      };
-    }
-  and migrate_Types____named:
-    'a 'a_migrated.
-    ('a => 'a_migrated, Version5._Types__named('a)) =>
-    _Types__named('a_migrated)
-   =
-    (type a, type a_migrated) => (
-      (contentsMigrator, named) => {
-        name: named.name,
-        contents: contentsMigrator(named.contents),
-        isClosed: false,
-      }:
-        (a => a_migrated, Version5._Types__named(a)) =>
-        _Types__named(a_migrated)
-    )
-  and migrate_Types____person: Version5._Types__person => _Types__person =
-    _input_data => _input_data
-  and migrate_Types____pet: Version5._Types__pet => _Types__pet =
-    _input_data =>
-      switch (_input_data) {
-      | Dog(dogBreed) => Dog
-      | Cat => Cat
-      | Mouse => Mouse
-      };
 };
 module Version7 = {
-  type _Types__household =
-    Types.household = {
-      people: list(_Types__person),
-      pets: list(_Types__pet),
-      what: _Types__what(string),
-      visitors: list(_Types__person),
-      county: _Types__named(int),
-    }
-  and _Types__named('a) =
-    Types.named('a) = {
-      name: string,
-      contents: 'a,
-      isClosed: bool,
-      other: option('a),
-    }
-  and _Types__person =
-    Types.person = {
-      name: string,
-      age: float,
-      thing: [ | `one | `two(int) | `three(float, string)],
-      coords: (float, float),
-    }
-  and _Types__pet = Types.pet = | Dog | Cat | Mouse
-  and _Types__what('a) = Types.what('a) = | Now('a, int);
+  open Types7;
   let rec deserialize_Types____household:
     Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
     record =>
@@ -2284,95 +2391,6 @@ module Version7 = {
           (int => Js.Json.number(float_of_int(int)))(arg1),
         |])
       };
-  let rec migrate_Types____household:
-    Version6._Types__household => _Types__household =
-    _input_data => {
-      let _converted_people =
-        (Belt.List.map(_input_data.people))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_pets =
-        (Belt.List.map(_input_data.pets))(_item =>
-          migrate_Types____pet(_item)
-        );
-      let _converted_what =
-        migrate_Types____what(arg => arg, _input_data.what);
-      let _converted_visitors =
-        (Belt.List.map(_input_data.visitors))(_item =>
-          migrate_Types____person(_item)
-        );
-      let _converted_county =
-        migrate_Types____named(arg => arg, _input_data.county);
-      {
-        county: _converted_county,
-        visitors: _converted_visitors,
-        what: _converted_what,
-        pets: _converted_pets,
-        people: _converted_people,
-      };
-    }
-  and migrate_Types____named:
-    'a 'a_migrated.
-    ('a => 'a_migrated, Version6._Types__named('a)) =>
-    _Types__named('a_migrated)
-   =
-    (type a, type a_migrated) => (
-      (_migrator_a, _input_data) => {
-        let _converted_name = _input_data.name;
-        let _converted_contents = _migrator_a(_input_data.contents);
-        let _converted_isClosed = _input_data.isClosed;
-        let _converted_other =
-          (_ => None: Version6._Types__named(a) => option(a_migrated))(
-            _input_data,
-          );
-        {
-          other: _converted_other,
-          isClosed: _converted_isClosed,
-          contents: _converted_contents,
-          name: _converted_name,
-        };
-      }:
-        (a => a_migrated, Version6._Types__named(a)) =>
-        _Types__named(a_migrated)
-    )
-  and migrate_Types____person: Version6._Types__person => _Types__person =
-    _input_data => {
-      let _converted_name = _input_data.name;
-      let _converted_age = _input_data.age;
-      let _converted_thing =
-        (
-          _ => `one:
-            Version6._Types__person =>
-            [ | `one | `two(int) | `three(float, string)]
-        )(
-          _input_data,
-        );
-      let _converted_coords = {
-        let (arg0, arg1) = _input_data.coords;
-        (arg0, arg1);
-      };
-      {
-        coords: _converted_coords,
-        thing: _converted_thing,
-        age: _converted_age,
-        name: _converted_name,
-      };
-    }
-  and migrate_Types____pet: Version6._Types__pet => _Types__pet =
-    _input_data => _input_data
-  and migrate_Types____what:
-    'a 'a_migrated.
-    ('a => 'a_migrated, Version6._Types__what('a)) =>
-    _Types__what('a_migrated)
-   =
-    (type a, type a_migrated) => (
-      (_migrator_a, _input_data) =>
-        switch (_input_data) {
-        | Now(a) => Now(_migrator_a(a), 5)
-        }:
-        (a => a_migrated, Version6._Types__what(a)) =>
-        _Types__what(a_migrated)
-    );
 };
 let currentVersion = 7;
 module Current = Version7;
@@ -2426,57 +2444,57 @@ and deserializeHousehold = data =>
       switch (Version6.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
-        let data = Version7.migrate_Types____household(data);
+        let data = Types7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 5 =>
       switch (Version5.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
-        let data = Version6.migrate_Types____household(data);
-        let data = Version7.migrate_Types____household(data);
+        let data = Types6.migrate_Types____household(data);
+        let data = Types7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 4 =>
       switch (Version4.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
-        let data = Version5.migrate_Types____household(data);
-        let data = Version6.migrate_Types____household(data);
-        let data = Version7.migrate_Types____household(data);
+        let data = Types5.migrate_Types____household(data);
+        let data = Types6.migrate_Types____household(data);
+        let data = Types7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 3 =>
       switch (Version3.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
-        let data = Version4.migrate_Types____household(data);
-        let data = Version5.migrate_Types____household(data);
-        let data = Version6.migrate_Types____household(data);
-        let data = Version7.migrate_Types____household(data);
+        let data = Types4.migrate_Types____household(data);
+        let data = Types5.migrate_Types____household(data);
+        let data = Types6.migrate_Types____household(data);
+        let data = Types7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 2 =>
       switch (Version2.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
-        let data = Version3.migrate_Types____household(data);
-        let data = Version4.migrate_Types____household(data);
-        let data = Version5.migrate_Types____household(data);
-        let data = Version6.migrate_Types____household(data);
-        let data = Version7.migrate_Types____household(data);
+        let data = Types3.migrate_Types____household(data);
+        let data = Types4.migrate_Types____household(data);
+        let data = Types5.migrate_Types____household(data);
+        let data = Types6.migrate_Types____household(data);
+        let data = Types7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | 1 =>
       switch (Version1.deserialize_Types____household(data)) {
       | Belt.Result.Error(error) => Belt.Result.Error(error)
       | Ok(data) =>
-        let data = Version2.migrate_Types____household(data);
-        let data = Version3.migrate_Types____household(data);
-        let data = Version4.migrate_Types____household(data);
-        let data = Version5.migrate_Types____household(data);
-        let data = Version6.migrate_Types____household(data);
-        let data = Version7.migrate_Types____household(data);
+        let data = Types2.migrate_Types____household(data);
+        let data = Types3.migrate_Types____household(data);
+        let data = Types4.migrate_Types____household(data);
+        let data = Types5.migrate_Types____household(data);
+        let data = Types6.migrate_Types____household(data);
+        let data = Types7.migrate_Types____household(data);
         Belt.Result.Ok(data);
       }
     | _ =>

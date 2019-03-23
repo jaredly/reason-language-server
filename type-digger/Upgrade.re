@@ -239,8 +239,6 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
     }
   });
 
-  let versionModuleName = version => "Version" ++ string_of_int(version);
-
   let typeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
 
   let concreteArgs = decl.variables->Belt.List.map(Serde.OutputType.outputExpr(
@@ -255,12 +253,12 @@ let makeUpgrader = (version, _prevTypeMap, lockedDeep, ~moduleName, ~modulePath,
   });
 
   let prevTypeConcrete = Typ.constr(
-    mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
+    mknoloc(Ldot(Lident(DigUtils.typesModuleName(version - 1)), typeName)),
     concreteArgs
   );
 
   let prevTypeName = Typ.constr(
-    mknoloc(Ldot(Lident(versionModuleName(version - 1)), typeName)),
+    mknoloc(Ldot(Lident(DigUtils.typesModuleName(version - 1)), typeName)),
     args
   );
 

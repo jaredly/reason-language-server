@@ -204,45 +204,15 @@ let makeModule = (moduleName, contents) =>
     Ast_helper.Mb.mk(Location.mknoloc(moduleName), Ast_helper.Mod.mk(Parsetree.Pmod_structure(contents))),
   );
 
-let makeFullModule = (~engine, ~config, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
+let makeFullModule = (~engine, ~currentVersion, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
   /* TODO respect engineVersion */
   module Engine = (val engine: Serde.Engine.T);
   let fns = makeDeserializers(Engine.declDeserializer, typeMap, lockedDeep, version);
-  let fns = version == config.version ? fns @ makeFns(Engine.declSerializer, typeMap) : fns;
-  // let (fns, outfile) =
-  //   switch (config.engines) {
-  //   | {bs_json: Some({output}), rex_json: None} =>
-  //     let fns = makeDeserializers(Serde.BsJson.declDeserializer, typeMap, lockedDeep, version);
-  //     (version == config.version ? fns @ makeFns(Serde.BsJson.declSerializer, typeMap) : fns, output);
-  //   | {rex_json: Some({output}), bs_json: None} =>
-  //     let fns = makeDeserializers(Serde.Json.declDeserializer, typeMap, lockedDeep, version);
-  //     (version == config.version ? fns @ makeFns(Serde.Json.declSerializer, typeMap) : fns, output);
-  //   | _ => failwith("multiple engines not yet supported")
-  //   };
+  let fns = version == currentVersion ? fns @ makeFns(Engine.declSerializer, typeMap) : fns;
 
   makeModule(versionModuleName(version), [
-    Ast_helper.Str.type_(Recursive, TypesFile.lockTypes(~currentVersion=config.version, version, typeMap, lockedDeep)),
+    Ast_helper.Str.open_(Ast_helper.Opn.mk(Location.mknoloc(Longident.Lident(typesModuleName(version))))),
     Ast_helper.Str.value(Recursive, fns),
-    ...(if (version > 1) {
-      let pastTypeMap = lockfile->Locked.getVersion(version - 1).typeMap;
-      [
-        Ast_helper.Str.value(
-          Recursive,
-          hashList(typeMap)
-          ->Belt.List.sort(compare)
-          ->Belt.List.keepMap((((moduleName, modulePath, name) as ref, decl)) =>  {
-            switch (pastTypeMap->Upgrade.hashFind(ref)) {
-              | Some(dPast) => Some(
-                  Upgrade.makeUpgrader(version, pastTypeMap, lockedDeep, ~moduleName, ~modulePath, ~name, decl, dPast)
-                )
-              | None => None
-            }
-          })
-        ),
-      ];
-    } else {
-      []
-    })
   ]);
 };
 
@@ -272,7 +242,7 @@ let makeConverters = (~config, ~state) => config.entries->Belt.List.map(({file, 
         [%expr Belt.Result.Ok(data)]
       } else {
         [%expr {
-          let data = [%e expIdent(Ldot(Lident(versionModuleName(current + 1)), "migrate_" ++ fullName))](data);
+          let data = [%e expIdent(Ldot(Lident(typesModuleName(current + 1)), "migrate_" ++ fullName))](data);
           [%e loop(current + 1)]
         }]
       };
@@ -360,10 +330,16 @@ let main = (~override=false, configPath) => {
     Lockdown.typesAndDependencies(config.typeMap)
   }));
 
+  let makeTypeModules = () => {
+    let rec loop = version => version > config.version ? [] : {
+      [TypesFile.makeModule(~currentVersion=config.version, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version).typeMap), ...loop(version + 1)]
+    };
+    loop(1)
+  };
 
   let makeAllModules = () => {
     let rec loop = version => version > config.version ? [] : {
-      [makeFullModule(~engine, ~config, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version)), ...loop(version + 1)]
+      [makeFullModule(~engine, ~currentVersion=config.version, ~lockedDeep, ~lockfile, version, lockfile->Locked.getVersion(version)), ...loop(version + 1)]
     };
     loop(1)
     /* loop(config.version) */
@@ -373,7 +349,9 @@ let main = (~override=false, configPath) => {
 
   let body = Parsetree.[
       [%stri [@ocaml.warning "-34"]; ],
-    ] @ makeAllModules() @ Parsetree.[
+    ]
+    @ makeTypeModules()
+    @ makeAllModules() @ Parsetree.[
     [%stri
       let currentVersion = [%e Ast_helper.Exp.constant(Parsetree.Pconst_integer(string_of_int(config.version), None))]
     ],
