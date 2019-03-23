@@ -1,31 +1,33 @@
 {
-  "$schemaVersion": 1,
-  "engine": ["rex-json"],
+  "$schemaVersion": 2,
   "versions": [
     {
       "entries": [
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [],
           "name": "serializableLockfile"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [],
           "name": "t"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [],
           "name": "simpleDeclaration"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [],
           "name": "simpleExpr"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -2028,25 +2030,48 @@
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
           "name": "serializableLockfile"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
           "name": "t"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
           "name": "simpleDeclaration"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
           "name": "simpleExpr"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [

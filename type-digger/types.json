@@ -1,36 +1,55 @@
 {
-  "version": 2,
-  "$schemaVersion": 1,
-  "output": "type-digger/type-map-serde/Serde.re",
-  "engine": ["rex-json"],
-  "entries": [
-    {
-      "file": "type-digger/type-map-serde/Config.re",
-      "type": "serializableLockfile",
-      "history": false
-    },
-    {
-      "file": "type-digger/type-map-serde/Config.re",
-      "type": "t",
-      "history": false
-    },
-    {
-      "file": "type-digger/type-map-serde/Config.re",
-      "type": "simpleDeclaration",
-      "history": false
-    },
-    {
-      "file": "type-digger/type-map-serde/Config.re",
-      "type": "simpleExpr",
-      "history": false
-    }
-  ],
-  "//": { "file": "core/SharedTypes.re", "type": "SimpleType.expr", "publicName": "simpleExpr" },
-  "custom": [
-    {"module": "Parsetree", "path": [], "name": "signature", "args": 0},
-    {"module": "Parsetree", "path": [], "name": "structure", "args": 0},
-    {"module": "Parsetree", "path": [], "name": "core_type", "args": 0},
-    {"module": "Parsetree", "path": [], "name": "expression", "args": 0},
-    {"module": "Parsetree", "path": [], "name": "pattern", "args": 0}
-  ]
+"$schemaVersion": 2,
+"version": 2,
+"engines": {
+  "rex-json": {
+    "output": "type-digger/type-map-serde/Serde.re",
+    "helpers": "TransformHelpers"
+  }
+},
+"entries": [
+  {
+    "file": "type-digger/type-map-serde/Config.re",
+    "type": "serializableLockfile"
+  },
+  {
+    "file": "type-digger/type-map-serde/Config.re",
+    "type": "t"
+  },
+  {
+    "file": "type-digger/type-map-serde/Config.re",
+    "type": "simpleDeclaration"
+  },
+  {
+    "file": "type-digger/type-map-serde/Config.re",
+    "type": "simpleExpr"
+  }
+],
+"custom": [
+  {
+    "module": "Parsetree",
+    "path": [],
+    "name": "signature"
+  },
+  {
+    "module": "Parsetree",
+    "path": [],
+    "name": "structure"
+  },
+  {
+    "module": "Parsetree",
+    "path": [],
+    "name": "core_type"
+  },
+  {
+    "module": "Parsetree",
+    "path": [],
+    "name": "expression"
+  },
+  {
+    "module": "Parsetree",
+    "path": [],
+    "name": "pattern"
+  }
+]
 }
