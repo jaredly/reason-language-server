@@ -136,10 +136,14 @@ let rec forExpr = (~renames, transformer, t) => switch t {
   | _ => failer("not impl expr")
 };
 
-let forBody = (~renames, transformer, body, fullName, variables) => switch body {
+let forBody = (~helpers, ~renames, transformer, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
-    let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
+    let moduleName = switch helpers {
+      | None => failwith("Abstract type found, but no 'helpers' module specified for this engine")
+      | Some(name) => name;
+    };
+    let body = makeIdent(Ldot(Lident(moduleName), fullName));
     switch (variables) {
       | [] => body
       | args => Exp.apply(body, args->Belt.List.map(
@@ -221,9 +225,9 @@ let makeTypArgs = variables =>
         "arg" ++ string_of_int(index)
       });
 
-let declInner = (~renames, transformer, {variables, body}, fullName) => {
+let declInner = (~helpers, ~renames, transformer, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(~renames, transformer, body, fullName, variables)
+    | [] => forBody(~helpers, ~renames, transformer, body, fullName, variables)
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {
@@ -237,7 +241,7 @@ let declInner = (~renames, transformer, {variables, body}, fullName) => {
     loop(variables)
 };
 
-let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
+let decl = (~helpers, ~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let typ = Typ.arrow(
         Nolabel,
@@ -270,6 +274,6 @@ let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(~renames, transformer, decl, fullName)
+    declInner(~helpers, ~renames, transformer, decl, fullName)
   )
 };

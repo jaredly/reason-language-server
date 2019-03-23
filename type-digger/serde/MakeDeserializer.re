@@ -125,10 +125,14 @@ let rec forArgs = (~renames, transformer, args, body, errorName) => {
   | _ => failer("not impl expr")
 };
 
-let forBody = (~renames, transformer, coreType, body, fullName, variables) => switch body {
+let forBody = (~helpers, ~renames, transformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
-    let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
+    let moduleName = switch helpers {
+      | None => failwith("Abstract type found, but no 'helpers' module specified for this engine")
+      | Some(name) => name;
+    };
+    let body = makeIdent(Ldot(Lident(moduleName), fullName));
     switch (variables) {
       | [] => body
       | args => Exp.apply(body, args->Belt.List.map(
@@ -183,9 +187,9 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
     transformer.variant(~renames, constructors)
 };
 
-let declInner = (~renames, transformer, typeLident, {variables, body}, fullName) => {
+let declInner = (~helpers, ~renames, transformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(~renames, transformer,
+    | [] => forBody(~helpers, ~renames, transformer,
     Typ.constr(
       Location.mknoloc(
         typeLident,
@@ -286,7 +290,7 @@ let declOuter = (inputType, variables, ~moduleName, ~modulePath, ~name, inner) =
   );
 };
 
-let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, ~inner, decl) => {
+let decl = (transformer, ~helpers, ~renames, ~moduleName, ~modulePath, ~name, ~inner, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let fullName = transformerName(~moduleName, ~modulePath, ~name);
   declOuter(
@@ -296,7 +300,7 @@ let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, ~inner, decl
     ~modulePath,
     ~name,
     switch inner {
-      | None => declInner(~renames, transformer, lident, decl, fullName)
+      | None => declInner(~helpers, ~renames, transformer, lident, decl, fullName)
       | Some(inner) => inner
     }
   )

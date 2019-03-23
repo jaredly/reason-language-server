@@ -2,6 +2,7 @@
 module type T = {
   let declDeserializer:
     (
+      ~helpers: option(string),
       ~renames: list((string, string)),
       ~moduleName: string,
       ~modulePath: list(string),
@@ -14,6 +15,7 @@ module type T = {
     Parsetree.value_binding;
   let declSerializer:
     (
+      ~helpers: option(string),
       ~renames: list((string, string)),
       ~moduleName: string,
       ~modulePath: list(string),

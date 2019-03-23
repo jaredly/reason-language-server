@@ -121,7 +121,7 @@ let makeConverters = (~config, ~state) =>
       );
     });
 
-let makeDeserializers = (maker, tbl, lockedDeep, version) => {
+let makeDeserializers = (~helpers, maker, tbl, lockedDeep, version) => {
   hashList(tbl)
   ->Belt.List.sort(compare)
   ->Belt.List.map((((moduleName, modulePath, name) as ref, (attributes, decl))) => {
@@ -138,6 +138,7 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
       switch (prevVersion) {
       | None =>
         maker(
+          ~helpers,
           ~renames=attributes->Lockfile.getRenames,
           ~moduleName,
           ~modulePath,
@@ -154,6 +155,7 @@ let makeDeserializers = (maker, tbl, lockedDeep, version) => {
             ),
           );
         maker(
+          ~helpers,
           ~renames=attributes->Lockfile.getRenames,
           ~moduleName,
           ~modulePath,
@@ -177,20 +179,20 @@ let makeModule = (moduleName, contents) =>
     ),
   );
 
-let makeFns = (maker, tbl) => {
+let makeFns = (~helpers, maker, tbl) => {
   hashList(tbl)
   ->Belt.List.sort(compare)
   ->Belt.List.map((((moduleName, modulePath, name), (attributes, decl))) =>
-      maker(~renames=attributes->Lockfile.getRenames, ~moduleName, ~modulePath, ~name, decl)
+      maker(~helpers, ~renames=attributes->Lockfile.getRenames, ~moduleName, ~modulePath, ~name, decl)
     );
 };
 
 let makeFullModule =
-    (~engine, ~currentVersion, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
+    (~engine, ~helpers, ~currentVersion, ~lockedDeep, ~lockfile, version, {Locked.typeMap}) => {
   /* TODO respect engineVersion */
   module Engine = (val engine: Serde.Engine.T);
-  let fns = makeDeserializers(Engine.declDeserializer, typeMap, lockedDeep, version);
-  let fns = version == currentVersion ? fns @ makeFns(Engine.declSerializer, typeMap) : fns;
+  let fns = makeDeserializers(~helpers, Engine.declDeserializer, typeMap, lockedDeep, version);
+  let fns = version == currentVersion ? fns @ makeFns(~helpers, Engine.declSerializer, typeMap) : fns;
 
   makeModule(
     versionModuleName(version),

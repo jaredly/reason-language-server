@@ -158,7 +158,7 @@ let migrateBetween = (~version as _, ~lockedDeep as _, variable, fullName, thisT
     Some(Exp.match(variable, cases));
   }
   | (Abstract, Abstract) => 
-      let body = makeIdent(Ldot(Lident("TransformHelpers"), "migrate" ++ fullName));
+      let body = makeIdent(Ldot(Lident("MigrateHelpers"), "migrate" ++ fullName));
       switch (thisType.variables) {
       | [] => Some(variable)
       | args =>
