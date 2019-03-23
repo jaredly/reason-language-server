@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "$schemaVersion": 2,
+  "outputTypes": "src/KitchenTypes.re",
+  "engines": {
+    "Js.Json": {
+      "output": "src/KitchenSerde.re"
+    },
+    "rex-json": {
+      "output": "src/KitchenServerSerde.re"
+    }
+  },
+  "entries": [
+    {
+      "file": "src/AllTypes.re",
+      "type": "All.rename",
+      "publicName": "kitchenSink"
+    }
+  ],
+  "custom": []
+}

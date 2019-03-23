@@ -810,6 +810,7 @@ module Types2 = {
         _TypeMap__DigTypes__typeSource(reference_migrated)
     );
 };
+let currentVersion = 2;
 module Version1 = {
   open Types1;
   let rec deserialize_Analyze__TopTypes____moduleName:
@@ -4330,7 +4331,6 @@ module Version2 = {
       | NotFound => Json.Array([Json.String("NotFound")])
       };
 };
-let currentVersion = 2;
 module Current = Version2;
 let parseVersion = json =>
   switch (json) {

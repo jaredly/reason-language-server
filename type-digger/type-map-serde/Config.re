@@ -27,14 +27,19 @@ type custom = {
 type entry = {
   file: string,
   type_: string,
+  // TODO: support this attribute (currently unused)
   engines: option(list(engine)),
   publicName: option(string),
+  // TODO: support this attribute (currently unused)
   history: option(bool),
+  // TODO: support this attribute (currently unused)
   minVersion: option(int),
 };
 
+// type rexMode = Results | FullExceptions | ThinExceptions;
+
 // type rexJsonConfig = {
-//   tailCall: bool,
+//   mode: rexMode,
 // };
 
 // type bsJsonConfig = {
@@ -78,6 +83,7 @@ let activeEngines = engines => switch engines {
 [@migrate.minVersion t => None]
 type t = {
   version: int,
+  // TODO: support this attribute
   minVersion: option(int),
   outputTypes: option(string),
   engines,
@@ -91,6 +97,7 @@ module Locked = {
   type lockedEntry = {
     moduleName: string,
     modulePath: list(string),
+    // TODO: support engine versioning
     engines: list((engine, int)),
     name: string,
   };

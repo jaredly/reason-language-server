@@ -3,10 +3,6 @@ let loc = Location.none;
 open DigUtils;
 
 let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
-let capitalize = s =>
-  s == ""
-    ? ""
-    : String.uppercase_ascii(String.sub(s, 0, 1)) ++ String.sub(s, 1, String.length(s) - 1);
 
 let makeConverters = (~config, ~state) =>
   config.entries
@@ -50,7 +46,7 @@ let makeConverters = (~config, ~state) =>
         Asttypes.Nonrecursive,
         [
           Ast_helper.Vb.mk(
-            Ast_helper.Pat.var(Location.mknoloc("serialize" ++ capitalize(publicName))),
+            Ast_helper.Pat.var(Location.mknoloc("serialize" ++ String.capitalize_ascii(publicName))),
             [%expr
               data =>
                 wrapWithVersion(
@@ -71,7 +67,7 @@ let makeConverters = (~config, ~state) =>
             ],
           ),
           Ast_helper.Vb.mk(
-            Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ capitalize(publicName))),
+            Ast_helper.Pat.var(Location.mknoloc("deserialize" ++ String.capitalize_ascii(publicName))),
             [%expr
               data =>
                 switch (parseVersion(data)) {

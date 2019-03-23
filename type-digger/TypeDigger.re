@@ -105,6 +105,20 @@ let makeLockfilePath = configPath => {
   Filename.concat(base, newName);
 };
 
+let outputStructure = (~fileName, ~structure) => {
+  if (fileName->Filename.check_suffix(".re")) {
+    let reason_structure = Reason_toolchain.From_current.copy_structure(structure);
+    Reason_toolchain.RE.print_implementation_with_comments(
+      Format.str_formatter,
+      (reason_structure, []),
+    );
+  } else {
+    Pprintast.structure(Format.str_formatter, structure);
+  };
+
+  Files.writeFile(fileName, Format.flush_str_formatter()) |> ignore;
+};
+
 let main = (~upvert=false, ~override=false, configPath) => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config =
@@ -115,12 +129,20 @@ let main = (~upvert=false, ~override=false, configPath) => {
   TypeMapSerde.checkVersion(~upvert, ~configPath, config, json);
   let (state, currentTypeMap, lockedEntries) = loadTypeMap(config);
 
-  let (engine, outfile, helpers) =
-    switch (config.engines) {
-    | {bs_json: Some({output, helpers})} => ((module Serde.BsJson): (module Serde.Engine.T), output, helpers)
-    | {rex_json: Some({output, helpers})} => ((module Serde.Json): (module Serde.Engine.T), output, helpers)
-    | _ => failwith("No engine espcified")
-    };
+  let engines = TypeMapSerde.Config.engineConfigs(config.engines)->Belt.List.map(((engine, config)) => (
+    switch engine {
+      | Bs_json => (module Serde.BsJson: Serde.Engine.T)
+      | Rex_json => (module Serde.Json: Serde.Engine.T)
+    },
+    config
+  ));
+
+  // let (engine, outfile, helpers) =
+  //   switch (config.engines) {
+  //   | {bs_json: Some({output, helpers})} => ((module Serde.BsJson): (module Serde.Engine.T), output, helpers)
+  //   | {rex_json: Some({output, helpers})} => ((module Serde.Json): (module Serde.Engine.T), output, helpers)
+  //   | _ => failwith("No engine espcified")
+  //   };
 
   let lockFilePath = makeLockfilePath(configPath);
 
@@ -136,7 +158,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
         ),
     );
 
-  let makeTypeModules = () => {
+  let typeModules = {
     let rec loop = version =>
       version > config.version
         ? []
@@ -155,7 +177,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
     loop(1);
   };
 
-  let makeAllModules = () => {
+  let makeEngineModules = (engine, helpers) => {
     let rec loop = version =>
       version > config.version
         ? []
@@ -173,56 +195,63 @@ let main = (~upvert=false, ~override=false, configPath) => {
             ...loop(version + 1),
           ];
         };
-    loop(1);
-  };
-
-  module Engine = (val engine: Serde.Engine.T);
-
-  let body =
-    Parsetree.[[%stri [@ocaml.warning "-34"]]]
-    @ makeTypeModules()
-    @ makeAllModules()
-    @ Parsetree.[
-        [%stri
-          let currentVersion = [%e
-            Ast_helper.Exp.constant(
-              Parsetree.Pconst_integer(string_of_int(config.version), None),
-            )
-          ]
-        ],
-        [%stri
-          module Current = [%m
-            Ast_helper.Mod.ident(
-              Location.mknoloc(Longident.Lident(versionModuleName(config.version))),
-            )
-          ]
-        ],
-        /* body, */
-        ...[%str
-             let parseVersion = [%e Engine.deserializeTransformer.parseVersion];
-             let wrapWithVersion = [%e Engine.serializeTransformer.wrapWithVersion]
-           ],
-      ];
-
-  let converters = SerdeFile.makeConverters(~config, ~state);
-
-  let structure = body @ converters;
-
-  if (outfile->Filename.check_suffix(".re")) {
-    let reason_structure = Reason_toolchain.From_current.copy_structure(structure);
-    Reason_toolchain.RE.print_implementation_with_comments(
-      Format.str_formatter,
-      (reason_structure, []),
+    module Engine = (val engine: Serde.Engine.T);
+    loop(1) @ Parsetree.(
+      [%str
+        module Current = [%m
+          Ast_helper.Mod.ident(
+            Location.mknoloc(Longident.Lident(versionModuleName(config.version))),
+          )
+        ];
+        let parseVersion = [%e Engine.deserializeTransformer.parseVersion];
+        let wrapWithVersion = [%e Engine.serializeTransformer.wrapWithVersion];
+      ]
     );
-  } else {
-    Pprintast.structure(Format.str_formatter, structure);
   };
-  let ml = Format.flush_str_formatter();
+
+  let typeModuleStructures =
+    typeModules
+    @ Parsetree.[
+      [%stri
+        let currentVersion = [%e
+          Ast_helper.Exp.constant(Parsetree.Pconst_integer(string_of_int(config.version), None))
+        ]
+      ],
+    ];
+  let warning = Parsetree.[[%stri [@ocaml.warning "-34"]]]
+
+  switch (engines, config.outputTypes) {
+    | ([(engine, {output, helpers})], None) =>
+      let body =
+        warning
+        @ typeModuleStructures
+        @ makeEngineModules(engine, helpers);
+
+      let converters = SerdeFile.makeConverters(~config, ~state);
+      let structure = body @ converters;
+
+      outputStructure(~fileName=output, ~structure);
+    | (_multiple, None) => failwith("When you specify multiple engines, you must provide an `lockedTypes` file")
+    | (multiple, Some(lockedTypes)) => {
+      outputStructure(~fileName=lockedTypes, ~structure=warning @ typeModuleStructures);
+      let lockedTypesModule = Filename.basename(lockedTypes)->Stdlib.Filename.remove_extension->String.capitalize_ascii;
+      multiple->Belt.List.forEach(((engine, {output, helpers})) => {
+        let body =
+          warning
+          @ [Ast_helper.Str.open_(
+            Ast_helper.Opn.mk(Location.mknoloc(Longident.Lident(lockedTypesModule))),
+          )]
+          @ makeEngineModules(engine, helpers);
+        let converters = SerdeFile.makeConverters(~config, ~state);
+        let structure = body @ converters;
+        outputStructure(~fileName=output, ~structure);
+      })
+    }
+  };
+
 
   let lockfileJson = TypeMapSerde.lockfileToJson(lockfile);
   Files.writeFileExn(lockFilePath, Json.stringifyPretty(~indent=2, lockfileJson));
-
-  Files.writeFile(outfile, ml) |> ignore;
 };
 
 switch (Sys.argv->Belt.List.fromArray) {
