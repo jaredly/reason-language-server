@@ -180,7 +180,7 @@ let rec stringify = (t) =>
 
 let white = n => {
   let buffer = Buffer.create(n);
-  for (i in 0 to n - 1) {
+  for (_ in 0 to n - 1) {
     Buffer.add_char(buffer, ' ')
   };
   Buffer.contents(buffer)

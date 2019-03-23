@@ -52,11 +52,11 @@ type transformer('source) = {
 let loc = Location.none;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
-let ok = v => Exp.construct(mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(v));
+let ok = v => [%expr Belt.Result.Ok([%e v])];
 let expString = message => Exp.constant(Pconst_string(message, None));
 let expError = message => [%expr Belt.Result.Error([[%e expString(message)]])];
-let expPassError = text => Exp.construct(mknoloc(Lident("Error")), Some([%expr [[%e expString(text)], ...[%e makeIdent(Lident("error"))]]]));
-let patPassError = Pat.construct(mknoloc(Lident("Error")), Some(Pat.var(mknoloc("error"))));
+let expPassError = text => [%expr Belt.Result.Error([[%e expString(text)], ...error])];
+let patPassError = [%pat? Error(error)];
 
 
 let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
@@ -304,46 +304,6 @@ let decl = (transformer, ~helpers, ~renames, ~moduleName, ~modulePath, ~name, ~i
       | Some(inner) => inner
     }
   )
-
-  // let lident = makeLident(~moduleName, ~modulePath, ~name);
-  // let asTypeVariables = 
-  //         decl.variables->makeTypArgs->Belt.List.map(Typ.var);
-  // let typ = makeArrow(transformer.inputType, lident, asTypeVariables);
-  // let typ = makeFunctionType(typ, transformer.inputType, asTypeVariables);
-  // let typ =
-  //   switch (decl.variables) {
-  //   | [] => typ
-  //   | _args => Typ.poly(makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc), typ)
-  //   };
-  // let fullName = transformerName(~moduleName, ~modulePath, ~name);
-
-  // let inner = 
-
-  // let inner = decl.variables == [] ? inner : {
-  //   let asTypeConstrs =
-  //     decl.variables
-  //     ->makeTypArgs
-  //     ->Belt.List.map(name => Typ.constr(Location.mknoloc(Lident(name)), []));
-
-  //   let inner = Ast_helper.Exp.constraint_(
-  //     inner,
-  //     makeFunctionType(
-  //       makeArrow(transformer.inputType, lident, asTypeConstrs),
-  //       transformer.inputType, asTypeConstrs
-  //     )
-  //   );
-
-  //   makeTypArgs(decl.variables)
-  //   ->Belt.List.reduce(
-  //     inner, (body, arg) =>
-  //       Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
-  //     );
-  // };
-
-  // Vb.mk(
-  //   Pat.constraint_(Pat.var(Location.mknoloc(fullName)), typ),
-  //   inner,
-  // );
 };
 
 

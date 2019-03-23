@@ -101,13 +101,18 @@ module Version1 = {
                                     )
                                   ) {
                                   | Belt.Result.Ok(arg0) =>
-                                    [@implicit_arity]
-                                    Belt.Result.Ok(arg0, arg1)
+                                    Belt.Result.Ok((arg0, arg1))
                                   | Error(error) =>
-                                    Error(["tuple element 0", ...error])
+                                    Belt.Result.Error([
+                                      "tuple element 0",
+                                      ...error,
+                                    ])
                                   }
                                 | Error(error) =>
-                                  Error(["tuple element 1", ...error])
+                                  Belt.Result.Error([
+                                    "tuple element 1",
+                                    ...error,
+                                  ])
                                 }
                               | _ => Belt.Result.Error(["Expected array"])
                               }
@@ -129,12 +134,12 @@ module Version1 = {
                             )
                           ) {
                           | Belt.Result.Ok(arg0) =>
-                            [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                            Belt.Result.Ok((arg0, arg1))
                           | Error(error) =>
-                            Error(["tuple element 0", ...error])
+                            Belt.Result.Error(["tuple element 0", ...error])
                           }
                         | Error(error) =>
-                          Error(["tuple element 1", ...error])
+                          Belt.Result.Error(["tuple element 1", ...error])
                         }
                       | _ => Belt.Result.Error(["Expected array"])
                       }
@@ -293,7 +298,8 @@ module Version1 = {
           Belt.Result.Ok(
             [@implicit_arity] C(arg0): _AllTypes__All__normalVariant,
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "D" == tag =>
         switch (deserialize_AllTypes__All__normalRecord(arg0)) {
@@ -301,7 +307,8 @@ module Version1 = {
           Belt.Result.Ok(
             [@implicit_arity] D(arg0): _AllTypes__All__normalVariant,
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), ..._]) =>
         Belt.Result.Error(["Invalid constructor: " ++ tag])
@@ -386,11 +393,12 @@ module Version1 = {
                           )
                         ) {
                         | Belt.Result.Ok(arg0) =>
-                          [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                          Belt.Result.Ok((arg0, arg1))
                         | Error(error) =>
-                          Error(["tuple element 0", ...error])
+                          Belt.Result.Error(["tuple element 0", ...error])
                         }
-                      | Error(error) => Error(["tuple element 1", ...error])
+                      | Error(error) =>
+                        Belt.Result.Error(["tuple element 1", ...error])
                       }
                     | _ => Belt.Result.Error(["Expected array"])
                     }
@@ -455,7 +463,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | Json.Array([Json.String(tag), arg0, arg1]) when "PC" == tag =>
           switch (bTransformer(arg1)) {
@@ -469,9 +478,11 @@ module Version1 = {
                                                      arg1,
                                                    ),
               )
-            | Error(error) => Error(["constructor argument 0", ...error])
+            | Error(error) =>
+              Belt.Result.Error(["constructor argument 0", ...error])
             }
-          | Error(error) => Error(["constructor argument 1", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 1", ...error])
           }
         | Json.Array([Json.String(tag), arg0]) when "PD" == tag =>
           switch (
@@ -492,7 +503,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | Json.Array([Json.String(tag), arg0]) when "PE" == tag =>
           switch (deserialize_AllTypes__All__normalVariant(arg0)) {
@@ -504,7 +516,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | Json.Array([Json.String(tag), arg0]) when "PF" == tag =>
           switch (deserialize_AllTypes__All__normalRecord(arg0)) {
@@ -516,7 +529,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | Json.Array([Json.String(tag), ..._]) =>
           Belt.Result.Error(["Invalid constructor: " ++ tag])
@@ -545,7 +559,8 @@ module Version1 = {
           Belt.Result.Ok(
             [@implicit_arity] B(arg0): _AllTypes__All__recursive,
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), ..._]) =>
         Belt.Result.Error(["Invalid constructor: " ++ tag])

@@ -101,13 +101,18 @@ module Version1 = {
                                     )
                                   ) {
                                   | Belt.Result.Ok(arg0) =>
-                                    [@implicit_arity]
-                                    Belt.Result.Ok(arg0, arg1)
+                                    Belt.Result.Ok((arg0, arg1))
                                   | Error(error) =>
-                                    Error(["tuple element 0", ...error])
+                                    Belt.Result.Error([
+                                      "tuple element 0",
+                                      ...error,
+                                    ])
                                   }
                                 | Error(error) =>
-                                  Error(["tuple element 1", ...error])
+                                  Belt.Result.Error([
+                                    "tuple element 1",
+                                    ...error,
+                                  ])
                                 }
                               | _ => Belt.Result.Error(["Expected an array"])
                               }
@@ -129,12 +134,12 @@ module Version1 = {
                             )
                           ) {
                           | Belt.Result.Ok(arg0) =>
-                            [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                            Belt.Result.Ok((arg0, arg1))
                           | Error(error) =>
-                            Error(["tuple element 0", ...error])
+                            Belt.Result.Error(["tuple element 0", ...error])
                           }
                         | Error(error) =>
-                          Error(["tuple element 1", ...error])
+                          Belt.Result.Error(["tuple element 1", ...error])
                         }
                       | _ => Belt.Result.Error(["Expected an array"])
                       }
@@ -298,7 +303,8 @@ module Version1 = {
           Belt.Result.Ok(
             [@implicit_arity] C(arg0): _AllTypes__All__normalVariant,
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | JSONArray([|tag, arg0|])
           when Js.Json.JSONString("D") == Js.Json.classify(tag) =>
@@ -307,7 +313,8 @@ module Version1 = {
           Belt.Result.Ok(
             [@implicit_arity] D(arg0): _AllTypes__All__normalVariant,
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | _ => Belt.Result.Error(["Expected an array"])
       }
@@ -390,11 +397,12 @@ module Version1 = {
                           )
                         ) {
                         | Belt.Result.Ok(arg0) =>
-                          [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                          Belt.Result.Ok((arg0, arg1))
                         | Error(error) =>
-                          Error(["tuple element 0", ...error])
+                          Belt.Result.Error(["tuple element 0", ...error])
                         }
-                      | Error(error) => Error(["tuple element 1", ...error])
+                      | Error(error) =>
+                        Belt.Result.Error(["tuple element 1", ...error])
                       }
                     | _ => Belt.Result.Error(["Expected an array"])
                     }
@@ -460,7 +468,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | JSONArray([|tag, arg0, arg1|])
             when Js.Json.JSONString("PC") == Js.Json.classify(tag) =>
@@ -475,9 +484,11 @@ module Version1 = {
                                                      arg1,
                                                    ),
               )
-            | Error(error) => Error(["constructor argument 0", ...error])
+            | Error(error) =>
+              Belt.Result.Error(["constructor argument 0", ...error])
             }
-          | Error(error) => Error(["constructor argument 1", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 1", ...error])
           }
         | JSONArray([|tag, arg0|])
             when Js.Json.JSONString("PD") == Js.Json.classify(tag) =>
@@ -499,7 +510,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | JSONArray([|tag, arg0|])
             when Js.Json.JSONString("PE") == Js.Json.classify(tag) =>
@@ -512,7 +524,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | JSONArray([|tag, arg0|])
             when Js.Json.JSONString("PF") == Js.Json.classify(tag) =>
@@ -525,7 +538,8 @@ module Version1 = {
                                              arg1,
                                            ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
         | _ => Belt.Result.Error(["Expected an array"])
         }:
@@ -553,7 +567,8 @@ module Version1 = {
           Belt.Result.Ok(
             [@implicit_arity] B(arg0): _AllTypes__All__recursive,
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | _ => Belt.Result.Error(["Expected an array"])
       }

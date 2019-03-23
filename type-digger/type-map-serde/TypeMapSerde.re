@@ -17,22 +17,8 @@ let checkVersion = (~upvert, ~configPath, config, json) => {
   };
 };
 
-let dumpExpr = expr => {
-  // failwith("a")
-  Serde.serializeSimpleExpr(
-    expr,
-    // Serde.serialize_SharedTypes__SimpleType__expr(Serde.serialize_TypeMap__DigTypes____typeSource(Serde.serialize_TypeMap__DigTypes____shortReference));
-  );
-};
-
-let dumpDecl = expr => {
-  // failwith("a")
-  Serde.serializeSimpleDeclaration(
-    expr,
-    // Serde.serialize_SharedTypes__SimpleType__expr(Serde.serialize_TypeMap__DigTypes____typeSource(Serde.serialize_TypeMap__DigTypes____shortReference));
-  );
-};
-
+let dumpExpr = Serde.serializeSimpleExpr;
+let dumpDecl = Serde.serializeSimpleDeclaration;
 let parseVersion = Serde.parseVersion;
 
 module Config = Config;
