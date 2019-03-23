@@ -105,13 +105,14 @@ let makeLockfilePath = configPath => {
   Filename.concat(base, newName);
 };
 
-let main = (~override=false, configPath) => {
+let main = (~upvert=false, ~override=false, configPath) => {
   let json = Json.parse(Util.Files.readFileExn(configPath));
   let%try_force config =
     switch (TypeMapSerde.configFromJson(json)) {
     | Error(m) => Error(String.concat("::", m))
     | Ok(v) => Ok(v)
     };
+  TypeMapSerde.checkVersion(~upvert, ~configPath, config, json);
   let (state, currentTypeMap, lockedEntries) = loadTypeMap(config);
 
   let (engine, outfile) =
@@ -226,5 +227,6 @@ let main = (~override=false, configPath) => {
 switch (Sys.argv->Belt.List.fromArray) {
 | [_, config] => main(config)
 | [_, config, "--override"] => main(~override=true, config)
+| [_, config, "--upvert"] => main(~upvert=true, config)
 | _ => failwith("Bad args")
 };
