@@ -100,26 +100,6 @@
         ],
         [
           [
-            "Belt__Belt_HashMapInt",
-            [],
-            "t"
-          ],
-          [
-            [],
-            {
-              "name": "t",
-              "variables": [
-                [
-                  "Variable",
-                  "arg0"
-                ]
-              ],
-              "body": ["Abstract"]
-            }
-          ]
-        ],
-        [
-          [
             "Location",
             [],
             "t"
@@ -3917,7 +3897,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ])\n        }\n    | Bs_json ->\n        {\n          res_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ])\n        }"
+                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ])\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ])\n        }"
                 ]
               ],
               [
