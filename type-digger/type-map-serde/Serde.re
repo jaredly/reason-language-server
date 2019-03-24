@@ -76,7 +76,8 @@ module Types1 = {
     args: int,
   }
   and _TypeMapSerde__Config__engine =
-    TypeMapSerde__Config.engine = | Rex_json | Bs_json
+    | Rex_json
+    | Bs_json
   and _TypeMapSerde__Config__entry = {
     file: string,
     type_: string,
@@ -212,7 +213,7 @@ module Types2 = {
       args: option(int),
     }
   and _TypeMapSerde__Config__engine =
-    TypeMapSerde__Config.engine = | Rex_json | Bs_json
+    TypeMapSerde__Config.engine = | Rex_json | Bs_json | Ezjsonm
   and _TypeMapSerde__Config__engineConfig =
     TypeMapSerde__Config.engineConfig = {
       output: string,
@@ -222,6 +223,7 @@ module Types2 = {
     TypeMapSerde__Config.engines = {
       rex_json: option(_TypeMapSerde__Config__engineConfig),
       bs_json: option(_TypeMapSerde__Config__engineConfig),
+      ezjsonm: option(_TypeMapSerde__Config__engineConfig),
     }
   and _TypeMapSerde__Config__entry =
     TypeMapSerde__Config.entry = {
@@ -567,7 +569,11 @@ module Types2 = {
     }
   and migrate_TypeMapSerde__Config____engine:
     Types1._TypeMapSerde__Config__engine => _TypeMapSerde__Config__engine =
-    _input_data => _input_data
+    _input_data =>
+      switch (_input_data) {
+      | Rex_json => Rex_json
+      | Bs_json => Bs_json
+      }
   and migrate_TypeMapSerde__Config____entry:
     Types1._TypeMapSerde__Config__entry => _TypeMapSerde__Config__entry =
     _input_data => {
@@ -638,10 +644,12 @@ module Types2 = {
             | Rex_json => {
                 bs_json: None,
                 rex_json: Some({output, helpers: None}),
+                ezjsonm: None,
               }
             | Bs_json => {
                 rex_json: None,
                 bs_json: Some({output, helpers: None}),
+                ezjsonm: None,
               }
             }:
             Types1._TypeMapSerde__Config__t => _TypeMapSerde__Config__engines
@@ -932,11 +940,12 @@ module Version1 = {
                   arg0,
                 )
               ) {
-              | Belt.Result.Ok(arg0) =>
-                [@implicit_arity] Belt.Result.Ok(arg0, arg1)
-              | Error(error) => Error(["tuple element 0", ...error])
+              | Belt.Result.Ok(arg0) => Belt.Result.Ok((arg0, arg1))
+              | Error(error) =>
+                Belt.Result.Error(["tuple element 0", ...error])
               }
-            | Error(error) => Error(["tuple element 1", ...error])
+            | Error(error) =>
+              Belt.Result.Error(["tuple element 1", ...error])
             }
           | _ => Belt.Result.Error(["Expected array"])
           }
@@ -981,19 +990,22 @@ module Version1 = {
         switch (deserialize_Parsetree____structure(arg0)) {
         | Belt.Result.Ok(arg0) =>
           Belt.Result.Ok([@implicit_arity] PStr(arg0): _Parsetree__payload)
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "PSig" == tag =>
         switch (deserialize_Parsetree____signature(arg0)) {
         | Belt.Result.Ok(arg0) =>
           Belt.Result.Ok([@implicit_arity] PSig(arg0): _Parsetree__payload)
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "PTyp" == tag =>
         switch (deserialize_Parsetree____core_type(arg0)) {
         | Belt.Result.Ok(arg0) =>
           Belt.Result.Ok([@implicit_arity] PTyp(arg0): _Parsetree__payload)
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0, arg1]) when "PPat" == tag =>
         switch (
@@ -1022,9 +1034,11 @@ module Version1 = {
             Belt.Result.Ok(
               [@implicit_arity] PPat(arg0, arg1): _Parsetree__payload,
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
-        | Error(error) => Error(["constructor argument 1", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 1", ...error])
         }
       | Json.Array([Json.String(tag), ..._]) =>
         Belt.Result.Error(["Invalid constructor: " ++ tag])
@@ -1059,7 +1073,8 @@ module Version1 = {
                                              arg0,
                                            ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "Record" == tag =>
         switch (
@@ -1091,11 +1106,12 @@ module Version1 = {
                           arg0,
                         )
                       ) {
-                      | Belt.Result.Ok(arg0) =>
-                        [@implicit_arity] Belt.Result.Ok(arg0, arg1)
-                      | Error(error) => Error(["tuple element 0", ...error])
+                      | Belt.Result.Ok(arg0) => Belt.Result.Ok((arg0, arg1))
+                      | Error(error) =>
+                        Belt.Result.Error(["tuple element 0", ...error])
                       }
-                    | Error(error) => Error(["tuple element 1", ...error])
+                    | Error(error) =>
+                      Belt.Result.Error(["tuple element 1", ...error])
                     }
                   | _ => Belt.Result.Error(["Expected array"])
                   };
@@ -1124,7 +1140,8 @@ module Version1 = {
                                                arg0,
                                              ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "Variant" == tag =>
         switch (
@@ -1205,13 +1222,15 @@ module Version1 = {
                           )
                         ) {
                         | Belt.Result.Ok(arg0) =>
-                          [@implicit_arity] Belt.Result.Ok(arg0, arg1, arg2)
+                          Belt.Result.Ok((arg0, arg1, arg2))
                         | Error(error) =>
-                          Error(["tuple element 0", ...error])
+                          Belt.Result.Error(["tuple element 0", ...error])
                         }
-                      | Error(error) => Error(["tuple element 1", ...error])
+                      | Error(error) =>
+                        Belt.Result.Error(["tuple element 1", ...error])
                       }
-                    | Error(error) => Error(["tuple element 2", ...error])
+                    | Error(error) =>
+                      Belt.Result.Error(["tuple element 2", ...error])
                     }
                   | _ => Belt.Result.Error(["Expected array"])
                   };
@@ -1240,7 +1259,8 @@ module Version1 = {
                                                 arg0,
                                               ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), ..._]) =>
         Belt.Result.Error(["Invalid constructor: " ++ tag])
@@ -1360,7 +1380,8 @@ module Version1 = {
                                                  arg0,
                                                ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag)])
       | Json.String(tag) when "AnonVariable" == tag =>
@@ -1426,11 +1447,12 @@ module Version1 = {
                           )
                         ) {
                         | Belt.Result.Ok(arg0) =>
-                          [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                          Belt.Result.Ok((arg0, arg1))
                         | Error(error) =>
-                          Error(["tuple element 0", ...error])
+                          Belt.Result.Error(["tuple element 0", ...error])
                         }
-                      | Error(error) => Error(["tuple element 1", ...error])
+                      | Error(error) =>
+                        Belt.Result.Error(["tuple element 1", ...error])
                       }
                     | _ => Belt.Result.Error(["Expected array"])
                     };
@@ -1459,9 +1481,11 @@ module Version1 = {
                                                            arg0,
                                                          ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
-        | Error(error) => Error(["constructor argument 1", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 1", ...error])
         }
       | Json.Array([Json.String(tag), arg0, arg1]) when "Reference" == tag =>
         switch (
@@ -1500,9 +1524,11 @@ module Version1 = {
                                                           arg0,
                                                         ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
-        | Error(error) => Error(["constructor argument 1", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 1", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "Tuple" == tag =>
         switch (
@@ -1539,7 +1565,8 @@ module Version1 = {
                                               arg0,
                                             ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0, arg1]) when "Fn" == tag =>
         switch (
@@ -1595,11 +1622,12 @@ module Version1 = {
                           )
                         ) {
                         | Belt.Result.Ok(arg0) =>
-                          [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                          Belt.Result.Ok((arg0, arg1))
                         | Error(error) =>
-                          Error(["tuple element 0", ...error])
+                          Belt.Result.Error(["tuple element 0", ...error])
                         }
-                      | Error(error) => Error(["tuple element 1", ...error])
+                      | Error(error) =>
+                        Belt.Result.Error(["tuple element 1", ...error])
                       }
                     | _ => Belt.Result.Error(["Expected array"])
                     };
@@ -1628,9 +1656,11 @@ module Version1 = {
                                                    arg0,
                                                  ),
             )
-          | Error(error) => Error(["constructor argument 0", ...error])
+          | Error(error) =>
+            Belt.Result.Error(["constructor argument 0", ...error])
           }
-        | Error(error) => Error(["constructor argument 1", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 1", ...error])
         }
       | Json.Array([Json.String(tag)])
       | Json.String(tag) when "Other" == tag =>
@@ -2440,13 +2470,15 @@ module Version1 = {
               ) {
               | Belt.Result.Ok(arg1) =>
                 switch (deserialize_Analyze__TopTypes____moduleName(arg0)) {
-                | Belt.Result.Ok(arg0) =>
-                  [@implicit_arity] Belt.Result.Ok(arg0, arg1, arg2)
-                | Error(error) => Error(["tuple element 0", ...error])
+                | Belt.Result.Ok(arg0) => Belt.Result.Ok((arg0, arg1, arg2))
+                | Error(error) =>
+                  Belt.Result.Error(["tuple element 0", ...error])
                 }
-              | Error(error) => Error(["tuple element 1", ...error])
+              | Error(error) =>
+                Belt.Result.Error(["tuple element 1", ...error])
               }
-            | Error(error) => Error(["tuple element 2", ...error])
+            | Error(error) =>
+              Belt.Result.Error(["tuple element 2", ...error])
             }
           | _ => Belt.Result.Error(["Expected array"])
           }
@@ -2476,11 +2508,12 @@ module Version1 = {
             ) {
             | Belt.Result.Ok(arg1) =>
               switch (deserialize_Parsetree____attributes(arg0)) {
-              | Belt.Result.Ok(arg0) =>
-                [@implicit_arity] Belt.Result.Ok(arg0, arg1)
-              | Error(error) => Error(["tuple element 0", ...error])
+              | Belt.Result.Ok(arg0) => Belt.Result.Ok((arg0, arg1))
+              | Error(error) =>
+                Belt.Result.Error(["tuple element 0", ...error])
               }
-            | Error(error) => Error(["tuple element 1", ...error])
+            | Error(error) =>
+              Belt.Result.Error(["tuple element 1", ...error])
             }
           | _ => Belt.Result.Error(["Expected array"])
           }
@@ -2513,7 +2546,8 @@ module Version1 = {
                                                 arg0,
                                               ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag), arg0]) when "Public" == tag =>
         switch (referenceTransformer(arg0)) {
@@ -2524,7 +2558,8 @@ module Version1 = {
                                                arg0,
                                              ),
           )
-        | Error(error) => Error(["constructor argument 0", ...error])
+        | Error(error) =>
+          Belt.Result.Error(["constructor argument 0", ...error])
         }
       | Json.Array([Json.String(tag)])
       | Json.String(tag) when "NotFound" == tag =>
@@ -2723,7 +2758,22 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____engine:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__engine, list(string)) = Version1.deserialize_TypeMapSerde__Config____engine
+    Json.t => Belt.Result.t(_TypeMapSerde__Config__engine, list(string)) =
+    constructor =>
+      switch (constructor) {
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "rex-json" == tag =>
+        Belt.Result.Ok(Rex_json: _TypeMapSerde__Config__engine)
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "Js.Json" == tag =>
+        Belt.Result.Ok(Bs_json: _TypeMapSerde__Config__engine)
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "ezjsonm" == tag =>
+        Belt.Result.Ok(Ezjsonm: _TypeMapSerde__Config__engine)
+      | Json.Array([Json.String(tag), ..._]) =>
+        Belt.Result.Error(["Invalid constructor: " ++ tag])
+      | _ => Belt.Result.Error(["Expected an array"])
+      }
   and deserialize_TypeMapSerde__Config____engineConfig:
     Json.t =>
     Belt.Result.t(_TypeMapSerde__Config__engineConfig, list(string)) =
@@ -2792,10 +2842,45 @@ module Version2 = {
     record =>
       switch (record) {
       | Json.Object(items) =>
-        let inner = attr_bs_json => {
-          let inner = attr_rex_json =>
-            Belt.Result.Ok({rex_json: attr_rex_json, bs_json: attr_bs_json});
-          switch (Belt.List.getAssoc(items, "rex-json", (==))) {
+        let inner = attr_ezjsonm => {
+          let inner = attr_bs_json => {
+            let inner = attr_rex_json =>
+              Belt.Result.Ok({
+                rex_json: attr_rex_json,
+                bs_json: attr_bs_json,
+                ezjsonm: attr_ezjsonm,
+              });
+            switch (Belt.List.getAssoc(items, "rex-json", (==))) {
+            | None => inner(None)
+            | Some(json) =>
+              switch (
+                (
+                  (
+                    (transformer, option) =>
+                      switch (option) {
+                      | Json.Null => Belt.Result.Ok(None)
+                      | _ =>
+                        switch (transformer(option)) {
+                        | Belt.Result.Error(error) =>
+                          Belt.Result.Error(["optional value", ...error])
+                        | Belt.Result.Ok(value) =>
+                          Belt.Result.Ok(Some(value))
+                        }
+                      }
+                  )(
+                    deserialize_TypeMapSerde__Config____engineConfig,
+                  )
+                )(
+                  json,
+                )
+              ) {
+              | Belt.Result.Error(error) =>
+                Belt.Result.Error(["attribute 'rex-json'", ...error])
+              | Belt.Result.Ok(data) => inner(data)
+              }
+            };
+          };
+          switch (Belt.List.getAssoc(items, "Js.Json", (==))) {
           | None => inner(None)
           | Some(json) =>
             switch (
@@ -2819,12 +2904,12 @@ module Version2 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute 'rex-json'", ...error])
+              Belt.Result.Error(["attribute 'Js.Json'", ...error])
             | Belt.Result.Ok(data) => inner(data)
             }
           };
         };
-        switch (Belt.List.getAssoc(items, "Js.Json", (==))) {
+        switch (Belt.List.getAssoc(items, "ezjsonm", (==))) {
         | None => inner(None)
         | Some(json) =>
           switch (
@@ -2848,7 +2933,7 @@ module Version2 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute 'Js.Json'", ...error])
+            Belt.Result.Error(["attribute 'ezjsonm'", ...error])
           | Belt.Result.Ok(data) => inner(data)
           }
         };
@@ -3480,12 +3565,12 @@ module Version2 = {
                             deserialize_TypeMapSerde__Config____engine(arg0)
                           ) {
                           | Belt.Result.Ok(arg0) =>
-                            [@implicit_arity] Belt.Result.Ok(arg0, arg1)
+                            Belt.Result.Ok((arg0, arg1))
                           | Error(error) =>
-                            Error(["tuple element 0", ...error])
+                            Belt.Result.Error(["tuple element 0", ...error])
                           }
                         | Error(error) =>
-                          Error(["tuple element 1", ...error])
+                          Belt.Result.Error(["tuple element 1", ...error])
                         }
                       | _ => Belt.Result.Error(["Expected array"])
                       };
@@ -3951,6 +4036,7 @@ module Version2 = {
       switch (constructor) {
       | Rex_json => Json.Array([Json.String("rex-json")])
       | Bs_json => Json.Array([Json.String("Js.Json")])
+      | Ezjsonm => Json.Array([Json.String("ezjsonm")])
       }
   and serialize_TypeMapSerde__Config____engineConfig:
     _TypeMapSerde__Config__engineConfig => Json.t =
@@ -4006,6 +4092,21 @@ module Version2 = {
             )
           )(
             record.bs_json,
+          ),
+        ),
+        (
+          "ezjsonm",
+          (
+            (
+              transformer =>
+                fun
+                | None => Json.Null
+                | Some(v) => transformer(v)
+            )(
+              serialize_TypeMapSerde__Config____engineConfig,
+            )
+          )(
+            record.ezjsonm,
           ),
         ),
       ])

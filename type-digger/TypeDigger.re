@@ -133,6 +133,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
     switch engine {
       | Bs_json => (module Serde.BsJson: Serde.Engine.T)
       | Rex_json => (module Serde.Json: Serde.Engine.T)
+      | Ezjsonm => (module Serde.Ezjsonm: Serde.Engine.T)
     },
     config
   ));

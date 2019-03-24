@@ -3300,6 +3300,30 @@
               ],
               [
                 {
+                  "txt": "rename.Ezjsonm",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"ezjsonm\""
+                ]
+              ],
+              [
+                {
                   "txt": "rename.Bs_json",
                   "loc": {
                     "loc_start": {
@@ -3336,6 +3360,11 @@
                   ],
                   [
                     "Bs_json",
+                    [],
+                    null
+                  ],
+                  [
+                    "Ezjsonm",
                     [],
                     null
                   ]
@@ -3483,6 +3512,30 @@
                   ],
                   [
                     "bs_json",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineConfig"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "ezjsonm",
                     [
                       "Reference",
                       [
@@ -3922,7 +3975,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ])\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ])\n        }"
+                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None\n        }"
                 ]
               ],
               [

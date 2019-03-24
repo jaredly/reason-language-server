@@ -8,8 +8,9 @@ type simpleDeclaration = SharedTypes.SimpleType.declaration(TypeMap.DigTypes.typ
 ));
 
 [@rename.Rex_json "rex-json"]
+[@rename.Ezjsonm "ezjsonm"]
 [@rename.Bs_json "Js.Json"]
-type engine = Rex_json | Bs_json;
+type engine = Rex_json | Bs_json | Ezjsonm;
 
 [@rename.module_ "module"]
 [@migrate.args custom => custom.args == 0 ? None : Some(custom.args)]
@@ -58,6 +59,7 @@ type engineConfig = {
 type engines = {
   rex_json: option(engineConfig),
   bs_json: option(engineConfig),
+  ezjsonm: option(engineConfig),
 };
 
 let engineConfigs = engines => switch engines {
@@ -67,16 +69,28 @@ let engineConfigs = engines => switch engines {
   | {rex_json: None, bs_json: None} => []
 };
 
-let activeEngines = engines => switch engines {
-  | {rex_json: None, bs_json: Some(_)} => [Bs_json]
-  | {rex_json: Some(_), bs_json: None} => [Rex_json]
-  | {rex_json: Some(_), bs_json: Some(_)} => [Rex_json, Bs_json]
-  | {rex_json: None, bs_json: None} => []
+let engineConfigs = engines => {
+  let result = [];
+  let result = switch engines {
+    | {rex_json: Some(config)} => [(Rex_json, config), ...result]
+    | _ => result
+  };
+  let result = switch engines {
+    | {bs_json: Some(config)} => [(Bs_json, config), ...result]
+    | _ => result
+  };
+  let result = switch engines {
+    | {ezjsonm: Some(config)} => [(Ezjsonm, config), ...result]
+    | _ => result
+  };
+  result
 };
 
+let activeEngines = engines => engineConfigs(engines)->Belt.List.map(fst);
+
 [@migrate.engines ({engine, output}) => switch engine {
-  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None})}
-  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None})}
+  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None}), ezjsonm: None}
+  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None}), ezjsonm: None}
 }]
 [@migrate.globalEngines t => None]
 [@migrate.lockedTypes t => None]
