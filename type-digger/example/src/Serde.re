@@ -316,6 +316,8 @@ module Types6 = {
 module Types7 = {
   type _Types__household =
     Types.household = {
+      one: _Types__what(_Types__one),
+      two: _Types__what(_Types__two),
       people: list(_Types__person),
       pets: list(_Types__pet),
       what: _Types__what(string),
@@ -329,6 +331,7 @@ module Types7 = {
       isClosed: bool,
       other: option('a),
     }
+  and _Types__one = Types.one = {key: string}
   and _Types__person =
     Types.person = {
       name: string,
@@ -337,10 +340,25 @@ module Types7 = {
       coords: (float, float),
     }
   and _Types__pet = Types.pet = | Dog | Cat | Mouse
+  and _Types__two = Types.two = {key: string}
   and _Types__what('a) = Types.what('a) = | Now('a, int);
   let rec migrate_Types____household:
     Types6._Types__household => _Types__household =
     _input_data => {
+      let _converted_one =
+        (
+          h => Now({key: "one"}, 5):
+            Types6._Types__household => _Types__what(_Types__one)
+        )(
+          _input_data,
+        );
+      let _converted_two =
+        (
+          h => Now({key: "two"}, 5):
+            Types6._Types__household => _Types__what(_Types__two)
+        )(
+          _input_data,
+        );
       let _converted_people =
         (Belt.List.map(_input_data.people))(_item =>
           migrate_Types____person(_item)
@@ -363,6 +381,8 @@ module Types7 = {
         what: _converted_what,
         pets: _converted_pets,
         people: _converted_people,
+        two: _converted_two,
+        one: _converted_one,
       };
     }
   and migrate_Types____named:
@@ -436,7 +456,9 @@ module Version1 = {
       | JSONObject(dict) =>
         let inner = attr_pets => {
           let inner = attr_people =>
-            Belt.Result.Ok({people: attr_people, pets: attr_pets});
+            Belt.Result.Ok(
+              {people: attr_people, pets: attr_pets}: _Types__household,
+            );
           switch (Js.Dict.get(dict, "people")) {
           | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
@@ -519,12 +541,14 @@ module Version1 = {
           let inner = attr_coords => {
             let inner = attr_age => {
               let inner = attr_name =>
-                Belt.Result.Ok({
-                  name: attr_name,
-                  age: attr_age,
-                  coords: attr_coords,
-                  parents: attr_parents,
-                });
+                Belt.Result.Ok(
+                  {
+                    name: attr_name,
+                    age: attr_age,
+                    coords: attr_coords,
+                    parents: attr_parents,
+                  }: _Types__person,
+                );
               switch (Js.Dict.get(dict, "name")) {
               | None => Belt.Result.Error(["No attribute 'name'"])
               | Some(json) =>
@@ -682,7 +706,9 @@ module Version2 = {
       | JSONObject(dict) =>
         let inner = attr_pets => {
           let inner = attr_people =>
-            Belt.Result.Ok({people: attr_people, pets: attr_pets});
+            Belt.Result.Ok(
+              {people: attr_people, pets: attr_pets}: _Types__household,
+            );
           switch (Js.Dict.get(dict, "people")) {
           | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
@@ -765,12 +791,14 @@ module Version2 = {
           let inner = attr_coords => {
             let inner = attr_age => {
               let inner = attr_name =>
-                Belt.Result.Ok({
-                  name: attr_name,
-                  age: attr_age,
-                  coords: attr_coords,
-                  parents: attr_parents,
-                });
+                Belt.Result.Ok(
+                  {
+                    name: attr_name,
+                    age: attr_age,
+                    coords: attr_coords,
+                    parents: attr_parents,
+                  }: _Types__person,
+                );
               switch (Js.Dict.get(dict, "name")) {
               | None => Belt.Result.Error(["No attribute 'name'"])
               | Some(json) =>
@@ -930,7 +958,9 @@ module Version3 = {
       | JSONObject(dict) =>
         let inner = attr_pets => {
           let inner = attr_people =>
-            Belt.Result.Ok({people: attr_people, pets: attr_pets});
+            Belt.Result.Ok(
+              {people: attr_people, pets: attr_pets}: _Types__household,
+            );
           switch (Js.Dict.get(dict, "people")) {
           | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
@@ -1012,11 +1042,9 @@ module Version3 = {
         let inner = attr_coords => {
           let inner = attr_age => {
             let inner = attr_name =>
-              Belt.Result.Ok({
-                name: attr_name,
-                age: attr_age,
-                coords: attr_coords,
-              });
+              Belt.Result.Ok(
+                {name: attr_name, age: attr_age, coords: attr_coords}: _Types__person,
+              );
             switch (Js.Dict.get(dict, "name")) {
             | None => Belt.Result.Error(["No attribute 'name'"])
             | Some(json) =>
@@ -1138,7 +1166,9 @@ module Version4 = {
       | JSONObject(dict) =>
         let inner = attr_pets => {
           let inner = attr_people =>
-            Belt.Result.Ok({people: attr_people, pets: attr_pets});
+            Belt.Result.Ok(
+              {people: attr_people, pets: attr_pets}: _Types__household,
+            );
           switch (Js.Dict.get(dict, "people")) {
           | None => Belt.Result.Error(["No attribute 'people'"])
           | Some(json) =>
@@ -1297,11 +1327,9 @@ module Version5 = {
         let inner = attr_county => {
           let inner = attr_pets => {
             let inner = attr_people =>
-              Belt.Result.Ok({
-                people: attr_people,
-                pets: attr_pets,
-                county: attr_county,
-              });
+              Belt.Result.Ok(
+                {people: attr_people, pets: attr_pets, county: attr_county}: _Types__household,
+              );
             switch (Js.Dict.get(dict, "people")) {
             | None => Belt.Result.Error(["No attribute 'people'"])
             | Some(json) =>
@@ -1405,7 +1433,12 @@ module Version5 = {
       | JSONObject(dict) =>
         let inner = attr_contents => {
           let inner = attr_name =>
-            Belt.Result.Ok({name: attr_name, contents: attr_contents});
+            Belt.Result.Ok(
+              {name: attr_name, contents: attr_contents}:
+                                                           _Types__named(
+                                                             arg0,
+                                                           ),
+            );
           switch (Js.Dict.get(dict, "name")) {
           | None => Belt.Result.Error(["No attribute 'name'"])
           | Some(json) =>
@@ -1491,13 +1524,15 @@ module Version6 = {
             let inner = attr_what => {
               let inner = attr_pets => {
                 let inner = attr_people =>
-                  Belt.Result.Ok({
-                    people: attr_people,
-                    pets: attr_pets,
-                    what: attr_what,
-                    visitors: attr_visitors,
-                    county: attr_county,
-                  });
+                  Belt.Result.Ok(
+                    {
+                      people: attr_people,
+                      pets: attr_pets,
+                      what: attr_what,
+                      visitors: attr_visitors,
+                      county: attr_county,
+                    }: _Types__household,
+                  );
                 switch (Js.Dict.get(dict, "people")) {
                 | None => Belt.Result.Error(["No attribute 'people'"])
                 | Some(json) =>
@@ -1661,11 +1696,13 @@ module Version6 = {
         let inner = attr_isClosed => {
           let inner = attr_contents => {
             let inner = attr_name =>
-              Belt.Result.Ok({
-                name: attr_name,
-                contents: attr_contents,
-                isClosed: attr_isClosed,
-              });
+              Belt.Result.Ok(
+                {
+                  name: attr_name,
+                  contents: attr_contents,
+                  isClosed: attr_isClosed,
+                }: _Types__named(arg0),
+              );
             switch (Js.Dict.get(dict, "the name")) {
             | None => Belt.Result.Error(["No attribute 'the name'"])
             | Some(json) =>
@@ -1763,14 +1800,48 @@ module Version7 = {
           let inner = attr_visitors => {
             let inner = attr_what => {
               let inner = attr_pets => {
-                let inner = attr_people =>
-                  Belt.Result.Ok({
-                    people: attr_people,
-                    pets: attr_pets,
-                    what: attr_what,
-                    visitors: attr_visitors,
-                    county: attr_county,
-                  });
+                let inner = attr_people => {
+                  let inner = attr_two => {
+                    let inner = attr_one =>
+                      Belt.Result.Ok(
+                        {
+                          one: attr_one,
+                          two: attr_two,
+                          people: attr_people,
+                          pets: attr_pets,
+                          what: attr_what,
+                          visitors: attr_visitors,
+                          county: attr_county,
+                        }: _Types__household,
+                      );
+                    switch (Js.Dict.get(dict, "one")) {
+                    | None => Belt.Result.Error(["No attribute 'one'"])
+                    | Some(json) =>
+                      switch (
+                        (deserialize_Types____what(deserialize_Types____one))(
+                          json,
+                        )
+                      ) {
+                      | Belt.Result.Error(error) =>
+                        Belt.Result.Error(["attribute 'one'", ...error])
+                      | Ok(data) => inner(data)
+                      }
+                    };
+                  };
+                  switch (Js.Dict.get(dict, "two")) {
+                  | None => Belt.Result.Error(["No attribute 'two'"])
+                  | Some(json) =>
+                    switch (
+                      (deserialize_Types____what(deserialize_Types____two))(
+                        json,
+                      )
+                    ) {
+                    | Belt.Result.Error(error) =>
+                      Belt.Result.Error(["attribute 'two'", ...error])
+                    | Ok(data) => inner(data)
+                    }
+                  };
+                };
                 switch (Js.Dict.get(dict, "people")) {
                 | None => Belt.Result.Error(["No attribute 'people'"])
                 | Some(json) =>
@@ -1935,12 +2006,14 @@ module Version7 = {
           let inner = attr_isClosed => {
             let inner = attr_contents => {
               let inner = attr_name =>
-                Belt.Result.Ok({
-                  name: attr_name,
-                  contents: attr_contents,
-                  isClosed: attr_isClosed,
-                  other: attr_other,
-                });
+                Belt.Result.Ok(
+                  {
+                    name: attr_name,
+                    contents: attr_contents,
+                    isClosed: attr_isClosed,
+                    other: attr_other,
+                  }: _Types__named(arg0),
+                );
               switch (Js.Dict.get(dict, "the name")) {
               | None => Belt.Result.Error(["No attribute 'the name'"])
               | Some(json) =>
@@ -2022,6 +2095,33 @@ module Version7 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
+  and deserialize_Types____one:
+    Js.Json.t => Belt.Result.t(_Types__one, list(string)) =
+    record =>
+      switch (Js.Json.classify(record)) {
+      | JSONObject(dict) =>
+        let inner = attr_key => Belt.Result.Ok({key: attr_key}: _Types__one);
+        switch (Js.Dict.get(dict, "key")) {
+        | None => Belt.Result.Error(["No attribute 'key'"])
+        | Some(json) =>
+          switch (
+            (
+              string =>
+                switch (Js.Json.classify(string)) {
+                | JSONString(string) => Belt.Result.Ok(string)
+                | _ => Error(["expected a string"])
+                }
+            )(
+              json,
+            )
+          ) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error(["attribute 'key'", ...error])
+          | Ok(data) => inner(data)
+          }
+        };
+      | _ => Belt.Result.Error(["Expected an object"])
+      }
   and deserialize_Types____person:
     Js.Json.t => Belt.Result.t(_Types__person, list(string)) =
     record =>
@@ -2031,12 +2131,14 @@ module Version7 = {
           let inner = attr_thing => {
             let inner = attr_age => {
               let inner = attr_name =>
-                Belt.Result.Ok({
-                  name: attr_name,
-                  age: attr_age,
-                  thing: attr_thing,
-                  coords: attr_coords,
-                });
+                Belt.Result.Ok(
+                  {
+                    name: attr_name,
+                    age: attr_age,
+                    thing: attr_thing,
+                    coords: attr_coords,
+                  }: _Types__person,
+                );
               switch (Js.Dict.get(dict, "name")) {
               | None => Belt.Result.Error(["No attribute 'name'"])
               | Some(json) =>
@@ -2222,6 +2324,33 @@ module Version7 = {
       }
   and deserialize_Types____pet:
     Js.Json.t => Belt.Result.t(_Types__pet, list(string)) = Version6.deserialize_Types____pet
+  and deserialize_Types____two:
+    Js.Json.t => Belt.Result.t(_Types__two, list(string)) =
+    record =>
+      switch (Js.Json.classify(record)) {
+      | JSONObject(dict) =>
+        let inner = attr_key => Belt.Result.Ok({key: attr_key}: _Types__two);
+        switch (Js.Dict.get(dict, "key")) {
+        | None => Belt.Result.Error(["No attribute 'key'"])
+        | Some(json) =>
+          switch (
+            (
+              string =>
+                switch (Js.Json.classify(string)) {
+                | JSONString(string) => Belt.Result.Ok(string)
+                | _ => Error(["expected a string"])
+                }
+            )(
+              json,
+            )
+          ) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error(["attribute 'key'", ...error])
+          | Ok(data) => inner(data)
+          }
+        };
+      | _ => Belt.Result.Error(["Expected an object"])
+      }
   and deserialize_Types____what:
     type arg0.
       (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
@@ -2259,6 +2388,14 @@ module Version7 = {
     record =>
       Js.Json.object_(
         Js.Dict.fromArray([|
+          (
+            "one",
+            (serialize_Types____what(serialize_Types____one))(record.one),
+          ),
+          (
+            "two",
+            (serialize_Types____what(serialize_Types____two))(record.two),
+          ),
           (
             "people",
             (
@@ -2338,6 +2475,11 @@ module Version7 = {
           ),
         |]),
       )
+  and serialize_Types____one: _Types__one => Js.Json.t =
+    record =>
+      Js.Json.object_(
+        Js.Dict.fromArray([|("key", Js.Json.string(record.key))|]),
+      )
   and serialize_Types____person: _Types__person => Js.Json.t =
     record =>
       Js.Json.object_(
@@ -2394,6 +2536,11 @@ module Version7 = {
       | Cat => Js.Json.array([|Js.Json.string("Cat")|])
       | Mouse => Js.Json.array([|Js.Json.string("Mouse")|])
       }
+  and serialize_Types____two: _Types__two => Js.Json.t =
+    record =>
+      Js.Json.object_(
+        Js.Dict.fromArray([|("key", Js.Json.string(record.key))|]),
+      )
   and serialize_Types____what:
     'arg0.
     ('arg0 => Js.Json.t, _Types__what('arg0)) => Js.Json.t

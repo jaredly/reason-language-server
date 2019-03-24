@@ -223,7 +223,15 @@ module V7 = {
   [@migrate.Now (Now(a)) => Now(_migrator_a(a), 5)]
   type what('a) = Now('a, int);
 
+  /* designed to trigger record key collision */
+  type one = {key: string};
+  type two = {key: string};
+
+  [@migrate.one h => Now({key: "one"}, 5)]
+  [@migrate.two h => Now({key: "two"}, 5)]
   type household = {
+    one: what(one),
+    two: what(two),
     people: list(person),
     pets: list(pet),
     what: what(string),
@@ -232,6 +240,8 @@ module V7 = {
   };
 
   let example = {
+    one: Now({key: "one"}, 5),
+    two: Now({key: "two"}, 5),
     people: [{name: "Me", age: 10., coords: (5., 6.), thing: `one}],
     pets: [Dog, Mouse],
     what: Now("5", 5),

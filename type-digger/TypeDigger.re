@@ -138,13 +138,6 @@ let main = (~upvert=false, ~override=false, configPath) => {
     config
   ));
 
-  // let (engine, outfile, helpers) =
-  //   switch (config.engines) {
-  //   | {bs_json: Some({output, helpers})} => ((module Serde.BsJson): (module Serde.Engine.T), output, helpers)
-  //   | {rex_json: Some({output, helpers})} => ((module Serde.Json): (module Serde.Engine.T), output, helpers)
-  //   | _ => failwith("No engine espcified")
-  //   };
-
   let lockFilePath = makeLockfilePath(configPath);
 
   let lockfile =

@@ -1801,13 +1801,118 @@
             "household"
           ],
           [
-            [],
+            [
+              [
+                {
+                  "txt": "migrate.one",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = fun h -> ((Now ({ key = \"one\" }, 5))[@explicit_arity ])"
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.two",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ = fun h -> ((Now ({ key = \"two\" }, 5))[@explicit_arity ])"
+                ]
+              ]
+            ],
             {
               "name": "household",
               "variables": [],
               "body": [
                 "Record",
                 [
+                  [
+                    "one",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          [],
+                          "what"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              [],
+                              "one"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "two",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Types",
+                          [],
+                          "what"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Types",
+                              [],
+                              "two"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
                   [
                     "people",
                     [
@@ -2055,6 +2160,36 @@
           [
             "Types",
             [],
+            "one"
+          ],
+          [
+            [],
+            {
+              "name": "one",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "key",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
             "person"
           ],
           [
@@ -2242,6 +2377,36 @@
                     "Mouse",
                     [],
                     null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Types",
+            [],
+            "two"
+          ],
+          [
+            [],
+            {
+              "name": "two",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "key",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
                   ]
                 ]
               ]

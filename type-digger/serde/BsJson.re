@@ -205,13 +205,16 @@ let deserializeTransformer = {
       | _ => Belt.Result.Error(["Expected an array"])
     }]
   },
-  record: (~renames, items) =>  {
+  record: (~renames, ~typ, items) =>  {
     let body =
       MakeDeserializer.ok(
-        Exp.record(
-          items->Belt.List.map(((label, _, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
-          None,
-        ),
+        Exp.constraint_(
+          Exp.record(
+            items->Belt.List.map(((label, _, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
+            None,
+          ),
+          typ
+        )
       );
     let body = items->Belt.List.reduce(body, (body, (label, inner, isOptional)) => {
       /* let inner = forExpr(expr); */

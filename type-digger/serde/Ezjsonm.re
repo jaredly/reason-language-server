@@ -198,13 +198,16 @@ let deserializeTransformer = {
     ];
 
   },
-  record: (~renames, items) =>  {
+  record: (~renames, ~typ, items) =>  {
     let body =
       MakeDeserializer.ok(
+        Exp.constraint_(
         Exp.record(
           items->Belt.List.map(((label, _, _)) => (Location.mknoloc(Lident(label)), makeIdent(Lident("attr_" ++ label)))),
           None,
         ),
+        typ
+        )
       );
     let body = items->Belt.List.reduce(body, (body, (label, inner, isOptional)) => {
       let attrName = MakeDeserializer.getRename(~renames, label);

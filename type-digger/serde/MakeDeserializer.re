@@ -43,7 +43,7 @@ type transformer('source) = {
   inputType: Parsetree.core_type,
   parseVersion: Parsetree.expression,
   tuple: (Parsetree.expression, list(Parsetree.pattern), Parsetree.expression) => Parsetree.expression,
-  record: (~renames: list((string, string)), list((string, Parsetree.expression, bool))) => Parsetree.expression,
+  record: (~renames: list((string, string)), ~typ: Parsetree.core_type, list((string, Parsetree.expression, bool))) => Parsetree.expression,
   source: ('source) => Parsetree.expression,
   variant: (~renames: list((string, string)), list((string, int, Parsetree.expression))) => Parsetree.expression,
   list: (Parsetree.expression, Parsetree.expression) => Parsetree.expression,
@@ -152,7 +152,7 @@ let forBody = (~helpers, ~renames, transformer, coreType, body, fullName, variab
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) =>
-    transformer.record(~renames, items->Belt.List.map(((label, expr)) => (label, forExpr(~renames, transformer, expr), {
+    transformer.record(~renames, ~typ=coreType, items->Belt.List.map(((label, expr)) => (label, forExpr(~renames, transformer, expr), {
       switch expr {
         | Reference(Builtin("option"), [_]) => true
         | _ => false
