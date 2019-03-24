@@ -43,9 +43,10 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
+let target = [%type: Js.Json.t];
+
 let serializeTransformer =
   MakeSerializer.{
-    outputType: [%type: Js.Json.t],
     wrapWithVersion: [%expr
       (version, payload) => {
         switch (Js.Json.classify(payload)) {
@@ -177,11 +178,8 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
-let jsonT = Typ.constr(Location.mknoloc(Ldot(jsJson, "t")), []);
-
 let deserializeTransformer = {
-  MakeDeserializer.inputType: jsonT,
-  source: sourceTransformer,
+  MakeDeserializer.source: sourceTransformer,
   parseVersion: [%expr 
     json => switch (Js.Json.classify(json)) {
       | JSONObject(dict) => switch (Js.Dict.get(dict, "$schemaVersion")) {

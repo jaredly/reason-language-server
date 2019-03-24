@@ -1,5 +1,6 @@
 [@ocaml.warning "-34"];
 open KitchenTypes;
+type target = Ezjsonm.value;
 module Version1 = {
   open Types1;
   let rec deserialize_AllTypes__All__normalRecord:
@@ -855,3 +856,10 @@ and deserializeKitchenSink = data =>
       Belt.Result.Error(["Unexpected version " ++ string_of_int(version)])
     }
   };
+module Modules = {
+  module KitchenSink = {
+    type t = Types1._AllTypes__All__rename;
+    let serialize = serializeKitchenSink;
+    let deserialize = deserializeKitchenSink;
+  };
+};

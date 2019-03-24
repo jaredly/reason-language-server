@@ -213,7 +213,7 @@ module Types2 = {
       args: option(int),
     }
   and _TypeMapSerde__Config__engine =
-    TypeMapSerde__Config.engine = | Rex_json | Bs_json | Ezjsonm
+    TypeMapSerde__Config.engine = | Rex_json | Bs_json | Ezjsonm | Yojson
   and _TypeMapSerde__Config__engineConfig =
     TypeMapSerde__Config.engineConfig = {
       output: string,
@@ -224,6 +224,7 @@ module Types2 = {
       rex_json: option(_TypeMapSerde__Config__engineConfig),
       bs_json: option(_TypeMapSerde__Config__engineConfig),
       ezjsonm: option(_TypeMapSerde__Config__engineConfig),
+      yojson: option(_TypeMapSerde__Config__engineConfig),
     }
   and _TypeMapSerde__Config__entry =
     TypeMapSerde__Config.entry = {
@@ -645,11 +646,13 @@ module Types2 = {
                 bs_json: None,
                 rex_json: Some({output, helpers: None}),
                 ezjsonm: None,
+                yojson: None,
               }
             | Bs_json => {
                 rex_json: None,
                 bs_json: Some({output, helpers: None}),
                 ezjsonm: None,
+                yojson: None,
               }
             }:
             Types1._TypeMapSerde__Config__t => _TypeMapSerde__Config__engines
@@ -819,6 +822,7 @@ module Types2 = {
     );
 };
 let currentVersion = 2;
+type target = Json.t;
 module Version1 = {
   open Types1;
   let rec deserialize_Analyze__TopTypes____moduleName:
@@ -842,7 +846,9 @@ module Version1 = {
       | Json.Object(items) =>
         let inner = attr_loc => {
           let inner = attr_txt =>
-            Belt.Result.Ok({txt: attr_txt, loc: attr_loc});
+            Belt.Result.Ok(
+              {txt: attr_txt, loc: attr_loc}: _Asttypes__loc(arg0),
+            );
           switch (Belt.List.getAssoc(items, "txt", (==))) {
           | None => Belt.Result.Error(["No attribute 'txt'"])
           | Some(json) =>
@@ -872,11 +878,13 @@ module Version1 = {
         let inner = attr_loc_ghost => {
           let inner = attr_loc_end => {
             let inner = attr_loc_start =>
-              Belt.Result.Ok({
-                loc_start: attr_loc_start,
-                loc_end: attr_loc_end,
-                loc_ghost: attr_loc_ghost,
-              });
+              Belt.Result.Ok(
+                {
+                  loc_start: attr_loc_start,
+                  loc_end: attr_loc_end,
+                  loc_ghost: attr_loc_ghost,
+                }: _Location__t,
+              );
             switch (Belt.List.getAssoc(items, "loc_start", (==))) {
             | None => Belt.Result.Error(["No attribute 'loc_start'"])
             | Some(json) =>
@@ -1279,11 +1287,12 @@ module Version1 = {
         let inner = attr_body => {
           let inner = attr_variables => {
             let inner = attr_name =>
-              Belt.Result.Ok({
-                name: attr_name,
-                variables: attr_variables,
-                body: attr_body,
-              });
+              Belt.Result.Ok(
+                {name: attr_name, variables: attr_variables, body: attr_body}:
+                                                                    _SharedTypes__SimpleType__declaration(
+                                                                    arg0,
+                                                                    ),
+              );
             switch (Belt.List.getAssoc(items, "name", (==))) {
             | None => Belt.Result.Error(["No attribute 'name'"])
             | Some(json) =>
@@ -1700,12 +1709,14 @@ module Version1 = {
           let inner = attr_pos_bol => {
             let inner = attr_pos_lnum => {
               let inner = attr_pos_fname =>
-                Belt.Result.Ok({
-                  pos_fname: attr_pos_fname,
-                  pos_lnum: attr_pos_lnum,
-                  pos_bol: attr_pos_bol,
-                  pos_cnum: attr_pos_cnum,
-                });
+                Belt.Result.Ok(
+                  {
+                    pos_fname: attr_pos_fname,
+                    pos_lnum: attr_pos_lnum,
+                    pos_bol: attr_pos_bol,
+                    pos_cnum: attr_pos_cnum,
+                  }: _Stdlib__lexing__position,
+                );
               switch (Belt.List.getAssoc(items, "pos_fname", (==))) {
               | None => Belt.Result.Error(["No attribute 'pos_fname'"])
               | Some(json) =>
@@ -1799,12 +1810,14 @@ module Version1 = {
           let inner = attr_name => {
             let inner = attr_path => {
               let inner = attr_module_ =>
-                Belt.Result.Ok({
-                  module_: attr_module_,
-                  path: attr_path,
-                  name: attr_name,
-                  args: attr_args,
-                });
+                Belt.Result.Ok(
+                  {
+                    module_: attr_module_,
+                    path: attr_path,
+                    name: attr_name,
+                    args: attr_args,
+                  }: _TypeMapSerde__Config__custom,
+                );
               switch (Belt.List.getAssoc(items, "module", (==))) {
               | None => Belt.Result.Error(["No attribute 'module'"])
               | Some(json) =>
@@ -1926,11 +1939,13 @@ module Version1 = {
         let inner = attr_publicName => {
           let inner = attr_type_ => {
             let inner = attr_file =>
-              Belt.Result.Ok({
-                file: attr_file,
-                type_: attr_type_,
-                publicName: attr_publicName,
-              });
+              Belt.Result.Ok(
+                {
+                  file: attr_file,
+                  type_: attr_type_,
+                  publicName: attr_publicName,
+                }: _TypeMapSerde__Config__entry,
+              );
             switch (Belt.List.getAssoc(items, "file", (==))) {
             | None => Belt.Result.Error(["No attribute 'file'"])
             | Some(json) =>
@@ -2051,13 +2066,15 @@ module Version1 = {
             let inner = attr_engine => {
               let inner = attr_output => {
                 let inner = attr_version =>
-                  Belt.Result.Ok({
-                    version: attr_version,
-                    output: attr_output,
-                    engine: attr_engine,
-                    entries: attr_entries,
-                    custom: attr_custom,
-                  });
+                  Belt.Result.Ok(
+                    {
+                      version: attr_version,
+                      output: attr_output,
+                      engine: attr_engine,
+                      entries: attr_entries,
+                      custom: attr_custom,
+                    }: _TypeMapSerde__Config__t,
+                  );
                 switch (Belt.List.getAssoc(items, "version", (==))) {
                 | None => Belt.Result.Error(["No attribute 'version'"])
                 | Some(json) =>
@@ -2189,11 +2206,13 @@ module Version1 = {
         let inner = attr_typeMap => {
           let inner = attr_engineVersion => {
             let inner = attr_entries =>
-              Belt.Result.Ok({
-                entries: attr_entries,
-                engineVersion: attr_engineVersion,
-                typeMap: attr_typeMap,
-              });
+              Belt.Result.Ok(
+                {
+                  entries: attr_entries,
+                  engineVersion: attr_engineVersion,
+                  typeMap: attr_typeMap,
+                }: _TypeMapSerde__Config__Locked__lockedConfig(arg0),
+              );
             switch (Belt.List.getAssoc(items, "entries", (==))) {
             | None => Belt.Result.Error(["No attribute 'entries'"])
             | Some(json) =>
@@ -2272,11 +2291,13 @@ module Version1 = {
         let inner = attr_name => {
           let inner = attr_modulePath => {
             let inner = attr_moduleName =>
-              Belt.Result.Ok({
-                moduleName: attr_moduleName,
-                modulePath: attr_modulePath,
-                name: attr_name,
-              });
+              Belt.Result.Ok(
+                {
+                  moduleName: attr_moduleName,
+                  modulePath: attr_modulePath,
+                  name: attr_name,
+                }: _TypeMapSerde__Config__Locked__lockedEntry,
+              );
             switch (Belt.List.getAssoc(items, "moduleName", (==))) {
             | None => Belt.Result.Error(["No attribute 'moduleName'"])
             | Some(json) =>
@@ -2367,7 +2388,12 @@ module Version1 = {
       | Json.Object(items) =>
         let inner = attr_versions => {
           let inner = attr_engine =>
-            Belt.Result.Ok({engine: attr_engine, versions: attr_versions});
+            Belt.Result.Ok(
+              {engine: attr_engine, versions: attr_versions}:
+                                                               _TypeMapSerde__Config__Locked__lockfile(
+                                                                 arg0,
+                                                               ),
+            );
           switch (Belt.List.getAssoc(items, "engine", (==))) {
           | None => Belt.Result.Error(["No attribute 'engine'"])
           | Some(json) =>
@@ -2639,12 +2665,14 @@ module Version2 = {
           let inner = attr_name => {
             let inner = attr_path => {
               let inner = attr_module_ =>
-                Belt.Result.Ok({
-                  module_: attr_module_,
-                  path: attr_path,
-                  name: attr_name,
-                  args: attr_args,
-                });
+                Belt.Result.Ok(
+                  {
+                    module_: attr_module_,
+                    path: attr_path,
+                    name: attr_name,
+                    args: attr_args,
+                  }: _TypeMapSerde__Config__custom,
+                );
               switch (Belt.List.getAssoc(items, "module", (==))) {
               | None => Belt.Result.Error(["No attribute 'module'"])
               | Some(json) =>
@@ -2770,6 +2798,9 @@ module Version2 = {
       | Json.Array([Json.String(tag)])
       | Json.String(tag) when "ezjsonm" == tag =>
         Belt.Result.Ok(Ezjsonm: _TypeMapSerde__Config__engine)
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "yojson" == tag =>
+        Belt.Result.Ok(Yojson: _TypeMapSerde__Config__engine)
       | Json.Array([Json.String(tag), ..._]) =>
         Belt.Result.Error(["Invalid constructor: " ++ tag])
       | _ => Belt.Result.Error(["Expected an array"])
@@ -2782,7 +2813,9 @@ module Version2 = {
       | Json.Object(items) =>
         let inner = attr_helpers => {
           let inner = attr_output =>
-            Belt.Result.Ok({output: attr_output, helpers: attr_helpers});
+            Belt.Result.Ok(
+              {output: attr_output, helpers: attr_helpers}: _TypeMapSerde__Config__engineConfig,
+            );
           switch (Belt.List.getAssoc(items, "output", (==))) {
           | None => Belt.Result.Error(["No attribute 'output'"])
           | Some(json) =>
@@ -2842,15 +2875,49 @@ module Version2 = {
     record =>
       switch (record) {
       | Json.Object(items) =>
-        let inner = attr_ezjsonm => {
-          let inner = attr_bs_json => {
-            let inner = attr_rex_json =>
-              Belt.Result.Ok({
-                rex_json: attr_rex_json,
-                bs_json: attr_bs_json,
-                ezjsonm: attr_ezjsonm,
-              });
-            switch (Belt.List.getAssoc(items, "rex-json", (==))) {
+        let inner = attr_yojson => {
+          let inner = attr_ezjsonm => {
+            let inner = attr_bs_json => {
+              let inner = attr_rex_json =>
+                Belt.Result.Ok(
+                  {
+                    rex_json: attr_rex_json,
+                    bs_json: attr_bs_json,
+                    ezjsonm: attr_ezjsonm,
+                    yojson: attr_yojson,
+                  }: _TypeMapSerde__Config__engines,
+                );
+              switch (Belt.List.getAssoc(items, "rex-json", (==))) {
+              | None => inner(None)
+              | Some(json) =>
+                switch (
+                  (
+                    (
+                      (transformer, option) =>
+                        switch (option) {
+                        | Json.Null => Belt.Result.Ok(None)
+                        | _ =>
+                          switch (transformer(option)) {
+                          | Belt.Result.Error(error) =>
+                            Belt.Result.Error(["optional value", ...error])
+                          | Belt.Result.Ok(value) =>
+                            Belt.Result.Ok(Some(value))
+                          }
+                        }
+                    )(
+                      deserialize_TypeMapSerde__Config____engineConfig,
+                    )
+                  )(
+                    json,
+                  )
+                ) {
+                | Belt.Result.Error(error) =>
+                  Belt.Result.Error(["attribute 'rex-json'", ...error])
+                | Belt.Result.Ok(data) => inner(data)
+                }
+              };
+            };
+            switch (Belt.List.getAssoc(items, "Js.Json", (==))) {
             | None => inner(None)
             | Some(json) =>
               switch (
@@ -2875,12 +2942,12 @@ module Version2 = {
                 )
               ) {
               | Belt.Result.Error(error) =>
-                Belt.Result.Error(["attribute 'rex-json'", ...error])
+                Belt.Result.Error(["attribute 'Js.Json'", ...error])
               | Belt.Result.Ok(data) => inner(data)
               }
             };
           };
-          switch (Belt.List.getAssoc(items, "Js.Json", (==))) {
+          switch (Belt.List.getAssoc(items, "ezjsonm", (==))) {
           | None => inner(None)
           | Some(json) =>
             switch (
@@ -2904,12 +2971,12 @@ module Version2 = {
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute 'Js.Json'", ...error])
+              Belt.Result.Error(["attribute 'ezjsonm'", ...error])
             | Belt.Result.Ok(data) => inner(data)
             }
           };
         };
-        switch (Belt.List.getAssoc(items, "ezjsonm", (==))) {
+        switch (Belt.List.getAssoc(items, "yojson", (==))) {
         | None => inner(None)
         | Some(json) =>
           switch (
@@ -2933,7 +3000,7 @@ module Version2 = {
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute 'ezjsonm'", ...error])
+            Belt.Result.Error(["attribute 'yojson'", ...error])
           | Belt.Result.Ok(data) => inner(data)
           }
         };
@@ -2950,14 +3017,16 @@ module Version2 = {
               let inner = attr_engines => {
                 let inner = attr_type_ => {
                   let inner = attr_file =>
-                    Belt.Result.Ok({
-                      file: attr_file,
-                      type_: attr_type_,
-                      engines: attr_engines,
-                      publicName: attr_publicName,
-                      history: attr_history,
-                      minVersion: attr_minVersion,
-                    });
+                    Belt.Result.Ok(
+                      {
+                        file: attr_file,
+                        type_: attr_type_,
+                        engines: attr_engines,
+                        publicName: attr_publicName,
+                        history: attr_history,
+                        minVersion: attr_minVersion,
+                      }: _TypeMapSerde__Config__entry,
+                    );
                   switch (Belt.List.getAssoc(items, "file", (==))) {
                   | None => Belt.Result.Error(["No attribute 'file'"])
                   | Some(json) =>
@@ -3177,15 +3246,17 @@ module Version2 = {
                 let inner = attr_lockedTypes => {
                   let inner = attr_minVersion => {
                     let inner = attr_version =>
-                      Belt.Result.Ok({
-                        version: attr_version,
-                        minVersion: attr_minVersion,
-                        lockedTypes: attr_lockedTypes,
-                        engines: attr_engines,
-                        globalEngines: attr_globalEngines,
-                        entries: attr_entries,
-                        custom: attr_custom,
-                      });
+                      Belt.Result.Ok(
+                        {
+                          version: attr_version,
+                          minVersion: attr_minVersion,
+                          lockedTypes: attr_lockedTypes,
+                          engines: attr_engines,
+                          globalEngines: attr_globalEngines,
+                          entries: attr_entries,
+                          custom: attr_custom,
+                        }: _TypeMapSerde__Config__t,
+                      );
                     switch (Belt.List.getAssoc(items, "version", (==))) {
                     | None => Belt.Result.Error(["No attribute 'version'"])
                     | Some(json) =>
@@ -3415,7 +3486,12 @@ module Version2 = {
       | Json.Object(items) =>
         let inner = attr_typeMap => {
           let inner = attr_entries =>
-            Belt.Result.Ok({entries: attr_entries, typeMap: attr_typeMap});
+            Belt.Result.Ok(
+              {entries: attr_entries, typeMap: attr_typeMap}:
+                                                               _TypeMapSerde__Config__Locked__lockedConfig(
+                                                                 arg0,
+                                                               ),
+            );
           switch (Belt.List.getAssoc(items, "entries", (==))) {
           | None => Belt.Result.Error(["No attribute 'entries'"])
           | Some(json) =>
@@ -3474,12 +3550,14 @@ module Version2 = {
           let inner = attr_engines => {
             let inner = attr_modulePath => {
               let inner = attr_moduleName =>
-                Belt.Result.Ok({
-                  moduleName: attr_moduleName,
-                  modulePath: attr_modulePath,
-                  engines: attr_engines,
-                  name: attr_name,
-                });
+                Belt.Result.Ok(
+                  {
+                    moduleName: attr_moduleName,
+                    modulePath: attr_modulePath,
+                    engines: attr_engines,
+                    name: attr_name,
+                  }: _TypeMapSerde__Config__Locked__lockedEntry,
+                );
               switch (Belt.List.getAssoc(items, "moduleName", (==))) {
               | None => Belt.Result.Error(["No attribute 'moduleName'"])
               | Some(json) =>
@@ -3630,7 +3708,12 @@ module Version2 = {
       switch (record) {
       | Json.Object(items) =>
         let inner = attr_versions =>
-          Belt.Result.Ok({versions: attr_versions});
+          Belt.Result.Ok(
+            {versions: attr_versions}:
+                                        _TypeMapSerde__Config__Locked__lockfile(
+                                          arg0,
+                                        ),
+          );
         switch (Belt.List.getAssoc(items, "versions", (==))) {
         | None => Belt.Result.Error(["No attribute 'versions'"])
         | Some(json) =>
@@ -4037,6 +4120,7 @@ module Version2 = {
       | Rex_json => Json.Array([Json.String("rex-json")])
       | Bs_json => Json.Array([Json.String("Js.Json")])
       | Ezjsonm => Json.Array([Json.String("ezjsonm")])
+      | Yojson => Json.Array([Json.String("yojson")])
       }
   and serialize_TypeMapSerde__Config____engineConfig:
     _TypeMapSerde__Config__engineConfig => Json.t =
@@ -4107,6 +4191,21 @@ module Version2 = {
             )
           )(
             record.ezjsonm,
+          ),
+        ),
+        (
+          "yojson",
+          (
+            (
+              transformer =>
+                fun
+                | None => Json.Null
+                | Some(v) => transformer(v)
+            )(
+              serialize_TypeMapSerde__Config____engineConfig,
+            )
+          )(
+            record.yojson,
           ),
         ),
       ])
@@ -4573,3 +4672,25 @@ and deserializeSimpleExpr = data =>
       Belt.Result.Error(["Unexpected version " ++ string_of_int(version)])
     }
   };
+module Modules = {
+  module SerializableLockfile = {
+    type t = Types2._TypeMapSerde__Config__serializableLockfile;
+    let serialize = serializeSerializableLockfile;
+    let deserialize = deserializeSerializableLockfile;
+  };
+  module T = {
+    type t = Types2._TypeMapSerde__Config__t;
+    let serialize = serializeT;
+    let deserialize = deserializeT;
+  };
+  module SimpleDeclaration = {
+    type t = Types2._TypeMapSerde__Config__simpleDeclaration;
+    let serialize = serializeSimpleDeclaration;
+    let deserialize = deserializeSimpleDeclaration;
+  };
+  module SimpleExpr = {
+    type t = Types2._TypeMapSerde__Config__simpleExpr;
+    let serialize = serializeSimpleExpr;
+    let deserialize = deserializeSimpleExpr;
+  };
+};

@@ -3345,6 +3345,30 @@
                   "PStr",
                   ";;\"Js.Json\""
                 ]
+              ],
+              [
+                {
+                  "txt": "rename.Yojson",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"yojson\""
+                ]
               ]
             ],
             {
@@ -3365,6 +3389,11 @@
                   ],
                   [
                     "Ezjsonm",
+                    [],
+                    null
+                  ],
+                  [
+                    "Yojson",
                     [],
                     null
                   ]
@@ -3536,6 +3565,30 @@
                   ],
                   [
                     "ezjsonm",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineConfig"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "yojson",
                     [
                       "Reference",
                       [
@@ -3975,7 +4028,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None\n        }"
+                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }"
                 ]
               ],
               [

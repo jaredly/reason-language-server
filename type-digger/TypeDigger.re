@@ -134,6 +134,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
       | Bs_json => (module Serde.BsJson: Serde.Engine.T)
       | Rex_json => (module Serde.Json: Serde.Engine.T)
       | Ezjsonm => (module Serde.Ezjsonm: Serde.Engine.T)
+      | Yojson => (module Serde.Yojson: Serde.Engine.T)
     },
     config
   ));
@@ -190,7 +191,11 @@ let main = (~upvert=false, ~override=false, configPath) => {
           ];
         };
     module Engine = (val engine: Serde.Engine.T);
-    loop(1) @ Parsetree.(
+    open Parsetree;
+    [%str
+      type target = [%t Engine.target];
+    ] @
+    loop(1) @ (
       [%str
         module Current = [%m
           Ast_helper.Mod.ident(
@@ -222,7 +227,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
         @ makeEngineModules(engine, helpers);
 
       let converters = SerdeFile.makeConverters(~config, ~state);
-      let structure = body @ converters;
+      let structure = body @ converters @ SerdeFile.makeSubModules(~config, ~state);
 
       outputStructure(~fileName=output, ~structure);
     | (_multiple, None) => failwith("When you specify multiple engines, you must provide an `lockedTypes` file")
@@ -237,7 +242,7 @@ let main = (~upvert=false, ~override=false, configPath) => {
           )]
           @ makeEngineModules(engine, helpers);
         let converters = SerdeFile.makeConverters(~config, ~state);
-        let structure = body @ converters;
+        let structure = body @ converters @ SerdeFile.makeSubModules(~config, ~state);
         outputStructure(~fileName=output, ~structure);
       })
     }

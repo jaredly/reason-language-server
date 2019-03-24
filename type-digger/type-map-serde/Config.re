@@ -10,7 +10,8 @@ type simpleDeclaration = SharedTypes.SimpleType.declaration(TypeMap.DigTypes.typ
 [@rename.Rex_json "rex-json"]
 [@rename.Ezjsonm "ezjsonm"]
 [@rename.Bs_json "Js.Json"]
-type engine = Rex_json | Bs_json | Ezjsonm;
+[@rename.Yojson "yojson"]
+type engine = Rex_json | Bs_json | Ezjsonm | Yojson;
 
 [@rename.module_ "module"]
 [@migrate.args custom => custom.args == 0 ? None : Some(custom.args)]
@@ -60,6 +61,7 @@ type engines = {
   rex_json: option(engineConfig),
   bs_json: option(engineConfig),
   ezjsonm: option(engineConfig),
+  yojson: option(engineConfig),
 };
 
 let engineConfigs = engines => switch engines {
@@ -89,8 +91,8 @@ let engineConfigs = engines => {
 let activeEngines = engines => engineConfigs(engines)->Belt.List.map(fst);
 
 [@migrate.engines ({engine, output}) => switch engine {
-  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None}), ezjsonm: None}
-  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None}), ezjsonm: None}
+  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None}), ezjsonm: None, yojson: None}
+  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None}), ezjsonm: None, yojson: None}
 }]
 [@migrate.globalEngines t => None]
 [@migrate.lockedTypes t => None]

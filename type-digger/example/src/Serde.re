@@ -447,10 +447,11 @@ module Types7 = {
     );
 };
 let currentVersion = 7;
+type target = Js.Json.t;
 module Version1 = {
   open Types1;
   let rec deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -533,7 +534,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) =
+    target => Belt.Result.t(_Types__person, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -685,7 +686,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
+    target => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag|])
@@ -700,7 +701,7 @@ module Version1 = {
 module Version2 = {
   open Types2;
   let rec deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -783,7 +784,7 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) =
+    target => Belt.Result.t(_Types__person, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -934,7 +935,7 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
+    target => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag|])
@@ -952,7 +953,7 @@ module Version2 = {
 module Version3 = {
   open Types3;
   let rec deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -1035,7 +1036,7 @@ module Version3 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) =
+    target => Belt.Result.t(_Types__person, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -1137,12 +1138,12 @@ module Version3 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) = Version2.deserialize_Types____pet;
+    target => Belt.Result.t(_Types__pet, list(string)) = Version2.deserialize_Types____pet;
 };
 module Version4 = {
   open Types4;
   let rec deserialize_Types____dogBreed:
-    Js.Json.t => Belt.Result.t(_Types__dogBreed, list(string)) =
+    target => Belt.Result.t(_Types__dogBreed, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag|])
@@ -1160,7 +1161,7 @@ module Version4 = {
       | _ => Belt.Result.Error(["Expected an array"])
       }
   and deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -1243,9 +1244,9 @@ module Version4 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version3.deserialize_Types____person
+    target => Belt.Result.t(_Types__person, list(string)) = Version3.deserialize_Types____person
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
+    target => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag, arg0|])
@@ -1287,7 +1288,7 @@ module Version4 = {
 module Version5 = {
   open Types5;
   let rec deserialize_Types____dogBreed:
-    Js.Json.t => Belt.Result.t(_Types__dogBreed, list(string)) =
+    target => Belt.Result.t(_Types__dogBreed, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag, arg0|])
@@ -1320,7 +1321,7 @@ module Version5 = {
       | _ => Belt.Result.Error(["Expected an array"])
       }
   and deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -1426,7 +1427,7 @@ module Version5 = {
       }
   and deserialize_Types____named:
     type arg0.
-      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Types__named(arg0), list(string)) =
     (aTransformer, record) =>
       switch (Js.Json.classify(record)) {
@@ -1471,9 +1472,9 @@ module Version5 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version4.deserialize_Types____person
+    target => Belt.Result.t(_Types__person, list(string)) = Version4.deserialize_Types____person
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
+    target => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag, arg0|])
@@ -1515,7 +1516,7 @@ module Version5 = {
 module Version6 = {
   open Types6;
   let rec deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -1688,7 +1689,7 @@ module Version6 = {
       }
   and deserialize_Types____named:
     type arg0.
-      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Types__named(arg0), list(string)) =
     (aTransformer, record) =>
       switch (Js.Json.classify(record)) {
@@ -1756,9 +1757,9 @@ module Version6 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) = Version5.deserialize_Types____person
+    target => Belt.Result.t(_Types__person, list(string)) = Version5.deserialize_Types____person
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) =
+    target => Belt.Result.t(_Types__pet, list(string)) =
     constructor =>
       switch (Js.Json.classify(constructor)) {
       | JSONArray([|tag|])
@@ -1774,7 +1775,7 @@ module Version6 = {
       }
   and deserialize_Types____what:
     type arg0.
-      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Types__what(arg0), list(string)) =
     (aTransformer, constructor) =>
       switch (Js.Json.classify(constructor)) {
@@ -1792,7 +1793,7 @@ module Version6 = {
 module Version7 = {
   open Types7;
   let rec deserialize_Types____household:
-    Js.Json.t => Belt.Result.t(_Types__household, list(string)) =
+    target => Belt.Result.t(_Types__household, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -1997,7 +1998,7 @@ module Version7 = {
       }
   and deserialize_Types____named:
     type arg0.
-      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Types__named(arg0), list(string)) =
     (aTransformer, record) =>
       switch (Js.Json.classify(record)) {
@@ -2096,7 +2097,7 @@ module Version7 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____one:
-    Js.Json.t => Belt.Result.t(_Types__one, list(string)) =
+    target => Belt.Result.t(_Types__one, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -2123,7 +2124,7 @@ module Version7 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____person:
-    Js.Json.t => Belt.Result.t(_Types__person, list(string)) =
+    target => Belt.Result.t(_Types__person, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -2323,9 +2324,9 @@ module Version7 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Types____pet:
-    Js.Json.t => Belt.Result.t(_Types__pet, list(string)) = Version6.deserialize_Types____pet
+    target => Belt.Result.t(_Types__pet, list(string)) = Version6.deserialize_Types____pet
   and deserialize_Types____two:
-    Js.Json.t => Belt.Result.t(_Types__two, list(string)) =
+    target => Belt.Result.t(_Types__two, list(string)) =
     record =>
       switch (Js.Json.classify(record)) {
       | JSONObject(dict) =>
@@ -2353,7 +2354,7 @@ module Version7 = {
       }
   and deserialize_Types____what:
     type arg0.
-      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Types__what(arg0), list(string)) =
     (aTransformer, constructor) =>
       switch (Js.Json.classify(constructor)) {
@@ -2384,7 +2385,7 @@ module Version7 = {
         }
       | _ => Belt.Result.Error(["Expected an array"])
       }
-  and serialize_Types____household: _Types__household => Js.Json.t =
+  and serialize_Types____household: _Types__household => target =
     record =>
       Js.Json.object_(
         Js.Dict.fromArray([|
@@ -2450,7 +2451,7 @@ module Version7 = {
       )
   and serialize_Types____named:
     'arg0.
-    ('arg0 => Js.Json.t, _Types__named('arg0)) => Js.Json.t
+    ('arg0 => target, _Types__named('arg0)) => target
    =
     (aTransformer, record) =>
       Js.Json.object_(
@@ -2475,12 +2476,12 @@ module Version7 = {
           ),
         |]),
       )
-  and serialize_Types____one: _Types__one => Js.Json.t =
+  and serialize_Types____one: _Types__one => target =
     record =>
       Js.Json.object_(
         Js.Dict.fromArray([|("key", Js.Json.string(record.key))|]),
       )
-  and serialize_Types____person: _Types__person => Js.Json.t =
+  and serialize_Types____person: _Types__person => target =
     record =>
       Js.Json.object_(
         Js.Dict.fromArray([|
@@ -2529,21 +2530,21 @@ module Version7 = {
           ),
         |]),
       )
-  and serialize_Types____pet: _Types__pet => Js.Json.t =
+  and serialize_Types____pet: _Types__pet => target =
     constructor =>
       switch (constructor) {
       | Dog => Js.Json.array([|Js.Json.string("a-cat")|])
       | Cat => Js.Json.array([|Js.Json.string("Cat")|])
       | Mouse => Js.Json.array([|Js.Json.string("Mouse")|])
       }
-  and serialize_Types____two: _Types__two => Js.Json.t =
+  and serialize_Types____two: _Types__two => target =
     record =>
       Js.Json.object_(
         Js.Dict.fromArray([|("key", Js.Json.string(record.key))|]),
       )
   and serialize_Types____what:
     'arg0.
-    ('arg0 => Js.Json.t, _Types__what('arg0)) => Js.Json.t
+    ('arg0 => target, _Types__what('arg0)) => target
    =
     (aTransformer, constructor) =>
       switch (constructor) {
@@ -2663,3 +2664,10 @@ and deserializeHousehold = data =>
       Belt.Result.Error(["Unexpected version " ++ string_of_int(version)])
     }
   };
+module Modules = {
+  module Household = {
+    type t = Types7._Types__household;
+    let serialize = serializeHousehold;
+    let deserialize = deserializeHousehold;
+  };
+};

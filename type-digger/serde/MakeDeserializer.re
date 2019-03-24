@@ -40,7 +40,6 @@ open Asttypes;
 open SharedTypes.SimpleType;
 
 type transformer('source) = {
-  inputType: Parsetree.core_type,
   parseVersion: Parsetree.expression,
   tuple: (Parsetree.expression, list(Parsetree.pattern), Parsetree.expression) => Parsetree.expression,
   record: (~renames: list((string, string)), ~typ: Parsetree.core_type, list((string, Parsetree.expression, bool))) => Parsetree.expression,
@@ -294,7 +293,7 @@ let decl = (transformer, ~helpers, ~renames, ~moduleName, ~modulePath, ~name, ~i
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let fullName = transformerName(~moduleName, ~modulePath, ~name);
   declOuter(
-    transformer.inputType,
+    [%type: target],
     decl.variables,
     ~moduleName,
     ~modulePath,

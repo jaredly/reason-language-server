@@ -31,9 +31,10 @@ let sourceTransformer = source => switch source {
   | Builtin(name) => failer("Builtin: " ++ name)
 };
 
+let target = [%type: Json.t];
+
 let serializeTransformer =
   MakeSerializer.{
-    outputType: [%type: Json.t],
     wrapWithVersion: [%expr
       (version, payload) =>
         switch (payload) {
@@ -159,11 +160,8 @@ let rec makePatList = items => switch items {
 };
 
 
-let jsonT = [%type: Json.t];
-
 let deserializeTransformer = {
-  MakeDeserializer.inputType: jsonT,
-  source: sourceTransformer,
+  MakeDeserializer.source: sourceTransformer,
   parseVersion: [%expr
     json => switch json {
       | Json.Object(items) => switch (items->Belt.List.getAssoc("$schemaVersion", (==))) {

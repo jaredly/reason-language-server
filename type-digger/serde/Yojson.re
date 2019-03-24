@@ -10,25 +10,27 @@ open Helpers;
 // let makeJson = (kind, contents) => Exp.construct(Location.mknoloc(Ldot(Lident("Ezjsonm"), kind)), contents);
 // let jsonObject = items => makeJson("Object", Some(makeList(items)));
 // let jsonArray = items => makeJson("Array", Some(items));
-let target = [%type:
-  [ `Null
-  | `Bool(bool)
-  | `Float(float)
-  | `String(string)
-  | `A(list(target))
-  | `O(list((string, target))) ]
-];
+
+let target = [%type: [ `Assoc(list((string, target)))
+       | `Bool(bool)
+       | `Float(float)
+       | `Int(int)
+       | `List(list(target))
+       | `Null
+       | `String(string)
+       ]
+       ];
 
 let sourceTransformer = source => switch source {
   | DigTypes.NotFound => MakeSerializer.failer("Not found")
   | Public((moduleName, modulePath, name)) =>
     makeIdent(Lident(MakeSerializer.transformerName(~moduleName, ~modulePath, ~name)))
   | Builtin("array") =>
-    [%expr (transformer, array) => `A(
+    [%expr (transformer, array) => `List(
       Belt.List.fromArray(Belt.Array.map(array, transformer))
     )]
   | Builtin("list") =>
-    [%expr (transformer, list) => `A(Belt.List.map(list, transformer))]
+    [%expr (transformer, list) => `List(Belt.List.map(list, transformer))]
   | Builtin("string") => [%expr s => `String(s)]
   | Builtin("bool") => [%expr b => `Bool(b)]
   | Builtin("unit") => [%expr b => `Null]
@@ -45,16 +47,16 @@ let serializeTransformer =
     wrapWithVersion: [%expr
       (version, payload) =>
         switch (payload) {
-        | `O(items) =>
-          `O([("$schemaVersion", `Float(float_of_int(version))), ...items])
-        | _ => `A([`Float(float_of_int(version)), payload])
+        | `Assoc(items) =>
+          `Assoc([("$schemaVersion", `Float(float_of_int(version))), ...items])
+        | _ => `List([`Float(float_of_int(version)), payload])
         }
     ],
     source: sourceTransformer,
-    list: items => [%expr `A([%e items])],
-    tuple: exps => [%expr `A([%e makeList(exps)])],
+    list: items => [%expr `List([%e items])],
+    tuple: exps => [%expr `List([%e makeList(exps)])],
     record: (~renames, items) =>
-      [%expr `O([%e 
+      [%expr `Assoc([%e 
         makeList(items->Belt.List.map(((label, expr)) =>
           Exp.tuple([
             Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, label), None)),
@@ -63,7 +65,7 @@ let serializeTransformer =
         ))
       ])],
     constructor: (~renames, name, args) =>
-      [%expr `A([%e makeList(
+      [%expr `List([%e makeList(
             [
               [%expr `String(
                   [%e Exp.constant(Pconst_string(MakeDeserializer.getRename(~renames, name), None))]
@@ -92,7 +94,7 @@ let sourceTransformer = source => switch source {
   | Builtin("array") =>
     [%expr
       (transformer, array) => switch (array) {
-        | `A(items) =>
+        | `List(items) =>
           let rec loop = (collected, items) => switch items {
             | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
@@ -110,7 +112,7 @@ let sourceTransformer = source => switch source {
   | Builtin("list") =>
     [%expr
       (transformer, list) => switch (list) {
-        | `A(items) =>
+        | `List(items) =>
           let rec loop = (collected, items) => switch items {
             | [] => Belt.Result.Ok(Belt.List.reverse(collected))
             | [one, ...rest] => switch (transformer(one)) {
@@ -159,30 +161,27 @@ let rec makePatList = items => switch items {
   ])))
 };
 
-
-let jsonT = [%type: Ezjsonm.value];
-
 let deserializeTransformer = {
   MakeDeserializer.source: sourceTransformer,
   parseVersion: [%expr
     json => switch json {
-      | `O(items) => switch (items->Belt.List.getAssoc("$schemaVersion", (==))) {
+      | `Assoc(items) => switch (items->Belt.List.getAssoc("$schemaVersion", (==))) {
         | Some(`Float(schemaVersion)) => [@implicit_arity]Belt.Result.Ok((int_of_float(schemaVersion), json))
         | Some(_) => Belt.Result.Error("Invalid schema version - expected number")
         | None => Belt.Result.Error("No $schemaVersion")
       }
-      | `A([`Float(version), payload]) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
+      | `List([`Float(version), payload]) => [@implicit_arity]Belt.Result.Ok((int_of_float(version), payload))
       | _ => Belt.Result.Error("Not wrapped in a version")
     }
   ],
   tuple: (value, patArgs, body) => [%expr json => switch ([%e value]) {
-    | `A([%p makePatList(patArgs)]) => [%e body]
+    | `List([%p makePatList(patArgs)]) => [%e body]
     | _ => Belt.Result.Error(["Expected array"])
   }],
   list: (transformer, list) => {
     [%expr
       switch ([%e list]) {
-        | `A(items) =>
+        | `List(items) =>
           let transformer = [%e transformer];
           let rec loop = (collected, items) => switch items {
             | [] => Belt.Result.Ok(Belt.List.reverse(collected))
@@ -232,7 +231,7 @@ let deserializeTransformer = {
       };
     });
     [%expr record => switch (record) {
-      | `O(items) => [%e body]
+      | `Assoc(items) => [%e body]
       | _ => Belt.Result.Error(["Expected an object"])
     }]
   },
@@ -242,7 +241,7 @@ let deserializeTransformer = {
       constructors->Belt.List.map(((name, argCount, argTransformer)) => {
         let constrName = MakeDeserializer.getRename(~renames, name);
         let pat =
-          [%pat? `A([%p
+          [%pat? `List([%p
               makePatList([
                 [%pat? `String([%p Pat.var(Location.mknoloc("tag"))])],
                 ...MakeDeserializer.range(argCount, index =>
@@ -279,7 +278,7 @@ let deserializeTransformer = {
       Exp.match(
         makeIdent(Lident("constructor")),
         cases->Belt.List.concat([
-          Exp.case([%pat? `A([`String(tag), ..._])], [%expr Belt.Result.Error(["Invalid constructor: " ++ tag])]),
+          Exp.case([%pat? `List([`String(tag), ..._])], [%expr Belt.Result.Error(["Invalid constructor: " ++ tag])]),
           Exp.case(Pat.any(), MakeDeserializer.expError("Expected an array"))
         ])
       )

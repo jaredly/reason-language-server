@@ -1,8 +1,50 @@
 open TypeMapSerde.Config;
 let loc = Location.none;
 open DigUtils;
+open Longident;
+let mknoloc = Location.mknoloc;
 
 let expIdent = lident => Ast_helper.Exp.ident(Location.mknoloc(lident));
+
+let makeSubModules = (~config, ~state) => {
+  let modules = config.entries
+  ->Belt.List.map(({file, type_, publicName}) => {
+      let publicName =
+        switch (publicName) {
+        | None => type_
+        | Some(name) => name
+        };
+      let uri = Utils.toUri(Filename.concat(Sys.getcwd(), file));
+      let%try_force (moduleName, modulePath, name) =
+        TypeMap.GetTypeMap.fileToReference(~state, uri, type_);
+      let lockedTypeName = Serde.OutputType.makeLockedTypeName(moduleName, modulePath, name);
+      open Ast_helper;
+      Str.module_(
+        Mb.mk(
+          Location.mknoloc(String.capitalize_ascii(publicName)),
+          {
+            pmod_desc: Pmod_structure([%str 
+              type t = [%t Typ.constr(mknoloc(Ldot(Lident(typesModuleName(config.version)), lockedTypeName)), [])];
+              let serialize = [%e expIdent(Lident("serialize" ++ String.capitalize_ascii(publicName)))];
+              let deserialize = [%e expIdent(Lident("deserialize" ++ String.capitalize_ascii(publicName)))];
+             ]),
+            pmod_loc: Location.none,
+            pmod_attributes: []
+          }
+        )
+    )
+  });
+  [Ast_helper.Str.module_(
+    Ast_helper.Mb.mk(
+      mknoloc("Modules"),
+      {
+        pmod_desc: Pmod_structure(modules),
+        pmod_loc: Location.none,
+        pmod_attributes: []
+      }
+    )
+  )]
+};
 
 let makeConverters = (~config, ~state) =>
   config.entries

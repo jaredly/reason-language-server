@@ -20,11 +20,11 @@ open Asttypes;
 open SharedTypes.SimpleType;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
+let loc = Location.none;
 
 let variableTransformerName = name => name ++ "Transformer";
 
 type transformer('source) = {
-  outputType: Parsetree.core_type,
   wrapWithVersion: Parsetree.expression,
   source: ('source) => Parsetree.expression,
   list: (Parsetree.expression) => Parsetree.expression,
@@ -243,13 +243,13 @@ let decl = (~helpers, ~renames, transformer, ~moduleName, ~modulePath, ~name, de
           Location.mknoloc(lident),
           decl.variables->makeTypArgs->Belt.List.map(Typ.var)
         ),
-        transformer.outputType
+        [%type: target]
       );
   let rec loop = (i, vbls) => switch vbls {
     | [] => typ
     | [_, ...rest] => Typ.arrow(
       Nolabel,
-      Typ.arrow(Nolabel, Typ.var("arg" ++ string_of_int(i)), transformer.outputType),
+      Typ.arrow(Nolabel, Typ.var("arg" ++ string_of_int(i)), [%type: target]),
       loop(i + 1, rest)
     )
   };
