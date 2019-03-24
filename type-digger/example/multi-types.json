@@ -8,6 +8,9 @@
     },
     "rex-json": {
       "output": "src/KitchenServerSerde.re"
+    },
+    "ezjsonm": {
+      "output": "src/KitchenEzSerde.re"
     }
   },
   "entries": [

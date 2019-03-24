@@ -8,11 +8,15 @@
           "modulePath": ["All"],
           "engines": [
             [
-              ["rex-json"],
+              ["ezjsonm"],
               1
             ],
             [
               ["Js.Json"],
+              1
+            ],
+            [
+              ["rex-json"],
               1
             ]
           ],

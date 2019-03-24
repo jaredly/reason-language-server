@@ -13,14 +13,16 @@ module Version1 = {
               let inner = attr_c => {
                 let inner = attr_b => {
                   let inner = attr_a =>
-                    Belt.Result.Ok({
-                      a: attr_a,
-                      b: attr_b,
-                      c: attr_c,
-                      d: attr_d,
-                      e: attr_e,
-                      f: attr_f,
-                    });
+                    Belt.Result.Ok(
+                      {
+                        a: attr_a,
+                        b: attr_b,
+                        c: attr_c,
+                        d: attr_d,
+                        e: attr_e,
+                        f: attr_f,
+                      }: _AllTypes__All__normalRecord,
+                    );
                   switch (Belt.List.getAssoc(items, "a", (==))) {
                   | None => Belt.Result.Error(["No attribute 'a'"])
                   | Some(json) =>
@@ -334,12 +336,13 @@ module Version1 = {
             let inner = attr_c => {
               let inner = attr_b => {
                 let inner = attr_a =>
-                  Belt.Result.Ok({
-                    a: attr_a,
-                    b: attr_b,
-                    c: attr_c,
-                    d: attr_d,
-                  });
+                  Belt.Result.Ok(
+                    {a: attr_a, b: attr_b, c: attr_c, d: attr_d}:
+                                                                   _AllTypes__All__parameterizedRecord(
+                                                                    arg0,
+                                                                    arg1,
+                                                                   ),
+                  );
                 switch (Belt.List.getAssoc(items, "a", (==))) {
                 | None => Belt.Result.Error(["No attribute 'a'"])
                 | Some(json) =>
@@ -576,7 +579,9 @@ module Version1 = {
       | Json.Object(items) =>
         let inner = attr_title => {
           let inner = attr_contents =>
-            Belt.Result.Ok({contents: attr_contents, title: attr_title});
+            Belt.Result.Ok(
+              {contents: attr_contents, title: attr_title}: _AllTypes__All__top,
+            );
           switch (Belt.List.getAssoc(items, "contents", (==))) {
           | None => Belt.Result.Error(["No attribute 'contents'"])
           | Some(json) =>
