@@ -21,7 +21,7 @@ cache:
 install:
     # The x64 is required as a workaround for esy/esy#412
     - ps: Install-Product node 8 x64
-    - npm install -g esy@0.4.9
+    - npm install -g esy@0.5.6
     # Retry is necessary due to esy/esy#413 and esy/esy#414
     - appveyor-retry esy install
 
@@ -29,9 +29,9 @@ build_script:
     - esy build
     # Validate binary
     # - esy dune exec Bin -- --help
-    - esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
+    - esy exec-command --include-build-env cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
     - ExamplesTests.exe
-    - esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
+    - esy exec-command --include-build-env cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
 artifacts:
     - path: bin.exe
