@@ -25,6 +25,8 @@ Can also be installed with VS Code Quick Open: press `Cmd/Ctrl + P`, paste the f
 ext install jaredly.reason-vscode
 ```
 
+The vscode extension is configured via the normal vscode settings screen.
+
 ### OniVim
 
 Oni has support for Reason baked in, and it only needs a little bit of configuration to integrate this langauge server.
@@ -59,16 +61,6 @@ And you're done!
 }
 ```
 
-### Vim
-
-1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
-2. Install [the vim-reason-plus plugin](https://github.com/reasonml-editor/vim-reason-plus), following the README. Add the following to your `.vimrc` file:
-```vim
-let g:LanguageClient_serverCommands = {
-    \ 'reason': ['/absolute/path/to/reason-language-server.exe']
-    \ }
-```
-
 ### Emacs
 
 1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
@@ -80,7 +72,21 @@ let g:LanguageClient_serverCommands = {
                     :server-id 'ocaml-ls))
 ```
 
-#### Configuration
+### Atom
+
+Install https://atom.io/packages/ide-reason
+
+### Vim
+
+1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
+2. Install [the vim-reason-plus plugin](https://github.com/reasonml-editor/vim-reason-plus), following the README. Add the following to your `.vimrc` file:
+```vim
+let g:LanguageClient_serverCommands = {
+    \ 'reason': ['/absolute/path/to/reason-language-server.exe']
+    \ }
+```
+
+### Vim config location
 
 [LanguageClient-neovim](https://github.com/autozimu/LanguageClient-neovim) supports configuring language servers via a configuration file. By default the configuration file is `.vim/settings.json` in the root of your project. For example to set the format width the file will contain:
 
@@ -92,9 +98,9 @@ let g:LanguageClient_serverCommands = {
 }
 ```
 
-##### Supported settings
+## Configuration settings
 
-Note that some of these might be VS Code specific and not relevant to vim use.
+The language server supports the following settings (not all of them apply to all clients, for example some clients don't support codelenses at all).
 
 - `format_width` - defaults to 80 (int)
 - `per_value_codelens` - show the type of each toplevel value in a lens (bool)
@@ -102,21 +108,17 @@ Note that some of these might be VS Code specific and not relevant to vim use.
 - `opens_codelens` - show what values are used from an `open` (bool)
 - `autoRebuild` — rebuild project on save (turned on by default) (bool)
 
-##### Debug settings
+### Debug settings
 
 Useful if you're developing the language server itself.
 
 - `location` - provide a custom binary location for the langauge server (string)
 - `refmt` - provide a custom location for refmt (string)
 - `lispRefmt` - provide a custom location for reason-lisp's refmt (string)
-- `reloadOnChange` - reload the server when the binary is updated (bool)
+- `reloadOnChange` - reload the server when the reason-language-server binary is updated (bool). assumes the `location` setting.
 - `show_debug_errors` - pipe the server's stderr into the output pane (bool)
 
-### Atom
-
-Install https://atom.io/packages/ide-reason
-
-### Troubleshooting
+## Troubleshooting
 
 NOTE: reason-language-server runs bsb or dune *automatically* for you, it is not necessary to have a separate process running `bsb -w`. In fact, having a separate process running can sometimes get the editor into a weird state.
 
