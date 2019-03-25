@@ -164,7 +164,7 @@ let getEsyCompiledBase = () => {
   switch(Utils.getEnvVar(~env, "cur__original_root"), Utils.getEnvVar(~env, "cur__target_dir")) {
   | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(correctSlashesOnWindows(projectRoot), correctSlashesOnWindows(targetDir)))
   | (_, _) =>
-    switch (Commands.execResult(~cwd=root, "esy command-env --json")) {
+    switch (Commands.execResult("esy command-env --json")) {
     | Ok(commandEnv) =>
       switch (Json.parse(commandEnv)) {
       | exception (Failure(message)) =>
