@@ -25,6 +25,8 @@ Can also be installed with VS Code Quick Open: press `Cmd/Ctrl + P`, paste the f
 ext install jaredly.reason-vscode
 ```
 
+The vscode extension is configured via the normal vscode settings screen.
+
 ### OniVim
 
 Oni has support for Reason baked in, and it only needs a little bit of configuration to integrate this langauge server.
@@ -59,6 +61,21 @@ And you're done!
 }
 ```
 
+### Emacs
+
+1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
+2. Assuming you're using [lsp-mode](https://github.com/emacs-lsp/lsp-mode/), add the following to your config file:
+```
+(lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection "/path/to/reason-language-server.exe")
+                    :major-modes '(reason-mode)
+                    :server-id 'ocaml-ls))
+```
+
+### Atom
+
+Install https://atom.io/packages/ide-reason
+
 ### Vim
 
 1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
@@ -69,11 +86,39 @@ let g:LanguageClient_serverCommands = {
     \ }
 ```
 
-### Emacs
+### Vim config location
 
-_TODO_ people have gotten it to work with emacs, but I don't know the steps.
+[LanguageClient-neovim](https://github.com/autozimu/LanguageClient-neovim) supports configuring language servers via a configuration file. By default the configuration file is `.vim/settings.json` in the root of your project. For example to set the format width the file will contain:
 
-### Troubleshooting
+```json
+{
+  "reason_language_server": {
+    "format_width": 100
+  }
+}
+```
+
+## Configuration settings
+
+The language server supports the following settings (not all of them apply to all clients, for example some clients don't support codelenses at all).
+
+- `format_width` - defaults to 80 (int)
+- `per_value_codelens` - show the type of each toplevel value in a lens (bool)
+- `dependencies_codelens` - list a files dependencies at the top (bool)
+- `opens_codelens` - show what values are used from an `open` (bool)
+- `autoRebuild` — rebuild project on save (turned on by default) (bool)
+
+### Debug settings
+
+Useful if you're developing the language server itself.
+
+- `location` - provide a custom binary location for the langauge server (string)
+- `refmt` - provide a custom location for refmt (string)
+- `lispRefmt` - provide a custom location for reason-lisp's refmt (string)
+- `reloadOnChange` - reload the server when the reason-language-server binary is updated (bool). assumes the `location` setting.
+- `show_debug_errors` - pipe the server's stderr into the output pane (bool)
+
+## Troubleshooting
 
 NOTE: reason-language-server runs bsb or dune *automatically* for you, it is not necessary to have a separate process running `bsb -w`. In fact, having a separate process running can sometimes get the editor into a weird state.
 

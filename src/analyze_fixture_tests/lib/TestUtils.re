@@ -3,7 +3,7 @@ let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
-  let buildSystem = BuildSystem.Dune(Esy);
+  let buildSystem = BuildSystem.Dune(Esy("0.4.9"));
   let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
   let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
   let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
@@ -42,7 +42,7 @@ let offsetToPos = (text, offset) => {
 };
 
 let extractPosition = text => {
-  let clean = Str.substitute_first(Str.regexp_string("<*>"), x => "", text);
+  let clean = Str.substitute_first(Str.regexp_string("<*>"), _ => "", text);
   let char = Str.match_beginning();
   (clean, char, offsetToPos(text, char))
 };
@@ -106,6 +106,7 @@ let getState = () => {
       showModulePathOnHover: false,
       recordAllLocations: false,
       autoRebuild: false,
+      buildSystemOverrideByRoot: [],
     },
   };
 };

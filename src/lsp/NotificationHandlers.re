@@ -1,7 +1,6 @@
 
 open Infix;
 open RResult;
-open Log;
 open TopTypes;
 
 let recompileDebounceTime = 0.5; /* seconds */
@@ -110,6 +109,12 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let showModulePathOnHover = (settings |?> Json.get("show_module_path_on_hover") |?> Json.bool) |? true;
     let autoRebuild = settings |?> Json.get("autoRebuild") |?> Json.bool |? true;
 
+    let buildSystemOverrideByRoot = (settings |?> Json.get("build_system_override_by_root") |?> Json.obj |? [])->Belt.List.keepMap(((key, v)) => {
+      let%opt v = Json.string(v);
+      let%opt system = Analyze.BuildSystem.fromString(v);
+      Some((key, system))
+    });
+
     Ok({
       ...state,
       settings: {
@@ -123,6 +128,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         crossFileAsYouType,
         showModulePathOnHover,
         autoRebuild,
+        buildSystemOverrideByRoot,
       },
     });
   }),
@@ -181,7 +187,6 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let%try changes = RJson.array(changes);
     open InfixResult;
     let shouldReload = Belt.List.some(changes, change => {
-      let%try t = RJson.get("type", change) |?> RJson.number;
       let%try uri = RJson.get("uri", change) |?> RJson.string;
       let isRelevant =
         Utils.endsWith(uri, "/bsconfig.json") ||

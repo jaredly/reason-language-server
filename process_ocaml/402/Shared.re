@@ -97,7 +97,7 @@ let rec asSimpleType = t => {
   }
 };
 
-let rec asSimpleDeclaration = (name, t) => {
+let asSimpleDeclaration = (name, t) => {
   open SharedTypes;
   {
     SimpleType.name,

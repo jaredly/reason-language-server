@@ -42,14 +42,14 @@ let trimFirst = (num, string) => {
 
 let cleanOffStars = doc => {
   let lines = Str.split(Str.regexp_string("\n"), doc);
-  let rec loop = (first, lines) => {
+  let rec loop = (lines) => {
     switch lines {
     | [] => None
     | [one] => (String.trim(one) == "") ? None : findStars(one)
-    | [one, ...rest] => (String.trim(one) == "") ? loop(false, rest) : combine(findStars(one), loop(false, rest))
+    | [one, ...rest] => (String.trim(one) == "") ? loop(rest) : combine(findStars(one), loop(rest))
     }
   };
-  let num = loop(true, lines);
+  let num = loop(lines);
   switch num {
   | None | Some(0) => doc
   | Some(num) => switch lines {
@@ -68,7 +68,7 @@ let cleanOffStars = doc => {
 let rec hasNoDoc = attributes => {
   switch attributes {
   | [] => false
-  | [({Asttypes.txt: "nodoc"}, _), ...rest] => true
+  | [({Asttypes.txt: "nodoc"}, _), ..._] => true
   | [_, ...rest] => hasNoDoc(rest)
   }
 };

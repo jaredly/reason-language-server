@@ -56,7 +56,7 @@ let rec outputDeclaration = (~alias, moduleName, modulePath, name, showSource, d
     ), declarationName);
   | Variant(items) =>
     mk(~manifest=?fullReference, ~kind=Parsetree.Ptype_variant(
-         items->List.map(((name, contents, result)) =>
+         items->List.map(((name, contents, _result)) =>
           Ast_helper.Type.constructor(
             ~args=Parsetree.Pcstr_tuple(contents->List.map(outputExpr(showSource))),
             Location.mknoloc(name)
@@ -76,7 +76,7 @@ and outputExpr = (showSource, expr) => {
   | Fn(args, result) =>
     let rec loop = (args) => switch args {
       | [] => outputExpr(showSource, result)
-      | [(label, arg), ...rest] => arrow(Nolabel, outputExpr(showSource, arg), loop(rest))
+      | [(_label, arg), ...rest] => arrow(Nolabel, outputExpr(showSource, arg), loop(rest))
     };
     loop(args)
   | Other => failwith("unhandled expr type")

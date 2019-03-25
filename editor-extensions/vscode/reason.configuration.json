@@ -12,6 +12,7 @@
     [ "(", ")" ]
   ],
   "comments": {
+    "lineComment": "//",
     "blockComment": [ "/*", "*/" ]
   },
   "surroundingPairs": [

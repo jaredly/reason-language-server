@@ -31,7 +31,7 @@ let getFullLineOfPos = (pos, s) => {
 
 let repeat = (length, s) => {
   let result = ref("");
-  for (i in 1 to length) {
+  for (_ in 1 to length) {
     result:= result^ ++ s
   };
   result^
@@ -114,7 +114,7 @@ let toUri = (path) =>
       Str.global_replace(Str.regexp_string("\\"), "/", path)
       |> Str.substitute_first(Str.regexp("^\\([A-Z]\\):"), text => {
         let name = Str.matched_group(1, text);
-        "/" ++ String.lowercase(name) ++ "%3A"
+        "/" ++ String.lowercase_ascii(name) ++ "%3A"
       })
     )
   };
@@ -123,7 +123,7 @@ let parseWindowsUri = withoutScheme => {
   withoutScheme
   |> Str.substitute_first(Str.regexp("^/\\([a-z]\\)%3A"), text => {
     let name = Str.matched_group(1, text);
-    String.uppercase(name) ++ ":"
+    String.uppercase_ascii(name) ++ ":"
   })
   /* OCaml doesn't want to do a find & replace where the replacement is a single backslash. So this works */
   |> Str.split(Str.regexp_string("/"))
@@ -219,7 +219,7 @@ let showLocation = ({Location.loc_start, loc_end}) =>
 
 let joinLines = String.concat("\n");
 
-let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize;
+let getName = x => Filename.basename(x) |> Filename.chop_extension |> String.capitalize_ascii;
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 
 let dedup = items => {

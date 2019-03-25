@@ -14,21 +14,23 @@ jobs:
 
     steps:
       - checkout
-      - run: sudo npm install -g esy@0.3.4
+      - run: sudo npm install -g esy@0.5.6
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-dependencies-{{ checksum "esy.json" }}
+          - v2-dependencies-{{ checksum "package.json" }}
           # fallback to using the latest cache if no exact match is found
           - v2-dependencies-
 
       # build
-      - run: esy install
+      - run: esy
 
       # run tests!
-      - run: esy b
-      - run: esy dune exec ExamplesTests
+      # - run: esy dune exec Bin -- --help
+      - run: esy exec-command --include-build-env cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
+      - run: ./ExamplesTests.exe
+      - run: esy exec-command --include-build-env cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
       - save_cache:
           paths:
@@ -39,10 +41,11 @@ jobs:
             - examples/example-es6-imports/node_modules/
             - examples/example-react/node_modules/
             - examples/example-esy-dune-project/node_modules/
-          key: v2-dependencies-{{ checksum "esy.json" }}
+            - examples/name_with_underscore/node_modules/
+          key: v2-dependencies-{{ checksum "package.json" }}
 
       - store_artifacts:
-          path: ./_esy/default/build/default/bin/Bin.exe
+          path: ./bin.exe
           destination: bin.native.linux
 
   publish-github-release:
@@ -56,4 +59,3 @@ jobs:
             FILE=./_esy/default/build/default/bin/Bin.exe
             VERSION=$(my-binary --version)
             curl -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: $(file -b --mime-type $FILE)" --data-binary @$FILE "https://uploads.github.com/repos/jaredly/reason-language-server/releases/${CIRCLE_TAG}/assets?name=bin.linux.exe"
-

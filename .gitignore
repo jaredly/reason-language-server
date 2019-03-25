@@ -22,3 +22,5 @@ examples/markdown-reason-react/
 editor-extensions/vscode/*.zip
 bsb_modules
 _esy/
+bin.exe
+ExamplesTests.exe

@@ -20,12 +20,15 @@ let checkExampleProject = (rootPath, sourcePaths) => {
         print_endline(message);
         [`PackageFail(uri, message), ...failures]
       | Ok(package) => switch (State.getCompilationResult(uri, state, ~package)) {
-        | Error(message) => 
+        | Error(message) =>
           print_endline("  Invalid compilation result: " ++ message);
           [`FileFail(uri, message), ...failures]
-        | Ok(result) =>
+        | Ok(Success(_)) =>
           print_endline("  Good: " ++ uri);
           failures
+        | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
+          print_endline("  Error compiling: " ++ uri);
+          [`FileFail(uri, message)]
       }
     }
   })
@@ -41,7 +44,7 @@ let projects = [
 ];
 
 
-let main = (baseDir, verbose, args) => {
+let main = (baseDir, _verbose, args) => {
   print_endline("Checking each example project to make sure we can analyze each source file...");
   projects->Belt.List.reduce([], (failures, (root, sourcePaths, prepareCommand)) => {
     if (args == [] || List.mem(root, args)) {

@@ -18,12 +18,34 @@ type compilerVersion =
 type packageManager =
   /* Absolute path to the Opam switch prefix */
   | Opam(string)
-  | Esy;
+  /* Esy version */
+  | Esy(string);
 
 type t =
   | Dune(packageManager)
   | Bsb(string)
   | BsbNative(string, target);
+
+
+let fromString = string => {
+  switch (Util.Utils.split_on_char(':', string)) {
+    | ["bsb", version] => Some(Bsb(version))
+    | ["dune", "esy", version] => Some(Dune(Esy(version)))
+    | ["dune", "opam", basedir] => Some(Dune(Opam(basedir)))
+    | ["bsb-native", version, "js"] => Some(BsbNative(version, Js))
+    | ["bsb-native", version, "native"] => Some(BsbNative(version, Native))
+    | ["bsb-native", version, "bytecode"] => Some(BsbNative(version, Bytecode))
+    | _ => None
+  }
+};
+
+let show = t => switch t {
+  | Dune(Esy(v)) => "dune & esy, esy version: " ++ v
+  | Dune(Opam(loc)) => "dune & opam (switch at " ++ loc ++ ")"
+  | Bsb(v) => "bsb version " ++ v
+  | BsbNative(v, target) => "bsb-native version " ++ v ++ " targetting " ++ targetName(target)
+}
+
 
 let isNative = config => Json.get("entries", config) != None || Json.get("allowed-build-kinds", config) != None;
 
@@ -94,7 +116,7 @@ let getCompilerVersion = executable => {
     | ["4", "02", _] => Ok(V402)
     | ["4", "06", _] => Ok(V406)
     | ["4", "07", _] => Ok(V407)
-    | version => Error("Unsupported OCaml version: " ++ line)
+    | _ => Error("Unsupported OCaml version: " ++ line)
   }
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
   } : Error("Could not run compiler (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
@@ -127,7 +149,7 @@ let detect = (rootPath, bsconfig) => {
   }) : Bsb(bsbVersion);
 };
 
-let getEsyCompiledBase = (root) => {
+let getEsyCompiledBase = () => {
   let env = Unix.environment()->Array.to_list;
 
   let correctSlashesOnWindows = (p) => {
@@ -177,14 +199,14 @@ let getCompiledBase = (root, buildSystem) => {
   | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
   | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
   | Dune(Opam(_)) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
-  | Dune(Esy) =>
-    let%try_wrap esyTargetDir = getEsyCompiledBase(root);
+  | Dune(Esy(_)) =>
+    let%try_wrap esyTargetDir = getEsyCompiledBase();
     root /+ esyTargetDir
   };
 
   switch compiledBase {
   | Ok(compiledBase) => Files.ifExists(compiledBase);
-  | err => None
+  | _ => None
   };
 };
 
@@ -208,11 +230,11 @@ let getStdlib = (base, buildSystem) => {
   | Bsb(_) =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml"]
-  | BsbNative("3.2.0", Native) =>
+  | BsbNative(v, Native) when v >= "3.2.0" =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml" /+ "native",
     bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
-  | BsbNative("3.2.0", Bytecode) =>
+  | BsbNative(v, Bytecode) when v >= "3.2.0" =>
     let%try_wrap bsPlatformDir = getBsPlatformDir(base);
     [bsPlatformDir /+ "lib" /+ "ocaml" /+ "bytecode",
     bsPlatformDir /+ "vendor" /+ "ocaml" /+ "lib" /+ "ocaml"]
@@ -223,13 +245,15 @@ let getStdlib = (base, buildSystem) => {
     /+ "ocaml"
     /+ "lib"
     /+ "ocaml"]
-  | Dune(Esy) =>
+  | Dune(Esy(v)) =>
     let env = Unix.environment()->Array.to_list;
     switch (Utils.getEnvVar(~env, "OCAMLLIB")) {
     | Some(esy_ocamllib) => Ok([esy_ocamllib])
     | None =>
       let echoCommand = Filename.quote("echo $OCAMLLIB");
-      let%try_wrap esy_ocamllib = getLine("esy -q sh -- -c " ++ echoCommand, ~pwd=base);
+      let commandPrefix = v < "0.5.6" ?
+        "esy -q sh -- -c " : "esy -q sh -c ";
+      let%try_wrap esy_ocamllib = getLine(command ++ echoCommand, ~pwd=base);
       [esy_ocamllib];
     };
   | Dune(Opam(switchPrefix)) =>
@@ -264,7 +288,7 @@ let getCompiler = (rootPath, buildSystem) => {
     | BsbNative(_, Bytecode) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlc.opt"
-    | Dune(Esy) => getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
+    | Dune(Esy(_)) => getExecutableInEsyPath("ocamlopt.opt", ~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt");
       binPath
@@ -285,7 +309,7 @@ let getRefmt = (rootPath, buildSystem) => {
     | Bsb(_) | BsbNative(_, _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "lib" /+ "refmt3.exe"
-    | Dune(Esy) => getExecutableInEsyPath("refmt",~pwd=rootPath)
+    | Dune(Esy(_)) => getExecutableInEsyPath("refmt",~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       Ok(switchPrefix /+ "bin" /+ "refmt")
   };
@@ -296,21 +320,31 @@ let hiddenLocation = (rootPath, buildSystem) => {
     | Bsb(_)
     | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
     | Dune(Opam(_)) => Ok(rootPath /+ "_build" /+ ".lsp")
-    | Dune(Esy) =>
-      let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath);
+    | Dune(Esy(_)) =>
+      let%try_wrap esyTargetDir = getEsyCompiledBase();
       rootPath /+ esyTargetDir /+ ".lsp"
   };
 };
 
-let inferPackageManager = (projectRoot) => {
+let inferPackageManager = projectRoot => {
   let hasEsyDir = Files.exists(projectRoot /+ "_esy");
 
-  switch(getLine("opam config var prefix", ~pwd=projectRoot)) {
-    | Ok(prefix) when !hasEsyDir =>
-      Log.log("Detected `opam` dependency manager for local use");
-      Ok(Opam(prefix))
-    | _ =>
+  let esy = getLine("esy --version", ~pwd=projectRoot);
+  let opam = getLine("opam config var prefix", ~pwd=projectRoot);
+
+  if (hasEsyDir) {
+    switch (esy) {
+    | Ok(v) =>
       Log.log("Detected `esy` dependency manager for local use");
-      Ok(Esy)
+      Ok(Esy(v));
+    | _ => Error("Couldn't get esy version")
+    };
+  } else {
+    switch (opam) {
+    | Ok(prefix) =>
+      Log.log("Detected `opam` dependency manager for local use");
+      Ok(Opam(prefix));
+    | _ => Error("Couldn't get opam switch prefix")
+    };
   };
 };

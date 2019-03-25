@@ -3,7 +3,7 @@ open Infix;
 open TopTypes;
 
 module Show = {
-  let state = ({rootPath}, {localModules, compilerPath, dependencyModules, pathsForModule}) => {
+  let state = ({rootPath}, {localModules, dependencyModules, pathsForModule}) => {
     "Root: " ++ rootPath ++
     "\nLocal\n"++
     (Belt.List.map(localModules, (name) => {
@@ -69,7 +69,7 @@ let rec getAffectedFiles = (root, lines) => switch lines {
       | [one, ..._] => [one |> String.trim |> Utils.toUri, ...getAffectedFiles(root, rest)]
       | _ => getAffectedFiles(root, [two, ...rest])
     }
-  | [one, ...rest] => {
+  | [_, ...rest] => {
     /* Log.log(
       "Not covered " ++ one
     ); */
@@ -82,7 +82,7 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   /** TODO refactor so Dune projects don't get bsconfig.json handling below */
   let%opt_consume (buildCommand, commandDirectory) = buildCommand;
   Log.log(">> Build system running: " ++ buildCommand);
-  let (stdout, stderr, success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
+  let (stdout, stderr, _success) = Commands.execFull(~pwd=commandDirectory, buildCommand);
   Log.log(">>> stdout");
   Log.log(Utils.joinLines(stdout));
   Log.log(">>> stderr");
@@ -94,7 +94,6 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   files |. Belt.List.forEach(uri => {
     if (Utils.endsWith(uri, "bsconfig.json")) {
       bsconfigClean := false;
-      open Util.JsonShort;
       Log.log("Bsconfig.json sending");
       reportDiagnostics(
         uri, `BuildFailed(stdout @ stderr)
@@ -105,24 +104,49 @@ let runBuildCommand = (~reportDiagnostics, state, root, buildCommand) => {
   });
   if (bsconfigClean^) {
     Log.log("Cleaning bsconfig.json");
-      open Util.JsonShort;
     reportDiagnostics(bsconfigJson, `BuildSucceeded)
   }
   /* TODO report notifications here */
 };
 
-let newBsPackage = (~reportDiagnostics, state, rootPath) => {
+let escapePpxFlag = flag => {
+  /* ppx escaping not supported on windows yet */
+  if (Sys.os_type == "Win32") {
+    flag
+  } else {
+    let parts = Utils.split_on_char(' ', flag);
+    switch(parts) {
+      | ["-ppx", ...ppx] => "-ppx " ++ (String.concat(" ", ppx) |> Filename.quote)
+      | _ => flag
+    }
+  }
+};
+
+let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath) => {
   let%try raw = Files.readFileResult(rootPath /+ "bsconfig.json");
   let config = Json.parse(raw);
 
   let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
-  let%try buildSystem = BuildSystem.detect(rootPath, config);
-  let bsb = bsPlatform /+ "lib" /+ "bsb.exe";
+
+  let%try buildSystem = switch overrideBuildSystem {
+    | None => BuildSystem.detect(rootPath, config)
+    | Some(s) => Ok(s)
+  };
+
+  let%try bsb = Files.ifExists(bsPlatform /+ "lib" /+ "bsb.exe") |> RResult.orError(bsPlatform /+ "lib" /+ "bsb.exe not found. aborting");
+
   let buildCommand = switch buildSystem {
     | Bsb(_) => bsb ++ " -make-world"
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune(_) => assert(false)
   };
+
+  Log.log({|📣 📣 NEW BSB PACKAGE 📣 📣|});
+  /* failwith("Wat"); */
+  Log.log("- location: " ++ rootPath);
+  Log.log("- bsPlatform: " ++ bsPlatform);
+  Log.log("- buildSystem: " ++ BuildSystem.show(buildSystem));
+  Log.log("- build command: " ++ buildCommand);
 
   if (state.settings.autoRebuild) {
     runBuildCommand(~reportDiagnostics, state, rootPath, Some((buildCommand, rootPath)));
@@ -173,7 +197,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   let (flags, opens) = switch buildSystem {
     /* Bsb-native's support for merlin is not dependable */
     /* So I have to reimplement the compiler flags here. */
-    | BsbNative(v, _) =>
+    | BsbNative(_, _) =>
       let defaultFlags = [
         "-w -30-40+6+7+27+32..39+44+45+101",
       ];
@@ -189,7 +213,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
       let ppxs = config |> Json.get("ppx-flags") |?> Json.array |?>> Utils.filterMap(Json.string) |? [];
       Log.log("Getting hte ppxs yall");
       let flags = flags @ (Belt.List.map(ppxs, name => {
-        MerlinFile.fixPpx("-ppx " ++ name, rootPath)
+        MerlinFile.fixPpx("-ppx " ++ Filename.quote(name), rootPath)
       }));
       let flags = switch (config |> Json.get("warnings") |?> Json.get("number") |?> Json.string) {
         | None => flags
@@ -197,10 +221,9 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
       };
       (flags @ [
         "-ppx " ++ bsPlatform /+ "lib" /+ "bsppx.exe"
-
       ], opens)
     | _ => {
-      let flags = MerlinFile.getFlags(rootPath) |> RResult.withDefault([""]);
+      let flags = MerlinFile.getFlags(rootPath) |> RResult.withDefault([""]) |> List.map(escapePpxFlag);
       let opens = List.fold_left((opens, item) => {
         let parts = Utils.split_on_char(' ', item);
         let rec loop = items => switch items {
@@ -226,12 +249,17 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
         };
         spec |?> Json.get("module") |?> Json.string
       } |? "commonjs";
-      let flags = jsPackageMode == "es6" ? [
-        "-bs-package-name",
-        config |> Json.get("name") |?> Json.string |? "unnamed",
-        "-bs-package-output",
-        "es6:node_modules/.lsp",
-        ...flags] : flags;
+      let flags = switch (jsPackageMode) {
+        | "es6" as packageMode
+        | "es6-global" as packageMode => [
+            "-bs-package-name",
+            config |> Json.get("name") |?> Json.string |? "unnamed",
+            ...packageMode == "es6"
+              ? ["-bs-package-output", "es6:node_modules/.lsp", ...flags]
+              : flags
+          ]
+        | _ => flags;
+      };
       /* flags */
       ["-bs-no-builtin-ppx-ml", ...flags];
     }
@@ -268,7 +296,7 @@ let newBsPackage = (~reportDiagnostics, state, rootPath) => {
   };
 };
 
-let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
+let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath) => {
   let rec findJbuilderProjectRoot = (path) => {
     if (path == "/") {
       RResult.Error("Unable to find project root dir")
@@ -287,12 +315,22 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     }
   };
 
-  let%try projectRoot = findJbuilderProjectRoot(Filename.dirname(rootPath));
+  /* `Filename.dirname` strips the current path segment even if it's a
+   * directory, which means it would disallow projects where the source files
+   * are at the toplevel, i.e. co-located with the e.g. `dune-project` file.
+   */
+  let%try projectRoot = findJbuilderProjectRoot(
+    Sys.is_directory(rootPath) ? rootPath : Filename.dirname(rootPath)
+  );
   Log.log("=== Project root: " ++ projectRoot);
 
-  let%try pkgMgr = BuildSystem.inferPackageManager(projectRoot);
-
-  let buildSystem = BuildSystem.Dune(pkgMgr);
+  let%try (pkgMgr, buildSystem) = switch overrideBuildSystem {
+    | None =>
+      let%try pkgMgr = BuildSystem.inferPackageManager(projectRoot);
+      Ok((pkgMgr, BuildSystem.Dune(pkgMgr)));
+    | Some(BuildSystem.Dune(mgr)) => Ok((mgr, Dune(mgr)))
+    | Some(_) => failwith("Invalid build system override when creating a new dune package")
+  };
 
   let%try buildDir =
     BuildSystem.getCompiledBase(projectRoot, buildSystem)
@@ -302,7 +340,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   Log.log("=== Build dir:    " ++ buildDir);
 
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
-  let (source, build, flags) = MerlinFile.parseMerlin("", merlinRaw);
+  let (source, _build, flags) = MerlinFile.parseMerlin("", merlinRaw);
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
@@ -324,7 +362,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
   let rel = Files.relpath(projectRoot, rootPath);
   let compiledBase = switch packageName {
     | `NoName => buildDir /+ "default" /+ rel
-    | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs"
+    | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte"
     | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs"
   };
   let libraryName = switch packageName {
@@ -344,14 +382,14 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     let namespaced = switch packageName {
       | `NoName | `Executable(_) => name
       | `Library(libraryName) =>
-        String.capitalize(libraryName) ++ "__" ++ String.capitalize(name)
+        String.capitalize_ascii(libraryName) ++ "__" ++ String.capitalize_ascii(name)
     };
     Log.log("Local file: " ++ (rootPath /+ filename));
     let implCmtPath =
       compiledBase
         /+ (
           fold(libraryName, "", l => l ++ "__")
-          ++ String.capitalize(Filename.chop_extension(filename))
+          ++ String.capitalize_ascii(Filename.chop_extension(filename))
           ++ ".cmt"
         );
     Log.log("Local .cmt file: " ++ implCmtPath);
@@ -376,8 +414,9 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
         | _ => Error("Not a library")
       };
       let rel = Files.relpath(projectRoot, otherPath);
-      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs";
-      Log.log("Other directory: " ++ compiledBase);
+      let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte";
+      Log.log("Found " ++ libraryName ++ " defined in " ++ jbuildPath);
+      Log.log("Compiled base: " ++ compiledBase);
       Ok((compiledBase, FindFiles.collectFiles(~compiledTransform=modName => {
         if (modName == libraryName) {
           modName
@@ -407,7 +446,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     |> List.filter(FindFiles.isCompiledFile)
     |> List.map(name => {
       let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-      (Filename.chop_extension(name) |> String.capitalize, SharedTypes.Impl(compiled, Some(path /+ name)));
+      (Filename.chop_extension(name) |> String.capitalize_ascii, SharedTypes.Impl(compiled, Some(path /+ name)));
     })
   })
   |> List.concat;
@@ -419,14 +458,14 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
   libraryName |?< libraryName => Hashtbl.replace(
     pathsForModule,
-    String.capitalize(libraryName),
+    String.capitalize_ascii(libraryName),
     Impl(compiledBase /+ libraryName ++ ".cmt", None)
   );
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
   let buildCommand = switch (pkgMgr) {
-    | Esy =>
+    | Esy(_) =>
       Some(("esy", projectRoot))
     | Opam(switchPrefix) =>
       if (Files.exists(switchPrefix /+ "bin" /+ "dune")) {
@@ -457,7 +496,7 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
     buildSystem,
     buildCommand,
     /* TODO check if there's a module called that */
-    opens: fold(libraryName, [], libraryName => [String.capitalize(libraryName)]),
+    opens: fold(libraryName, [], libraryName => [String.capitalize_ascii(libraryName)]),
     tmpPath: hiddenLocation,
     compilationFlags: flags |> String.concat(" "),
     includeDirectories: [compiledBase, ...otherDirectories] @ dependencyDirectories,
@@ -473,26 +512,33 @@ let newJbuilderPackage = (~reportDiagnostics, state, rootPath) => {
 
 
 
-let findRoot = (uri, packagesByRoot) => {
-  let%opt path = Utils.parseUri(uri);
-  let rec loop = path => {
-    if (path == "/") {
-      None
-    } else if (Hashtbl.mem(packagesByRoot, path)) {
-      Some(`Root(path))
-    } else if (Files.exists(path /+ "bsconfig.json")) {
-      Some(`Bs(path))
-    } else if (Files.exists(path /+ "dune")) {
-      Log.log("Found a `dune` file at " ++ path);
-      Some(`Jbuilder(path))
-    } else if (Files.exists(path /+ ".merlin")) {
-      Log.log("Found a `.merlin` file at " ++ path);
-      Some(`Jbuilder(path))
-    } else {
+let findRoot = (uri, packagesByRoot, overrides) => {
+  let override = overrides->Belt.List.getBy(((prefix, _system)) => {
+    Util.Utils.startsWith(uri, prefix)
+  });
+  switch override {
+    | Some((root, system)) => Some(`Override(root, system))
+    | None =>
+      let%opt path = Utils.parseUri(uri);
+      let rec loop = path => {
+        if (path == "/") {
+          None
+        } else if (Hashtbl.mem(packagesByRoot, path)) {
+          Some(`Root(path))
+        } else if (Files.exists(path /+ "bsconfig.json")) {
+          Some(`Bs(path))
+        } else if (Files.exists(path /+ "dune")) {
+          Log.log("Found a `dune` file at " ++ path);
+          Some(`Jbuilder(path))
+        } else if (Files.exists(path /+ ".merlin")) {
+          Log.log("Found a `.merlin` file at " ++ path);
+          Some(`Jbuilder(path))
+        } else {
+          loop(Filename.dirname(path))
+        }
+      };
       loop(Filename.dirname(path))
-    }
-  };
-  loop(Filename.dirname(path))
+  }
 };
 
 let newPackageForRoot = (~reportDiagnostics, state, root) => {
@@ -517,11 +563,22 @@ let getPackage = (~reportDiagnostics, uri, state) => {
   if (Hashtbl.mem(state.rootForUri, uri)) {
     RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
   } else {
-    let%try root = findRoot(uri, state.packagesByRoot) |> RResult.orError("No root directory found");
+    let%try root = findRoot(uri, state.packagesByRoot, state.settings.buildSystemOverrideByRoot) |> RResult.orError("No root directory found");
     let%try package = switch root {
     | `Root(rootPath) =>
       Hashtbl.replace(state.rootForUri, uri, rootPath);
       RResult.Ok(Hashtbl.find(state.packagesByRoot, Hashtbl.find(state.rootForUri, uri)))
+    | `Override(rootPath, (Bsb(_) | BsbNative(_)) as buildSystem) =>
+      let%try package = newBsPackage(~overrideBuildSystem=buildSystem, ~reportDiagnostics, state, rootPath);
+      Files.mkdirp(package.tmpPath);
+      let package = {
+        ...package,
+        refmtPath: state.settings.refmtLocation |?? package.refmtPath,
+        lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
+      };
+      Hashtbl.replace(state.rootForUri, uri, package.basePath);
+      Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      RResult.Ok(package)
     | `Bs(rootPath) =>
       let%try package = newBsPackage(~reportDiagnostics, state, rootPath);
       Files.mkdirp(package.tmpPath);
@@ -530,6 +587,13 @@ let getPackage = (~reportDiagnostics, uri, state) => {
         refmtPath: state.settings.refmtLocation |?? package.refmtPath,
         lispRefmtPath: state.settings.lispRefmtLocation |?? package.lispRefmtPath,
       };
+      Hashtbl.replace(state.rootForUri, uri, package.basePath);
+      Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      RResult.Ok(package)
+    | `Override(path, (Dune(_)) as buildSystem) =>
+      Log.log("]] Making a new jbuilder package at " ++ path);
+      let%try package = newJbuilderPackage(~overrideBuildSystem=buildSystem, ~reportDiagnostics, state, path);
+      Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
       RResult.Ok(package)
@@ -567,7 +631,7 @@ let getPackage = (~reportDiagnostics, uri, state) => {
 let isMl = path =>
   Filename.check_suffix(path, ".ml") || Filename.check_suffix(path, ".mli");
 
-let odocToMd = text => MarkdownOfOCamldoc.convert(0, text);
+let odocToMd = text => MarkdownOfOCamldoc.convert(text);
 let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
 
 let converter = (src, usePlainText) => {
@@ -735,10 +799,7 @@ let getInterfaceFile = (uri, state, ~package: TopTypes.package) => {
   : package.includeDirectories;
   let%try refmtPath = refmtForUri(uri, package);
   AsYouType.getInterface(
-    ~compilerVersion=package.compilerVersion,
-    ~uri,
     ~moduleName,
-    ~allLocations=state.settings.recordAllLocations,
     ~basePath=package.basePath,
     ~reasonFormat=switch (package.buildSystem) {
       | Bsb(_) | BsbNative(_, Js) => Utils.endsWith(uri, "re") || Utils.endsWith(uri, "rei")
@@ -910,7 +971,7 @@ let fileForModule = (state,  ~package, modname) => {
     }
   } : None;
   switch file {
-    | Some(f) => file
+    | Some(_) => file
     | None =>
       let%opt (file, _) = docsForModule(modname, state, ~package);
       Some(file)
@@ -922,7 +983,7 @@ let extraForModule = (state, ~package, modname) => {
     let paths = Hashtbl.find(package.pathsForModule, modname);
     /* TODO do better? */
     let%opt src = SharedTypes.getSrc(paths);
-    let%opt {file, extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> RResult.toOptionAndLog;
+    let%opt {extra} = tryExtra(getCompilationResult(Utils.toUri(src), state, ~package)) |> RResult.toOptionAndLog;
     Some(extra)
   } else {
     None;

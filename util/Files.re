@@ -182,7 +182,10 @@ let readDirectory = (dir) => {
     | Some(name) when name == Filename.current_dir_name || name == Filename.parent_dir_name => loop(handle)
     | Some(name) => [name, ...loop(handle)]
     };
-  loop(Unix.opendir(dir))
+  switch (Unix.opendir(dir)) {
+    | exception Unix.Unix_error(Unix.ENOENT, "opendir", _dir) => []
+    | handle => loop(handle)
+  }
 };
 
 let rec mkdirp = (dest) =>
@@ -237,7 +240,7 @@ let rec collectDirs = (path) => {
   }
 };
 
-let rec collect = (~checkDir=x => true, path, test) =>
+let rec collect = (~checkDir=_ => true, path, test) =>
   switch (maybeStat(path)) {
   | None => []
   | Some({Unix.st_kind: Unix.S_DIR}) =>

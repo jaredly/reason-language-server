@@ -84,7 +84,6 @@ let parseLoc = text => {
     let line = Str.matched_group(1, text) |> int_of_string;
     let c0 = Str.matched_group(2, text) |> int_of_string;
     let c1 = Str.matched_group(3, text) |> int_of_string;
-    let final = Str.match_end();
     Some((line - 1, c0, c1))
   } else {
     /* Log.log("Cannot parse type error: " ++ text); */
@@ -113,14 +112,13 @@ let parseDependencyError = text => {
   let rx = Str.regexp({|Error: The files \(.+\)\.cmi
        and \(.+\)\.cmi
        make inconsistent assumptions over interface \([A-Za-z_-]+\)|});
-  
+
   switch (Str.search_forward(rx, text, 0)) {
   | exception Not_found => None
-  | x =>
-    let dep = Str.matched_group(1, text) |> Filename.basename |> String.capitalize;
-    let base = Str.matched_group(2, text) |> Filename.basename |> String.capitalize;
+  | _ =>
+    let dep = Str.matched_group(1, text) |> Filename.basename |> String.capitalize_ascii;
+    let base = Str.matched_group(2, text) |> Filename.basename |> String.capitalize_ascii;
     let interface = Str.matched_group(3, text);
-    let final = Str.match_end();
     Some((dep, base, interface))
   }
 };
@@ -149,9 +147,9 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sour
   }
 };
 
-let getInterface = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
+let getInterface = (~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, compilerPath, refmtPath, includes, flags) => {
   let interface = false;
-  let%try (syntaxError, astFile) = switch (refmtPath) {
+  let%try (_syntaxError, astFile) = switch (refmtPath) {
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
       let astFile = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
@@ -163,7 +161,7 @@ let getInterface = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLoc
     | Error(lines) => {
       Error("Failed to generate interface file\n\n" ++ String.concat("\n", lines))
     }
-    | Ok((lines, errlines)) =>
+    | Ok((lines, _errlines)) =>
     let text = String.concat("\n", lines);
     Log.log("GOT ITNERFACE");
     Log.log(text);
@@ -174,6 +172,51 @@ let getInterface = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLoc
     }
   }
 };
+
+let cmtPath = (~cacheLocation, ~moduleName, ~uri) => {
+  let interface = Utils.endsWith(uri, "i");
+  cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
+};
+
+let isMl = (uri) =>Utils.endsWith(uri, "ml") || Utils.endsWith(uri, "mli");
+
+let getParsetree = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
+  (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.astForCmt
+    | V406 => Process_406.astForCmt
+    | V407 => Process_407.astForCmt
+  })(cmt);
+};
+
+/* let getSource = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let%try parsetree = getParsetree(~cacheLocation, ~compilerVersion, ~moduleName, ~uri);
+  if (isMl(uri)) {
+    switch (parsetree) {
+      | `Implementation(str) => Pprintast.structure(Format.str_formatter, str)
+      | `Interface(int) => Pprintast.signature(Format.str_formatter, int)
+    };
+    Ok(Format.flush_str_formatter())
+  } else {
+    switch (parsetree) {
+      | `Implementation(str) =>
+        Reason_toolchain.RE.print_implementation(Format.str_formatter, structure);
+      | `Interface(int) =>
+      ()
+    };
+    Ok("")
+  }
+};
+
+let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
+  let cmt = cmtPath(~cacheLocation, ~moduleName, ~uri);
+  /* (switch compilerVersion {
+    | BuildSystem.V402 => Process_402.astForCmt
+    | V406 => Process_406.astForCmt
+    | V407 => Process_407.astForCmt
+  })(cmt); */
+  Ok("NVM")
+}; */
 
 let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
@@ -190,9 +233,10 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     | V406 => Process_406.fullForCmt
     | V407 => Process_407.fullForCmt
   })(~moduleName, ~allLocations);
+  let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
+  try (Unix.unlink(cmtPath)) { | _ => ()};
   switch (runBsc(~basePath, ~interface, ~reasonFormat, ~command="-c", compilerPath, astFile, includes, flags)) {
     | Error(lines) => {
-      let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
       if (!Files.isFile(cmtPath)) {
         Ok(TypeError(String.concat("\n", lines), SharedTypes.initFull(moduleName, uri)))
       } else {
@@ -204,7 +248,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
             SyntaxError(String.concat("\n", s), errorText, {file, extra})
           | None => {
             let errorText = switch (parseDependencyError(errorText)) {
-              | Some((name, oname, iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
+              | Some((name, _oname, _iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
               | None => errorText
             };
             TypeError(errorText, {file, extra})
@@ -213,8 +257,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       }
     }
     | Ok((lines, error)) => {
-      let cmt = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
-      let%try_wrap full = fullForCmt(cmt, uri, x => x);
+      let%try_wrap full = fullForCmt(cmtPath, uri, x => x);
       Success(String.concat("\n", lines @ error), full)
     }
   }

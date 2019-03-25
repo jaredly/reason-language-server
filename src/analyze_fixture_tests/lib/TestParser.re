@@ -28,7 +28,7 @@ let rec getUntilNextSection = lines => switch lines {
       let (lines, after) = getUntilNextSection(rest);
       ([line, ...lines], after)
     }
-    | Some(header) => ([], lines)
+    | Some(_) => ([], lines)
   }
 };
 

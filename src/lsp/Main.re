@@ -49,7 +49,7 @@ let getInitialState = (params) => {
 
   Files.mkdirp(rootPath /+ "node_modules" /+ ".lsp");
   Log.setLocation(rootPath /+ "node_modules" /+ ".lsp" /+ "debug.log");
-  Log.log("Hello from " ++ Sys.executable_name);
+  Log.log("Hello - from " ++ Sys.executable_name);
   Log.log("Previous log location: " ++ Log.initial_dest);
 
   Rpc.sendNotification(
@@ -85,10 +85,6 @@ let getInitialState = (params) => {
     ),
   );
 
-  open InfixResult;
-
-  let packagesByRoot = Hashtbl.create(1);
-
   /* if client needs plain text in any place, we disable markdown everywhere */
   let clientNeedsPlainText = ! Infix.(
       Json.getPath("capabilities.textDocument.hover.contentFormat", params) |?> Protocol.hasMarkdownCap |? true
@@ -122,8 +118,6 @@ let getInitialState = (params) => {
   Ok({...state, settings: {...state.settings, clientNeedsPlainText}})
 };
 
-open TopTypes;
-
 let tick = state => {
   NotificationHandlers.checkPackageTimers(state);
   Diagnostics.checkDocumentTimers(state);
@@ -145,7 +139,7 @@ let main = () => {
       out^ |?< close_out;
     | [|_, "-h" | "--help"|] | _ =>
       print_endline({|
-## Reason Language Server ##
+🎉 Reason Language Server 🎉 
 
 Usage: run without arguments, and communicate over stdin/stdout,
 following the language server protocol as defined in

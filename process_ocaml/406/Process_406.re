@@ -20,12 +20,36 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   {file, extra}
 };
 
-let parseTreeForCmt = cmt => {
+/* let sourceForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) => {
-    Ok(Untypeast.untype_structure(structure));
+    Pprintast.structure(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
+    Ok(Format.flush_str_formatter());
   }
+  | Interface(signature) =>
+    Pprintast.signature(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
+    Ok(Format.flush_str_formatter());
+  | _ => Error("Not a well-typed implementation")
+  }
+}; */
+
+let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_407);
+
+let astForCmt = cmt => {
+  let%try infos = Shared.tryReadCmt(cmt);
+  switch (infos.cmt_annots) {
+  | Implementation(structure) => {
+    /* The definition of my Compiler_libs_406 is different from ocaml-migrate-parsetree's in
+       a couple small ways that don't actually change the in-memory representation :eyeroll: */
+    Ok(`Implementation(Convert.copy_structure(Obj.magic(Untypeast.untype_structure(structure)))))
+    /* Printast.implementation(Stdlib.Format.str_formatter, Untypeast.untype_structure(structure));
+    Ok(Format.flush_str_formatter()); */
+  }
+  | Interface(signature) =>
+    Ok(`Interface(Convert.copy_signature(Obj.magic(Untypeast.untype_signature(signature)))))
+    /* Printast.interface(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
+    Ok(Format.flush_str_formatter()); */
   | _ => Error("Not a well-typed implementation")
   }
 };

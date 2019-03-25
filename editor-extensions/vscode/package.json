@@ -3,7 +3,7 @@
 	"description": "IDE & Syntax support for Reason/OCaml",
 	"author": "Jared Forsyth",
 	"license": "ISC",
-	"version": "1.3.0",
+	"version": "1.5.2",
 	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
@@ -29,6 +29,14 @@
 				"title": "Restart Reason Language Server"
 			},
 			{
+				"command": "reason-language-server.show_ppxed_source",
+				"title": "Reason: Show the fully ppxed source for this file."
+			},
+			{
+				"command": "reason-language-server.show_ast",
+				"title": "Reason: Show the abstract syntax tree (AST) for this file."
+			},
+			{
 				"command": "reason-language-server.create_interface",
 				"title": "Reason: Create an interface file for this implementation file."
 			}
@@ -47,6 +55,21 @@
 					"type": "string",
 					"description": "Provide a custom location for the language server binary"
 				},
+				"reason_language_server.build_system_override_by_root": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "string",
+						"enum": [
+							"bsb:4.0.7",
+							"dune:esy",
+							"dune:opam:/abs/path/to/switch",
+							"bsb-native:4.0.7:js",
+							"bsb-native:4.0.7:bytecode",
+							"bsb-native:4.0.7:native"
+						]
+					},
+					"description": "Only specify this if build system autodetection isn't working for you (for example if you have a bsconfig.json, and a dune file in the same project). The keys in this object should be in uri format, e.g. file:///some/path/here"
+				},
 				"reason_language_server.refmt": {
 					"type": "string",
 					"description": "Provide a custom location for the refmt binary"
@@ -57,8 +80,8 @@
 				},
 				"reason_language_server.format_width": {
 					"type": "number",
-					"description": "Format width (default=80)",
-					"default": "80"
+					"default": 80,
+					"description": "Format width (default=80)"
 				},
 				"reason_language_server.per_value_codelens": {
 					"type": "boolean",
@@ -112,6 +135,16 @@
 				"language": "reason_lisp",
 				"scopeName": "source.reason_lisp",
 				"path": "./reason-lisp.json"
+			},
+			{
+				"scopeName": "markdown.reason.codeblock",
+				"path": "./reason-markdown-codeblock.json",
+				"injectTo": [
+					"text.html.markdown"
+				],
+				"embeddedLanguages": {
+					"meta.embedded.block.reason": "reason"
+				}
 			}
 		],
 		"languages": [
@@ -155,6 +188,7 @@
 	},
 	"dependencies": {
 		"vscode": "^1.1.17",
-		"vscode-languageclient": "^4.1.3"
+		"vscode-languageclient": "^4.1.3",
+		"vscode-languageserver-types": "^3.14.0"
 	}
 }

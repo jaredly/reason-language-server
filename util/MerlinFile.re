@@ -4,7 +4,7 @@ open Infix;
 let fixPpx = (flg, base) => {
   switch (Str.split(Str.regexp_string(" "), flg)) {
     | ["-ppx", ppx] when Str.string_match(Str.regexp("[a-zA-Z_]+"), ppx, 0) && !Str.string_match(Str.regexp("[a-zA-Z_]:"), ppx, 0) => {
-      "-ppx " ++ (base /+ "lib" /+ "bs" /+ "native" /+ String.lowercase(ppx) ++ ".native")
+      "-ppx " ++ (base /+ "lib" /+ "bs" /+ "native" /+ String.lowercase_ascii(ppx) ++ ".native")
     }
     | _ => flg
   }
@@ -40,10 +40,10 @@ let getModulesFromMerlin = (base, text) => {
     let full = maybeConcat(base, dir);
     Files.readDirectory(full) |> List.iter(name => {
       if (Filename.check_suffix(name, ".mli") || Filename.check_suffix(name, ".rei")) {
-        let base = Filename.chop_extension(name) |> String.capitalize;
+        let base = Filename.chop_extension(name) |> String.capitalize_ascii;
         Hashtbl.replace(sourceMap, base, Filename.concat(full, name))
       } else if (Filename.check_suffix(name, ".ml") || Filename.check_suffix(name, ".re")) {
-        let base = Filename.chop_extension(name) |> String.capitalize;
+        let base = Filename.chop_extension(name) |> String.capitalize_ascii;
         if (!Hashtbl.mem(sourceMap, base)) {
           Hashtbl.replace(sourceMap, base, Filename.concat(full, name))
         }
@@ -56,10 +56,10 @@ let getModulesFromMerlin = (base, text) => {
     Files.readDirectory(full) |> List.iter(name => {
       if (Filename.check_suffix(name, ".cmti")) {
         /* TODO handle namespacing */
-        let base = Filename.chop_extension(name) |> String.capitalize;
+        let base = Filename.chop_extension(name) |> String.capitalize_ascii;
         Hashtbl.replace(buildMap, base, Filename.concat(full, name))
       } else if (Filename.check_suffix(name, ".cmt")) {
-        let base = Filename.chop_extension(name) |> String.capitalize;
+        let base = Filename.chop_extension(name) |> String.capitalize_ascii;
         if (!Hashtbl.mem(buildMap, base)) {
           Hashtbl.replace(buildMap, base, Filename.concat(full, name))
         }
@@ -68,7 +68,7 @@ let getModulesFromMerlin = (base, text) => {
   });
 
   let nm = Filename.concat(base, "node_modules");
-  let (local, deps) = Hashtbl.fold((modname, path, (local, deps)) => {
+  let (local, deps) = Hashtbl.fold((_modname, path, (local, deps)) => {
     let item = (path, None);
     if (Utils.startsWith(path, nm) || !Utils.startsWith(path, base)) {
       (local, [item, ...deps])
@@ -94,14 +94,14 @@ let getBackend = (rootPath) => {
     let ic = open_in(path);
     let rec loop = () =>
       switch (input_line(ic)) {
-      | exception End_of_file => 
+      | exception End_of_file =>
         close_in(ic);
         RResult.Ok("js")
-      | s => 
+      | s =>
         if (s == "####{BSB GENERATED: NO EDIT") {
           switch(input_line(ic)) {
             | exception End_of_file => RResult.Error("Bsb merlin comment not ended correctly");
-            | backendLine => 
+            | backendLine =>
             let len = String.length("# -backend ");
             let totalLen = String.length(backendLine);
             try (RResult.Ok(String.sub(backendLine, len, totalLen - len))) {

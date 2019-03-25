@@ -4,5 +4,5 @@
   (public_name ReasonLanguageServer.Compiler_libs_406)
   (modules_without_implementation annot outcometree asttypes cmo_format compdynlink parsetree)
   (libraries Current)
-  (flags :standard -w -A)
+  (flags :standard -w -9)
 )

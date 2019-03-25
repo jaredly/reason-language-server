@@ -95,7 +95,7 @@ let rec asSimpleType = t => {
   }
 };
 
-let rec asSimpleDeclaration = (name, t) => {
+let asSimpleDeclaration = (name, t) => {
   open SharedTypes;
   {
     SimpleType.name,
@@ -118,7 +118,7 @@ let rec asSimpleDeclaration = (name, t) => {
           switch (cd_args) {
             | Cstr_tuple(args) =>
               args->Belt.List.map(asSimpleType)
-            | Cstr_record(labels) => []
+            | Cstr_record(_) => []
           },
           switch (cd_res) {
           | None => None
