@@ -112,6 +112,10 @@ Useful if you're developing the language server itself.
 - `reloadOnChange` - reload the server when the binary is updated (bool)
 - `show_debug_errors` - pipe the server's stderr into the output pane (bool)
 
+### Atom
+
+Install https://atom.io/packages/ide-reason
+
 ### Troubleshooting
 
 NOTE: reason-language-server runs bsb or dune *automatically* for you, it is not necessary to have a separate process running `bsb -w`. In fact, having a separate process running can sometimes get the editor into a weird state.
