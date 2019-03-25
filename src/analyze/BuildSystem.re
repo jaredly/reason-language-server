@@ -253,7 +253,7 @@ let getStdlib = (base, buildSystem) => {
       let echoCommand = Filename.quote("echo $OCAMLLIB");
       let commandPrefix = v < "0.5.6" ?
         "esy -q sh -- -c " : "esy -q sh -c ";
-      let%try_wrap esy_ocamllib = getLine(command ++ echoCommand, ~pwd=base);
+      let%try_wrap esy_ocamllib = getLine(commandPrefix ++ echoCommand, ~pwd=base);
       [esy_ocamllib];
     };
   | Dune(Opam(switchPrefix)) =>
