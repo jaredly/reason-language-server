@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - checkout
-      - run: sudo npm install -g esy@0.4.9
+      - run: sudo npm install -g esy@0.5.6
 
       # Download and cache dependencies
       - restore_cache:
@@ -28,9 +28,9 @@ jobs:
 
       # run tests!
       # - run: esy dune exec Bin -- --help
-      - run: esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
+      - run: esy exec-command --include-build-env cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
       - run: ./ExamplesTests.exe
-      - run: esy exec-command --include-build-env ReasonLanguageServer cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
+      - run: esy exec-command --include-build-env cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
       - save_cache:
           paths:
@@ -59,4 +59,3 @@ jobs:
             FILE=./_esy/default/build/default/bin/Bin.exe
             VERSION=$(my-binary --version)
             curl -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: $(file -b --mime-type $FILE)" --data-binary @$FILE "https://uploads.github.com/repos/jaredly/reason-language-server/releases/${CIRCLE_TAG}/assets?name=bin.linux.exe"
-
