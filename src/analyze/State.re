@@ -160,7 +160,11 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
   let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
   let%try_wrap compiledBase = compiledBase |> RResult.orError("You need to run bsb first so that reason-language-server can access the compiled artifacts.\nOnce you've run bsb, restart the language server.");
 
-  let namespace = FindFiles.getNamespace(config);
+  let supportsNamespaceRename = BuildSystem.(switch(buildSystem) {
+    | Bsb(v) when v >= "5.0.0" => true
+    | _ => false
+    });
+  let namespace = FindFiles.getNamespace(~supportsNamespaceRename, config);
   let localSourceDirs = FindFiles.getSourceDirectories(~includeDev=true, rootPath, config);
   Log.log("Got source directories " ++ String.concat(" - ", localSourceDirs));
   let localCompiledDirs = localSourceDirs |> List.map(Infix.fileConcat(compiledBase));
