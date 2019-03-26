@@ -15,10 +15,6 @@ let failer = message => {
 };
 
 
-let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(Ldot(Lident("Js"), "Json"), kind)), [
-  (Nolabel, contents)
-]);
-
 let jsonObject = items => [%expr Js.Json.object_(Js.Dict.fromArray([%e Exp.array(items)]))];
 let jsonArray = items => [%expr Js.Json.array(Belt.List.toArray([%e items]))];
 
@@ -80,23 +76,6 @@ let serializeTransformer =
 
 let declSerializer = MakeSerializer.decl(serializeTransformer);
 
-
-
-
-
-
-
-
-
-
-
-let jsJson = Ldot(Lident("Js"), "Json");
-
-let makeJson = (kind, contents) => Exp.apply(makeIdent(Ldot(jsJson, kind)), [
-  (Nolabel, contents)
-]);
-
-let makeClassify = makeJson("classify");
 
 let list = (transformer, list) => {
     [%expr 

@@ -3446,6 +3446,75 @@
                         ]
                       ]
                     ]
+                  ],
+                  [
+                    "options",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineOptions"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "engineOptions"
+          ],
+          [
+            [],
+            {
+              "name": "engineOptions",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "tailCall",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "bool"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "deserializeErrorMode",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMapSerde__Config",
+                          [],
+                          "errorMode"
+                        ]
+                      ],
+                      []
+                    ]
                   ]
                 ]
               ]
@@ -3851,6 +3920,40 @@
           [
             "TypeMapSerde__Config",
             [],
+            "errorMode"
+          ],
+          [
+            [],
+            {
+              "name": "errorMode",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Result",
+                    [],
+                    null
+                  ],
+                  [
+                    "TrackedExceptions",
+                    [],
+                    null
+                  ],
+                  [
+                    "PlainExceptions",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
             "serializableLockfile"
           ],
           [
@@ -4028,7 +4131,7 @@
                 },
                 [
                   "PStr",
-                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }"
+                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None; options = None })\n            [@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None; options = None })\n            [@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }"
                 ]
               ],
               [

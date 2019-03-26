@@ -43,16 +43,19 @@ type entry = {
 // type rexJsonConfig = {
 //   mode: rexMode,
 // };
+type errorMode = Result | TrackedExceptions | PlainExceptions;
 
-// type bsJsonConfig = {
-//   tailCall: bool,
-// };
+// TODO: support these options (currently ignored)
+type engineOptions = {
+  tailCall: bool,
+  deserializeErrorMode: errorMode
+};
 
 type engineConfig = {
   output: string,
   // a module name
   helpers: option(string),
-  // options: option('options),
+  options: option(engineOptions),
 };
 
 [@rename.rex_json "rex-json"]
@@ -91,8 +94,8 @@ let engineConfigs = engines => {
 let activeEngines = engines => engineConfigs(engines)->Belt.List.map(fst);
 
 [@migrate.engines ({engine, output}) => switch engine {
-  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None}), ezjsonm: None, yojson: None}
-  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None}), ezjsonm: None, yojson: None}
+  | Rex_json => {bs_json: None, rex_json: Some({output, helpers: None, options: None}), ezjsonm: None, yojson: None}
+  | Bs_json => {rex_json: None, bs_json: Some({output, helpers: None, options: None}), ezjsonm: None, yojson: None}
 }]
 [@migrate.globalEngines t => None]
 [@migrate.lockedTypes t => None]

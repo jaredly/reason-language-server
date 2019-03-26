@@ -218,6 +218,12 @@ module Types2 = {
     TypeMapSerde__Config.engineConfig = {
       output: string,
       helpers: option(string),
+      options: option(_TypeMapSerde__Config__engineOptions),
+    }
+  and _TypeMapSerde__Config__engineOptions =
+    TypeMapSerde__Config.engineOptions = {
+      tailCall: bool,
+      deserializeErrorMode: _TypeMapSerde__Config__errorMode,
     }
   and _TypeMapSerde__Config__engines =
     TypeMapSerde__Config.engines = {
@@ -235,6 +241,9 @@ module Types2 = {
       history: option(bool),
       minVersion: option(int),
     }
+  and _TypeMapSerde__Config__errorMode =
+    TypeMapSerde__Config.errorMode =
+      | Result | TrackedExceptions | PlainExceptions
   and _TypeMapSerde__Config__serializableLockfile =
     _TypeMapSerde__Config__Locked__lockfile(
       _TypeMap__DigTypes__shortReference,
@@ -621,7 +630,15 @@ module Types2 = {
   and migrate_TypeMapSerde__Config____simpleDeclaration:
     Types1._TypeMapSerde__Config__simpleDeclaration =>
     _TypeMapSerde__Config__simpleDeclaration =
-    _input_data => _input_data
+    _input_data =>
+      migrate_SharedTypes__SimpleType__declaration(
+        arg =>
+          migrate_TypeMap__DigTypes____typeSource(
+            arg => migrate_TypeMap__DigTypes____shortReference(arg),
+            arg,
+          ),
+        _input_data,
+      )
   and migrate_TypeMapSerde__Config____simpleExpr:
     Types1._TypeMapSerde__Config__simpleExpr =>
     _TypeMapSerde__Config__simpleExpr =
@@ -644,13 +661,13 @@ module Types2 = {
             switch (engine) {
             | Rex_json => {
                 bs_json: None,
-                rex_json: Some({output, helpers: None}),
+                rex_json: Some({output, helpers: None, options: None}),
                 ezjsonm: None,
                 yojson: None,
               }
             | Bs_json => {
                 rex_json: None,
-                bs_json: Some({output, helpers: None}),
+                bs_json: Some({output, helpers: None, options: None}),
                 ezjsonm: None,
                 yojson: None,
               }
@@ -826,7 +843,7 @@ type target = Json.t;
 module Version1 = {
   open Types1;
   let rec deserialize_Analyze__TopTypes____moduleName:
-    Json.t => Belt.Result.t(_Analyze__TopTypes__moduleName, list(string)) =
+    target => Belt.Result.t(_Analyze__TopTypes__moduleName, list(string)) =
     value =>
       (
         string =>
@@ -839,7 +856,7 @@ module Version1 = {
       )
   and deserialize_Asttypes____loc:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Asttypes__loc(arg0), list(string)) =
     (aTransformer, record) =>
       switch (record) {
@@ -871,7 +888,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Location____t:
-    Json.t => Belt.Result.t(_Location__t, list(string)) =
+    target => Belt.Result.t(_Location__t, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -928,7 +945,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Parsetree____attribute:
-    Json.t => Belt.Result.t(_Parsetree__attribute, list(string)) =
+    target => Belt.Result.t(_Parsetree__attribute, list(string)) =
     value =>
       (
         json =>
@@ -961,7 +978,7 @@ module Version1 = {
         value,
       )
   and deserialize_Parsetree____attributes:
-    Json.t => Belt.Result.t(_Parsetree__attributes, list(string)) =
+    target => Belt.Result.t(_Parsetree__attributes, list(string)) =
     value =>
       (
         list =>
@@ -985,13 +1002,13 @@ module Version1 = {
         value,
       )
   and deserialize_Parsetree____core_type:
-    Json.t => Belt.Result.t(_Parsetree__core_type, list(string)) = TransformHelpers.deserialize_Parsetree____core_type
+    target => Belt.Result.t(_Parsetree__core_type, list(string)) = TransformHelpers.deserialize_Parsetree____core_type
   and deserialize_Parsetree____expression:
-    Json.t => Belt.Result.t(_Parsetree__expression, list(string)) = TransformHelpers.deserialize_Parsetree____expression
+    target => Belt.Result.t(_Parsetree__expression, list(string)) = TransformHelpers.deserialize_Parsetree____expression
   and deserialize_Parsetree____pattern:
-    Json.t => Belt.Result.t(_Parsetree__pattern, list(string)) = TransformHelpers.deserialize_Parsetree____pattern
+    target => Belt.Result.t(_Parsetree__pattern, list(string)) = TransformHelpers.deserialize_Parsetree____pattern
   and deserialize_Parsetree____payload:
-    Json.t => Belt.Result.t(_Parsetree__payload, list(string)) =
+    target => Belt.Result.t(_Parsetree__payload, list(string)) =
     constructor =>
       switch (constructor) {
       | Json.Array([Json.String(tag), arg0]) when "PStr" == tag =>
@@ -1053,12 +1070,12 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an array"])
       }
   and deserialize_Parsetree____signature:
-    Json.t => Belt.Result.t(_Parsetree__signature, list(string)) = TransformHelpers.deserialize_Parsetree____signature
+    target => Belt.Result.t(_Parsetree__signature, list(string)) = TransformHelpers.deserialize_Parsetree____signature
   and deserialize_Parsetree____structure:
-    Json.t => Belt.Result.t(_Parsetree__structure, list(string)) = TransformHelpers.deserialize_Parsetree____structure
+    target => Belt.Result.t(_Parsetree__structure, list(string)) = TransformHelpers.deserialize_Parsetree____structure
   and deserialize_SharedTypes__SimpleType__body:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_SharedTypes__SimpleType__body(arg0), list(string)) =
     (sourceTransformer, constructor) =>
       switch (constructor) {
@@ -1276,7 +1293,7 @@ module Version1 = {
       }
   and deserialize_SharedTypes__SimpleType__declaration:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(
         _SharedTypes__SimpleType__declaration(arg0),
         list(string),
@@ -1366,7 +1383,7 @@ module Version1 = {
       }
   and deserialize_SharedTypes__SimpleType__expr:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_SharedTypes__SimpleType__expr(arg0), list(string)) =
     (sourceTransformer, constructor) =>
       switch (constructor) {
@@ -1681,9 +1698,9 @@ module Version1 = {
   and deserialize_Stdlib__hashtbl____t:
     'arg0 'arg1.
     (
-      Json.t => Belt.Result.t('arg0, list(string)),
-      Json.t => Belt.Result.t('arg1, list(string)),
-      Json.t
+      target => Belt.Result.t('arg0, list(string)),
+      target => Belt.Result.t('arg1, list(string)),
+      target
     ) =>
     Belt.Result.t(_Stdlib__hashtbl__t('arg0, 'arg1), list(string))
    =
@@ -1694,14 +1711,14 @@ module Version1 = {
           bTransformer,
         ):
         (
-          Json.t => Belt.Result.t(arg0, list(string)),
-          Json.t => Belt.Result.t(arg1, list(string)),
-          Json.t
+          target => Belt.Result.t(arg0, list(string)),
+          target => Belt.Result.t(arg1, list(string)),
+          target
         ) =>
         Belt.Result.t(_Stdlib__hashtbl__t(arg0, arg1), list(string))
     )
   and deserialize_Stdlib__lexing____position:
-    Json.t => Belt.Result.t(_Stdlib__lexing__position, list(string)) =
+    target => Belt.Result.t(_Stdlib__lexing__position, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -1802,7 +1819,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____custom:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__custom, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__custom, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -1918,7 +1935,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____engine:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__engine, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__engine, list(string)) =
     constructor =>
       switch (constructor) {
       | Json.Array([Json.String(tag)])
@@ -1932,7 +1949,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an array"])
       }
   and deserialize_TypeMapSerde__Config____entry:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__entry, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__entry, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -2021,7 +2038,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____serializableLockfile:
-    Json.t =>
+    target =>
     Belt.Result.t(_TypeMapSerde__Config__serializableLockfile, list(string)) =
     value =>
       (
@@ -2032,7 +2049,7 @@ module Version1 = {
         value,
       )
   and deserialize_TypeMapSerde__Config____simpleDeclaration:
-    Json.t =>
+    target =>
     Belt.Result.t(_TypeMapSerde__Config__simpleDeclaration, list(string)) =
     value =>
       (
@@ -2045,7 +2062,7 @@ module Version1 = {
         value,
       )
   and deserialize_TypeMapSerde__Config____simpleExpr:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__simpleExpr, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__simpleExpr, list(string)) =
     value =>
       (
         deserialize_SharedTypes__SimpleType__expr(
@@ -2057,7 +2074,7 @@ module Version1 = {
         value,
       )
   and deserialize_TypeMapSerde__Config____t:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__t, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__t, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -2195,7 +2212,7 @@ module Version1 = {
       }
   and deserialize_TypeMapSerde__Config__Locked__lockedConfig:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(
         _TypeMapSerde__Config__Locked__lockedConfig(arg0),
         list(string),
@@ -2283,7 +2300,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config__Locked__lockedEntry:
-    Json.t =>
+    target =>
     Belt.Result.t(_TypeMapSerde__Config__Locked__lockedEntry, list(string)) =
     record =>
       switch (record) {
@@ -2378,7 +2395,7 @@ module Version1 = {
       }
   and deserialize_TypeMapSerde__Config__Locked__lockfile:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(
         _TypeMapSerde__Config__Locked__lockfile(arg0),
         list(string),
@@ -2448,7 +2465,7 @@ module Version1 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMap__DigTypes____shortReference:
-    Json.t => Belt.Result.t(_TypeMap__DigTypes__shortReference, list(string)) =
+    target => Belt.Result.t(_TypeMap__DigTypes__shortReference, list(string)) =
     value =>
       (
         json =>
@@ -2513,7 +2530,7 @@ module Version1 = {
       )
   and deserialize_TypeMap__DigTypes____typeMap:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_TypeMap__DigTypes__typeMap(arg0), list(string)) =
     (referenceTransformer, value) =>
       (
@@ -2549,7 +2566,7 @@ module Version1 = {
       )
   and deserialize_TypeMap__DigTypes____typeSource:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_TypeMap__DigTypes__typeSource(arg0), list(string)) =
     (referenceTransformer, constructor) =>
       switch (constructor) {
@@ -2598,66 +2615,66 @@ module Version1 = {
 module Version2 = {
   open Types2;
   let rec deserialize_Analyze__TopTypes____moduleName:
-    Json.t => Belt.Result.t(_Analyze__TopTypes__moduleName, list(string)) = Version1.deserialize_Analyze__TopTypes____moduleName
+    target => Belt.Result.t(_Analyze__TopTypes__moduleName, list(string)) = Version1.deserialize_Analyze__TopTypes____moduleName
   and deserialize_Asttypes____loc:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_Asttypes__loc(arg0), list(string)) = Version1.deserialize_Asttypes____loc
   and deserialize_Location____t:
-    Json.t => Belt.Result.t(_Location__t, list(string)) = Version1.deserialize_Location____t
+    target => Belt.Result.t(_Location__t, list(string)) = Version1.deserialize_Location____t
   and deserialize_Parsetree____attribute:
-    Json.t => Belt.Result.t(_Parsetree__attribute, list(string)) = Version1.deserialize_Parsetree____attribute
+    target => Belt.Result.t(_Parsetree__attribute, list(string)) = Version1.deserialize_Parsetree____attribute
   and deserialize_Parsetree____attributes:
-    Json.t => Belt.Result.t(_Parsetree__attributes, list(string)) = Version1.deserialize_Parsetree____attributes
+    target => Belt.Result.t(_Parsetree__attributes, list(string)) = Version1.deserialize_Parsetree____attributes
   and deserialize_Parsetree____core_type:
-    Json.t => Belt.Result.t(_Parsetree__core_type, list(string)) = Version1.deserialize_Parsetree____core_type
+    target => Belt.Result.t(_Parsetree__core_type, list(string)) = Version1.deserialize_Parsetree____core_type
   and deserialize_Parsetree____expression:
-    Json.t => Belt.Result.t(_Parsetree__expression, list(string)) = Version1.deserialize_Parsetree____expression
+    target => Belt.Result.t(_Parsetree__expression, list(string)) = Version1.deserialize_Parsetree____expression
   and deserialize_Parsetree____pattern:
-    Json.t => Belt.Result.t(_Parsetree__pattern, list(string)) = Version1.deserialize_Parsetree____pattern
+    target => Belt.Result.t(_Parsetree__pattern, list(string)) = Version1.deserialize_Parsetree____pattern
   and deserialize_Parsetree____payload:
-    Json.t => Belt.Result.t(_Parsetree__payload, list(string)) = Version1.deserialize_Parsetree____payload
+    target => Belt.Result.t(_Parsetree__payload, list(string)) = Version1.deserialize_Parsetree____payload
   and deserialize_Parsetree____signature:
-    Json.t => Belt.Result.t(_Parsetree__signature, list(string)) = Version1.deserialize_Parsetree____signature
+    target => Belt.Result.t(_Parsetree__signature, list(string)) = Version1.deserialize_Parsetree____signature
   and deserialize_Parsetree____structure:
-    Json.t => Belt.Result.t(_Parsetree__structure, list(string)) = Version1.deserialize_Parsetree____structure
+    target => Belt.Result.t(_Parsetree__structure, list(string)) = Version1.deserialize_Parsetree____structure
   and deserialize_SharedTypes__SimpleType__body:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_SharedTypes__SimpleType__body(arg0), list(string)) = Version1.deserialize_SharedTypes__SimpleType__body
   and deserialize_SharedTypes__SimpleType__declaration:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(
         _SharedTypes__SimpleType__declaration(arg0),
         list(string),
       ) = Version1.deserialize_SharedTypes__SimpleType__declaration
   and deserialize_SharedTypes__SimpleType__expr:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_SharedTypes__SimpleType__expr(arg0), list(string)) = Version1.deserialize_SharedTypes__SimpleType__expr
   and deserialize_Stdlib__hashtbl____t:
     'arg0 'arg1.
     (
-      Json.t => Belt.Result.t('arg0, list(string)),
-      Json.t => Belt.Result.t('arg1, list(string)),
-      Json.t
+      target => Belt.Result.t('arg0, list(string)),
+      target => Belt.Result.t('arg1, list(string)),
+      target
     ) =>
     Belt.Result.t(_Stdlib__hashtbl__t('arg0, 'arg1), list(string))
    =
     (type arg1, type arg0) => (
       Version1.deserialize_Stdlib__hashtbl____t:
         (
-          Json.t => Belt.Result.t(arg0, list(string)),
-          Json.t => Belt.Result.t(arg1, list(string)),
-          Json.t
+          target => Belt.Result.t(arg0, list(string)),
+          target => Belt.Result.t(arg1, list(string)),
+          target
         ) =>
         Belt.Result.t(_Stdlib__hashtbl__t(arg0, arg1), list(string))
     )
   and deserialize_Stdlib__lexing____position:
-    Json.t => Belt.Result.t(_Stdlib__lexing__position, list(string)) = Version1.deserialize_Stdlib__lexing____position
+    target => Belt.Result.t(_Stdlib__lexing__position, list(string)) = Version1.deserialize_Stdlib__lexing____position
   and deserialize_TypeMapSerde__Config____custom:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__custom, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__custom, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -2786,7 +2803,7 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____engine:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__engine, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__engine, list(string)) =
     constructor =>
       switch (constructor) {
       | Json.Array([Json.String(tag)])
@@ -2806,37 +2823,75 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an array"])
       }
   and deserialize_TypeMapSerde__Config____engineConfig:
-    Json.t =>
+    target =>
     Belt.Result.t(_TypeMapSerde__Config__engineConfig, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
-        let inner = attr_helpers => {
-          let inner = attr_output =>
-            Belt.Result.Ok(
-              {output: attr_output, helpers: attr_helpers}: _TypeMapSerde__Config__engineConfig,
-            );
-          switch (Belt.List.getAssoc(items, "output", (==))) {
-          | None => Belt.Result.Error(["No attribute 'output'"])
+        let inner = attr_options => {
+          let inner = attr_helpers => {
+            let inner = attr_output =>
+              Belt.Result.Ok(
+                {
+                  output: attr_output,
+                  helpers: attr_helpers,
+                  options: attr_options,
+                }: _TypeMapSerde__Config__engineConfig,
+              );
+            switch (Belt.List.getAssoc(items, "output", (==))) {
+            | None => Belt.Result.Error(["No attribute 'output'"])
+            | Some(json) =>
+              switch (
+                (
+                  string =>
+                    switch (string) {
+                    | Json.String(string) => Belt.Result.Ok(string)
+                    | _ => Error(["epected a string"])
+                    }
+                )(
+                  json,
+                )
+              ) {
+              | Belt.Result.Error(error) =>
+                Belt.Result.Error(["attribute 'output'", ...error])
+              | Belt.Result.Ok(data) => inner(data)
+              }
+            };
+          };
+          switch (Belt.List.getAssoc(items, "helpers", (==))) {
+          | None => inner(None)
           | Some(json) =>
             switch (
               (
-                string =>
+                (
+                  (transformer, option) =>
+                    switch (option) {
+                    | Json.Null => Belt.Result.Ok(None)
+                    | _ =>
+                      switch (transformer(option)) {
+                      | Belt.Result.Error(error) =>
+                        Belt.Result.Error(["optional value", ...error])
+                      | Belt.Result.Ok(value) => Belt.Result.Ok(Some(value))
+                      }
+                    }
+                )(
+                  string =>
                   switch (string) {
                   | Json.String(string) => Belt.Result.Ok(string)
                   | _ => Error(["epected a string"])
                   }
+                )
               )(
                 json,
               )
             ) {
             | Belt.Result.Error(error) =>
-              Belt.Result.Error(["attribute 'output'", ...error])
+              Belt.Result.Error(["attribute 'helpers'", ...error])
             | Belt.Result.Ok(data) => inner(data)
             }
           };
         };
-        switch (Belt.List.getAssoc(items, "helpers", (==))) {
+        switch (Belt.List.getAssoc(items, "options", (==))) {
         | None => inner(None)
         | Some(json) =>
           switch (
@@ -2853,25 +2908,67 @@ module Version2 = {
                     }
                   }
               )(
-                string =>
-                switch (string) {
-                | Json.String(string) => Belt.Result.Ok(string)
-                | _ => Error(["epected a string"])
-                }
+                deserialize_TypeMapSerde__Config____engineOptions,
               )
             )(
               json,
             )
           ) {
           | Belt.Result.Error(error) =>
-            Belt.Result.Error(["attribute 'helpers'", ...error])
+            Belt.Result.Error(["attribute 'options'", ...error])
+          | Belt.Result.Ok(data) => inner(data)
+          }
+        };
+      | _ => Belt.Result.Error(["Expected an object"])
+      }
+  and deserialize_TypeMapSerde__Config____engineOptions:
+    target =>
+    Belt.Result.t(_TypeMapSerde__Config__engineOptions, list(string)) =
+    record =>
+      switch (record) {
+      | Json.Object(items) =>
+        let inner = attr_deserializeErrorMode => {
+          let inner = attr_tailCall =>
+            Belt.Result.Ok(
+              {
+                tailCall: attr_tailCall,
+                deserializeErrorMode: attr_deserializeErrorMode,
+              }: _TypeMapSerde__Config__engineOptions,
+            );
+          switch (Belt.List.getAssoc(items, "tailCall", (==))) {
+          | None => Belt.Result.Error(["No attribute 'tailCall'"])
+          | Some(json) =>
+            switch (
+              (
+                bool =>
+                  switch (bool) {
+                  | Json.True => Belt.Result.Ok(true)
+                  | Json.False => Belt.Result.Ok(false)
+                  | _ => Belt.Result.Error(["Expected a bool"])
+                  }
+              )(
+                json,
+              )
+            ) {
+            | Belt.Result.Error(error) =>
+              Belt.Result.Error(["attribute 'tailCall'", ...error])
+            | Belt.Result.Ok(data) => inner(data)
+            }
+          };
+        };
+        switch (Belt.List.getAssoc(items, "deserializeErrorMode", (==))) {
+        | None => Belt.Result.Error(["No attribute 'deserializeErrorMode'"])
+        | Some(json) =>
+          switch (deserialize_TypeMapSerde__Config____errorMode(json)) {
+          | Belt.Result.Error(error) =>
+            Belt.Result.Error(["attribute 'deserializeErrorMode'", ...error])
           | Belt.Result.Ok(data) => inner(data)
           }
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____engines:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__engines, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__engines, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -3007,7 +3104,7 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config____entry:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__entry, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__entry, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -3218,8 +3315,25 @@ module Version2 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
+  and deserialize_TypeMapSerde__Config____errorMode:
+    target => Belt.Result.t(_TypeMapSerde__Config__errorMode, list(string)) =
+    constructor =>
+      switch (constructor) {
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "Result" == tag =>
+        Belt.Result.Ok(Result: _TypeMapSerde__Config__errorMode)
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "TrackedExceptions" == tag =>
+        Belt.Result.Ok(TrackedExceptions: _TypeMapSerde__Config__errorMode)
+      | Json.Array([Json.String(tag)])
+      | Json.String(tag) when "PlainExceptions" == tag =>
+        Belt.Result.Ok(PlainExceptions: _TypeMapSerde__Config__errorMode)
+      | Json.Array([Json.String(tag), ..._]) =>
+        Belt.Result.Error(["Invalid constructor: " ++ tag])
+      | _ => Belt.Result.Error(["Expected an array"])
+      }
   and deserialize_TypeMapSerde__Config____serializableLockfile:
-    Json.t =>
+    target =>
     Belt.Result.t(_TypeMapSerde__Config__serializableLockfile, list(string)) =
     value =>
       (
@@ -3230,12 +3344,22 @@ module Version2 = {
         value,
       )
   and deserialize_TypeMapSerde__Config____simpleDeclaration:
-    Json.t =>
-    Belt.Result.t(_TypeMapSerde__Config__simpleDeclaration, list(string)) = Version1.deserialize_TypeMapSerde__Config____simpleDeclaration
+    target =>
+    Belt.Result.t(_TypeMapSerde__Config__simpleDeclaration, list(string)) =
+    value =>
+      (
+        deserialize_SharedTypes__SimpleType__declaration(
+          deserialize_TypeMap__DigTypes____typeSource(
+            deserialize_TypeMap__DigTypes____shortReference,
+          ),
+        )
+      )(
+        value,
+      )
   and deserialize_TypeMapSerde__Config____simpleExpr:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__simpleExpr, list(string)) = Version1.deserialize_TypeMapSerde__Config____simpleExpr
+    target => Belt.Result.t(_TypeMapSerde__Config__simpleExpr, list(string)) = Version1.deserialize_TypeMapSerde__Config____simpleExpr
   and deserialize_TypeMapSerde__Config____t:
-    Json.t => Belt.Result.t(_TypeMapSerde__Config__t, list(string)) =
+    target => Belt.Result.t(_TypeMapSerde__Config__t, list(string)) =
     record =>
       switch (record) {
       | Json.Object(items) =>
@@ -3476,7 +3600,7 @@ module Version2 = {
       }
   and deserialize_TypeMapSerde__Config__Locked__lockedConfig:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(
         _TypeMapSerde__Config__Locked__lockedConfig(arg0),
         list(string),
@@ -3541,7 +3665,7 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMapSerde__Config__Locked__lockedEntry:
-    Json.t =>
+    target =>
     Belt.Result.t(_TypeMapSerde__Config__Locked__lockedEntry, list(string)) =
     record =>
       switch (record) {
@@ -3699,7 +3823,7 @@ module Version2 = {
       }
   and deserialize_TypeMapSerde__Config__Locked__lockfile:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(
         _TypeMapSerde__Config__Locked__lockfile(arg0),
         list(string),
@@ -3758,28 +3882,28 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_TypeMap__DigTypes____shortReference:
-    Json.t => Belt.Result.t(_TypeMap__DigTypes__shortReference, list(string)) = Version1.deserialize_TypeMap__DigTypes____shortReference
+    target => Belt.Result.t(_TypeMap__DigTypes__shortReference, list(string)) = Version1.deserialize_TypeMap__DigTypes____shortReference
   and deserialize_TypeMap__DigTypes____typeMap:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_TypeMap__DigTypes__typeMap(arg0), list(string)) = Version1.deserialize_TypeMap__DigTypes____typeMap
   and deserialize_TypeMap__DigTypes____typeSource:
     type arg0.
-      (Json.t => Belt.Result.t(arg0, list(string)), Json.t) =>
+      (target => Belt.Result.t(arg0, list(string)), target) =>
       Belt.Result.t(_TypeMap__DigTypes__typeSource(arg0), list(string)) = Version1.deserialize_TypeMap__DigTypes____typeSource
   and serialize_Analyze__TopTypes____moduleName:
-    _Analyze__TopTypes__moduleName => Json.t =
+    _Analyze__TopTypes__moduleName => target =
     value => (s => Json.String(s))(value)
   and serialize_Asttypes____loc:
     'arg0.
-    ('arg0 => Json.t, _Asttypes__loc('arg0)) => Json.t
+    ('arg0 => target, _Asttypes__loc('arg0)) => target
    =
     (aTransformer, record) =>
       Json.Object([
         ("txt", aTransformer(record.txt)),
         ("loc", serialize_Location____t(record.loc)),
       ])
-  and serialize_Location____t: _Location__t => Json.t =
+  and serialize_Location____t: _Location__t => target =
     record =>
       Json.Object([
         (
@@ -3789,7 +3913,7 @@ module Version2 = {
         ("loc_end", serialize_Stdlib__lexing____position(record.loc_end)),
         ("loc_ghost", (b => b ? Json.True : Json.False)(record.loc_ghost)),
       ])
-  and serialize_Parsetree____attribute: _Parsetree__attribute => Json.t =
+  and serialize_Parsetree____attribute: _Parsetree__attribute => target =
     value =>
       (
         ((arg0, arg1)) =>
@@ -3800,7 +3924,7 @@ module Version2 = {
       )(
         value,
       )
-  and serialize_Parsetree____attributes: _Parsetree__attributes => Json.t =
+  and serialize_Parsetree____attributes: _Parsetree__attributes => target =
     value =>
       (
         list =>
@@ -3808,10 +3932,10 @@ module Version2 = {
       )(
         value,
       )
-  and serialize_Parsetree____core_type: _Parsetree__core_type => Json.t = TransformHelpers.serialize_Parsetree____core_type
-  and serialize_Parsetree____expression: _Parsetree__expression => Json.t = TransformHelpers.serialize_Parsetree____expression
-  and serialize_Parsetree____pattern: _Parsetree__pattern => Json.t = TransformHelpers.serialize_Parsetree____pattern
-  and serialize_Parsetree____payload: _Parsetree__payload => Json.t =
+  and serialize_Parsetree____core_type: _Parsetree__core_type => target = TransformHelpers.serialize_Parsetree____core_type
+  and serialize_Parsetree____expression: _Parsetree__expression => target = TransformHelpers.serialize_Parsetree____expression
+  and serialize_Parsetree____pattern: _Parsetree__pattern => target = TransformHelpers.serialize_Parsetree____pattern
+  and serialize_Parsetree____payload: _Parsetree__payload => target =
     constructor =>
       switch (constructor) {
       | PStr(arg0) =>
@@ -3847,11 +3971,11 @@ module Version2 = {
           ),
         ])
       }
-  and serialize_Parsetree____signature: _Parsetree__signature => Json.t = TransformHelpers.serialize_Parsetree____signature
-  and serialize_Parsetree____structure: _Parsetree__structure => Json.t = TransformHelpers.serialize_Parsetree____structure
+  and serialize_Parsetree____signature: _Parsetree__signature => target = TransformHelpers.serialize_Parsetree____signature
+  and serialize_Parsetree____structure: _Parsetree__structure => target = TransformHelpers.serialize_Parsetree____structure
   and serialize_SharedTypes__SimpleType__body:
     'arg0.
-    ('arg0 => Json.t, _SharedTypes__SimpleType__body('arg0)) => Json.t
+    ('arg0 => target, _SharedTypes__SimpleType__body('arg0)) => target
    =
     (sourceTransformer, constructor) =>
       switch (constructor) {
@@ -3931,7 +4055,7 @@ module Version2 = {
       }
   and serialize_SharedTypes__SimpleType__declaration:
     'arg0.
-    ('arg0 => Json.t, _SharedTypes__SimpleType__declaration('arg0)) => Json.t
+    ('arg0 => target, _SharedTypes__SimpleType__declaration('arg0)) => target
    =
     (sourceTransformer, record) =>
       Json.Object([
@@ -3959,7 +4083,7 @@ module Version2 = {
       ])
   and serialize_SharedTypes__SimpleType__expr:
     'arg0.
-    ('arg0 => Json.t, _SharedTypes__SimpleType__expr('arg0)) => Json.t
+    ('arg0 => target, _SharedTypes__SimpleType__expr('arg0)) => target
    =
     (sourceTransformer, constructor) =>
       switch (constructor) {
@@ -4068,15 +4192,15 @@ module Version2 = {
       }
   and serialize_Stdlib__hashtbl____t:
     'arg0 'arg1.
-    ('arg0 => Json.t, 'arg1 => Json.t, _Stdlib__hashtbl__t('arg0, 'arg1)) =>
-    Json.t
+    ('arg0 => target, 'arg1 => target, _Stdlib__hashtbl__t('arg0, 'arg1)) =>
+    target
    =
     (aTransformer, bTransformer) =>
       TransformHelpers.serialize_Stdlib__hashtbl____t(
         aTransformer,
         bTransformer,
       )
-  and serialize_Stdlib__lexing____position: _Stdlib__lexing__position => Json.t =
+  and serialize_Stdlib__lexing____position: _Stdlib__lexing__position => target =
     record =>
       Json.Object([
         ("pos_fname", (s => Json.String(s))(record.pos_fname)),
@@ -4085,7 +4209,7 @@ module Version2 = {
         ("pos_cnum", (i => Json.Number(float_of_int(i)))(record.pos_cnum)),
       ])
   and serialize_TypeMapSerde__Config____custom:
-    _TypeMapSerde__Config__custom => Json.t =
+    _TypeMapSerde__Config__custom => target =
     record =>
       Json.Object([
         ("module", (s => Json.String(s))(record.module_)),
@@ -4114,7 +4238,7 @@ module Version2 = {
         ),
       ])
   and serialize_TypeMapSerde__Config____engine:
-    _TypeMapSerde__Config__engine => Json.t =
+    _TypeMapSerde__Config__engine => target =
     constructor =>
       switch (constructor) {
       | Rex_json => Json.Array([Json.String("rex-json")])
@@ -4123,7 +4247,7 @@ module Version2 = {
       | Yojson => Json.Array([Json.String("yojson")])
       }
   and serialize_TypeMapSerde__Config____engineConfig:
-    _TypeMapSerde__Config__engineConfig => Json.t =
+    _TypeMapSerde__Config__engineConfig => target =
     record =>
       Json.Object([
         ("output", (s => Json.String(s))(record.output)),
@@ -4143,9 +4267,36 @@ module Version2 = {
             record.helpers,
           ),
         ),
+        (
+          "options",
+          (
+            (
+              transformer =>
+                fun
+                | None => Json.Null
+                | Some(v) => transformer(v)
+            )(
+              serialize_TypeMapSerde__Config____engineOptions,
+            )
+          )(
+            record.options,
+          ),
+        ),
+      ])
+  and serialize_TypeMapSerde__Config____engineOptions:
+    _TypeMapSerde__Config__engineOptions => target =
+    record =>
+      Json.Object([
+        ("tailCall", (b => b ? Json.True : Json.False)(record.tailCall)),
+        (
+          "deserializeErrorMode",
+          serialize_TypeMapSerde__Config____errorMode(
+            record.deserializeErrorMode,
+          ),
+        ),
       ])
   and serialize_TypeMapSerde__Config____engines:
-    _TypeMapSerde__Config__engines => Json.t =
+    _TypeMapSerde__Config__engines => target =
     record =>
       Json.Object([
         (
@@ -4210,7 +4361,7 @@ module Version2 = {
         ),
       ])
   and serialize_TypeMapSerde__Config____entry:
-    _TypeMapSerde__Config__entry => Json.t =
+    _TypeMapSerde__Config__entry => target =
     record =>
       Json.Object([
         ("file", (s => Json.String(s))(record.file)),
@@ -4282,8 +4433,16 @@ module Version2 = {
           ),
         ),
       ])
+  and serialize_TypeMapSerde__Config____errorMode:
+    _TypeMapSerde__Config__errorMode => target =
+    constructor =>
+      switch (constructor) {
+      | Result => Json.Array([Json.String("Result")])
+      | TrackedExceptions => Json.Array([Json.String("TrackedExceptions")])
+      | PlainExceptions => Json.Array([Json.String("PlainExceptions")])
+      }
   and serialize_TypeMapSerde__Config____serializableLockfile:
-    _TypeMapSerde__Config__serializableLockfile => Json.t =
+    _TypeMapSerde__Config__serializableLockfile => target =
     value =>
       (
         serialize_TypeMapSerde__Config__Locked__lockfile(
@@ -4293,7 +4452,7 @@ module Version2 = {
         value,
       )
   and serialize_TypeMapSerde__Config____simpleDeclaration:
-    _TypeMapSerde__Config__simpleDeclaration => Json.t =
+    _TypeMapSerde__Config__simpleDeclaration => target =
     value =>
       (
         serialize_SharedTypes__SimpleType__declaration(
@@ -4305,7 +4464,7 @@ module Version2 = {
         value,
       )
   and serialize_TypeMapSerde__Config____simpleExpr:
-    _TypeMapSerde__Config__simpleExpr => Json.t =
+    _TypeMapSerde__Config__simpleExpr => target =
     value =>
       (
         serialize_SharedTypes__SimpleType__expr(
@@ -4316,7 +4475,7 @@ module Version2 = {
       )(
         value,
       )
-  and serialize_TypeMapSerde__Config____t: _TypeMapSerde__Config__t => Json.t =
+  and serialize_TypeMapSerde__Config____t: _TypeMapSerde__Config__t => target =
     record =>
       Json.Object([
         ("version", (i => Json.Number(float_of_int(i)))(record.version)),
@@ -4399,8 +4558,8 @@ module Version2 = {
       ])
   and serialize_TypeMapSerde__Config__Locked__lockedConfig:
     'arg0.
-    ('arg0 => Json.t, _TypeMapSerde__Config__Locked__lockedConfig('arg0)) =>
-    Json.t
+    ('arg0 => target, _TypeMapSerde__Config__Locked__lockedConfig('arg0)) =>
+    target
    =
     (referenceTransformer, record) =>
       Json.Object([
@@ -4426,7 +4585,7 @@ module Version2 = {
         ),
       ])
   and serialize_TypeMapSerde__Config__Locked__lockedEntry:
-    _TypeMapSerde__Config__Locked__lockedEntry => Json.t =
+    _TypeMapSerde__Config__Locked__lockedEntry => target =
     record =>
       Json.Object([
         ("moduleName", (s => Json.String(s))(record.moduleName)),
@@ -4456,8 +4615,8 @@ module Version2 = {
       ])
   and serialize_TypeMapSerde__Config__Locked__lockfile:
     'arg0.
-    ('arg0 => Json.t, _TypeMapSerde__Config__Locked__lockfile('arg0)) =>
-    Json.t
+    ('arg0 => target, _TypeMapSerde__Config__Locked__lockfile('arg0)) =>
+    target
    =
     (referenceTransformer, record) =>
       Json.Object([
@@ -4480,7 +4639,7 @@ module Version2 = {
         ),
       ])
   and serialize_TypeMap__DigTypes____shortReference:
-    _TypeMap__DigTypes__shortReference => Json.t =
+    _TypeMap__DigTypes__shortReference => target =
     value =>
       (
         ((arg0, arg1, arg2)) =>
@@ -4496,7 +4655,7 @@ module Version2 = {
       )
   and serialize_TypeMap__DigTypes____typeMap:
     'arg0.
-    ('arg0 => Json.t, _TypeMap__DigTypes__typeMap('arg0)) => Json.t
+    ('arg0 => target, _TypeMap__DigTypes__typeMap('arg0)) => target
    =
     (referenceTransformer, value) =>
       (
@@ -4520,7 +4679,7 @@ module Version2 = {
       )
   and serialize_TypeMap__DigTypes____typeSource:
     'arg0.
-    ('arg0 => Json.t, _TypeMap__DigTypes__typeSource('arg0)) => Json.t
+    ('arg0 => target, _TypeMap__DigTypes__typeSource('arg0)) => target
    =
     (referenceTransformer, constructor) =>
       switch (constructor) {
