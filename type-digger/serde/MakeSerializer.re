@@ -4,13 +4,6 @@ open TypeMap;
 
 let makeLident = (~moduleName, ~modulePath, ~name) => {
   Lident(OutputType.makeLockedTypeName(moduleName, modulePath, name))
-  /* let base = switch (Str.split(Str.regexp_string("-"), moduleName)) {
-    | [one, two] => Ldot(Lident(two), one)
-    | [one] => Lident(one)
-    | _ => failwith("Bad modulename")
-  };
-  let base = modulePath->Belt.List.reduce(base, (base, item) => Ldot(base, item));
-  Ldot(base, name) */
 };
 
 let transformerName = (~moduleName, ~modulePath, ~name) =>
@@ -27,10 +20,11 @@ open Asttypes;
 open SharedTypes.SimpleType;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
+let loc = Location.none;
 
+let variableTransformerName = name => name ++ "Transformer";
 
 type transformer('source) = {
-  outputType: Parsetree.core_type,
   wrapWithVersion: Parsetree.expression,
   source: ('source) => Parsetree.expression,
   list: (Parsetree.expression) => Parsetree.expression,
@@ -40,7 +34,7 @@ type transformer('source) = {
 };
 
 let failer = message => Exp.fun_(Nolabel, None, Pat.any(),
-Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
+Exp.apply(Exp.ident(Location.mknoloc(Lident("print_endline"))), [
   (Nolabel, Exp.constant(Pconst_string(message, None)))
 ]));
 
@@ -51,9 +45,9 @@ let rec makeList = items => switch items {
   ])))
 }
 
-let rec forExpr = (transformer, t) => switch t {
-  | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
-  | AnonVariable => failer("Non variable")
+let rec forExpr = (~renames, transformer, t) => switch t {
+  | Variable(string) => makeIdent(Lident(variableTransformerName(string)))
+  | AnonVariable => failer("Anon variable")
   | Reference(source, args) =>
     switch (source, args) {
       | (DigTypes.Builtin("list"), [arg]) =>
@@ -66,7 +60,7 @@ let rec forExpr = (transformer, t) => switch t {
                 makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
                 [
                   (Nolabel, makeIdent(Lident("list"))),
-                  (Nolabel, forExpr(transformer, arg)),
+                  (Nolabel, forExpr(~renames, transformer, arg)),
                 ]
               )
           )
@@ -77,7 +71,7 @@ let rec forExpr = (transformer, t) => switch t {
           | [] => transformer.source(source)
           | args => Exp.apply(
             transformer.source(source),
-            args->Belt.List.map(arg => (Nolabel, forExpr(transformer, arg)))
+            args->Belt.List.map(arg => (Nolabel, forExpr(~renames, transformer, arg)))
           )
         }
     }
@@ -91,7 +85,7 @@ let rec forExpr = (transformer, t) => switch t {
           Pat.var(Location.mknoloc(name)),
           ...pats
         ], [
-          Exp.apply(forExpr(transformer, arg), [
+          Exp.apply(forExpr(~renames, transformer, arg), [
             (Nolabel, Exp.ident(Location.mknoloc(Lident(name))))
           ]),
           ...exps
@@ -101,18 +95,54 @@ let rec forExpr = (transformer, t) => switch t {
     Exp.fun_(Nolabel, None, Pat.tuple(pats),
       transformer.tuple(exps)
     )
+  | RowVariant(rows, _closed) =>
+    Exp.fun_(
+      Nolabel,
+      None,
+      Pat.var(Location.mknoloc("constructor")),
+      Exp.match(
+        makeIdent(Lident("constructor")),
+        rows->Belt.List.map(((name, arg)) => {
+          Exp.case(
+            Pat.variant(
+              name,
+              switch arg {
+                | None => None
+                | Some(arg) => Some(Pat.var(Location.mknoloc("arg")))
+              }
+            ),
+            transformer.constructor(
+              ~renames, name,
+              switch arg {
+                | None => []
+                | Some(arg) =>
+                  [Exp.apply(
+                    forExpr(~renames, transformer, arg),
+                    [(Nolabel, makeIdent(Lident("arg")))],
+                  )]
+              }
+            )
+          )
+
+        })
+      )
+    )
   | _ => failer("not impl expr")
 };
 
-let forBody = (~renames, transformer, body, fullName, variables) => switch body {
+let forBody = (~helpers, ~renames, transformer, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
-    let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
+    let moduleName = switch helpers {
+      | None => failwith("Abstract type found, but no 'helpers' module specified for this engine")
+      | Some(name) => name;
+    };
+    let body = makeIdent(Ldot(Lident(moduleName), fullName));
     switch (variables) {
       | [] => body
       | args => Exp.apply(body, args->Belt.List.map(
         arg => (Nolabel, makeIdent(Lident(switch arg {
-          | Variable(string) => string ++ "Transformer"
+          | Variable(string) => variableTransformerName(string)
           | AnonVariable => "ANON"
           | _ => "OTHER"
         })))
@@ -123,7 +153,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
       Nolabel,
       None,
       Pat.var(Location.mknoloc("value")),
-      Exp.apply(forExpr(transformer, e), [
+      Exp.apply(forExpr(~renames, transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) =>
@@ -137,7 +167,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
       transformer.record(~renames, items->Belt.List.map(((label, expr)) => {
         (label,
           Exp.apply(
-            forExpr(transformer, expr),
+            forExpr(~renames, transformer, expr),
             [(Nolabel, Exp.field(makeIdent(Lident("record")),
             Location.mknoloc(Lident(label))
             ))]
@@ -173,7 +203,7 @@ let forBody = (~renames, transformer, body, fullName, variables) => switch body 
             transformer.constructor(
               ~renames, name,
               args->Belt.List.mapWithIndex((index, arg) => {
-                Exp.apply(forExpr(transformer, arg),
+                Exp.apply(forExpr(~renames, transformer, arg),
                 [(Nolabel, makeIdent(Lident("arg" ++ string_of_int(index))))])
               })
             )
@@ -189,13 +219,13 @@ let makeTypArgs = variables =>
         "arg" ++ string_of_int(index)
       });
 
-let declInner = (~renames, transformer, {variables, body}, fullName) => {
+let declInner = (~helpers, ~renames, transformer, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(~renames, transformer, body, fullName, variables)
+    | [] => forBody(~helpers, ~renames, transformer, body, fullName, variables)
     | [arg, ...rest] =>
       Exp.fun_(Nolabel, None, Pat.var(Location.mknoloc(
         switch arg {
-          | Variable(string) => string ++ "Transformer"
+          | Variable(string) => variableTransformerName(string)
           | AnonVariable => "ANON"
           | _ => "OTHER"
         }
@@ -205,7 +235,7 @@ let declInner = (~renames, transformer, {variables, body}, fullName) => {
     loop(variables)
 };
 
-let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
+let decl = (~helpers, ~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
   let lident = makeLident(~moduleName, ~modulePath, ~name);
   let typ = Typ.arrow(
         Nolabel,
@@ -213,13 +243,13 @@ let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
           Location.mknoloc(lident),
           decl.variables->makeTypArgs->Belt.List.map(Typ.var)
         ),
-        transformer.outputType
+        [%type: target]
       );
   let rec loop = (i, vbls) => switch vbls {
     | [] => typ
     | [_, ...rest] => Typ.arrow(
       Nolabel,
-      Typ.arrow(Nolabel, Typ.var("arg" ++ string_of_int(i)), transformer.outputType),
+      Typ.arrow(Nolabel, Typ.var("arg" ++ string_of_int(i)), [%type: target]),
       loop(i + 1, rest)
     )
   };
@@ -238,6 +268,6 @@ let decl = (~renames, transformer, ~moduleName, ~modulePath, ~name, decl) => {
       Pat.var(Location.mknoloc(fullName)),
       typ,
     ),
-    declInner(~renames, transformer, decl, fullName)
+    declInner(~helpers, ~renames, transformer, decl, fullName)
   )
 };

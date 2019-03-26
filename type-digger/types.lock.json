@@ -1,21 +1,33 @@
 {
-  "$schemaVersion": 1,
-  "engine": ["rex-json"],
+  "$schemaVersion": 2,
   "versions": [
     {
       "entries": [
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [],
           "name": "serializableLockfile"
         },
         {
           "moduleName": "TypeMapSerde__Config",
           "modulePath": [],
+          "engines": [],
           "name": "t"
+        },
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
+          "engines": [],
+          "name": "simpleDeclaration"
+        },
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
+          "engines": [],
+          "name": "simpleExpr"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -85,26 +97,6 @@
                   ]
                 ]
               ]
-            }
-          ]
-        ],
-        [
-          [
-            "Belt__Belt_HashMapInt",
-            [],
-            "t"
-          ],
-          [
-            [],
-            {
-              "name": "t",
-              "variables": [
-                [
-                  "Variable",
-                  "arg0"
-                ]
-              ],
-              "body": ["Abstract"]
             }
           ]
         ],
@@ -753,6 +745,68 @@
                     null
                   ],
                   [
+                    "RowVariant",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Tuple",
+                            [
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "string"
+                                ],
+                                []
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "option"
+                                ],
+                                [
+                                  [
+                                    "Reference",
+                                    [
+                                      "Public",
+                                      [
+                                        "SharedTypes",
+                                        ["SimpleType"],
+                                        "expr"
+                                      ]
+                                    ],
+                                    [
+                                      [
+                                        "Variable",
+                                        "source"
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "bool"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
                     "Reference",
                     [
                       [
@@ -1345,6 +1399,116 @@
           [
             "TypeMapSerde__Config",
             [],
+            "simpleDeclaration"
+          ],
+          [
+            [],
+            {
+              "name": "simpleDeclaration",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "SharedTypes",
+                      ["SimpleType"],
+                      "declaration"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "typeSource"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMap__DigTypes",
+                              [],
+                              "shortReference"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "simpleExpr"
+          ],
+          [
+            [],
+            {
+              "name": "simpleExpr",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "SharedTypes",
+                      ["SimpleType"],
+                      "expr"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "typeSource"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMap__DigTypes",
+                              [],
+                              "shortReference"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
             "t"
           ],
           [
@@ -1619,6 +1783,2695 @@
                       []
                     ]
                   ],
+                  [
+                    "versions",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "array"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              ["Locked"],
+                              "lockedConfig"
+                            ]
+                          ],
+                          [
+                            [
+                              "Variable",
+                              "reference"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMap__DigTypes",
+            [],
+            "shortReference"
+          ],
+          [
+            [],
+            {
+              "name": "shortReference",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Tuple",
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Analyze__TopTypes",
+                          [],
+                          "moduleName"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMap__DigTypes",
+            [],
+            "typeMap"
+          ],
+          [
+            [],
+            {
+              "name": "typeMap",
+              "variables": [
+                [
+                  "Variable",
+                  "reference"
+                ]
+              ],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Stdlib__hashtbl",
+                      [],
+                      "t"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "shortReference"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Tuple",
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Parsetree",
+                              [],
+                              "attributes"
+                            ]
+                          ],
+                          []
+                        ],
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "SharedTypes",
+                              ["SimpleType"],
+                              "declaration"
+                            ]
+                          ],
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "TypeMap__DigTypes",
+                                  [],
+                                  "typeSource"
+                                ]
+                              ],
+                              [
+                                [
+                                  "Variable",
+                                  "reference"
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMap__DigTypes",
+            [],
+            "typeSource"
+          ],
+          [
+            [],
+            {
+              "name": "typeSource",
+              "variables": [
+                [
+                  "Variable",
+                  "reference"
+                ]
+              ],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Builtin",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Public",
+                    [
+                      [
+                        "Variable",
+                        "reference"
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "NotFound",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ]
+      ]
+    },
+    {
+      "entries": [
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
+          "name": "serializableLockfile"
+        },
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
+          "name": "t"
+        },
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
+          "name": "simpleDeclaration"
+        },
+        {
+          "moduleName": "TypeMapSerde__Config",
+          "modulePath": [],
+          "engines": [
+            [
+              ["rex-json"],
+              1
+            ]
+          ],
+          "name": "simpleExpr"
+        }
+      ],
+      "typeMap": [
+        [
+          [
+            "Analyze__TopTypes",
+            [],
+            "moduleName"
+          ],
+          [
+            [],
+            {
+              "name": "moduleName",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "string"
+                  ],
+                  []
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Asttypes",
+            [],
+            "loc"
+          ],
+          [
+            [],
+            {
+              "name": "loc",
+              "variables": [
+                [
+                  "Variable",
+                  "a"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
+                  [
+                    "txt",
+                    [
+                      "Variable",
+                      "a"
+                    ]
+                  ],
+                  [
+                    "loc",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Location",
+                          [],
+                          "t"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Location",
+            [],
+            "t"
+          ],
+          [
+            [],
+            {
+              "name": "t",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "loc_start",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Stdlib__lexing",
+                          [],
+                          "position"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "loc_end",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Stdlib__lexing",
+                          [],
+                          "position"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "loc_ghost",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "bool"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "attribute"
+          ],
+          [
+            [],
+            {
+              "name": "attribute",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Tuple",
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Asttypes",
+                          [],
+                          "loc"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Parsetree",
+                          [],
+                          "payload"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "attributes"
+          ],
+          [
+            [],
+            {
+              "name": "attributes",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "list"
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Parsetree",
+                          [],
+                          "attribute"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "core_type"
+          ],
+          [
+            [],
+            {
+              "name": "core_type",
+              "variables": [],
+              "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "expression"
+          ],
+          [
+            [],
+            {
+              "name": "expression",
+              "variables": [],
+              "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "pattern"
+          ],
+          [
+            [],
+            {
+              "name": "pattern",
+              "variables": [],
+              "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "payload"
+          ],
+          [
+            [],
+            {
+              "name": "payload",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "PStr",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Parsetree",
+                            [],
+                            "structure"
+                          ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "PSig",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Parsetree",
+                            [],
+                            "signature"
+                          ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "PTyp",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Parsetree",
+                            [],
+                            "core_type"
+                          ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "PPat",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Parsetree",
+                            [],
+                            "pattern"
+                          ]
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "option"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "Parsetree",
+                                [],
+                                "expression"
+                              ]
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "signature"
+          ],
+          [
+            [],
+            {
+              "name": "signature",
+              "variables": [],
+              "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "Parsetree",
+            [],
+            "structure"
+          ],
+          [
+            [],
+            {
+              "name": "structure",
+              "variables": [],
+              "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "SharedTypes",
+            ["SimpleType"],
+            "body"
+          ],
+          [
+            [],
+            {
+              "name": "body",
+              "variables": [
+                [
+                  "Variable",
+                  "source"
+                ]
+              ],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Open",
+                    [],
+                    null
+                  ],
+                  [
+                    "Abstract",
+                    [],
+                    null
+                  ],
+                  [
+                    "Expr",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "SharedTypes",
+                            ["SimpleType"],
+                            "expr"
+                          ]
+                        ],
+                        [
+                          [
+                            "Variable",
+                            "source"
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Record",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Tuple",
+                            [
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "string"
+                                ],
+                                []
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Public",
+                                  [
+                                    "SharedTypes",
+                                    ["SimpleType"],
+                                    "expr"
+                                  ]
+                                ],
+                                [
+                                  [
+                                    "Variable",
+                                    "source"
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Variant",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Tuple",
+                            [
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "string"
+                                ],
+                                []
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "list"
+                                ],
+                                [
+                                  [
+                                    "Reference",
+                                    [
+                                      "Public",
+                                      [
+                                        "SharedTypes",
+                                        ["SimpleType"],
+                                        "expr"
+                                      ]
+                                    ],
+                                    [
+                                      [
+                                        "Variable",
+                                        "source"
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "option"
+                                ],
+                                [
+                                  [
+                                    "Reference",
+                                    [
+                                      "Public",
+                                      [
+                                        "SharedTypes",
+                                        ["SimpleType"],
+                                        "expr"
+                                      ]
+                                    ],
+                                    [
+                                      [
+                                        "Variable",
+                                        "source"
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "SharedTypes",
+            ["SimpleType"],
+            "declaration"
+          ],
+          [
+            [],
+            {
+              "name": "declaration",
+              "variables": [
+                [
+                  "Variable",
+                  "source"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "variables",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "SharedTypes",
+                              ["SimpleType"],
+                              "expr"
+                            ]
+                          ],
+                          [
+                            [
+                              "Variable",
+                              "source"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "body",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "SharedTypes",
+                          ["SimpleType"],
+                          "body"
+                        ]
+                      ],
+                      [
+                        [
+                          "Variable",
+                          "source"
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "SharedTypes",
+            ["SimpleType"],
+            "expr"
+          ],
+          [
+            [],
+            {
+              "name": "expr",
+              "variables": [
+                [
+                  "Variable",
+                  "source"
+                ]
+              ],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Variable",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "AnonVariable",
+                    [],
+                    null
+                  ],
+                  [
+                    "RowVariant",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Tuple",
+                            [
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "string"
+                                ],
+                                []
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "option"
+                                ],
+                                [
+                                  [
+                                    "Reference",
+                                    [
+                                      "Public",
+                                      [
+                                        "SharedTypes",
+                                        ["SimpleType"],
+                                        "expr"
+                                      ]
+                                    ],
+                                    [
+                                      [
+                                        "Variable",
+                                        "source"
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "bool"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Reference",
+                    [
+                      [
+                        "Variable",
+                        "source"
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "SharedTypes",
+                                ["SimpleType"],
+                                "expr"
+                              ]
+                            ],
+                            [
+                              [
+                                "Variable",
+                                "source"
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Tuple",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "SharedTypes",
+                                ["SimpleType"],
+                                "expr"
+                              ]
+                            ],
+                            [
+                              [
+                                "Variable",
+                                "source"
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Fn",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Tuple",
+                            [
+                              [
+                                "Reference",
+                                [
+                                  "Builtin",
+                                  "option"
+                                ],
+                                [
+                                  [
+                                    "Reference",
+                                    [
+                                      "Builtin",
+                                      "string"
+                                    ],
+                                    []
+                                  ]
+                                ]
+                              ],
+                              [
+                                "Reference",
+                                [
+                                  "Public",
+                                  [
+                                    "SharedTypes",
+                                    ["SimpleType"],
+                                    "expr"
+                                  ]
+                                ],
+                                [
+                                  [
+                                    "Variable",
+                                    "source"
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "SharedTypes",
+                            ["SimpleType"],
+                            "expr"
+                          ]
+                        ],
+                        [
+                          [
+                            "Variable",
+                            "source"
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Other",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Stdlib__hashtbl",
+            [],
+            "t"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "ocaml.doc",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\" The type of hash tables from type ['a] to type ['b]. \""
+                ]
+              ]
+            ],
+            {
+              "name": "t",
+              "variables": [
+                [
+                  "Variable",
+                  "a"
+                ],
+                [
+                  "Variable",
+                  "b"
+                ]
+              ],
+              "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "Stdlib__lexing",
+            [],
+            "position"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "ocaml.doc",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\" A value of type [position] describes a point in a source file.\\n   [pos_fname] is the file name; [pos_lnum] is the line number;\\n   [pos_bol] is the offset of the beginning of the line (number\\n   of characters between the beginning of the lexbuf and the beginning\\n   of the line); [pos_cnum] is the offset of the position (number of\\n   characters between the beginning of the lexbuf and the position).\\n   The difference between [pos_cnum] and [pos_bol] is the character\\n   offset within the line (i.e. the column number, assuming each\\n   character is one column wide).\\n\\n   See the documentation of type [lexbuf] for information about\\n   how the lexing engine will manage positions.\\n \""
+                ]
+              ]
+            ],
+            {
+              "name": "position",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "pos_fname",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "pos_lnum",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "pos_bol",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "pos_cnum",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "custom"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "rename.module_",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"module\""
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.args",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun custom ->\n    match custom.args = 0 with\n    | true -> None\n    | false -> ((Some (custom.args))[@explicit_arity ])"
+                ]
+              ]
+            ],
+            {
+              "name": "custom",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "module_",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "path",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "args",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "int"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "engine"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "rename.Rex_json",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"rex-json\""
+                ]
+              ],
+              [
+                {
+                  "txt": "rename.Ezjsonm",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"ezjsonm\""
+                ]
+              ],
+              [
+                {
+                  "txt": "rename.Bs_json",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"Js.Json\""
+                ]
+              ],
+              [
+                {
+                  "txt": "rename.Yojson",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"yojson\""
+                ]
+              ]
+            ],
+            {
+              "name": "engine",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Rex_json",
+                    [],
+                    null
+                  ],
+                  [
+                    "Bs_json",
+                    [],
+                    null
+                  ],
+                  [
+                    "Ezjsonm",
+                    [],
+                    null
+                  ],
+                  [
+                    "Yojson",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "engineConfig"
+          ],
+          [
+            [],
+            {
+              "name": "engineConfig",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "output",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "helpers",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "engines"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "rename.rex_json",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"rex-json\""
+                ]
+              ],
+              [
+                {
+                  "txt": "rename.bs_json",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"Js.Json\""
+                ]
+              ]
+            ],
+            {
+              "name": "engines",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "rex_json",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineConfig"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "bs_json",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineConfig"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "ezjsonm",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineConfig"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "yojson",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "engineConfig"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "entry"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "rename.type_",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;\"type\""
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.engines",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun entry -> None"
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.history",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun entry -> None"
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.minVersion",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun entry -> None"
+                ]
+              ]
+            ],
+            {
+              "name": "entry",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "file",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "type_",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "engines",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "list"
+                          ],
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "TypeMapSerde__Config",
+                                  [],
+                                  "engine"
+                                ]
+                              ],
+                              []
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "publicName",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "history",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "bool"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "minVersion",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "int"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "serializableLockfile"
+          ],
+          [
+            [],
+            {
+              "name": "serializableLockfile",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "TypeMapSerde__Config",
+                      ["Locked"],
+                      "lockfile"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "shortReference"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "simpleDeclaration"
+          ],
+          [
+            [],
+            {
+              "name": "simpleDeclaration",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "SharedTypes",
+                      ["SimpleType"],
+                      "declaration"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "typeSource"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMap__DigTypes",
+                              [],
+                              "shortReference"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "simpleExpr"
+          ],
+          [
+            [],
+            {
+              "name": "simpleExpr",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "SharedTypes",
+                      ["SimpleType"],
+                      "expr"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "typeSource"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMap__DigTypes",
+                              [],
+                              "shortReference"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            [],
+            "t"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "migrate.engines",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun { engine; output } ->\n    match engine with\n    | Rex_json ->\n        {\n          bs_json = None;\n          rex_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }\n    | Bs_json ->\n        {\n          rex_json = None;\n          bs_json = ((Some { output; helpers = None })[@explicit_arity ]);\n          ezjsonm = None;\n          yojson = None\n        }"
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.globalEngines",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun t -> None"
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.lockedTypes",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun t -> None"
+                ]
+              ],
+              [
+                {
+                  "txt": "migrate.minVersion",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun t -> None"
+                ]
+              ]
+            ],
+            {
+              "name": "t",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "version",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "minVersion",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "int"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "lockedTypes",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "engines",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMapSerde__Config",
+                          [],
+                          "engines"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "globalEngines",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "list"
+                          ],
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "TypeMapSerde__Config",
+                                  [],
+                                  "engine"
+                                ]
+                              ],
+                              []
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "entries",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "entry"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "custom",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              [],
+                              "custom"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            ["Locked"],
+            "lockedConfig"
+          ],
+          [
+            [],
+            {
+              "name": "lockedConfig",
+              "variables": [
+                [
+                  "Variable",
+                  "reference"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
+                  [
+                    "entries",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "TypeMapSerde__Config",
+                              ["Locked"],
+                              "lockedEntry"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "typeMap",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "TypeMap__DigTypes",
+                          [],
+                          "typeMap"
+                        ]
+                      ],
+                      [
+                        [
+                          "Variable",
+                          "reference"
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            ["Locked"],
+            "lockedEntry"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "migrate.engines",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  ";;fun l -> []"
+                ]
+              ]
+            ],
+            {
+              "name": "lockedEntry",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "moduleName",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "modulePath",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "engines",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Tuple",
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Public",
+                                [
+                                  "TypeMapSerde__Config",
+                                  [],
+                                  "engine"
+                                ]
+                              ],
+                              []
+                            ],
+                            [
+                              "Reference",
+                              [
+                                "Builtin",
+                                "int"
+                              ],
+                              []
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "TypeMapSerde__Config",
+            ["Locked"],
+            "lockfile"
+          ],
+          [
+            [],
+            {
+              "name": "lockfile",
+              "variables": [
+                [
+                  "Variable",
+                  "reference"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
                   [
                     "versions",
                     [

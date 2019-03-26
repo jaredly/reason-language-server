@@ -40,10 +40,9 @@ open Asttypes;
 open SharedTypes.SimpleType;
 
 type transformer('source) = {
-  inputType: Parsetree.core_type,
   parseVersion: Parsetree.expression,
   tuple: (Parsetree.expression, list(Parsetree.pattern), Parsetree.expression) => Parsetree.expression,
-  record: (~renames: list((string, string)), list((string, Parsetree.expression, bool))) => Parsetree.expression,
+  record: (~renames: list((string, string)), ~typ: Parsetree.core_type, list((string, Parsetree.expression, bool))) => Parsetree.expression,
   source: ('source) => Parsetree.expression,
   variant: (~renames: list((string, string)), list((string, int, Parsetree.expression))) => Parsetree.expression,
   list: (Parsetree.expression, Parsetree.expression) => Parsetree.expression,
@@ -52,22 +51,22 @@ type transformer('source) = {
 let loc = Location.none;
 
 let makeIdent = lident => Exp.ident(Location.mknoloc(lident));
-let ok = v => Exp.construct(mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(v));
+let ok = v => [%expr Belt.Result.Ok([%e v])];
 let expString = message => Exp.constant(Pconst_string(message, None));
 let expError = message => [%expr Belt.Result.Error([[%e expString(message)]])];
-let expPassError = text => Exp.construct(mknoloc(Lident("Error")), Some([%expr [[%e expString(text)], ...[%e makeIdent(Lident("error"))]]]));
-let patPassError = Pat.construct(mknoloc(Lident("Error")), Some(Pat.var(mknoloc("error"))));
+let expPassError = text => [%expr Belt.Result.Error([[%e expString(text)], ...error])];
+let patPassError = [%pat? Error(error)];
 
 
-let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("failwith"))), [
+let failer = message => Exp.apply(Exp.ident(Location.mknoloc(Lident("print_endline"))), [
   (Nolabel, expString(message))
 ]);
 
-let rec forArgs = (transformer, args, body, errorName) => {
+let rec forArgs = (~renames, transformer, args, body, errorName) => {
   let (res, _) = args->Belt.List.reduce((body, 0), ((body, index), arg) => {
     let argname = "arg" ++ string_of_int(index);
     (Exp.match(
-      Exp.apply(forExpr(transformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
+      Exp.apply(forExpr(~renames, transformer, arg), [(Nolabel, makeIdent(Lident(argname)))]),
       [
         Exp.case(
           Pat.construct(Location.mknoloc(Ldot(Ldot(Lident("Belt"), "Result"), "Ok")), Some(Pat.var(Location.mknoloc(argname)))),
@@ -81,7 +80,7 @@ let rec forArgs = (transformer, args, body, errorName) => {
     ), index + 1)
   });
   res
-} and forExpr = (transformer, t) => switch t {
+} and forExpr = (~renames, transformer, t) => switch t {
   | Variable(string) => makeIdent(Lident(string ++ "Transformer"))
   | AnonVariable => failer("Non variable")
   | Reference(source, args) =>
@@ -89,30 +88,50 @@ let rec forArgs = (transformer, args, body, errorName) => {
       | (DigTypes.Builtin("list"), [arg]) =>
         let loc = Location.none;
         [%expr
-          (list) => [%e transformer.list(forExpr(transformer, arg), [%expr list])]
+          (list) => [%e transformer.list(forExpr(~renames, transformer, arg), [%expr list])]
         ]
       | _ =>
         switch args {
           | [] => transformer.source(source)
           | args => Exp.apply(
             transformer.source(source),
-            args->Belt.List.map(arg => (Nolabel, forExpr(transformer, arg)))
+            args->Belt.List.map(arg => (Nolabel, forExpr(~renames, transformer, arg)))
           )
         }
     }
   | Tuple(items) =>
     let patArgs = makeTypArgs(items)->Belt.List.map(name => Pat.var(mknoloc(name)));
     let body = ok(Exp.tuple(makeTypArgs(items)->Belt.List.map(name => makeIdent(Lident(name)))));
-    let body = forArgs(transformer, items, body, "tuple element");
+    let body = forArgs(~renames, transformer, items, body, "tuple element");
     let loc = Location.none;
     transformer.tuple([%expr json], patArgs, body)
+  | RowVariant(rows, closed) =>
+    let rows =
+      rows->Belt.List.map(((name, arg)) => {
+        let body = switch arg {
+          | None => ok(Exp.variant(name, None))
+          | Some(arg) => {
+            [%expr switch ([%e forExpr(~renames, transformer, arg)](arg0)) {
+              | Belt.Result.Ok(arg) => Belt.Result.Ok([%e Exp.variant(name, Some([%expr arg]))])
+              | Error(error) => Belt.Result.Error(error)
+            }]
+          }
+        };
+        (name, arg == None ? 0 : 1, body);
+      });
+
+    transformer.variant(~renames, rows)
   | _ => failer("not impl expr")
 };
 
-let forBody = (~renames, transformer, coreType, body, fullName, variables) => switch body {
+let forBody = (~helpers, ~renames, transformer, coreType, body, fullName, variables) => switch body {
   | Open => failer("Cannot transform an open type")
   | Abstract =>
-    let body = makeIdent(Ldot(Lident("TransformHelpers"), fullName));
+    let moduleName = switch helpers {
+      | None => failwith("Abstract type found, but no 'helpers' module specified for this engine")
+      | Some(name) => name;
+    };
+    let body = makeIdent(Ldot(Lident(moduleName), fullName));
     switch (variables) {
       | [] => body
       | args => Exp.apply(body, args->Belt.List.map(
@@ -128,11 +147,11 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
       Nolabel,
       None,
       Pat.var(Location.mknoloc("value")),
-      Exp.apply(forExpr(transformer, e), [
+      Exp.apply(forExpr(~renames, transformer, e), [
         (Nolabel, makeIdent(Lident("value")))])
     )
   | Record(items) =>
-    transformer.record(~renames, items->Belt.List.map(((label, expr)) => (label, forExpr(transformer, expr), {
+    transformer.record(~renames, ~typ=coreType, items->Belt.List.map(((label, expr)) => (label, forExpr(~renames, transformer, expr), {
       switch expr {
         | Reference(Builtin("option"), [_]) => true
         | _ => false
@@ -161,15 +180,15 @@ let forBody = (~renames, transformer, coreType, body, fullName, variables) => sw
               coreType,
             ),
           );
-        (name, List.length(args), forArgs(transformer, args, body, "constructor argument"));
+        (name, List.length(args), forArgs(~renames, transformer, args, body, "constructor argument"));
       });
 
     transformer.variant(~renames, constructors)
 };
 
-let declInner = (~renames, transformer, typeLident, {variables, body}, fullName) => {
+let declInner = (~helpers, ~renames, transformer, typeLident, {variables, body}, fullName) => {
   let rec loop = vbls => switch vbls {
-    | [] => forBody(~renames, transformer,
+    | [] => forBody(~helpers, ~renames, transformer,
     Typ.constr(
       Location.mknoloc(
         typeLident,
@@ -187,10 +206,7 @@ let declInner = (~renames, transformer, typeLident, {variables, body}, fullName)
       )), loop(rest))
   };
 
-  makeTypArgs(variables)
-  ->Belt.List.reduce(loop(variables), (body, arg) =>
-      Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
-    );
+    loop(variables)
 };
 
 let makeResult = t =>
@@ -205,45 +221,88 @@ let makeResult = t =>
     ],
   );
 
-let decl = (transformer, ~renames, ~moduleName, ~modulePath, ~name, decl) => {
-  let lident = makeLident(~moduleName, ~modulePath, ~name);
-  let typ =
+let rec makeFunctionType = (base, inputType, vbls) =>
+  switch (vbls) {
+  | [] => base
+  | [vbl, ...rest] =>
     Typ.arrow(
       Nolabel,
-      transformer.inputType,
-      makeResult(
-        Typ.constr(
-          Location.mknoloc(lident),
-          decl.variables->makeTypArgs->Belt.List.map(Typ.var),
-        ),
-      ),
-    );
-  let rec makeFunctionType = (i, vbls) =>
-    switch (vbls) {
-    | [] => typ
-    | [_, ...rest] =>
       Typ.arrow(
         Nolabel,
-        Typ.arrow(
-          Nolabel,
-          transformer.inputType,
-          makeResult(Typ.var("arg" ++ string_of_int(i))),
-        ),
-        makeFunctionType(i + 1, rest),
-      )
-    };
-  let typ = makeFunctionType(0, decl.variables);
+        inputType,
+        makeResult(vbl),
+      ),
+      makeFunctionType(base, inputType, rest),
+    )
+  };
+
+let makeArrow = (inputType, lident, variables) => {
+  Typ.arrow(
+    Nolabel,
+    inputType,
+    makeResult(
+      Typ.constr(
+        Location.mknoloc(lident),
+        variables
+      ),
+    ),
+  );
+};
+
+let declOuter = (inputType, variables, ~moduleName, ~modulePath, ~name, inner) => {
+  let lident = makeLident(~moduleName, ~modulePath, ~name);
+  let asTypeVariables = 
+          variables->makeTypArgs->Belt.List.map(Typ.var);
+  let typ = makeArrow(inputType, lident, asTypeVariables);
+  let typ = makeFunctionType(typ, inputType, asTypeVariables);
   let typ =
-    switch (decl.variables) {
+    switch (variables) {
     | [] => typ
-    | _args => Typ.poly(makeTypArgs(decl.variables)->Belt.List.map(Location.mknoloc), typ)
+    | _args => Typ.poly(makeTypArgs(variables)->Belt.List.map(Location.mknoloc), typ)
     };
   let fullName = transformerName(~moduleName, ~modulePath, ~name);
 
+  let inner = variables == [] ? inner : {
+    let asTypeConstrs =
+      variables
+      ->makeTypArgs
+      ->Belt.List.map(name => Typ.constr(Location.mknoloc(Lident(name)), []));
+
+    let inner = Ast_helper.Exp.constraint_(
+      inner,
+      makeFunctionType(
+        makeArrow(inputType, lident, asTypeConstrs),
+        inputType, asTypeConstrs
+      )
+    );
+
+    makeTypArgs(variables)
+    ->Belt.List.reduce(
+      inner, (body, arg) =>
+        Ast_helper.Exp.newtype(Location.mknoloc(arg), body)
+      );
+  };
+
   Vb.mk(
     Pat.constraint_(Pat.var(Location.mknoloc(fullName)), typ),
-    declInner(~renames, transformer, lident, decl, fullName),
+    inner,
   );
+};
+
+let decl = (transformer, ~helpers, ~renames, ~moduleName, ~modulePath, ~name, ~inner, decl) => {
+  let lident = makeLident(~moduleName, ~modulePath, ~name);
+  let fullName = transformerName(~moduleName, ~modulePath, ~name);
+  declOuter(
+    [%type: target],
+    decl.variables,
+    ~moduleName,
+    ~modulePath,
+    ~name,
+    switch inner {
+      | None => declInner(~helpers, ~renames, transformer, lident, decl, fullName)
+      | Some(inner) => inner
+    }
+  )
 };
 
 

@@ -189,3 +189,88 @@ module V6 = {
     county: {name: "Bearland", contents: 5, isClosed: false}
   };
 };
+
+/*
+Issues
+- can't export parameterized types
+
+ */
+
+module V7 = {
+  [@migrate.thing (_) => `one]
+  type person = {
+    name: string,
+    age: float,
+    thing: [`one | `two(int) | `three(float, string)],
+    coords: (float, float)
+  };
+
+  [@rename.Dog "a-cat"]
+  type pet =
+    | Dog
+    | Cat
+    | Mouse;
+
+  [@rename.name "the name"]
+  [@migrate.other (_) => None]
+  type named('a) = {
+    name: string,
+    contents: 'a,
+    isClosed: bool,
+    other: option('a)
+  };
+
+  [@migrate.Now (Now(a)) => Now(_migrator_a(a), 5)]
+  type what('a) = Now('a, int);
+
+  /* designed to trigger record key collision */
+  type one = {key: string};
+  type two = {key: string};
+
+  [@migrate.one h => Now({key: "one"}, 5)]
+  [@migrate.two h => Now({key: "two"}, 5)]
+  type household = {
+    one: what(one),
+    two: what(two),
+    people: list(person),
+    pets: list(pet),
+    what: what(string),
+    visitors: list(person),
+    county: named(int)
+  };
+
+  let example = {
+    one: Now({key: "one"}, 5),
+    two: Now({key: "two"}, 5),
+    people: [{name: "Me", age: 10., coords: (5., 6.), thing: `one}],
+    pets: [Dog, Mouse],
+    what: Now("5", 5),
+    visitors: [{name: "Friend", age: 11.5, coords: (1., 6.), thing: `one}],
+    county: {name: "Bearland", contents: 5, isClosed: false, other: None}
+  };
+};
+
+module All = {
+  type normalRecord = {
+    a: int,
+    b: string,
+    c: (int, (string, float)),
+    d: array(int),
+    e: list(float),
+    f: option(int)
+  };
+  type recursive = A | B(recursive);
+  type parameterizedRecord('a, 'b) = {
+    a: 'a,
+    b: 'b,
+    c: (int, float),
+    d: recursive,
+  };
+  type normalVariant = A | B | C(int) | D(normalRecord);
+  type parameterizedVariant('a, 'b) = PA | PB('a) | PC('a, 'b) | PD(parameterizedRecord('a, 'b)) | PE(normalVariant) | PF(normalRecord);
+  type top = {
+    contents: parameterizedVariant(int, array(float)),
+    title: string,
+  };
+  type rename = top;
+};

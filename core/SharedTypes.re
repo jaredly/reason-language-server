@@ -6,6 +6,7 @@ module SimpleType = {
   type expr('source) =
     | Variable(string)
     | AnonVariable
+    | RowVariant(list((string, option(expr('source)))), bool)
     | Reference('source, list(expr('source)))
     | Tuple(list(expr('source)))
     | Fn(list((option(string), expr('source))), expr('source))
@@ -28,6 +29,7 @@ module SimpleType = {
     | Tuple(items) => items->Belt.List.map(usedSourcesExpr)->List.concat
     | Reference(source, args) => [source, ...args->Belt.List.map(usedSourcesExpr)->List.concat]
     | Fn(args, res) => args->Belt.List.map(snd)->Belt.List.map(usedSourcesExpr)->List.concat @ usedSourcesExpr(res)
+    | RowVariant(rows, _) => rows->Belt.List.keepMap(snd)->Belt.List.map(usedSourcesExpr)->List.concat
     | Variable(_) | AnonVariable | Other => []
   };
 
@@ -65,6 +67,13 @@ module SimpleType = {
     | Fn(args, res) => Fn(args->Belt.List.map(
       ((label, arg)) => (label, mapSource(fn, arg))
     ), mapSource(fn, res))
+    | RowVariant(rows, closed) => RowVariant(
+      rows->Belt.List.map(((label, expr)) => (label, switch expr {
+        | None => None
+        | Some(expr) => Some(mapSource(fn, expr))
+      })),
+      closed
+    )
     | Other => Other
   };
 

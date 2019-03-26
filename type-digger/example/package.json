@@ -4,6 +4,7 @@
   },
   "scripts": {
     "start": "../../_esy/default/build/install/default/bin/type-digger types.json",
+    "kitchen": "../../_esy/default/build/install/default/bin/type-digger multi-types.json",
     "try": "bsb -make-world && node ./src/App.bs.js",
     "build": "bsb -make-world"
   }
