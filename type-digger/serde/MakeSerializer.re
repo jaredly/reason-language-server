@@ -51,20 +51,9 @@ let rec forExpr = (~renames, transformer, t) => switch t {
   | Reference(source, args) =>
     switch (source, args) {
       | (DigTypes.Builtin("list"), [arg]) =>
-        Exp.fun_(
-          Nolabel,
-          None,
-          Pat.var(Location.mknoloc("list")),
-          transformer.list(
-              Exp.apply(
-                makeIdent(Ldot(Ldot(Lident("Belt"), "List"), "map")),
-                [
-                  (Nolabel, makeIdent(Lident("list"))),
-                  (Nolabel, forExpr(~renames, transformer, arg)),
-                ]
-              )
-          )
-        )
+        [%expr list => [%e transformer.list(
+          [%expr Belt.List.map(list, [%e forExpr(~renames, transformer, arg)])]
+        )]]
 
       | _ =>
         switch args {
@@ -108,7 +97,7 @@ let rec forExpr = (~renames, transformer, t) => switch t {
               name,
               switch arg {
                 | None => None
-                | Some(arg) => Some(Pat.var(Location.mknoloc("arg")))
+                | Some(arg) => Some([%pat? arg])
               }
             ),
             transformer.constructor(
@@ -118,7 +107,7 @@ let rec forExpr = (~renames, transformer, t) => switch t {
                 | Some(arg) =>
                   [Exp.apply(
                     forExpr(~renames, transformer, arg),
-                    [(Nolabel, makeIdent(Lident("arg")))],
+                    [(Nolabel, [%expr arg])],
                   )]
               }
             )
