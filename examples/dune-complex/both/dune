@@ -1,2 +1,1 @@
 (executable (name A) (libraries B))
-(library (name B))

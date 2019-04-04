@@ -113,6 +113,7 @@ type filePath = string
 type paths =
 | Impl(filePath, option(filePath))
 | Intf(filePath, option(filePath))
+// .cm(t)i, .mli, .cmt, .rei
 | IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
 
 let getImpl = p => switch p {
