@@ -14,7 +14,7 @@ let checkExampleProject = (rootPath, sourcePaths) => {
   })->Belt.List.toArray->Belt.List.concatMany;
   files->Belt.List.reduce([], (failures, path) => {
     let uri = Utils.toUri(path);
-    switch (State.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
+    switch (Packages.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
       | Error(message) =>
         print_endline("  Unable to get package: " ++ uri)
         print_endline(message);

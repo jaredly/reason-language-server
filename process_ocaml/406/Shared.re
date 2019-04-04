@@ -97,7 +97,7 @@ let rec asSimpleType = t => {
       SimpleType.Tuple(items->Belt.List.map(asSimpleType))
     | Tconstr(path, args, _) =>
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
-    | Tvariant({row_fields, row_more, row_closed, row_fixed, row_name}) =>
+    | Tvariant({row_fields, row_more: _, row_closed, row_fixed: _, row_name: _}) =>
       SimpleType.RowVariant(
         row_fields->Belt.List.map(((label, field)) => switch field {
           | Reither(_, [arg], _, _) => (label, Some(asSimpleType(arg)))

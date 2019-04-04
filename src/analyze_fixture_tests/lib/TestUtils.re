@@ -6,7 +6,7 @@ let getPackage = (localModules) => {
   let buildSystem = BuildSystem.Dune(Esy("0.4.9"));
   let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
   let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
-  let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
+  let (pathsForModule, nameForPath) = Packages.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
     localModules: localModules |. Belt.List.map(fst),

@@ -31,6 +31,51 @@ let parseMerlin = (base, text) => {
 
 let maybeConcat = (base, path) => path.[0] == '/' ? path : Filename.concat(base, path);
 
+let isRelativePath = Sys.os_type == "Win32"
+? path => !Str.string_match(Str.regexp("[A-Z]:"), path, 0)
+: path => path != "" && path.[0] != '/'
+
+/** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
+let getModulesFromMerlin = (base, text) => {
+  let (source, build, flags) = parseMerlin(base, text);
+
+  let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
+
+  // Go through the local source directories
+  // for each one, look for a build directory that matches it
+  // buut to do that I need to parse the dunefile, probably.
+  // So:
+  // Source directory, dunefile
+  //   give me a list of `name, Library | Executable, modules`
+  // Then I'll look for the compilation units that correspond.
+
+  Files.readDirectory
+
+  let pathsForModule = Hashtbl.create(30);
+  let nameForPath = Hashtbl.create(30);
+  let add = (name, paths) => switch paths {
+    | SharedTypes.Intf(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
+    | SharedTypes.Impl(_, Some(path)) => Hashtbl.replace(nameForPath, path, name)
+    | SharedTypes.IntfAndImpl(_, intf, _, impl) =>
+        intf |?< path => Hashtbl.replace(nameForPath, path, name);
+        impl |?< path => Hashtbl.replace(nameForPath, path, name);
+    | _ => ()
+  };
+
+  dependencyModules |> List.iter(((modName, paths)) => {
+    add(modName, paths);
+    Hashtbl.replace(pathsForModule, modName, paths)
+  });
+
+  localModules |> List.iter(((modName, paths)) => {
+    add(modName, paths);
+    Hashtbl.replace(pathsForModule, modName, paths)
+  });
+
+  (pathsForModule, nameForPath)
+
+};
+
 let getModulesFromMerlin = (base, text) => {
   let (source, build, flags) = parseMerlin(base, text);
   let sourceMap = Hashtbl.create(20);

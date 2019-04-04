@@ -3,7 +3,15 @@
   (name Bin)
   (public_name Bin)
   (libraries Lsp)
+  (modules Bin)
   (flags :standard -w -9)
   (preprocess (pps Belt_ppx Ppx_monads))
   )
 
+(executable
+  (public_name diagnose)
+  (modules Diagnose)
+  (libraries Lsp Analyze)
+  (flags :standard -w -9)
+  (preprocess (pps Belt_ppx Ppx_monads))
+)
