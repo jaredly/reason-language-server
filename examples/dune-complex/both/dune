@@ -1,1 +1,1 @@
-(executable (name A) (libraries B))
+(executable (public_name A) (name A))

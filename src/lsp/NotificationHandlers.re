@@ -75,7 +75,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       /* let name = FindFiles.getName(path); */
       if (!Hashtbl.mem(package.nameForPath, path)) {
         /* TODO: figure out what the name should be, and process it. */
-        /* package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name)); */
+        package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name));
         Log.log("Reloading because you created a new file: " ++ path);
         Ok(state)
         /* Ok(reloadAllState(state)) */

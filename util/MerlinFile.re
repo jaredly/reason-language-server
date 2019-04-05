@@ -29,7 +29,7 @@ let parseMerlin = (base, text) => {
   )
 };
 
-let maybeConcat = (base, path) => path.[0] == '/' ? path : Filename.concat(base, path);
+// let maybeConcat = (base, path) => path.[0] == '/' ? path : Filename.concat(base, path);
 
 let isRelativePath = Sys.os_type == "Win32"
 ? path => !Str.string_match(Str.regexp("[A-Z]:"), path, 0)
@@ -110,7 +110,7 @@ let calcPaths = (mname, files) => {
 
 /** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
 let getModulesFromMerlin = (base, text) => {
-  print_endline("start");
+  Log.log("start");
   let (source, build, flags) = parseMerlin(base, text);
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
@@ -122,9 +122,9 @@ let getModulesFromMerlin = (base, text) => {
     Files.readDirectory(buildDir)
     ->Belt.List.keep(isBuildFile)
     ->Belt.List.forEach(name => {
-        let full = Filename.concat(buildDir, name);
+        let full = fileConcat(buildDir, name);
         if (buildByBasename->Hashtbl.mem(name)) {
-          print_endline(
+          Log.log(
             "DUPLICATE "
             ++ name
             ++ " : "
@@ -153,6 +153,7 @@ let getModulesFromMerlin = (base, text) => {
   let depsModuleNames = Hashtbl.create(10);
 
   depSource->Belt.List.forEach(dep => {
+    Log.log("For dep " ++ dep);
     let allFiles = dep->Files.readDirectory;
     let prefix = allFiles->Belt.List.reduce(None, (found, name) => {
       switch (found) {
@@ -160,7 +161,7 @@ let getModulesFromMerlin = (base, text) => {
         | None =>
           switch (Str.split(Str.regexp_string("__"), name)) {
             | [prefix, name, ..._] =>
-            print_endline("Prefix dor " ++ dep ++ ": " ++ prefix);
+            Log.log("Prefix dor " ++ dep ++ ": " ++ prefix);
             Some(prefix)
             | _ => None
           }
@@ -169,7 +170,9 @@ let getModulesFromMerlin = (base, text) => {
     let filesByName = Hashtbl.create(10);
     let moduleNames = Hashtbl.create(10);
     allFiles->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
-      filesByName->Hashtbl.replace(file, dep /+ file)
+      let full = dep /+ file;
+      Log.log("Dep " ++ full)
+      filesByName->Hashtbl.replace(file, full)
       moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
     });
     moduleNames->Hashtbl.to_seq_keys->Stdlib.List.of_seq->Belt.List.forEach(mname => {
@@ -200,15 +203,18 @@ let getModulesFromMerlin = (base, text) => {
 
   localSource->Belt.List.forEach(local => {
     let local = base /+ local;
+    Log.log("For local dir " ++ local);
     let dune = local /+ "dune";
     if (!Files.exists(dune)) {
-      print_endline("No dune file for source directory: " ++ local ++ ". Skipping");
+      Log.log("No dune file for source directory: " ++ local ++ ". Skipping");
     } else {
       let duneData = JbuildFile.parse(Files.readFileExn(dune));
       let filesByName = Hashtbl.create(10);
       let moduleNames = Hashtbl.create(10);
       local->Files.readDirectory->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
-        filesByName->Hashtbl.replace(file, local /+ file)
+        let full = local /+ file;
+        Log.log("Full " ++ full);
+        filesByName->Hashtbl.replace(file, full)
         moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
       });
 

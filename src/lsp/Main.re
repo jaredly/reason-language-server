@@ -124,8 +124,8 @@ let tick = state => {
 };
 
 let main = () => {
-  switch (Sys.argv) {
-    | [|_|] =>
+  switch (Sys.argv->Belt.List.fromArray) {
+    | [_] =>
       log("Booting up");
       BasicServer.run(
         ~tick,
@@ -137,7 +137,34 @@ let main = () => {
       );
       log("Finished");
       out^ |?< close_out;
-    | [|_, "-h" | "--help"|] | _ =>
+    | [_, "check", rootPath, ...files] =>
+      Util.Log.spamError := true;
+      log("# Reason Langauge Server - checking individual files to ensure they load & process correctly");
+      let rootPath = maybeConcat(Unix.getcwd(), rootPath);
+      let state = {
+        ...Analyze.TopTypes.empty(),
+        rootPath,
+        rootUri: Util.Utils.toUri(rootPath)
+      };
+      files->Belt.List.forEach(file => {
+        let file = maybeConcat(rootPath, file);
+        let uri = Utils.toUri(file);
+        switch (Packages.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
+          | Error(message) =>
+            print_endline("  Unable to get package: " ++ uri)
+            print_endline(message);
+          | Ok(package) => switch (State.getCompilationResult(uri, state, ~package)) {
+            | Error(message) =>
+              print_endline("  Invalid compilation result: " ++ message);
+            | Ok(Success(_)) =>
+              print_endline("  Good: " ++ uri);
+            | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
+              print_endline("  Error compiling: " ++ uri);
+          }
+        }
+      });
+      log("Ok");
+    | [_, "-h" | "--help"] | _ =>
       print_endline({|
 🎉 Reason Language Server 🎉 
 

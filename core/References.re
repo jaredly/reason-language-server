@@ -31,10 +31,10 @@ let posMatch = ({Lexing.pos_cnum}, {Lexing.pos_cnum: c2}) => {
 };
 
 let locForLocations = (~extra, location: Location.t) => {
-  /* print_endline("looking for " ++ Utils.showLocation(location)); */
+  /* Log.log("looking for " ++ Utils.showLocation(location)); */
   extra.locations |> Utils.find(((loc: Location.t, l)) => {
-    /* print_endline("  > checking " ++ Utils.showLocation(loc));
-    print_endline("    " ++ (switch l {
+    /* Log.log("  > checking " ++ Utils.showLocation(loc));
+    Log.log("    " ++ (switch l {
       | Loc.Typed(_) => "typed"
       | Constant(_) => "constant"
       | Module(_) => "module"

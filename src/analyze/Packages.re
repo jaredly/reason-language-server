@@ -263,13 +263,6 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
     | Some(_) => failwith("Invalid build system override when creating a new dune package")
   };
 
-  let%try buildDir =
-    BuildSystem.getCompiledBase(projectRoot, buildSystem)
-    |> RResult.resultOfOption(
-      "Could not find local build dir",
-    );
-  Log.log("=== Build dir:    " ++ buildDir);
-
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
   let (source, _build, flags) = MerlinFile.parseMerlin("", merlinRaw);
 
@@ -295,7 +288,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   Files.mkdirp(hiddenLocation);
 
   let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (true) {
-    let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(rootPath /+ ".merlin", merlinRaw);
+    let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(rootPath, merlinRaw);
     let pathsForModule = Hashtbl.create(Stdlib.Hashtbl.length(pathsForModule_));
     pathsForModule_ |> Hashtbl.iter((k, v) => pathsForModule->Hashtbl.replace(k, pathToPath(v)));
     // pathsForModule->Hasthbl.map
@@ -307,6 +300,12 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       includeDirectories
     ))
   } else {
+    let%try buildDir =
+      BuildSystem.getCompiledBase(projectRoot, buildSystem)
+      |> RResult.resultOfOption(
+        "Could not find local build dir for " ++ projectRoot,
+      );
+    Log.log("=== Build dir:    " ++ buildDir);
 
     Log.log("Get ocaml stdlib dirs");
     let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
@@ -325,7 +324,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs/byte"
     };
 
-    /* print_endline("locals"); */
+    /* Log.log("locals"); */
     Log.log("Got a compiled base " ++ compiledBase);
     let localModules = sourceFiles |> List.map(filename => {
       let name = FindFiles.getName(filename);
@@ -350,7 +349,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
     });
 
 
-    /* print_endline("Getting things"); */
+    /* Log.log("Getting things"); */
     let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] != '/') |> optMap(name => {
       let otherPath = rootPath /+ name;
       let res = {

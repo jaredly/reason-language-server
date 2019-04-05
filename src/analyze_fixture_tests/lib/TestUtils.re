@@ -153,7 +153,7 @@ let setUp = (files, text) => {
   );
 
   files |> List.iter(((name, contents)) => {
-    /* print_endline("Compiling " ++ name); */
+    /* Log.log("Compiling " ++ name); */
     let moduleName = Filename.chop_extension(name);
     let uri = uriForName(name);
     let%try_force result = AsYouType.process(
