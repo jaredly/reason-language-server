@@ -338,6 +338,7 @@ let docsForModule = (modname, state, ~package) =>
       /* TODO do better */
       let cmt = SharedTypes.getCmt(paths);
       let src = SharedTypes.getSrc(paths);
+      Log.log("FINDING docs for module " ++ SharedTypes.showPaths(paths));
       Log.log("FINDING " ++ cmt ++ " src " ++ (src |? ""));
       let%opt_wrap docs = docsForCmt(~package, ~moduleName=modname, cmt, src, state);
       (docs, src)

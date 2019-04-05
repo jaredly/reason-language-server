@@ -116,6 +116,13 @@ type paths =
 // .cm(t)i, .mli, .cmt, .rei
 | IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
 
+open Infix;
+let showPaths = paths => switch paths {
+  | Impl(cmt, src) => Printf.sprintf("Impl(%s, %s)", cmt, src |? "nil")
+  | Intf(cmti, src) => Printf.sprintf("Intf(%s, %s)", cmti, src |? "nil")
+  | IntfAndImpl(cmti, srci, cmt, src) => Printf.sprintf("IntfAndImpl(%s, %s, %s, %s)", cmti, srci |? "nil", cmt, src |? "nil")
+};
+
 let getImpl = p => switch p {
   | Impl(cmt, Some(s))
   | IntfAndImpl(_, _, cmt, Some(s)) => Some((cmt, s))

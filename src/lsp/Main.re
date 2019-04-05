@@ -140,7 +140,7 @@ let main = () => {
     | [_, "check", rootPath, ...files] =>
       Util.Log.spamError := true;
       log("# Reason Langauge Server - checking individual files to ensure they load & process correctly");
-      let rootPath = maybeConcat(Unix.getcwd(), rootPath);
+      let rootPath = rootPath == "." ? Unix.getcwd() : maybeConcat(Unix.getcwd(), rootPath);
       let state = {
         ...Analyze.TopTypes.empty(),
         rootPath,
