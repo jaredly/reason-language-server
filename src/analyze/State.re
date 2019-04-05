@@ -13,8 +13,13 @@ module Show = {
     ++
     "\nDeps\n" ++
     (Belt.List.map(dependencyModules, (modname) => {
+      try {
+
       let paths = Hashtbl.find(pathsForModule, modname);
       Printf.sprintf("%s (%s : %s)", modname, SharedTypes.getCmt(paths), SharedTypes.getSrc(paths) |? "")
+      } {
+        | Not_found => "ERRROR " ++ modname
+      }
     }) |> String.concat("\n"))
   };
 };

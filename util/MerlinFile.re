@@ -70,7 +70,7 @@ let (|??) = (a, b) => switch a {
 
 let orLog = v => switch v {
   | Error(m) => 
-  // print_endline("Error: " ++ m);
+  Log.log("Error: " ++ m);
   None
   | Ok(m) => Some(m)
 };
@@ -93,6 +93,10 @@ let showFiles = ({src, srci, cmi, cmt, cmti}) =>
 
 let calcPaths = (mname, files) => {
   switch files {
+  | {src: None, srci: None, cmt: Some(cmt), cmti: Some(cmti)} => Ok(`IntfAndImpl(cmt, None, cmti, None))
+  | {src: None, srci: None, cmt: None, cmti: Some(cmti)} => Ok(`Intf(cmti, None))
+  | {src: None, srci: None, cmt: Some(cmt), cmti: None} => Ok(`Impl(cmt, None))
+  | {src: None, srci: None, cmi: Some(cmi)} => Ok(`Intf(cmi, None))
   | {src: None, srci: None} => Error("No source files for module " ++ mname ++ " - " ++ showFiles(files))
   | {src: Some(src), srci: Some(srci), cmt: Some(cmt), cmti: Some(cmti)} =>
     Ok(`IntfAndImpl((cmt, Some(src), cmti, Some(srci))))
@@ -115,7 +119,7 @@ let getModulesFromMerlin = (base, text) => {
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
 
-  Printf.printf("Local %d, Deps %d\n", List.length(localSource), List.length(depSource));
+  Log.log(Printf.sprintf("Local %d, Deps %d\n", List.length(localSource), List.length(depSource)));
 
   let buildByBasename = Hashtbl.create(List.length(source) * 5);
   build->Belt.List.forEach(buildDir =>
@@ -153,7 +157,7 @@ let getModulesFromMerlin = (base, text) => {
   let depsModuleNames = Hashtbl.create(10);
 
   depSource->Belt.List.forEach(dep => {
-    Log.log("For dep " ++ dep);
+    // Log.log("For dep " ++ dep);
     let allFiles = dep->Files.readDirectory;
     let prefix = allFiles->Belt.List.reduce(None, (found, name) => {
       switch (found) {
@@ -161,7 +165,7 @@ let getModulesFromMerlin = (base, text) => {
         | None =>
           switch (Str.split(Str.regexp_string("__"), name)) {
             | [prefix, name, ..._] =>
-            Log.log("Prefix dor " ++ dep ++ ": " ++ prefix);
+            // Log.log("Prefix dor " ++ dep ++ ": " ++ prefix);
             Some(prefix)
             | _ => None
           }
@@ -171,7 +175,7 @@ let getModulesFromMerlin = (base, text) => {
     let moduleNames = Hashtbl.create(10);
     allFiles->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
       let full = dep /+ file;
-      Log.log("Dep " ++ full)
+      // Log.log("Dep " ++ full)
       filesByName->Hashtbl.replace(file, full)
       moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
     });
@@ -194,6 +198,7 @@ let getModulesFromMerlin = (base, text) => {
         )
         | _ => (fullName, cmi, cmt, cmti)
       };
+      let fullName = fullName->String.capitalize_ascii;
       depsModuleNames->Hashtbl.replace(fullName, ());
       let%opt_consume paths = calcPaths(mname, {src, srci, cmi, cmt, cmti}) |> orLog;
       pathsForModule->Hashtbl.replace(fullName, paths);
@@ -202,7 +207,7 @@ let getModulesFromMerlin = (base, text) => {
   });
 
   localSource->Belt.List.forEach(local => {
-    let local = base /+ local;
+    let local = local == "." ? base : base /+ local;
     Log.log("For local dir " ++ local);
     let dune = local /+ "dune";
     if (!Files.exists(dune)) {
@@ -224,6 +229,7 @@ let getModulesFromMerlin = (base, text) => {
           | None => Stdlib.Hashtbl.to_seq_keys(moduleNames)->Stdlib.List.of_seq;
           | Some(modules) => modules
         };
+        Log.log("One ");
         let%opt_consume privateName = switch (public, private) {
           | (Some(p), None) => Ok(p)
           | (_, Some(p)) => Ok(p)
@@ -233,16 +239,31 @@ let getModulesFromMerlin = (base, text) => {
           let fullName =
             mname->String.capitalize_ascii == privateName->String.capitalize_ascii
               ? mname->String.capitalize_ascii : privateName->String.uncapitalize_ascii ++ "__" ++ mname->String.capitalize_ascii;
-          localModuleNames->Hashtbl.replace(fullName, ());
           let src = filesByName->maybeHash(mname ++ ".ml") |?? filesByName->maybeHash(mname ++ ".re");
           let srci = filesByName->maybeHash(mname ++ ".mli") |?? filesByName->maybeHash(mname ++ ".rei");
           let cmi = buildByBasename->maybeHash(fullName ++ ".cmi");
           let cmt = buildByBasename->maybeHash(fullName ++ ".cmt");
           let cmti = buildByBasename->maybeHash(fullName ++ ".cmti");
           let%opt_consume paths = calcPaths(mname, {src, srci, cmi, cmt, cmti}) |> orLog;
+          let fullName = fullName->String.capitalize_ascii;
+          localModuleNames->Hashtbl.replace(fullName, ());
           pathsForModule->Hashtbl.replace(fullName, paths);
           add(fullName, paths);
-        })
+        });
+        switch kind {
+          | `Library =>
+            Log.log("A library " ++ privateName);
+            let cmi = buildByBasename->maybeHash(privateName ++ ".cmi");
+            let cmt = buildByBasename->maybeHash(privateName ++ ".cmt");
+            let cmti = buildByBasename->maybeHash(privateName ++ ".cmti");
+            let%opt_consume paths = calcPaths(privateName, {src: None, srci: None, cmi, cmt, cmti}) |> orLog;
+            Log.log("Ok " ++ privateName);
+            let privateName = privateName->String.capitalize_ascii;
+            localModuleNames->Hashtbl.replace(privateName, ());
+            pathsForModule->Hashtbl.replace(privateName, paths);
+            add(privateName, paths);
+          | `Binary => ()
+        }
       });
       ()
     }

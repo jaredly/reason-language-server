@@ -160,7 +160,8 @@ let main = () => {
               print_endline("  Good: " ++ uri);
             | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
               print_endline("  Error compiling: " ++ uri);
-          }
+          };
+          print_endline(Analyze.State.Show.state(state, package));
         }
       });
       log("Ok");
