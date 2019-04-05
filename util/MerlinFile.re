@@ -118,7 +118,7 @@ let calcPaths = (mname, files) => {
 /** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
 let getModulesFromMerlin = (base, text) => {
   Log.log("start");
-  let (source, build, flags) = parseMerlin(base, text);
+  let (source, build, _flags) = parseMerlin(base, text);
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
 
@@ -191,7 +191,7 @@ let getModulesFromMerlin = (base, text) => {
         | Some(m) => Some(m)
         | None =>
           switch (Str.split(Str.regexp_string("__"), name)) {
-            | [prefix, name, ..._] =>
+            | [prefix, _name, ..._] =>
             // Log.log("Prefix dor " ++ dep ++ ": " ++ prefix);
             Some(prefix)
             | _ => None

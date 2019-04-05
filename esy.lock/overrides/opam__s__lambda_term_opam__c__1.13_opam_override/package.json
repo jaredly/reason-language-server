@@ -3,13 +3,13 @@
     [
       "bash",
       "-c",
-      "#{os == 'windows' ? 'patch -p1 < base-v0.11.1.patch' : 'true'}"
+      "#{os == 'windows' ? 'patch -p1 < lambda-term-1.13.patch' : 'true'}"
     ],
     [
       "jbuilder",
       "build",
       "-p",
-      "base",
+      "lambda-term",
       "-j",
       "4"
     ]

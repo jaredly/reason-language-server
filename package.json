@@ -6,6 +6,7 @@
     "cp-test": "cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
     "package": "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
+    "alltests": "dune exec AllTests",
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",
     "symlink": "esy ln -s '_build/install/default/bin/Bin' bin.exe",
@@ -38,5 +39,8 @@
     "@opam/ppxlib": "*",
     "rex-json": "*",
     "ocaml": "~4.7.2"
+  },
+  "devDependencies": {
+    "@opam/utop": ">=2.0"
   }
 }

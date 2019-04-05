@@ -22,6 +22,8 @@ let (args, debug) = {
   loop(args |> List.rev, [], false)
 };
 
+// Util.Log.spamError := true;
+
 let (suite, name) = switch (args) {
   | [_] => (None, None)
   | [_, suite] => (Some(suite), None)
