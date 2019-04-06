@@ -284,8 +284,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
     opens,
     tmpPath,
     namespace,
-    /* Bucklescript is always 4.02.3 */
-    compilerVersion: BuildSystem.V402,
+    compilerVersion: BuildSystem.getBsCompilerVersion(buildSystem),
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
     includeDirectories:
