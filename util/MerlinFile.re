@@ -127,12 +127,11 @@ let calcPaths = (mname, files) => {
 
 /** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
 let getModulesFromMerlin = (base, text) => {
-  maybeLog("start");
   let (source, build, _flags) = parseMerlin(base, text);
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
 
-  maybeLog(Printf.sprintf("Local %d, Deps %d\n", List.length(localSource), List.length(depSource)));
+  maybeLog(Printf.sprintf("Local %d, Deps %d", List.length(localSource), List.length(depSource)));
 
   // let buildByBasename = Hashtbl.create(List.length(source) * 5);
 
@@ -143,6 +142,8 @@ let getModulesFromMerlin = (base, text) => {
   let addAndCheck = (tbl, k, v) => {
     if (Hashtbl.mem(tbl, k)) {
       maybeLog("DUPLICATE " ++ k ++ " : new value " ++ v ++ " : old value " ++ Hashtbl.find(tbl, k))
+    } else {
+      maybeLog("Build file for " ++ k ++ " : " ++ v);
     };
     Hashtbl.replace(tbl, k, v)
   };
@@ -154,7 +155,7 @@ let getModulesFromMerlin = (base, text) => {
     ->Belt.List.keep(isBuildFile)
     ->Belt.List.forEach(name => {
         let full = fileConcat(buildDir, name);
-        maybeLog("Build file " ++ full);
+        // maybeLog("Build file " ++ full);
         let moduleName = name->String.capitalize_ascii->Filename.chop_extension;
         if (Filename.check_suffix(name, ".cmi")) {
           cmiByModuleName->addAndCheck(moduleName, full)
@@ -280,7 +281,7 @@ let getModulesFromMerlin = (base, text) => {
             kind == `UnwrappedLibrary
               ? mname
               : mname->String.capitalize_ascii == privateName->String.capitalize_ascii
-                  ? mname->String.capitalize_ascii : privateName ++ "__" ++ mname->String.capitalize_ascii;
+                  ? mname->String.capitalize_ascii : privateName->String.capitalize_ascii ++ "__" ++ mname->String.capitalize_ascii;
           // let moduleName = 
           let src = filesByName->maybeHash(mname ++ ".ml") |?? filesByName->maybeHash(mname ++ ".re");
           let srci = filesByName->maybeHash(mname ++ ".mli") |?? filesByName->maybeHash(mname ++ ".rei");

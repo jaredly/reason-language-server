@@ -5,7 +5,7 @@ let debugReferences = ref(false);
 
 let maybeLog = m => {
   if (debugReferences^) {
-    Log.log(m);
+    Log.log("[ref] " ++ m);
   }
 };
 
@@ -34,10 +34,10 @@ let posMatch = ({Lexing.pos_cnum}, {Lexing.pos_cnum: c2}) => {
 };
 
 let locForLocations = (~extra, location: Location.t) => {
-  /* Log.log("looking for " ++ Utils.showLocation(location)); */
+  /* maybeLog("looking for " ++ Utils.showLocation(location)); */
   extra.locations |> Utils.find(((loc: Location.t, l)) => {
-    /* Log.log("  > checking " ++ Utils.showLocation(loc));
-    Log.log("    " ++ (switch l {
+    /* maybeLog("  > checking " ++ Utils.showLocation(loc));
+    maybeLog("    " ++ (switch l {
       | Loc.Typed(_) => "typed"
       | Constant(_) => "constant"
       | Module(_) => "module"
@@ -132,10 +132,10 @@ let definedForLoc = (~file, ~getModule, loc) => {
 
 let alternateDeclared = (~file, ~pathsForModule, ~getUri, declared, tip) => {
   let%opt paths = Utils.maybeHash(pathsForModule, file.moduleName);
-  Log.log("paths for " ++ file.moduleName);
+  maybeLog("paths for " ++ file.moduleName);
   switch (paths) {
   | SharedTypes.IntfAndImpl(_, Some(intf), _, Some(impl)) =>
-    Log.log("Have both!!");
+    maybeLog("Have both!!");
     let intf = Utils.toUri(intf);
     let impl = Utils.toUri(impl);
     if (intf == file.uri) {
@@ -180,7 +180,7 @@ let resolveModuleReference = (~file, ~getModule, declared: SharedTypes.declared(
           /* Some((file.uri, validateLoc(md.name.loc, md.extentLoc))) */
         | `GlobalMod(name) =>
           let%opt file = getModule(name);
-          /* Log.log("Congrats, found a global mod"); */
+          /* maybeLog("Congrats, found a global mod"); */
           Some((file, None))
         | _ => None
       };
@@ -322,7 +322,7 @@ let definition = (~file, ~getModule, stamp, tip) => {
       let loc = validateLoc(declared.name.loc, declared.extentLoc);
       let env = Query.fileEnv(file);
       let uri = Query.getSourceUri(~env, ~getModule, declared.modulePath);
-      Log.log("Inner uri " ++ uri);
+      maybeLog("Inner uri " ++ uri);
       Some((uri, loc))
   };
 };
@@ -335,11 +335,11 @@ let orLog = (message, v) => switch v {
 let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
   switch (loc) {
     | Loc.Typed(_, Definition(stamp, tip)) => {
-      Log.log("Trying to find a defintion for a definition");
+      maybeLog("Trying to find a defintion for a definition");
       let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
-      Log.log("Declared");
+      maybeLog("Declared");
       if (declared.exported) {
-        Log.log("exported, looking for alternate " ++ file.moduleName);
+        maybeLog("exported, looking for alternate " ++ file.moduleName);
         let%opt (file, _extra, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
         let loc = validateLoc(declared.name.loc, declared.extentLoc);
         Some((file.uri, loc))
