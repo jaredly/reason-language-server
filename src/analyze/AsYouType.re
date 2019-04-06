@@ -262,17 +262,17 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       }
     }
     | Ok((lines, error)) => {
-      Log.log("Now loading " ++ cmtPath);
-      switch (Files.maybeStat(cmtPath)) {
-      | Some({Unix.st_size: size}) =>
-      Log.log("Size " ++ string_of_int(size))
-      let ic = open_in_bin(cmtPath);
-      let buffer = really_input_string(ic,String.length(Config.cmi_magic_number));
-      Log.log(buffer);
-      Log.log(Config.cmi_magic_number);
-      close_in(ic);
-      | _ => Log.log("Doesn't exist")
-      };
+      // Log.log("Now loading " ++ cmtPath);
+      // switch (Files.maybeStat(cmtPath)) {
+      // | Some({Unix.st_size: size}) =>
+      // Log.log("Size " ++ string_of_int(size))
+      // let ic = open_in_bin(cmtPath);
+      // let buffer = really_input_string(ic,String.length(Config.cmi_magic_number));
+      // Log.log(buffer);
+      // Log.log(Config.cmi_magic_number);
+      // close_in(ic);
+      // | _ => Log.log("Doesn't exist")
+      // };
       let%try_wrap full = fullForCmt(cmtPath, uri, x => x);
       Success(String.concat("\n", lines @ error), full)
     }

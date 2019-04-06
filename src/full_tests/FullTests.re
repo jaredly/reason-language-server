@@ -23,9 +23,11 @@ files->Belt.List.forEach(fileName => {
     | Ok(package) => switch (State.getCompilationResult(uri, state, ~package)) {
       | Error(message) =>
         print_endline("  Invalid compilation result: " ++ message);
-      | Ok(Success(_text, {file, extra})) =>
+      | Ok(Success(_message, {file, extra})) =>
         extra.locations->Belt.List.forEach(((location, loc)) => {
           switch loc {
+            // Skip builtin types
+            | Typed(_, LocalReference(tag, Type)) when tag <= 15 => ()
             // | Constant(_) | Typed(_, Definition(_, _)) | Open
             // | TopLevelModule
             // | Explanation(_) => () // these don't need definitions

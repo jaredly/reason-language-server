@@ -1,5 +1,9 @@
 open Infix;
 
+let debug = ref(false);
+
+let maybeLog = message => if (debug^) { Log.log("[MerlinFile]: " ++ message) };
+
 /** This is a dirty hack to get around the bug in bsb native that doesn't do the proper ppx flags for ppxs */
 let fixPpx = (flg, base) => {
   switch (Str.split(Str.regexp_string(" "), flg)) {
@@ -70,7 +74,7 @@ let (|??) = (a, b) => switch a {
 
 let orLog = v => switch v {
   | Error(m) => 
-  Log.log("Error: " ++ m);
+  maybeLog("Error: " ++ m);
   None
   | Ok(m) => Some(m)
 };
@@ -90,6 +94,12 @@ let showFiles = ({src, srci, cmi, cmt, cmti}) =>
   cmt->orBlank,
   cmti->orBlank
   );
+
+let showPaths = paths => switch paths {
+  | `Impl(cmt, src) => Printf.sprintf("Impl(%s, %s)", cmt, src |? "nil")
+  | `Intf(cmti, src) => Printf.sprintf("Intf(%s, %s)", cmti, src |? "nil")
+  | `IntfAndImpl(cmti, srci, cmt, src) => Printf.sprintf("IntfAndImpl(%s, %s, %s, %s)", cmti, srci |? "nil", cmt, src |? "nil")
+};
 
 let calcPaths = (mname, files) => {
   switch (files) {
@@ -117,12 +127,12 @@ let calcPaths = (mname, files) => {
 
 /** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
 let getModulesFromMerlin = (base, text) => {
-  Log.log("start");
+  maybeLog("start");
   let (source, build, _flags) = parseMerlin(base, text);
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
 
-  Log.log(Printf.sprintf("Local %d, Deps %d\n", List.length(localSource), List.length(depSource)));
+  maybeLog(Printf.sprintf("Local %d, Deps %d\n", List.length(localSource), List.length(depSource)));
 
   // let buildByBasename = Hashtbl.create(List.length(source) * 5);
 
@@ -132,19 +142,19 @@ let getModulesFromMerlin = (base, text) => {
 
   let addAndCheck = (tbl, k, v) => {
     if (Hashtbl.mem(tbl, k)) {
-      Log.log("DUPLICATE " ++ k ++ " : new value " ++ v ++ " : old value " ++ Hashtbl.find(tbl, k))
+      maybeLog("DUPLICATE " ++ k ++ " : new value " ++ v ++ " : old value " ++ Hashtbl.find(tbl, k))
     };
     Hashtbl.replace(tbl, k, v)
   };
 
   build->Belt.List.forEach(buildDir => {
     let buildDir = maybeConcat(base, buildDir);
-    Log.log("## Build dir " ++ buildDir);
+    maybeLog("## Build dir " ++ buildDir);
     Files.readDirectory(buildDir)
     ->Belt.List.keep(isBuildFile)
     ->Belt.List.forEach(name => {
         let full = fileConcat(buildDir, name);
-        Log.log("Build file " ++ full);
+        maybeLog("Build file " ++ full);
         let moduleName = name->String.capitalize_ascii->Filename.chop_extension;
         if (Filename.check_suffix(name, ".cmi")) {
           cmiByModuleName->addAndCheck(moduleName, full)
@@ -154,7 +164,7 @@ let getModulesFromMerlin = (base, text) => {
           cmtiByModuleName->addAndCheck(moduleName, full)
         };
         // if (buildByBasename->Hashtbl.mem(name)) {
-        //   Log.log(
+        //   maybeLog(
         //     "DUPLICATE "
         //     ++ name
         //     ++ " : "
@@ -184,7 +194,7 @@ let getModulesFromMerlin = (base, text) => {
   let depsModuleNames = Hashtbl.create(10);
 
   depSource->Belt.List.forEach(dep => {
-    // Log.log("For dep " ++ dep);
+    maybeLog("For dependency dir " ++ dep);
     let allFiles = dep->Files.readDirectory;
     let prefix = allFiles->Belt.List.reduce(None, (found, name) => {
       switch (found) {
@@ -192,7 +202,7 @@ let getModulesFromMerlin = (base, text) => {
         | None =>
           switch (Str.split(Str.regexp_string("__"), name)) {
             | [prefix, _name, ..._] =>
-            // Log.log("Prefix dor " ++ dep ++ ": " ++ prefix);
+            maybeLog(" > prefix: " ++ prefix);
             Some(prefix)
             | _ => None
           }
@@ -202,7 +212,7 @@ let getModulesFromMerlin = (base, text) => {
     let moduleNames = Hashtbl.create(10);
     allFiles->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
       let full = dep /+ file;
-      // Log.log("Dep " ++ full)
+      maybeLog(" > file " ++ full)
       filesByName->Hashtbl.replace(file, full)
       moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
     });
@@ -230,6 +240,7 @@ let getModulesFromMerlin = (base, text) => {
       // let fullName = fullName->String.capitalize_ascii;
       depsModuleNames->Hashtbl.replace(moduleName, ());
       let%opt_consume paths = calcPaths(moduleName, {src, srci, cmi, cmt, cmti}) |> orLog;
+      maybeLog(" > module " ++ moduleName ++ " :: " ++ showPaths(paths));
       pathsForModule->Hashtbl.replace(moduleName, paths);
       add(moduleName, paths);
     })
@@ -237,17 +248,17 @@ let getModulesFromMerlin = (base, text) => {
 
   localSource->Belt.List.forEach(local => {
     let local = local == "." ? base : base /+ local;
-    Log.log("For local dir " ++ local);
+    maybeLog("For local dir " ++ local);
     let dune = local /+ "dune";
     if (!Files.exists(dune)) {
-      Log.log("No dune file for source directory: " ++ local ++ ". Skipping");
+      maybeLog("No dune file for source directory: " ++ local ++ ". Skipping");
     } else {
       let duneData = JbuildFile.parse(Files.readFileExn(dune));
       let filesByName = Hashtbl.create(10);
       let moduleNames = Hashtbl.create(10);
       local->Files.readDirectory->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
         let full = local /+ file;
-        Log.log("Full " ++ full);
+        // maybeLog("Full " ++ full);
         filesByName->Hashtbl.replace(file, full)
         moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
       });
@@ -258,7 +269,7 @@ let getModulesFromMerlin = (base, text) => {
           | None => Stdlib.Hashtbl.to_seq_keys(moduleNames)->Stdlib.List.of_seq;
           | Some(modules) => modules
         };
-        Log.log("One ");
+        // maybeLog("One ");
         let%opt_consume privateName = switch (public, private) {
           | (Some(p), None) => Ok(p)
           | (_, Some(p)) => Ok(p)
@@ -277,20 +288,27 @@ let getModulesFromMerlin = (base, text) => {
           let cmt = cmtByModuleName->maybeHash(moduleName);
           let cmti = cmtiByModuleName->maybeHash(moduleName);
           let%opt_consume paths = calcPaths(moduleName, {src, srci, cmi, cmt, cmti}) |> orLog;
+          maybeLog(" > module " ++ moduleName ++ " :: " ++ showPaths(paths));
           localModuleNames->Hashtbl.replace(moduleName, ());
           pathsForModule->Hashtbl.replace(moduleName, paths);
           add(moduleName, paths);
         });
         switch kind {
           | `Library =>
-            Log.log("A library " ++ privateName);
+            // maybeLog("A library " ++ privateName);
             let libModuleName = privateName->String.capitalize_ascii;
+            let libModuleName = if (Hashtbl.mem(localModuleNames, libModuleName)) {
+              libModuleName ++ "__"
+            } else {
+              libModuleName
+            };
             let cmi = cmiByModuleName->maybeHash(libModuleName);
             let cmt = cmtByModuleName->maybeHash(libModuleName);
             let cmti = cmtiByModuleName->maybeHash(libModuleName);
             let%opt_consume paths = calcPaths(libModuleName, {src: None, srci: None, cmi, cmt, cmti}) |> orLog;
-            Log.log("Ok " ++ libModuleName);
+            // maybeLog("Ok " ++ libModuleName);
             // let privateName = privateName->String.capitalize_ascii;
+            maybeLog(" > module " ++ libModuleName ++ " :: " ++ showPaths(paths));
             localModuleNames->Hashtbl.replace(libModuleName, ());
             pathsForModule->Hashtbl.replace(libModuleName, paths);
             add(libModuleName, paths);

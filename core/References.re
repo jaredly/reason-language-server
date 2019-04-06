@@ -1,9 +1,12 @@
 
 open SharedTypes;
 
+let debugReferences = ref(false);
+
 let maybeLog = m => {
-  Log.log(m);
-  ()
+  if (debugReferences^) {
+    Log.log(m);
+  }
 };
 
 let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}, loc_end}) =>
@@ -324,6 +327,11 @@ let definition = (~file, ~getModule, stamp, tip) => {
   };
 };
 
+let orLog = (message, v) => switch v {
+  | None => maybeLog(message); None
+  | _ => v
+};
+
 let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
   switch (loc) {
     | Loc.Typed(_, Definition(stamp, tip)) => {
@@ -348,7 +356,7 @@ let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
     | TopLevelModule(name) =>
       maybeLog("Toplevel " ++ name);
       open Infix;
-      let%opt src = Utils.maybeHash(pathsForModule, name) |?> SharedTypes.getSrc;
+      let%opt src = Utils.maybeHash(pathsForModule, name) |> orLog("No paths found") |?> SharedTypes.getSrc |> orLog("No src found");
       Some((Utils.toUri(src), Utils.topLoc(src)))
     | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {

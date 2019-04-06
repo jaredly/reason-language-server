@@ -1,3 +1,4 @@
+let debug: ref(bool);
 let fixPpx: (string, string) => string;
 let parseMerlin:
   (string, string) => (list(string), list(string), list(string));
@@ -32,7 +33,7 @@ let getModulesFromMerlin:
   (
     Hashtbl.t(
       string,
-      [>
+      [
         | `Impl(string, option(string))
         | `Intf(string, option(string))
         | `IntfAndImpl(string, option(string), string, option(string))
