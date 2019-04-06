@@ -1,0 +1,12 @@
+{
+  "name": "dune-complex",
+  "esy": {
+    "build": "dune build -p #{self.name}",
+    "buildsInSource": "_build"
+  },
+  "dependencies": {
+    "@opam/dune": "*",
+    "rex-json": "jaredly/rex-json#esy",
+    "@esy-ocaml/reason": "*"
+  }
+}

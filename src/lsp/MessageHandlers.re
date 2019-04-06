@@ -12,7 +12,7 @@ let (-?>) = (_, b) => b;
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
 
-let getPackage = State.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
+let getPackage = Packages.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
 
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
@@ -61,6 +61,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           let tokenParts = Utils.split_on_char('.', lident);
           let rawOpens = PartialParser.findOpens(text, offset);
           let%opt declared = NewCompletions.findDeclaredValue(
+            ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
             ~full,
             ~package,
             ~rawOpens,
@@ -142,6 +143,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let allModules = package.localModules @ package.dependencyModules;
       let items = NewCompletions.get(
+        ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
         ~full={file, extra},
         ~package,
         ~rawOpens,
@@ -648,9 +650,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("custom:reasonLanguageServer/showPpxedSource", (state, params) => {
-    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try (uri, _pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
-    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try (file, _extra) = State.fileForUri(state, ~package, uri);
     let%try parsetree = AsYouType.getParsetree(
       ~uri,
       ~moduleName=file.moduleName,
@@ -692,9 +694,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("custom:reasonLanguageServer/showAst", (state, params) => {
-    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try (uri, _pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
-    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try (file, _extra) = State.fileForUri(state, ~package, uri);
     let%try parsetree = AsYouType.getParsetree(
       ~uri,
       ~moduleName=file.moduleName,

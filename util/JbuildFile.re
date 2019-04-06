@@ -23,6 +23,52 @@ let rec getNamedIdent = items => switch items {
   | [_, ...rest] => getNamedIdent(rest)
 };
 
+let rec getModules = items => switch items {
+  | [] => None
+  | [`List([`Ident("modules"), ...modules]), ..._] => Some(modules->Belt.List.keepMap(item => switch item {
+    | `Ident(name) => Some(name)
+    | _ => None
+  }))
+  | [_, ...rest] => getModules(rest)
+}
+
+let isUnwrapped = items => {
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("wrapped"), `Ident("false")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(items)
+};
+
+let includeRecursive = items => {
+// (include_subdirs unqualified)
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("include_subdirs"), `Ident("unqualified")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(items)
+};
+
+let getLibsAndBinaries = jbuildConfig => {
+  jbuildConfig->Belt.List.keepMap(item => switch item {
+    | `List([`Ident("library"), `List(library)])
+    | `List([`Ident("library"), ...library]) => {
+      let (public, private) = getNamedIdent(library)
+      let modules = getModules(library);
+      Some((isUnwrapped(library) ? `UnwrappedLibrary : `Library, public, private, modules))
+    }
+    | `List([`Ident("executable"), `List(executable)])
+    | `List([`Ident("executable"), ...executable]) => {
+      let (public, private) = getNamedIdent(executable)
+      let modules = getModules(executable);
+      Some((`Binary, public, private, modules))
+    }
+    | _ => None
+  })
+};
+
 let findLibraryName = jbuildConfig => {
   let rec loop = items => switch items {
     | [] => None

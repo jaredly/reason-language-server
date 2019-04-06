@@ -3,7 +3,7 @@
   (name Bin)
   (public_name Bin)
   (libraries Lsp)
+  (modules Bin)
   (flags :standard -w -9)
   (preprocess (pps Belt_ppx Ppx_monads))
   )
-

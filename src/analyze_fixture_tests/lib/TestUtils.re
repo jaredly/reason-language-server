@@ -3,10 +3,10 @@ let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
 let getPackage = (localModules) => {
-  let buildSystem = BuildSystem.Dune(Esy("0.4.9"));
+  let buildSystem = BuildSystem.Dune(Esy("0.5.6"));
   let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
   let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
-  let (pathsForModule, nameForPath) = State.makePathsForModule(localModules, []);
+  let (pathsForModule, nameForPath) = Packages.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
     localModules: localModules |. Belt.List.map(fst),
@@ -20,7 +20,7 @@ let getPackage = (localModules) => {
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
-    compilerVersion: BuildSystem.V406,
+    compilerVersion: BuildSystem.V407,
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,
@@ -137,8 +137,8 @@ let makeFilesList = files => {
     }
   });
   normals |. List.concat(Hashtbl.fold((mname, iname, res) =>  {
-  [(mname, SharedTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res]
-}, interfaces, []))
+    [(mname, SharedTypes.Intf(cmtBase ++ mname ++ ".cmti", Some(srcBase ++ iname))), ...res]
+  }, interfaces, []))
 };
 
 let setUp = (files, text) => {
@@ -149,11 +149,11 @@ let setUp = (files, text) => {
       TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
     ))) */
     makeFilesList(files)
-    @ [("Test", Impl("/tmp/.lsp-test/Test.cmt", Some("/path/to/Test.re")))]
+    @ [("Test", Impl("/tmp/.lsp-test/Test.cmt", Some(mainPath)))]
   );
 
   files |> List.iter(((name, contents)) => {
-    /* print_endline("Compiling " ++ name); */
+    /* Log.log("Compiling " ++ name); */
     let moduleName = Filename.chop_extension(name);
     let uri = uriForName(name);
     let%try_force result = AsYouType.process(

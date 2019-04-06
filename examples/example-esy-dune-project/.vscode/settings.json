@@ -1,6 +1,6 @@
 {
   "editor.codeLens": true,
-  "reason_language_server.location": "../../_esy/default/build/install/default/bin/Bin",
+  "reason_language_server.location": "../../_build/install/default/bin/Bin",
   // "reason_language_server.location": "../lib/bs/native/bin.native.exe",
   "reason_language_server.reloadOnChange": true,
   "reason_language_server.per_value_codelens": true,

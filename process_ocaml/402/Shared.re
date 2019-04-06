@@ -4,15 +4,27 @@ open Belt.Result;
 
 let tryReadCmi = cmi =>
   switch (Cmi_format.read_cmi(cmi)) {
-  | exception _ => Error("Invalid cmi format - probably wrong ocaml version")
+  | exception err => Error("Invalid cmi format " ++ cmi ++ " - probably wrong ocaml version, expected " ++ Config.version ++ " : " ++ Printexc.to_string(err))
   | x => Ok(x)
   };
 
-let tryReadCmt = cmt =>
-  switch (Cmt_format.read_cmt(cmt)) {
-  | exception _ => Error("Invalid cmt format - probably wrong ocaml version")
-  | x => Ok(x)
-  };
+let tryReadCmt = cmt => {
+  if (!Util.Files.exists(cmt)) {
+    Error("Cmt file does not exist " ++ cmt)
+  } else {
+    switch (Cmt_format.read_cmt(cmt)) {
+    | exception Cmi_format.Error(err) =>
+      Error("Failed to load " ++ cmt ++ " as a cmt w/ ocaml version " ++
+      "402" ++
+      ", error: " ++ {
+        Cmi_format.report_error(Format.str_formatter, err);
+        Format.flush_str_formatter();
+      })
+    | exception err => Error("Invalid cmt format " ++ cmt ++ " - probably wrong ocaml version, expected " ++ Config.version ++ " : " ++ Printexc.to_string(err))
+    | x => Ok(x)
+    };
+  }
+};
 
 /** TODO move to the Process_ stuff */
 let rec dig = (typ) =>
@@ -93,19 +105,12 @@ let rec asSimpleType = t => {
       SimpleType.Tuple(items->Belt.List.map(asSimpleType))
     | Tconstr(path, args, _) =>
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
-    | Tvariant({row_fields, row_more, row_closed, row_fixed, row_name}) =>
+    | Tvariant({row_fields, row_more: _, row_closed, row_fixed: _, row_name: _}) =>
       SimpleType.RowVariant(
-        row_fields->Belt.List.map(((label, field)) => 
-        {
-          // print_endline("For label " ++ label);
-          switch field {
-            | Rpresent(None) => (label, None)
-            | Rpresent(Some(arg)) => (label, Some(asSimpleType(arg)))
-            | Reither(_, [arg], _, _) => (label, Some(asSimpleType(arg)))
-            | _ => (label, None)
-          }
-        }
-        ),
+        row_fields->Belt.List.map(((label, field)) => switch field {
+          | Reither(_, [arg], _, _) => (label, Some(asSimpleType(arg)))
+          | _ => (label, None)
+        }),
         row_closed
       )
     | _ => SimpleType.Other

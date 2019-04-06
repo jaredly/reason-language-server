@@ -1,9 +1,12 @@
 
 open SharedTypes;
 
+let debugReferences = ref(false);
+
 let maybeLog = m => {
-  Log.log(m);
-  ()
+  if (debugReferences^) {
+    Log.log("[ref] " ++ m);
+  }
 };
 
 let checkPos = ((line, char), {Location.loc_start: {pos_lnum, pos_bol, pos_cnum}, loc_end}) =>
@@ -31,10 +34,10 @@ let posMatch = ({Lexing.pos_cnum}, {Lexing.pos_cnum: c2}) => {
 };
 
 let locForLocations = (~extra, location: Location.t) => {
-  /* print_endline("looking for " ++ Utils.showLocation(location)); */
+  /* maybeLog("looking for " ++ Utils.showLocation(location)); */
   extra.locations |> Utils.find(((loc: Location.t, l)) => {
-    /* print_endline("  > checking " ++ Utils.showLocation(loc));
-    print_endline("    " ++ (switch l {
+    /* maybeLog("  > checking " ++ Utils.showLocation(loc));
+    maybeLog("    " ++ (switch l {
       | Loc.Typed(_) => "typed"
       | Constant(_) => "constant"
       | Module(_) => "module"
@@ -129,10 +132,10 @@ let definedForLoc = (~file, ~getModule, loc) => {
 
 let alternateDeclared = (~file, ~pathsForModule, ~getUri, declared, tip) => {
   let%opt paths = Utils.maybeHash(pathsForModule, file.moduleName);
-  Log.log("paths for " ++ file.moduleName);
+  maybeLog("paths for " ++ file.moduleName);
   switch (paths) {
   | SharedTypes.IntfAndImpl(_, Some(intf), _, Some(impl)) =>
-    Log.log("Have both!!");
+    maybeLog("Have both!!");
     let intf = Utils.toUri(intf);
     let impl = Utils.toUri(impl);
     if (intf == file.uri) {
@@ -177,7 +180,7 @@ let resolveModuleReference = (~file, ~getModule, declared: SharedTypes.declared(
           /* Some((file.uri, validateLoc(md.name.loc, md.extentLoc))) */
         | `GlobalMod(name) =>
           let%opt file = getModule(name);
-          /* Log.log("Congrats, found a global mod"); */
+          /* maybeLog("Congrats, found a global mod"); */
           Some((file, None))
         | _ => None
       };
@@ -269,31 +272,30 @@ let forPos = (~file, ~extra, pos) => {
   Some(refs)
 };
 
-let validateLoc = (loc: Location.t, backup: Location.t) => {
-  if (loc.loc_start.pos_cnum == -1) {
-    if (backup.loc_start.pos_cnum == -1) {
+let validateLoc = (loc: Location.t, backup: Location.t) =>
+  if (loc.loc_start.pos_cnum == (-1)) {
+    if (backup.loc_start.pos_cnum == (-1)) {
       {
         Location.loc_ghost: true,
         loc_start: {
           pos_cnum: 0,
           pos_lnum: 1,
           pos_bol: 0,
-          pos_fname: ""
+          pos_fname: "",
         },
         loc_end: {
           pos_cnum: 0,
           pos_lnum: 1,
           pos_bol: 0,
-          pos_fname: ""
+          pos_fname: "",
         },
-        }
+      };
     } else {
-      backup
-    }
+      backup;
+    };
   } else {
-    loc
-  }
-};
+    loc;
+  };
 
 let resolveModuleDefinition = (~file, ~getModule, stamp) => {
   let%opt md = Query.hashFind(file.stamps.modules, stamp);
@@ -319,19 +321,24 @@ let definition = (~file, ~getModule, stamp, tip) => {
       let loc = validateLoc(declared.name.loc, declared.extentLoc);
       let env = Query.fileEnv(file);
       let uri = Query.getSourceUri(~env, ~getModule, declared.modulePath);
-      Log.log("Inner uri " ++ uri);
+      maybeLog("Inner uri " ++ uri);
       Some((uri, loc))
   };
+};
+
+let orLog = (message, v) => switch v {
+  | None => maybeLog(message); None
+  | _ => v
 };
 
 let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
   switch (loc) {
     | Loc.Typed(_, Definition(stamp, tip)) => {
-      Log.log("Trying to find a defintion for a definition");
+      maybeLog("Trying to find a defintion for a definition");
       let%opt declared = Query.declaredForTip(~stamps=file.stamps, stamp, tip);
-      Log.log("Declared");
+      maybeLog("Declared");
       if (declared.exported) {
-        Log.log("exported, looking for alternate " ++ file.moduleName);
+        maybeLog("exported, looking for alternate " ++ file.moduleName);
         let%opt (file, _extra, declared) = alternateDeclared(~pathsForModule, ~file, ~getUri, declared, tip);
         let loc = validateLoc(declared.name.loc, declared.extentLoc);
         Some((file.uri, loc))
@@ -348,7 +355,7 @@ let definitionForLoc = (~pathsForModule, ~file, ~getUri, ~getModule, loc) => {
     | TopLevelModule(name) =>
       maybeLog("Toplevel " ++ name);
       open Infix;
-      let%opt src = Utils.maybeHash(pathsForModule, name) |?> SharedTypes.getSrc;
+      let%opt src = Utils.maybeHash(pathsForModule, name) |> orLog("No paths found") |?> SharedTypes.getSrc |> orLog("No src found");
       Some((Utils.toUri(src), Utils.topLoc(src)))
     | Module(LocalReference(stamp, tip))
     | Typed(_, LocalReference(stamp, tip)) => {

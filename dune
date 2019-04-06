@@ -2,3 +2,7 @@
   examples
   node_modules
 ))
+
+(env
+    (dev
+      (flags (:standard -warn-error -A))))

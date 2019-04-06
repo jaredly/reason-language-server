@@ -1,3 +1,4 @@
-B /Users/jared/clone/tools/reason-language-server/examples/example-esy-dune-project/node_modules/.cache/_esy/store/b/hello-0.1.0-330ac495/default/lib/.lib.objs
+EXCLUDE_QUERY_DIR
+B /Users/jared/clone/tools/reason-language-server/examples/example-esy-dune-project/_esy/default/store/b/hello-bb5af4c3/default/lib/.lib.objs/byte
 S .
 FLG -open Lib -w -40

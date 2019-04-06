@@ -14,7 +14,7 @@ let checkExampleProject = (rootPath, sourcePaths) => {
   })->Belt.List.toArray->Belt.List.concatMany;
   files->Belt.List.reduce([], (failures, path) => {
     let uri = Utils.toUri(path);
-    switch (State.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
+    switch (Packages.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
       | Error(message) =>
         print_endline("  Unable to get package: " ++ uri)
         print_endline(message);
@@ -35,12 +35,13 @@ let checkExampleProject = (rootPath, sourcePaths) => {
 };
 
 let projects = [
-  ("example-project", ["src"], "npm install"),
-  ("example-es6-imports", ["src"], "npm install"),
-  ("example-react", ["src", "__tests__"], "npm install"),
-  ("name_with_underscore", ["src"], "npm install"),
-  ("bs-3.1.5", ["src"], "npm install"),
-  /* ("example-esy-dune-project", ["lib", "bin"], "esy"), */
+  ("dune-complex", ["src", "both", "awesome"], "esy"),
+  // ("example-project", ["src"], "npm install"),
+  // ("example-es6-imports", ["src"], "npm install"),
+  // ("example-react", ["src", "__tests__"], "npm install"),
+  // ("name_with_underscore", ["src"], "npm install"),
+  // ("bs-3.1.5", ["src"], "npm install"),
+  // ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
 
 

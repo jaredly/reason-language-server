@@ -77,7 +77,7 @@ let checkDocumentTimers = state => {
   let now = Unix.gettimeofday();
   let removed = Hashtbl.fold((uri, timer, removed) => {
     if (now > timer) {
-      switch (State.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics, uri, state)) {
+      switch (Packages.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics, uri, state)) {
         | Ok(package) => runDiagnostics(uri, state, ~package);
         | Error(_) => () /* ignore... TODO should I do something */
       };

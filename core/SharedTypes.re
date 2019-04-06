@@ -113,7 +113,15 @@ type filePath = string
 type paths =
 | Impl(filePath, option(filePath))
 | Intf(filePath, option(filePath))
+// .cm(t)i, .mli, .cmt, .rei
 | IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
+
+open Infix;
+let showPaths = paths => switch paths {
+  | Impl(cmt, src) => Printf.sprintf("Impl(%s, %s)", cmt, src |? "nil")
+  | Intf(cmti, src) => Printf.sprintf("Intf(%s, %s)", cmti, src |? "nil")
+  | IntfAndImpl(cmti, srci, cmt, src) => Printf.sprintf("IntfAndImpl(%s, %s, %s, %s)", cmti, srci |? "nil", cmt, src |? "nil")
+};
 
 let getImpl = p => switch p {
   | Impl(cmt, Some(s))
@@ -340,6 +348,12 @@ module Loc = {
   | GlobalReference(string, path, tip)
   | NotFound
   | Definition(int, tip);
+  let typedToString = t => switch t {
+    | LocalReference(stamp, tip) => Printf.sprintf("Local(%d, %s)", stamp, tipToString(tip))
+    | GlobalReference(m, path, tip) => Printf.sprintf("Global(%s, %s, %s)", m, pathToString(path), tipToString(tip))
+    | Definition(stamp, tip) => Printf.sprintf("Definition(%d, %s)", stamp, tipToString(tip))
+    | NotFound => "NotFound"
+  };
   type t =
   | Typed(flexibleType, typed)
   | Constant(Asttypes.constant)
