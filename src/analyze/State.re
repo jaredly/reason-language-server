@@ -117,6 +117,7 @@ let escapePpxFlag = flag => {
     let parts = Utils.split_on_char(' ', flag);
     switch(parts) {
       | ["-ppx", ...ppx] => "-ppx " ++ (String.concat(" ", ppx) |> Filename.quote)
+      | ["-pp", ...pp] => "-pp " ++ (String.concat(" ", pp) |> Filename.quote)
       | _ => flag
     }
   }
