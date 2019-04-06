@@ -304,12 +304,6 @@ let getRefmt = (rootPath, buildSystem) => {
   };
 };
 
-let getBsCompilerVersion = buildSystem =>
-  switch buildSystem {
-    | Bsb(version) when version >= "6.0.0" => V406
-    | _ => V402
-  };
-
 let hiddenLocation = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | Bsb(_)
