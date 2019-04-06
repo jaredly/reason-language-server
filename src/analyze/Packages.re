@@ -296,7 +296,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   Log.log("Get ocaml stdlib dirs");
   let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
 
-  let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (true) {
+  let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (!state.settings.useOldDuneProcess) {
     let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(
       ~stdlibs,
       rootPath, merlinRaw);
