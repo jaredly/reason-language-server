@@ -126,8 +126,11 @@ let calcPaths = (mname, files) => {
 };
 
 /** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
-let getModulesFromMerlin = (base, text) => {
+let getModulesFromMerlin = (~stdlibs, base, text) => {
   let (source, build, _flags) = parseMerlin(base, text);
+
+  let source = stdlibs @ source;
+  let build = stdlibs @ build;
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
 

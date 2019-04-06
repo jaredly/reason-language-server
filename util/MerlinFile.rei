@@ -29,7 +29,7 @@ let calcPaths:
     string,
   );
 let getModulesFromMerlin:
-  (string, string) =>
+  (~stdlibs: list(string), string, string) =>
   (
     Hashtbl.t(
       string,

@@ -162,7 +162,7 @@ let singleDefinition = (rootPath, filePath, line, col) => {
   let uri = Utils.toUri(filePath);
   switch (processFile(~state, ~uri)) {
     | Some((package, Some({file, extra}))) => {
-      let res = {
+      let _ = {
         let%opt_consume (location, loc) = References.locForPos(~extra, (line, col - 1)) |> orLog(
           Printf.sprintf("Nothing definable found at %s:%d:%d", filePath, line, col)
         );

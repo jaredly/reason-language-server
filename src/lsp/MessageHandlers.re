@@ -61,6 +61,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           let tokenParts = Utils.split_on_char('.', lident);
           let rawOpens = PartialParser.findOpens(text, offset);
           let%opt declared = NewCompletions.findDeclaredValue(
+            ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
             ~full,
             ~package,
             ~rawOpens,
@@ -142,6 +143,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let allModules = package.localModules @ package.dependencyModules;
       let items = NewCompletions.get(
+        ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
         ~full={file, extra},
         ~package,
         ~rawOpens,

@@ -287,8 +287,13 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
   Files.mkdirp(hiddenLocation);
 
+  Log.log("Get ocaml stdlib dirs");
+  let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
+
   let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (true) {
-    let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(rootPath, merlinRaw);
+    let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(
+      ~stdlibs,
+      rootPath, merlinRaw);
     let pathsForModule = Hashtbl.create(Stdlib.Hashtbl.length(pathsForModule_));
     pathsForModule_ |> Hashtbl.iter((k, v) => pathsForModule->Hashtbl.replace(k, pathToPath(v)));
     // pathsForModule->Hasthbl.map
@@ -307,8 +312,6 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       );
     Log.log("=== Build dir:    " ++ buildDir);
 
-    Log.log("Get ocaml stdlib dirs");
-    let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
 
     /* TODO support binaries, and other directories */
     let includeSubdirs = JbuildFile.hasIncludeSubdirs(jbuildConfig);

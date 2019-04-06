@@ -26,6 +26,12 @@ type t =
   | Bsb(string)
   | BsbNative(string, target);
 
+let usesStdlib = v => switch v {
+  | V407 => true
+  | V406 => false
+  | V402 => false
+};
+
 
 let fromString = string => {
   switch (Util.Utils.split_on_char(':', string)) {

@@ -272,31 +272,30 @@ let forPos = (~file, ~extra, pos) => {
   Some(refs)
 };
 
-let validateLoc = (loc: Location.t, backup: Location.t) => {
-  if (loc.loc_start.pos_cnum == -1) {
-    if (backup.loc_start.pos_cnum == -1) {
+let validateLoc = (loc: Location.t, backup: Location.t) =>
+  if (loc.loc_start.pos_cnum == (-1)) {
+    if (backup.loc_start.pos_cnum == (-1)) {
       {
         Location.loc_ghost: true,
         loc_start: {
           pos_cnum: 0,
           pos_lnum: 1,
           pos_bol: 0,
-          pos_fname: ""
+          pos_fname: "",
         },
         loc_end: {
           pos_cnum: 0,
           pos_lnum: 1,
           pos_bol: 0,
-          pos_fname: ""
+          pos_fname: "",
         },
-        }
+      };
     } else {
-      backup
-    }
+      backup;
+    };
   } else {
-    loc
-  }
-};
+    loc;
+  };
 
 let resolveModuleDefinition = (~file, ~getModule, stamp) => {
   let%opt md = Query.hashFind(file.stamps.modules, stamp);

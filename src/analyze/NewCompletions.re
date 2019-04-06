@@ -458,8 +458,9 @@ TODO filter out things that are defined after the current position
 
 */
 
-let resolveRawOpens = (~env, ~getModule, ~rawOpens, ~package) => {
-  let packageOpens = ["Pervasives", ...package.TopTypes.opens];
+let resolveRawOpens = (~useStdlib, ~env, ~getModule, ~rawOpens, ~package) => {
+  // TODO Stdlib instead of Pervasives
+  let packageOpens = [useStdlib ? "Stdlib" : "Pervasives", ...package.TopTypes.opens];
   Log.log("Package opens " ++ String.concat(" ", packageOpens));
 
   let opens =
@@ -482,6 +483,7 @@ let resolveRawOpens = (~env, ~getModule, ~rawOpens, ~package) => {
 /** This function should live somewhere else */
 let findDeclaredValue =
     (
+      ~useStdlib=false,
       ~full,
       ~package,
       /* the text that we found e.g. open A.B.C, this is "A.B.C" */
@@ -492,7 +494,7 @@ let findDeclaredValue =
     ) => {
   let env = Query.fileEnv(full.file);
 
-  let opens = resolveRawOpens(~env, ~getModule, ~rawOpens, ~package);
+  let opens = resolveRawOpens(~useStdlib, ~env, ~getModule, ~rawOpens, ~package);
 
   let path = pathFromTokenParts(tokenParts);
 
@@ -504,7 +506,7 @@ let findDeclaredValue =
 
 
 let get =
-    (~full, ~package, ~rawOpens, ~getModule, ~allModules, pos, tokenParts) => {
+    (~useStdlib=false, ~full, ~package, ~rawOpens, ~getModule, ~allModules, pos, tokenParts) => {
   Log.log(
     "Opens folkz > "
     ++ string_of_int(List.length(rawOpens))
@@ -516,7 +518,7 @@ let get =
   let packageOpens = ["Pervasives", ...package.TopTypes.opens];
   Log.log("Package opens " ++ String.concat(" ", packageOpens));
 
-  let opens = resolveRawOpens(~env, ~getModule, ~rawOpens, ~package);
+  let opens = resolveRawOpens(~useStdlib, ~env, ~getModule, ~rawOpens, ~package);
   Log.log(
     "Opens nows "
     ++ string_of_int(List.length(opens))
