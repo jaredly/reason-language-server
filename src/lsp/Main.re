@@ -210,7 +210,7 @@ let check = (~definitions, rootPath, files) => {
     switch (processFile(~state, ~uri)) {
       | Some((package, result)) =>
         if (!definitions) {
-          print_endline(Analyze.State.Show.state(state, package));
+          log(Analyze.State.Show.state(state, package));
         } else {
           switch result {
             | None => ()
@@ -218,11 +218,7 @@ let check = (~definitions, rootPath, files) => {
               let missing = ref(0);
               extra.locations->Belt.List.forEach(((location, loc)) => {
                 switch loc {
-                  // Skip builtin types
                   | Typed(_, LocalReference(tag, Type)) when tag <= 15 => ()
-                  // | Constant(_) | Typed(_, Definition(_, _)) | Open
-                  // | TopLevelModule
-                  // | Explanation(_) => () // these don't need definitions
                   | Typed(_, (LocalReference(_, _) | GlobalReference(_, _, _)) as t)
                   when !location.loc_ghost
                   =>
@@ -235,7 +231,7 @@ let check = (~definitions, rootPath, files) => {
                     )) {
                       | None =>
                       missing := 1 + missing^;
-                      Printf.printf(" !! No definition for \"%s\", line %d, column %d : %s\n",
+                      Printf.printf(" !! No definition for \"%s:%d:%d\" : %s\n",
                       filePath,
                       location.loc_start.pos_lnum,
                       location.loc_start.pos_cnum - location.loc_start.pos_bol + 1,
@@ -245,8 +241,10 @@ let check = (~definitions, rootPath, files) => {
                     }
                   | _ => ()
                 }
-              })
-              print_endline("  > " ++ string_of_int(missing^) ++ " missing")
+              });
+              if (missing^ != 0) {
+                print_endline("  > " ++ string_of_int(missing^) ++ " missing")
+              }
           }
         }
       | _ => ()
@@ -295,7 +293,12 @@ let showHelp = () => {
 let main = () => {
   switch (parseArgs(Sys.argv->Belt.List.fromArray)) {
     | (opts, _) when opts->hasOpts(["-h", "--help"]) => showHelp();
-    | (_, []) =>
+    | (opts, []) =>
+      if (opts->hasVerbose) {
+        Util.Log.spamError := true;
+        References.debugReferences := true;
+        MerlinFile.debug := true;
+      };
       log("Booting up");
       BasicServer.run(
         ~tick,
@@ -316,13 +319,15 @@ let main = () => {
         MerlinFile.debug := true;
       };
       singleDefinition(rootPath, file, line, col)
-    | (opts, [_, "check", rootPath, ...files]) =>
+    | (opts, ["check", rootPath, ...files]) =>
       let definitions = opts->hasOpts(["-d", "--definitions"]);
       if (opts->hasVerbose) {
         Util.Log.spamError := true;
         if (!definitions) {
           MerlinFile.debug := true
         }
+      } else {
+        Util.Log.spamError := false;
       };
       check(~definitions, rootPath, files)
     | _ => showHelp();
