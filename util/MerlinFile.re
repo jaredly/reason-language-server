@@ -266,8 +266,10 @@ let getModulesFromMerlin = (base, text) => {
         } |> orLog;
         modules->Belt.List.forEach(mname => {
           let moduleName =
-            mname->String.capitalize_ascii == privateName->String.capitalize_ascii
-              ? mname->String.capitalize_ascii : privateName ++ "__" ++ mname->String.capitalize_ascii;
+            kind == `UnwrappedLibrary
+              ? mname
+              : mname->String.capitalize_ascii == privateName->String.capitalize_ascii
+                  ? mname->String.capitalize_ascii : privateName ++ "__" ++ mname->String.capitalize_ascii;
           // let moduleName = 
           let src = filesByName->maybeHash(mname ++ ".ml") |?? filesByName->maybeHash(mname ++ ".re");
           let srci = filesByName->maybeHash(mname ++ ".mli") |?? filesByName->maybeHash(mname ++ ".rei");
@@ -293,6 +295,7 @@ let getModulesFromMerlin = (base, text) => {
             pathsForModule->Hashtbl.replace(libModuleName, paths);
             add(libModuleName, paths);
           | `Binary => ()
+          | `UnwrappedLibrary => ()
         }
       });
       ()

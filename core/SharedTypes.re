@@ -348,6 +348,12 @@ module Loc = {
   | GlobalReference(string, path, tip)
   | NotFound
   | Definition(int, tip);
+  let typedToString = t => switch t {
+    | LocalReference(stamp, tip) => Printf.sprintf("Local(%d, %s)", stamp, tipToString(tip))
+    | GlobalReference(m, path, tip) => Printf.sprintf("Global(%s, %s, %s)", m, pathToString(path), tipToString(tip))
+    | Definition(stamp, tip) => Printf.sprintf("Definition(%d, %s)", stamp, tipToString(tip))
+    | NotFound => "NotFound"
+  };
   type t =
   | Typed(flexibleType, typed)
   | Constant(Asttypes.constant)

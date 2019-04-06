@@ -32,13 +32,22 @@ let rec getModules = items => switch items {
   | [_, ...rest] => getModules(rest)
 }
 
+let isUnwrapped = items => {
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("wrapped"), `Ident("false")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(items)
+};
+
 let getLibsAndBinaries = jbuildConfig => {
   jbuildConfig->Belt.List.keepMap(item => switch item {
     | `List([`Ident("library"), `List(library)])
     | `List([`Ident("library"), ...library]) => {
       let (public, private) = getNamedIdent(library)
       let modules = getModules(library);
-      Some((`Library, public, private, modules))
+      Some((isUnwrapped(library) ? `UnwrappedLibrary : `Library, public, private, modules))
     }
     | `List([`Ident("executable"), `List(executable)])
     | `List([`Ident("executable"), ...executable]) => {
