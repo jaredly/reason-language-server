@@ -197,10 +197,6 @@ let singleDefinition = (rootPath, filePath, line, col) => {
 };
 
 let check = (~definitions, rootPath, files) => {
-  Util.Log.spamError := true;
-  if (!definitions) {
-    MerlinFile.debug := true
-  };
   log("# Reason Langauge Server - checking individual files to ensure they load & process correctly");
   let rootPath = rootPath == "." ? Unix.getcwd() : maybeConcat(Unix.getcwd(), rootPath);
   let state = {
@@ -259,9 +255,47 @@ let check = (~definitions, rootPath, files) => {
   log("Ok");
 }
 
+let parseArgs = args => {
+  switch args {
+    | [] => assert(false)
+    | [_, ...args] => {
+      let (opts, pos) = args->Belt.List.reduceReverse((Belt.Set.String.empty, []), ((set, pos), arg) => {
+        if (arg != "" & arg.[0] == '-') {
+          (set->Belt.Set.String.add(arg), pos)
+        } else {
+          (set, [arg, ...pos])
+        }
+      });
+      (opts, pos)
+    }
+  }
+};
+
+let hasOpt = (opts, name) => opts->Belt.Set.String.has(name);
+
+let hasOpts = (opts, names) => names->Belt.List.some(opts->Belt.Set.String.has);
+
+let hasVerbose = opts => opts->hasOpts(["-v", "--verbose"]);
+
+let help = {|
+🎉 Reason Language Server 🎉 
+
+Usage: run without arguments, and communicate over stdin/stdout,
+following the language server protocol as defined in
+https://microsoft.github.io/language-server-protocol/specification
+
+Logs are stored in `<project_root>/node_modules/.lsp/debug.log`.
+|};
+
+let showHelp = () => {
+  print_endline(help);
+  exit(1);
+};
+
 let main = () => {
-  switch (Sys.argv->Belt.List.fromArray) {
-    | [_] =>
+  switch (parseArgs(Sys.argv->Belt.List.fromArray)) {
+    | (opts, _) when opts->hasOpts(["-h", "--help"]) => showHelp();
+    | (_, []) =>
       log("Booting up");
       BasicServer.run(
         ~tick,
@@ -273,30 +307,24 @@ let main = () => {
       );
       log("Finished");
       out^ |?< close_out;
-    | [_, "definition", "-v" | "--verbose", rootPath, file, line, col] =>
+    | (opts, ["definition", rootPath, file, line, col]) =>
       let line = int_of_string(line);
       let col = int_of_string(col);
-      Util.Log.spamError := true;
-      References.debugReferences := true;
-      MerlinFile.debug := true;
+      if (opts->hasVerbose) {
+        Util.Log.spamError := true;
+        References.debugReferences := true;
+        MerlinFile.debug := true;
+      };
       singleDefinition(rootPath, file, line, col)
-    | [_, "definition", rootPath, file, line, col] =>
-      let line = int_of_string(line);
-      let col = int_of_string(col);
-      singleDefinition(rootPath, file, line, col)
-    | [_, "check", "-d" | "--definitions", rootPath, ...files] =>
-      check(~definitions=true, rootPath, files)
-    | [_, "check", rootPath, ...files] =>
-      check(~definitions=false, rootPath, files)
-    | [_, "-h" | "--help"] | _ =>
-      print_endline({|
-🎉 Reason Language Server 🎉 
-
-Usage: run without arguments, and communicate over stdin/stdout,
-following the language server protocol as defined in
-https://microsoft.github.io/language-server-protocol/specification
-
-Logs are stored in `<project_root>/node_modules/.lsp/debug.log`.
-      |})
+    | (opts, [_, "check", rootPath, ...files]) =>
+      let definitions = opts->hasOpts(["-d", "--definitions"]);
+      if (opts->hasVerbose) {
+        Util.Log.spamError := true;
+        if (!definitions) {
+          MerlinFile.debug := true
+        }
+      };
+      check(~definitions, rootPath, files)
+    | _ => showHelp();
   }
 };
