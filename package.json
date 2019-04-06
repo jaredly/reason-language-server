@@ -6,6 +6,7 @@
     "cp-test": "cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
     "package": "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
+    "check-self-definitions": "fd -E examples '.*\\.re$' | xargs ./bin.exe check -q -d .",
     "alltests": "dune exec AllTests",
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",

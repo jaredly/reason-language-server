@@ -128,7 +128,7 @@ let orLog = (message, v) => switch v {
   | Some(x) => Some(x)
 };
 
-let processFile = (~state, ~uri) => {
+let processFile = (~state, ~uri, ~quiet) => {
   switch (Packages.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
   | Error(message) =>
     print_endline("  Unable to get package: " ++ uri);
@@ -140,7 +140,9 @@ let processFile = (~state, ~uri) => {
       print_endline("  Invalid compilation result: " ++ message);
       Some((package, None));
     | Ok(Success(_message, contents)) =>
-      print_endline("  Good: " ++ uri);
+      if (!quiet) {
+        print_endline("  Good: " ++ uri);
+      };
       Some((package, Some(contents)));
     | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
       print_endline("  Error compiling: " ++ uri);
@@ -149,7 +151,7 @@ let processFile = (~state, ~uri) => {
   };
 };
 
-let singleDefinition = (rootPath, filePath, line, col) => {
+let singleDefinition = (~quiet, rootPath, filePath, line, col) => {
   log("# Reason Langauge Server - checking individual files to ensure they load & process correctly");
   let rootPath = rootPath == "." ? Unix.getcwd() : maybeConcat(Unix.getcwd(), rootPath);
   let filePath = maybeConcat(Unix.getcwd(), filePath);
@@ -160,7 +162,7 @@ let singleDefinition = (rootPath, filePath, line, col) => {
   };
 
   let uri = Utils.toUri(filePath);
-  switch (processFile(~state, ~uri)) {
+  switch (processFile(~state, ~uri, ~quiet)) {
     | Some((package, Some({file, extra}))) => {
       let _ = {
         let%opt_consume (location, loc) = References.locForPos(~extra, (line, col - 1)) |> orLog(
@@ -196,7 +198,7 @@ let singleDefinition = (rootPath, filePath, line, col) => {
   }
 };
 
-let check = (~definitions, rootPath, files) => {
+let check = (~definitions, ~quiet, rootPath, files) => {
   log("# Reason Langauge Server - checking individual files to ensure they load & process correctly");
   let rootPath = rootPath == "." ? Unix.getcwd() : maybeConcat(Unix.getcwd(), rootPath);
   let state = {
@@ -207,7 +209,7 @@ let check = (~definitions, rootPath, files) => {
   files->Belt.List.forEach(filePath => {
     let filePath = maybeConcat(Unix.getcwd(), filePath);
     let uri = Utils.toUri(filePath);
-    switch (processFile(~state, ~uri)) {
+    switch (processFile(~state, ~uri, ~quiet)) {
       | Some((package, result)) =>
         if (!definitions) {
           log(Analyze.State.Show.state(state, package));
@@ -215,10 +217,11 @@ let check = (~definitions, rootPath, files) => {
           switch result {
             | None => ()
             | Some({file, extra}) =>
-              let missing = ref(0);
+              let missing = ref([]);
               extra.locations->Belt.List.forEach(((location, loc)) => {
                 switch loc {
                   | Typed(_, LocalReference(tag, Type)) when tag <= 15 => ()
+                  | Typed(_, GlobalReference(_, _, Constructor("[]" | "::"))) => ()
                   | Typed(_, (LocalReference(_, _) | GlobalReference(_, _, _)) as t)
                   when !location.loc_ghost
                   =>
@@ -230,20 +233,25 @@ let check = (~definitions, rootPath, files) => {
                       loc,
                     )) {
                       | None =>
-                      missing := 1 + missing^;
-                      Printf.printf(" !! No definition for \"%s:%d:%d\" : %s\n",
-                      filePath,
-                      location.loc_start.pos_lnum,
-                      location.loc_start.pos_cnum - location.loc_start.pos_bol + 1,
-                      SharedTypes.Loc.typedToString(t)
-                      )
+                      // missing := 1 + missing^;
+                      missing := [
+                        Printf.sprintf("   - \"%s:%d:%d\" : %s",
+                        filePath,
+                        location.loc_start.pos_lnum,
+                        location.loc_start.pos_cnum - location.loc_start.pos_bol + 1,
+                        SharedTypes.Loc.typedToString(t)
+                        ),
+                        ...missing^
+                      ];
                       | Some(_defn) => ()
                     }
                   | _ => ()
                 }
               });
-              if (missing^ != 0) {
-                print_endline("  > " ++ string_of_int(missing^) ++ " missing")
+              if (missing^ != []) {
+                print_endline(filePath);
+                print_endline("  > " ++ string_of_int(List.length(missing^)) ++ " missing");
+                (missing^)->Belt.List.forEach(text => print_endline(text));
               }
           }
         }
@@ -258,7 +266,7 @@ let parseArgs = args => {
     | [] => assert(false)
     | [_, ...args] => {
       let (opts, pos) = args->Belt.List.reduceReverse((Belt.Set.String.empty, []), ((set, pos), arg) => {
-        if (arg != "" & arg.[0] == '-') {
+        if (arg != "" && arg.[0] == '-') {
           (set->Belt.Set.String.add(arg), pos)
         } else {
           (set, [arg, ...pos])
@@ -313,23 +321,25 @@ let main = () => {
     | (opts, ["definition", rootPath, file, line, col]) =>
       let line = int_of_string(line);
       let col = int_of_string(col);
+      let quiet = opts->hasOpts(["-q", "--quiet"]);
       if (opts->hasVerbose) {
         Util.Log.spamError := true;
         References.debugReferences := true;
         MerlinFile.debug := true;
       };
-      singleDefinition(rootPath, file, line, col)
+      singleDefinition(~quiet, rootPath, file, line, col)
     | (opts, ["check", rootPath, ...files]) =>
       let definitions = opts->hasOpts(["-d", "--definitions"]);
+      let quiet = opts->hasOpts(["-q", "--quiet"]);
       if (opts->hasVerbose) {
         Util.Log.spamError := true;
-        if (!definitions) {
-          MerlinFile.debug := true
-        }
+        // if (!definitions) {
+        MerlinFile.debug := true;
+        // }
       } else {
         Util.Log.spamError := false;
       };
-      check(~definitions, rootPath, files)
+      check(~definitions, ~quiet, rootPath, files)
     | _ => showHelp();
   }
 };

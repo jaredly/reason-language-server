@@ -134,7 +134,7 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
 
   let (localSource, depSource) = source->Belt.List.partition(isRelativePath);
 
-  maybeLog(Printf.sprintf("Local %d, Deps %d", List.length(localSource), List.length(depSource)));
+  maybeLog(Printf.sprintf("Local %d, Deps %d for %s/.merlin", List.length(localSource), List.length(depSource), base));
 
   // let buildByBasename = Hashtbl.create(List.length(source) * 5);
 
@@ -262,10 +262,22 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
       let moduleNames = Hashtbl.create(10);
       local->Files.readDirectory->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
         let full = local /+ file;
-        // maybeLog("Full " ++ full);
         filesByName->Hashtbl.replace(file, full)
         moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
       });
+      if (JbuildFile.includeRecursive(duneData)) {
+        // TODO: make this actually recursive! now just doing one level
+        maybeLog("We're including recursively");
+        local->Files.readDirectory->Belt.List.keep(name => Files.isDirectory(local /+ name))->Belt.List.forEach(dir => {
+          maybeLog(" > sub " ++ dir);
+          (local /+ dir)->Files.readDirectory->Belt.List.keep(isSourceFile)->Belt.List.forEach(file => {
+            let full = local /+ dir /+ file;
+            maybeLog(" >> " ++ full);
+            filesByName->Hashtbl.replace(file, full)
+            moduleNames->Hashtbl.replace(file->Filename.chop_extension, ())
+          })
+        })
+      };
 
       let libsAndBinaries = JbuildFile.getLibsAndBinaries(duneData);
       libsAndBinaries->Belt.List.forEach(((kind, public, private, modules)) => {
@@ -273,7 +285,6 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
           | None => Stdlib.Hashtbl.to_seq_keys(moduleNames)->Stdlib.List.of_seq;
           | Some(modules) => modules
         };
-        // maybeLog("One ");
         let%opt_consume privateName = switch (public, private) {
           | (Some(p), None) => Ok(p)
           | (_, Some(p)) => Ok(p)
@@ -285,12 +296,21 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
               ? mname
               : mname->String.capitalize_ascii == privateName->String.capitalize_ascii
                   ? mname->String.capitalize_ascii : privateName->String.capitalize_ascii ++ "__" ++ mname->String.capitalize_ascii;
-          // let moduleName = 
           let src = filesByName->maybeHash(mname ++ ".ml") |?? filesByName->maybeHash(mname ++ ".re");
           let srci = filesByName->maybeHash(mname ++ ".mli") |?? filesByName->maybeHash(mname ++ ".rei");
           let cmi = cmiByModuleName->maybeHash(moduleName);
           let cmt = cmtByModuleName->maybeHash(moduleName);
           let cmti = cmtiByModuleName->maybeHash(moduleName);
+          let (moduleName, cmi, cmt, cmti) = switch (cmi, cmt, cmti) {
+            // TODO it would be nice not to have to do this fallback
+            | (None, None, None) => (
+              mname->String.capitalize_ascii,
+              cmiByModuleName->maybeHash(mname->String.capitalize_ascii),
+              cmtByModuleName->maybeHash(mname->String.capitalize_ascii),
+              cmtiByModuleName->maybeHash(mname->String.capitalize_ascii),
+            )
+            | _ => (moduleName, cmi, cmt, cmti)
+          };
           let%opt_consume paths = calcPaths(moduleName, {src, srci, cmi, cmt, cmti}) |> orLog;
           maybeLog(" > module " ++ moduleName ++ " :: " ++ showPaths(paths));
           localModuleNames->Hashtbl.replace(moduleName, ());
@@ -299,7 +319,6 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
         });
         switch kind {
           | `Library =>
-            // maybeLog("A library " ++ privateName);
             let libModuleName = privateName->String.capitalize_ascii;
             let libModuleName = if (Hashtbl.mem(localModuleNames, libModuleName)) {
               libModuleName ++ "__"
@@ -310,8 +329,6 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
             let cmt = cmtByModuleName->maybeHash(libModuleName);
             let cmti = cmtiByModuleName->maybeHash(libModuleName);
             let%opt_consume paths = calcPaths(libModuleName, {src: None, srci: None, cmi, cmt, cmti}) |> orLog;
-            // maybeLog("Ok " ++ libModuleName);
-            // let privateName = privateName->String.capitalize_ascii;
             maybeLog(" > module " ++ libModuleName ++ " :: " ++ showPaths(paths));
             localModuleNames->Hashtbl.replace(libModuleName, ());
             pathsForModule->Hashtbl.replace(libModuleName, paths);

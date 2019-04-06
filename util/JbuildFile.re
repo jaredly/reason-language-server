@@ -41,6 +41,16 @@ let isUnwrapped = items => {
   loop(items)
 };
 
+let includeRecursive = items => {
+// (include_subdirs unqualified)
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("include_subdirs"), `Ident("unqualified")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(items)
+};
+
 let getLibsAndBinaries = jbuildConfig => {
   jbuildConfig->Belt.List.keepMap(item => switch item {
     | `List([`Ident("library"), `List(library)])
