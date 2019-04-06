@@ -2,6 +2,8 @@ open Infix;
 
 open TopTypes;
 
+module Semver = Util.Semver;
+
 module Show = {
   let state = ({rootPath}, {localModules, dependencyModules, pathsForModule}) => {
     "Root: " ++ rootPath ++
@@ -273,6 +275,11 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
+  let compilerVersion = switch buildSystem {
+    | Bsb(version) when Semver.parse(version)->Semver.major >= "6" => BuildSystem.V406
+    | _ => BuildSystem.V402
+  };
+
   {
     basePath: rootPath,
     rebuildTimer: 0.,
@@ -285,8 +292,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
     opens,
     tmpPath,
     namespace,
-    /* Bucklescript is always 4.02.3 */
-    compilerVersion: BuildSystem.V402,
+    compilerVersion,
     compilationFlags: flags |> String.concat(" "),
     interModuleDependencies,
     includeDirectories:
