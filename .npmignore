@@ -2,3 +2,7 @@ editor-extensions
 examples
 _build
 _esy
+ExamplesTests.exe
+.github
+.vscode
+.circleci
