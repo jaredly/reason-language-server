@@ -146,6 +146,7 @@ let processFile = (~state, ~uri, ~quiet) => {
       Some((package, Some(contents)));
     | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
       print_endline("  Error compiling: " ++ uri);
+      print_endline(message);
       Some((package, None));
     }
   };

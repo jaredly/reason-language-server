@@ -93,7 +93,7 @@ let empty = () => {
     showModulePathOnHover: true,
     recordAllLocations: false,
     autoRebuild: true,
-    useOldDuneProcess: true,
+    useOldDuneProcess: false,
     buildSystemOverrideByRoot: [],
   },
 };
