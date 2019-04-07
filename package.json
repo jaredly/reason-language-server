@@ -2,7 +2,7 @@
   "name": "reason-language-server",
   "version": "1.0.0",
   "scripts": {
-    "cp-test": "cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
+    "cp-test": "cp _build/install/default/bin/ExamplesTests ExamplesTests.exe",
     "package": "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "check-self-definitions": "fd -E examples '.*\\.re$' | xargs ./bin.exe check -q -d .",
@@ -10,9 +10,7 @@
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",
     "symlink": "esy ln -s '_build/install/default/bin/Bin' bin.exe",
-    "cp-bin": "cp \"#{self.target_dir}/default/bin/Bin.exe\" bin.exe",
-    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
-    "types": "./_build/install/default/bin/type-digger type-digger/types.json"
+    "cp-bin": "cp _build/install/default/bin/Bin bin.exe"
   },
   "keywords": [
     "Reason",
