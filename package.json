@@ -1,7 +1,6 @@
 {
-  "name": "ReasonLanguageServer",
-  "version": "0.0.0-dont-publish",
-  "private": true,
+  "name": "reason-language-server",
+  "version": "1.0.0",
   "scripts": {
     "cp-test": "cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
     "package": "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
@@ -40,8 +39,5 @@
     "@opam/ppxlib": "*",
     "rex-json": "*",
     "ocaml": "~4.7.2"
-  },
-  "devDependencies": {
-    "@opam/utop": ">=2.0"
   }
 }

@@ -1,6 +1,6 @@
 (library
   (name Process_406)
-  (public_name ReasonLanguageServer.Process_406)
+  (public_name reason-language-server.Process_406)
   (libraries Belt Current Vendor Util str Compiler_libs_406 Compiler_libs_407 ocaml-migrate-parsetree Core)
   (flags :standard -open Vendor -open Util -w -9)
   (preprocess (pps Belt_ppx Ppx_monads))
