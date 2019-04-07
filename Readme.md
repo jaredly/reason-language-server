@@ -3,7 +3,7 @@
 
 This project implements the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) for Reason.
 
-It is written in Reason, and compiled via bsb-native. The goal is for it to work equally well on Windows, MacOS, and Linux.
+It is written in Reason, and compiled w/ esy + dune. The goal is for it to work equally well on Windows, MacOS, and Linux.
 
 ## Platform support
 
