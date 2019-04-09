@@ -2,7 +2,7 @@ open Infix;
 open TopTypes;
 // open BuildCommand;
 
-let escapePpxFlag = flag => {
+let escapePreprocessingFlags = flag => {
   /* ppx escaping not supported on windows yet */
   if (Sys.os_type == "Win32") {
     flag
@@ -10,6 +10,7 @@ let escapePpxFlag = flag => {
     let parts = Utils.split_on_char(' ', flag);
     switch(parts) {
       | ["-ppx", ...ppx] => "-ppx " ++ (String.concat(" ", ppx) |> Filename.quote)
+      | ["-pp", ...pp] => "-pp " ++ (String.concat(" ", pp) |> Filename.quote)
       | _ => flag
     }
   }
@@ -148,7 +149,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
         "-ppx " ++ bsPlatform /+ "lib" /+ "bsppx.exe"
       ], opens)
     | _ => {
-      let flags = MerlinFile.getFlags(rootPath) |> RResult.withDefault([""]) |> List.map(escapePpxFlag);
+      let flags = MerlinFile.getFlags(rootPath) |> RResult.withDefault([""]) |> List.map(escapePreprocessingFlags);
       let opens = List.fold_left((opens, item) => {
         let parts = Utils.split_on_char(' ', item);
         let rec loop = items => switch items {
