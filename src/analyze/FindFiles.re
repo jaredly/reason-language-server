@@ -41,7 +41,7 @@ let getSourceDirectories = (~includeDev=false, base, config) => {
         []
       } else {
         switch (item |> Json.get("subdirs")) {
-        | None => [current /+ dir]
+        | None | Some(Json.False) => [current /+ dir]
         | Some(Json.True) => Files.collectDirs(base /+ current /+ dir)
           /* |> ifDebug(true, "Subdirs", String.concat(" - ")) */
           |> List.filter(name => name != Filename.current_dir_name)
