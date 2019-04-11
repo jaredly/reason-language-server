@@ -29,9 +29,9 @@ build_script:
     - esy build
     # Validate binary
     # - esy dune exec Bin -- --help
-    - esy exec-command --include-build-env cp _build/install/default/bin/ExamplesTests ExamplesTests.exe
+    - esy exec-command --include-build-env cp "#{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe" ExamplesTests.exe
     - ExamplesTests.exe
-    - esy exec-command --include-build-env cp _build/install/default/bin/Bin bin.exe
+    - esy exec-command --include-build-env cp "#{self.target_dir}/default/bin/Bin.exe" bin.exe
 
 artifacts:
     - path: bin.exe
