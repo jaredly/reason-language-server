@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "cp-test": "cp _build/install/default/bin/ExamplesTests ExamplesTests.exe",
-    "package": "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
+    "package": "esy build && esy cp \"_build/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "check-self-definitions": "fd -E examples '.*\\.re$' | xargs ./bin.exe check -q -d .",
     "alltests": "dune exec AllTests",
