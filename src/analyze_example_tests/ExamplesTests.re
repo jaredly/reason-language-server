@@ -35,7 +35,7 @@ let checkExampleProject = (rootPath, sourcePaths) => {
 };
 
 let projects = [
-  ("dune-complex", ["src", "both", "awesome"], "esy"),
+  // ("dune-complex", ["src", "both", "awesome"], "esy"),
   ("example-project", ["src"], "npm install"),
   ("example-es6-imports", ["src"], "npm install"),
   ("example-react", ["src", "__tests__"], "npm install"),
