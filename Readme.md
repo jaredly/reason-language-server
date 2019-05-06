@@ -53,8 +53,15 @@ And you're done!
     "reason": {
       "enabled": true,
       "command": ["/absolute/path/to/reason-language-server.exe"],
-      "scopes": ["source.reason"],
-      "syntaxes": ["Packages/Reason/Reason.tmLanguage"],
+      "scopes": [
+        "source.reason",
+        "source.ocaml"
+      ],
+      "syntaxes": [
+        "Packages/Reason/Reason.tmLanguage",
+        "Packages/sublime-reason/Reason.tmLanguage",
+        "Packages/OCaml/OCaml.sublime-syntax"
+      ],
       "languageId": "reason"
     }
   }
