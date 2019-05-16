@@ -9,8 +9,8 @@ let escapePreprocessingFlags = flag => {
   } else {
     let parts = Utils.split_on_char(' ', flag);
     switch(parts) {
-      | ["-ppx", ...ppx] => "-ppx " ++ (String.concat(" ", ppx) |> Filename.quote)
-      | ["-pp", ...pp] => "-pp " ++ (String.concat(" ", pp) |> Filename.quote)
+      | [("-ppx" | "-pp") as flag, ...rest] =>
+        flag ++ " " ++ Utils.maybeQuoteFilename(String.concat(" ", rest))
       | _ => flag
     }
   }
