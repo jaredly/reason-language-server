@@ -29,8 +29,8 @@ jobs:
       # run tests!
       # - run: esy dune exec Bin -- --help
       - run: esy exec-command --include-build-env cp _build/install/default/bin/ExamplesTests ExamplesTests.exe
-      - run: ./ExamplesTests.exe
       - run: esy exec-command --include-build-env cp _build/install/default/bin/Bin bin.exe
+      - run: ./ExamplesTests.exe
 
       - save_cache:
           paths:
