@@ -298,6 +298,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
 
   let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (!state.settings.useOldDuneProcess) {
+    Log.log("New dune process");
     let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(
       ~stdlibs,
       rootPath, merlinRaw);
@@ -312,6 +313,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       includeDirectories
     ))
   } else {
+    Log.log("Old dune process");
     let%try buildDir =
       BuildSystem.getCompiledBase(projectRoot, buildSystem)
       |> RResult.resultOfOption(
