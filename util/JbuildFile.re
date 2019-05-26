@@ -59,6 +59,8 @@ let getLibsAndBinaries = jbuildConfig => {
       let modules = getModules(library);
       Some((isUnwrapped(library) ? `UnwrappedLibrary : `Library, public, private, modules))
     }
+    // Handle the case where there's only one thing and it's a (name _) or a (public_name _)
+    | `List([`Ident("executable"), ...[`List([`Ident(_), _])] as executable])
     | `List([`Ident("executable"), `List(executable)])
     | `List([`Ident("executable"), ...executable]) => {
       let (public, private) = getNamedIdent(executable)
