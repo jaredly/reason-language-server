@@ -37,7 +37,7 @@ let parseTest = (lines) => {
   let rec collectFiles = lines => {
     let (header, after) = peekSection(lines);
     switch header {
-      | Some(`File(name)) => {
+     | Some(`File(name)) => {
         let (lines, after) = getUntilNextSection(after);
         let (files, after) = collectFiles(after);
         ([(name, String.concat("\n", lines)), ...files], after)
@@ -104,4 +104,4 @@ let printFiles = (mainFile, files) => {
       "--- " ++ name ++ "\n" ++ String.trim(content)
     }) |> String.concat("\n") |> files => files ++ "\n---\n" ++ mainFile
   }
-};
+ };
