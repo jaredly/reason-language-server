@@ -37,5 +37,5 @@
     "@opam/ppxlib": "*",
     "rex-json": "*",
     "ocaml": "~4.7.2"
-  }
+   }
 }
