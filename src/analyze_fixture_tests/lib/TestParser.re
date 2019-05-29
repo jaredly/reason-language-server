@@ -104,4 +104,4 @@ let printFiles = (mainFile, files) => {
       "--- " ++ name ++ "\n" ++ String.trim(content)
     }) |> String.concat("\n") |> files => files ++ "\n---\n" ++ mainFile
   }
-};
+ };
