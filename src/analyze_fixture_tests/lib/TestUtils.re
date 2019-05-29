@@ -252,4 +252,4 @@ let process = (lines, getResult) => {
       }
     }
   })
-};
+}; 
