@@ -18,8 +18,9 @@ const getLocation = (context) => {
         // hmm actually I could bundle one for each platform & probably be fine
         // I guess it's 9mb binary. I wonder if I can cut that down?
         const ext = process.platform === 'win32'
-		? '.exe'
-		: (process.platform === 'linux' ? '.linux' : '');
+            ? '.exe'
+            : (process.platform === 'linux' ? '.linux' : '');
+
         binaryLocation = path.join(vscode.workspace.rootPath, 'node_modules', '@jaredly', 'reason-language-server', 'lib', 'bs', 'native', 'bin.native' + ext)
         if (!fs.existsSync(binaryLocation)) {
             binaryLocation = context.asAbsolutePath('bin.native' + ext)
@@ -41,6 +42,46 @@ const getLocation = (context) => {
 }
 
 const shouldReload = () => vscode.workspace.getConfiguration('reason_language_server').get('reloadOnChange')
+
+/**
+ * Taken from https://github.com/rust-lang/rls-vscode/blob/master/src/extension.ts
+ * 
+ * Sets up additional language configuration that's impossible to do via a
+ * separate language-configuration.json file. See [1] for more information.
+ *
+ * [1]: https://github.com/Microsoft/vscode/issues/11514#issuecomment-244707076
+ */
+function configureLanguage() {
+  return vscode.languages.setLanguageConfiguration('reason', {
+    onEnterRules: [
+      {
+        // Begins an auto-closed multi-line comment (standard or parent doc)
+        // e.g. /** | */ or /*! | */
+        beforeText: /^\s*\/\*(\*|\!)(?!\/)([^\*]|\*(?!\/))*$/,
+        afterText: /^\s*\*\/$/,
+        action: { indentAction: vscode.IndentAction.IndentOutdent, appendText: ' * ' },
+      },
+      {
+        // Begins a multi-line comment (standard or parent doc)
+        // e.g. /** ...| or /*! ...|
+        beforeText: /^\s*\/\*(\*|\!)(?!\/)([^\*]|\*(?!\/))*$/,
+        action: { indentAction: vscode.IndentAction.None, appendText: ' * ' },
+      },
+      {
+        // Continues a multi-line comment
+        // e.g.  * ...|
+        beforeText: /^(\ \ )*\ \*(\ ([^\*]|\*(?!\/))*)?$/,
+        action: { indentAction: vscode.IndentAction.None, appendText: '* ' },
+      },
+      {
+        // Dedents after closing a multi-line comment
+        // e.g.  */|
+        beforeText: /^(\ \ )*\ \*\/\s*$/,
+        action: { indentAction: vscode.IndentAction.None, removeText: 1 },
+      },
+    ],
+  });
+}
 
 function activate(context) {
     // The server is implemented in reason
@@ -209,6 +250,8 @@ function activate(context) {
             astProvider.privateOnDidChange.fire(uri.with({scheme: 'ast-source'}))
         }),
     );
+
+    context.subscriptions.push(configureLanguage());
 
     vscode.workspace.registerTextDocumentContentProvider("ppxed-source", provider);
     vscode.workspace.registerTextDocumentContentProvider("ast-source", astProvider);
