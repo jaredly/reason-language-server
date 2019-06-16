@@ -258,17 +258,27 @@ module F = (Collector: {
 
   let rec addForLongident = (top, path: Path.t, txt: Longident.t, loc) => {
     if (!loc.Location.loc_ghost) {
-      let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
-      switch (top) {
-        | Some((t, tip)) => addForPath(path, txt, l, t, tip)
-        | None => addForPathParent(Shared.mapOldPath(path), l)
-      };
-      switch (path, txt) {
-        | (Pdot(pinner, _pname, _), Ldot(inner, name)) => {
-          addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
-        }
-        | (Pident(_), Lident(_)) => ()
-        | _ => ()
+      let idLength = String.length(String.concat(".", Longident.flatten(txt)));
+      let reportedLength = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum;
+      let isPpx = idLength != reportedLength;
+      if (isPpx) {
+        switch (top) {
+          | Some((t, tip)) => addForPath(path, txt, loc, t, tip)
+          | None => addForPathParent(Shared.mapOldPath(path), loc)
+          }
+      } else {
+        let l = Utils.endOfLocation(loc, String.length(Longident.last(txt)));
+        switch (top) {
+          | Some((t, tip)) => addForPath(path, txt, l, t, tip)
+          | None => addForPathParent(Shared.mapOldPath(path), l)
+        };
+        switch (path, txt) {
+          | (Pdot(pinner, _pname, _), Ldot(inner, name)) => {
+            addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
+          }
+          | (Pident(_), Lident(_)) => ()
+          | _ => ()
+        };
       };
     }
   };
