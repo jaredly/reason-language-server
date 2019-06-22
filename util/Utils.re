@@ -265,7 +265,8 @@ let maybeQuoteFilename = (filename) => {
     let firstChar = String.get(filename, 0);
     let lastChar = String.get(filename, len - 1)
     switch (firstChar, lastChar) {
-    | ('\'','\'') => filename
+    | ('\'','\'') 
+    | ('\"','\"') => filename  
     | _ => Filename.quote(filename)
     }
   }
