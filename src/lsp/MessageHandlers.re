@@ -616,7 +616,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
                   open Util.JsonShort;
                   let offset = String.length(text);
                   let%try (line, col) = PartialParser.offsetToPosition(text, offset) |> RResult.orError("Invalid offset");
-                  Rpc.sendRequest(Log.log, Pervasives.stdout, "workspace/applyEdit", o([
+                  Rpc.sendRequest(Log.log, stdout, "workspace/applyEdit", o([
                     ("label", s("Add item to interface")),
                     ("edit", o([
                       ("changes", o([
@@ -665,7 +665,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | `Interface(int) => Pprintast.signature(Format.str_formatter, int)
       };
     } else {
-      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_404);
+      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_408, Migrate_parsetree.OCaml_404);
       switch (parsetree) {
       | `Implementation(str) =>
         Reason_toolchain.RE.print_implementation_with_comments(
@@ -680,7 +680,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
     };
     let source = Format.flush_str_formatter();
-    
+
     /* let source = State.isMl(uri) ? source : switch (package.refmtPath) {
       | None => source
       | Some(refmt) =>

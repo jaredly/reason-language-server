@@ -1,4 +1,3 @@
-
 const items = `
 UTILS=utils/config.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
@@ -6,6 +5,7 @@ UTILS=utils/config.cmo utils/misc.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
+  utils/build_path_prefix_map.cmo \
   utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
@@ -27,16 +27,15 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typedtreeIter.cmo typing/typedtreeMap.cmo \
   typing/tast_mapper.cmo \
   typing/cmt_format.cmo typing/untypeast.cmo \
-  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
-  typing/stypes.cmo typing/typedecl.cmo typing/typeopt.cmo typing/typecore.cmo \
-  typing/typeclass.cmo \
-  typing/typemod.cmo
+  typing/includemod.cmo typing/typetexp.cmo typing/printpat.cmo \
+  typing/parmatch.cmo typing/stypes.cmo typing/typedecl.cmo typing/typeopt.cmo \
+  typing/typecore.cmo typing/typeclass.cmo typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/semantics_of_primitives.cmo \
   bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translattribute.cmo \
-  bytecomp/translcore.cmo \
+  bytecomp/translprim.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
   bytecomp/meta.cmo bytecomp/opcodes.cmo \
@@ -54,6 +53,8 @@ const fs = require('fs')
 const path = require('path')
 const base = '/Users/anmonteiro/Downloads/ocaml'
 
+// NOTE(anmonteiro): This relies on the compiler being built, since some files
+// get generated as part of the building process!
 const names = ['parsing/parsetree', 'parsing/asttypes', 'typing/annot', 'typing/outcometree'].concat(...items)
 
 const allFiles = names.reduce((result, name) => {
@@ -67,7 +68,7 @@ const allFiles = names.reduce((result, name) => {
 
 allFiles.forEach(file => {
   const base = path.basename(file)
-  fs.writeFileSync(path.join(__dirname, '406', base), fs.readFileSync(file))
+  fs.writeFileSync(path.join(__dirname, '407', base), fs.readFileSync(file))
 })
 
 

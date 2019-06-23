@@ -1,6 +1,7 @@
-
 (library
-  (name Compiler_libs_407)
-  (public_name reason-language-server.Compiler_libs_407)
-  (libraries compiler-libs.common Compiler_libs_406)
-  (flags :standard -w -9))
+ (name Compiler_libs_407)
+ (public_name reason-language-server.Compiler_libs_407)
+ (modules_without_implementation annot outcometree asttypes parsetree
+   compdynlink cmo_format)
+ (libraries Current)
+ (flags :standard -w -9))

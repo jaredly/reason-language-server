@@ -75,15 +75,22 @@ let rec getFnArgs = t => {
   }
 };
 
+/* Unfortunately we need to depend on previous Compiler_libs_* versions starting
+   with 4.07, otherwise we can't construct an ident with a custom stamp.
+ */
+
+
 /* HACK(jared): They removed all way for me to produce an "Ident.t" with the correct stamp.
    They forced my hand.
 */
-let convertIdent = (oldIdent) => {(Obj.magic(oldIdent): Current.ident)};
+let convertIdent = (oldIdent) => {
+  (Obj.magic(Current.Local { name: oldIdent.Ident.name, stamp: oldIdent.Ident.stamp }): Current.abstract_ident);
+};
 
 let rec mapOldPath = oldPath => {
   switch (oldPath) {
     | Path.Pident(oldIdent) => Current.Pident(convertIdent(oldIdent))
-    | Path.Pdot(inner, name, int) => Current.Pdot(mapOldPath(inner),name,int)
+    | Path.Pdot(inner, name, _) => Current.Pdot(mapOldPath(inner),name)
     | Path.Papply(one, two) => Current.Papply(mapOldPath(one), mapOldPath(two))
   }
 };
@@ -157,8 +164,10 @@ let asSimpleDeclaration = (name, t) => {
 };
 
 let migrateAttributes = t => {
-  t.Types.type_attributes->Belt.List.map((({Asttypes.txt}, payload)) => {
-    (Current.mknoloc(txt), switch payload {
+  t.Types.type_attributes
+    ->Belt.List.map(
+      (({Asttypes.txt, loc}, payload)) => {
+    let payload = switch payload {
       | PStr(structure) =>
         Current.PStr(Current.Parser.implementation(Current.Lexer.token, Stdlib.Lexing.from_string({
           Pprintast.structure(Stdlib.Format.str_formatter, structure);
@@ -182,7 +191,12 @@ let migrateAttributes = t => {
         Pprintast.signature(Stdlib.Format.str_formatter, signature);
         Stdlib.Format.flush_str_formatter()
       })))
-    })
+    };
+    {
+      Current.Parsetree.attr_name: Current.mknoloc(txt),
+      attr_payload: payload,
+      attr_loc: loc
+    }
   });
 };
 

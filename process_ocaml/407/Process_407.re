@@ -1,3 +1,4 @@
+open Compiler_libs_407;
 open SharedTypes;
 open Belt.Result;
 
@@ -31,6 +32,8 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
      | _ => Error("Cannot show ppxed source for files with type errors at the moment")
      }
    }; */
+
+module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_408);
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);

@@ -34,7 +34,7 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   }
 }; */
 
-let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_407);
+let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_408);
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);

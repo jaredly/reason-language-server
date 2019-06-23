@@ -1,0 +1,4 @@
+(library
+ (name Compiler_libs_408)
+ (public_name reason-language-server.Compiler_libs_408)
+ (libraries compiler-libs.common Current))
