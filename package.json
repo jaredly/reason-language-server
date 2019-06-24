@@ -38,7 +38,6 @@
     "ocaml": "~4.8.0"
   },
   "resolutions": {
-    "@opam/reason": "anmonteiro/reason:reason.opam#362e0df",
-    "@opam/merlin-extend": "let-def/merlin-extend:merlin-extend.opam#2034640"
+    "@opam/reason": "anmonteiro/reason:reason.opam#949db80"
   }
 }

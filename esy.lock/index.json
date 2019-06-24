@@ -1,5 +1,5 @@
 {
-  "checksum": "f978aa82190e8e3b78cdb8dde1210217",
+  "checksum": "5f7ca1557f557cb32c44c85bbb3d9a13",
   "root": "reason-language-server@link-dev:./package.json",
   "node": {
     "rex-json@1.4.0@d41d8cd9": {
@@ -28,7 +28,7 @@
       "overrides": [],
       "dependencies": [
         "rex-json@1.4.0@d41d8cd9", "ocaml@4.8.0@d41d8cd9",
-        "@opam/reason@github:anmonteiro/reason:reason.opam#362e0df@d41d8cd9",
+        "@opam/reason@github:anmonteiro/reason:reason.opam#949db80@d41d8cd9",
         "@opam/ppxlib@opam:0.8.0@1f9d5700",
         "@opam/ppx_tools_versioned@opam:5.2.2@34409c89",
         "@opam/ocaml-migrate-parsetree@opam:1.3.1@266527bd",
@@ -122,28 +122,28 @@
       ],
       "devDependencies": [ "ocaml@4.8.0@d41d8cd9" ]
     },
-    "@opam/reason@github:anmonteiro/reason:reason.opam#362e0df@d41d8cd9": {
+    "@opam/reason@github:anmonteiro/reason:reason.opam#949db80@d41d8cd9": {
       "id":
-        "@opam/reason@github:anmonteiro/reason:reason.opam#362e0df@d41d8cd9",
+        "@opam/reason@github:anmonteiro/reason:reason.opam#949db80@d41d8cd9",
       "name": "@opam/reason",
-      "version": "github:anmonteiro/reason:reason.opam#362e0df",
+      "version": "github:anmonteiro/reason:reason.opam#949db80",
       "source": {
         "type": "install",
-        "source": [ "github:anmonteiro/reason:reason.opam#362e0df" ]
+        "source": [ "github:anmonteiro/reason:reason.opam#949db80" ]
       },
       "overrides": [],
       "dependencies": [
         "ocaml@4.8.0@d41d8cd9", "@opam/result@opam:1.4@7add0d71",
         "@opam/ocamlfind@opam:1.8.0@f744a0c5",
         "@opam/ocaml-migrate-parsetree@opam:1.3.1@266527bd",
-        "@opam/merlin-extend@github:let-def/merlin-extend:merlin-extend.opam#2034640@d41d8cd9",
+        "@opam/merlin-extend@opam:0.4@9e025201",
         "@opam/menhir@opam:20190620@a914c43f",
         "@opam/dune@opam:1.10.0@b15ce221", "@esy-ocaml/substs@0.0.1@d41d8cd9"
       ],
       "devDependencies": [
         "ocaml@4.8.0@d41d8cd9", "@opam/result@opam:1.4@7add0d71",
         "@opam/ocaml-migrate-parsetree@opam:1.3.1@266527bd",
-        "@opam/merlin-extend@github:let-def/merlin-extend:merlin-extend.opam#2034640@d41d8cd9",
+        "@opam/merlin-extend@opam:0.4@9e025201",
         "@opam/menhir@opam:20190620@a914c43f"
       ]
     },
@@ -337,23 +337,28 @@
       ],
       "devDependencies": [ "ocaml@4.8.0@d41d8cd9" ]
     },
-    "@opam/merlin-extend@github:let-def/merlin-extend:merlin-extend.opam#2034640@d41d8cd9": {
-      "id":
-        "@opam/merlin-extend@github:let-def/merlin-extend:merlin-extend.opam#2034640@d41d8cd9",
+    "@opam/merlin-extend@opam:0.4@9e025201": {
+      "id": "@opam/merlin-extend@opam:0.4@9e025201",
       "name": "@opam/merlin-extend",
-      "version": "github:let-def/merlin-extend:merlin-extend.opam#2034640",
+      "version": "opam:0.4",
       "source": {
         "type": "install",
         "source": [
-          "github:let-def/merlin-extend:merlin-extend.opam#2034640"
-        ]
+          "archive:https://opam.ocaml.org/cache/md5/06/0663a58f2c45fad71615fbf0f6dd2e51#md5:0663a58f2c45fad71615fbf0f6dd2e51",
+          "archive:https://github.com/let-def/merlin-extend/archive/v0.4.tar.gz#md5:0663a58f2c45fad71615fbf0f6dd2e51"
+        ],
+        "opam": {
+          "name": "merlin-extend",
+          "version": "0.4",
+          "path": "esy.lock/opam/merlin-extend.0.4"
+        }
       },
       "overrides": [],
       "dependencies": [
-        "@opam/jbuilder@opam:transition@58bdfe0a",
+        "ocaml@4.8.0@d41d8cd9", "@opam/dune@opam:1.10.0@b15ce221",
         "@opam/cppo@opam:1.6.6@25eb99ce", "@esy-ocaml/substs@0.0.1@d41d8cd9"
       ],
-      "devDependencies": []
+      "devDependencies": [ "ocaml@4.8.0@d41d8cd9" ]
     },
     "@opam/menhir@opam:20190620@a914c43f": {
       "id": "@opam/menhir@opam:20190620@a914c43f",
@@ -378,28 +383,6 @@
         "@esy-ocaml/substs@0.0.1@d41d8cd9"
       ],
       "devDependencies": [ "ocaml@4.8.0@d41d8cd9" ]
-    },
-    "@opam/jbuilder@opam:transition@58bdfe0a": {
-      "id": "@opam/jbuilder@opam:transition@58bdfe0a",
-      "name": "@opam/jbuilder",
-      "version": "opam:transition",
-      "source": {
-        "type": "install",
-        "source": [ "no-source:" ],
-        "opam": {
-          "name": "jbuilder",
-          "version": "transition",
-          "path": "esy.lock/opam/jbuilder.transition"
-        }
-      },
-      "overrides": [],
-      "dependencies": [
-        "ocaml@4.8.0@d41d8cd9", "@opam/dune@opam:1.10.0@b15ce221",
-        "@esy-ocaml/substs@0.0.1@d41d8cd9"
-      ],
-      "devDependencies": [
-        "ocaml@4.8.0@d41d8cd9", "@opam/dune@opam:1.10.0@b15ce221"
-      ]
     },
     "@opam/dune@opam:1.10.0@b15ce221": {
       "id": "@opam/dune@opam:1.10.0@b15ce221",
