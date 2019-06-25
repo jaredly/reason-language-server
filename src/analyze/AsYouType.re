@@ -124,6 +124,19 @@ let parseDependencyError = text => {
 };
 
 let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
+  let flags = reasonFormat ? {
+    /* Filter out -pp flags for Reason files. Refmt is the only preprocessor
+       that should apply to Reason files. */
+    let parts = Utils.split_on_char(' ', flags);
+    let rec loop = (items) => {
+      switch(items) {
+        | ["-pp", _ppFlag, ...rest] => loop(rest)
+        | [x, ...rest] => [x, ...loop(rest)]
+        | [] => []
+      }
+    };
+    loop(parts) |> String.concat(" ")
+  } : flags;
   /* TODO make sure that bsc supports -color */
   Printf.sprintf(
     {|%s %s %s -bin-annot %s %s %s|},
