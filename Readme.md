@@ -74,9 +74,11 @@ And you're done!
 2. Assuming you're using [lsp-mode](https://github.com/emacs-lsp/lsp-mode/), add the following to your config file:
 ```
 (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection "/path/to/reason-language-server.exe")
-                    :major-modes '(reason-mode)
-                    :server-id 'ocaml-ls))
+ (make-lsp-client :new-connection (lsp-stdio-connection "/absolute/path/to/reason-language-server.exe")
+                  :major-modes '(reason-mode)
+                  :notification-handlers (ht ("client/registerCapability" 'ignore))
+                  :priority 1
+                  :server-id 'reason-ls))
 ```
 
 ### Atom
