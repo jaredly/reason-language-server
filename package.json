@@ -38,6 +38,6 @@
     "ocaml": "~4.8.0"
   },
   "resolutions": {
-    "@opam/reason": "anmonteiro/reason:reason.opam#949db80"
+    "@opam/reason": "facebook/reason:reason.opam#f584e86"
   }
 }
