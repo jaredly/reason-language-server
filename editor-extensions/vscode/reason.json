@@ -108,19 +108,15 @@
     "comment-line": {
       "name": "comment.line",
       "begin": "(^[ \\t]+)?((//))",
-      "end": "(?=^)",
-      "patterns": [
-        {
-          "include": "#comment"
-        }
-      ]
+      "end": "(?=^)"
     },
     "comment-block": {
       "begin": "/\\*",
       "end": "\\*/",
       "name": "comment.block",
       "patterns": [
-        { "include": "#comment" }
+        { "include": "#comment-block-doc" },
+        { "include": "#comment-block" }
       ]
     },
     "comment-block-doc": {
@@ -128,7 +124,8 @@
       "end": "\\*/",
       "name": "comment.block.documentation",
       "patterns": [
-        { "include": "#comment" }
+        { "include": "#comment-block-doc" },
+        { "include": "#comment-block" }
       ]
     },
     "condition-lhs": {
