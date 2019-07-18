@@ -143,7 +143,7 @@ let filterDuplicates = cmts => {
   });
 };
 
-let nameSpaceToName = n => n |> Str.split(Str.regexp_string("-")) |> List.map(String.capitalize_ascii) |> String.concat("");
+let nameSpaceToName = n => n |> Str.split(Str.regexp("[-/@]")) |> List.map(String.capitalize_ascii) |> String.concat("");
 
 let getNamespace = (~supportsNamespaceRename, config) => {
   if (!supportsNamespaceRename) {
