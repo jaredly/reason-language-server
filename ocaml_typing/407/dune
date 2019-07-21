@@ -4,4 +4,4 @@
  (modules_without_implementation annot outcometree asttypes parsetree
    compdynlink cmo_format)
  (libraries Current)
- (flags :standard -w -9))
+ (flags :standard -w -8-9-3))

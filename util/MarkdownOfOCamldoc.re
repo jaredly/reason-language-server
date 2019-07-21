@@ -71,7 +71,7 @@ let handleRef = reference => switch reference {
 };
 
 let rec showPath = (path: Path.module_) => switch path {
-  | Resolved(resolved) => "<resolved>"
+  | Resolved(_resolved) => "<resolved>"
   | Root(name) => name
   | Forward(name) => name
   | Dot(inner, name) => showPath(inner) ++ "." ++ name
@@ -94,7 +94,7 @@ let convertItem = (item) => {
   | `Tag(`Open) => Omd.Text("Open")
   | `Tag(`Closed) => Omd.Text("Closed")
   | `Tag(`Inline) => Omd.Text("Inline")
-  | `Tag(`Canonical(path, reference)) =>
+  | `Tag(`Canonical(path, _reference)) =>
     // output_string(stderr, "Warning: Unhandled tag 'Canonical' in ocamldoc (please tell the reason-language-server maintainers)\n");
     Omd.Text(showPath(path)) // ++ ", " ++ handleRef(reference))
   | `Tag(_) => {
