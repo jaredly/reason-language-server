@@ -146,6 +146,7 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - Clone this repo
 - `cd` to the cloned dir
 - Run `esy` from the main project dir
+- Run `esy symlink` to link the built artifact into the root folder at `bin.exe`
 - Install the VS Code extension's dependencies `cd editor-extensions/vscode && npm i && cd ../..`
 - Open this project in VS Code
 
