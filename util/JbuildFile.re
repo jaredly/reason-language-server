@@ -53,6 +53,8 @@ let includeRecursive = items => {
 
 let getLibsAndBinaries = jbuildConfig => {
   jbuildConfig->Belt.List.keepMap(item => switch item {
+    // Handle the case where there's only one thing and it's a (name _) or a (public_name _)
+    | `List([`Ident("library"), ...[`List([`Ident(_), _])] as library])
     | `List([`Ident("library"), `List(library)])
     | `List([`Ident("library"), ...library]) => {
       let (public, private) = getNamedIdent(library)
