@@ -72,6 +72,8 @@ let getInitialState = (params) => {
                     l([
                       o([
                         ("globPattern", s("**/bsconfig.json")),
+                      ]),
+                      o([
                         ("globPattern", s("**/.merlin")),
                       ]),
                     ]),
