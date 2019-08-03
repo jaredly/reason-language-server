@@ -14,18 +14,15 @@ let absify = path => {
 let removeExtraDots = path => Str.global_replace(Str.regexp_string("/./"), "/", path)
 |> Str.global_replace(Str.regexp({|^\./\.\./|}), "../");
 
-let startsWith = (text, prefix) => String.length(prefix) <= String.length(text)
-  && String.sub(text, 0, String.length(prefix)) == prefix;
+// Win32 & MacOS are case-insensitive
+let pathEq = Sys.os_type == "Linux" ? (a, b) => a == b : (a, b) => String.lowercase_ascii(a) == String.lowercase_ascii(b);
+
+let pathStartsWith = (text, prefix) => String.length(prefix) <= String.length(text)
+  && pathEq(String.sub(text, 0, String.length(prefix)), prefix);
 let sliceToEnd = (str, pos) => String.sub(str, pos, String.length(str) - pos);
 
-[@test [
-  (("/a/b/c", "/a/b/d"), "../d"),
-  (("/a/b/c", "/a/b/d/e"), "../d/e"),
-  (("/a/b/c", "/d/e/f"), "../../../d/e/f"),
-  (("/a/b/c", "/a/b/c/d/e"), "./d/e"),
-]]
 let relpath = (base, path) => {
-  if (startsWith(path, base)) {
+  if (pathStartsWith(path, base)) {
     let baselen = String.length(base);
     let rest = String.sub(path, baselen, String.length(path) - baselen);
     if (rest == "") {
@@ -46,7 +43,7 @@ let relpath = (base, path) => {
       switch (bp, pp) {
       | ([".", ...ra], _) => loop(ra, pp)
       | (_, [".", ...rb]) => loop(bp, rb)
-      | ([a, ...ra], [b, ...rb]) when a == b => loop(ra, rb)
+      | ([a, ...ra], [b, ...rb]) when pathEq(a, b) => loop(ra, rb)
       | _ => (bp, pp)
       }
     };
