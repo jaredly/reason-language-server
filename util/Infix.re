@@ -36,6 +36,8 @@ let logIfAbsent = (message, x) => switch x {
 let maybeConcat = (a, b) => {
   if (b != "" && b.[0] == '/') {
     b
+  } else if (Sys.win32 && String.length(b) > 1 && b.[1] == ':') {
+    b
   } else {
     fileConcat(a, b)
   }
