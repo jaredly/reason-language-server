@@ -33,10 +33,10 @@ let logIfAbsent = (message, x) => switch x {
   | _ => x
 };
 
+let isFullPath = b => b.[0] == '/' || Sys.win32 && String.length(b) > 1 && b.[1] == ':';
+
 let maybeConcat = (a, b) => {
-  if (b != "" && b.[0] == '/') {
-    b
-  } else if (Sys.win32 && String.length(b) > 1 && b.[1] == ':') {
+  if (b != "" && isFullPath(b)) {
     b
   } else {
     fileConcat(a, b)
