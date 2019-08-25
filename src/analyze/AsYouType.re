@@ -156,7 +156,7 @@ let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sour
   if (success) {
     Ok((out, error))
   } else {
-    Error(out @ error)
+    Error(["Command " ++ cmd ++ " errored, with the following output:\n"] @ out @ error)
   }
 };
 
@@ -258,8 +258,12 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
         | Some({Unix.st_size: size}) => Log.log("Size " ++ string_of_int(size))
         | _ => Log.log("Doesn't exist")
         };
-        let%try_wrap {file, extra} = fullForCmt(cmtPath, uri, x => x);
         let errorText = String.concat("\n", lines);
+        Log.log("ErrorText: " ++ errorText);
+        let%try_wrap {file, extra} = switch (fullForCmt(cmtPath, uri, x => x)) {
+          | Ok(v) => Ok(v)
+          | Error(e) => Error(errorText ++ "\nand then tried to load the cmt, but got\n" ++ e)
+        };
         switch (syntaxError) {
           | Some(s) =>
             /** TODO also report the type errors / warnings from the partial result */

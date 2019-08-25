@@ -1,0 +1,176 @@
+{
+  "checksum": "d9cef64948abb87b7267b9c6d5c87626",
+  "root": "react-template@link-dev:./package.json",
+  "node": {
+    "scheduler@0.15.0@d41d8cd9": {
+      "id": "scheduler@0.15.0@d41d8cd9",
+      "name": "scheduler",
+      "version": "0.15.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/scheduler/-/scheduler-0.15.0.tgz#sha1:6bfcf80ff850b280fed4aeecc6513bc0b4f17f8e"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [
+        "object-assign@4.1.1@d41d8cd9", "loose-envify@1.4.0@d41d8cd9"
+      ],
+      "devDependencies": []
+    },
+    "reason-react@0.7.0@d41d8cd9": {
+      "id": "reason-react@0.7.0@d41d8cd9",
+      "name": "reason-react",
+      "version": "0.7.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/reason-react/-/reason-react-0.7.0.tgz#sha1:46a975c321e81cd51310d7b1a02418ca7667b0d6"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [
+        "react-dom@16.9.0@d41d8cd9", "react@16.9.0@d41d8cd9"
+      ],
+      "devDependencies": []
+    },
+    "react-template@link-dev:./package.json": {
+      "id": "react-template@link-dev:./package.json",
+      "name": "react-template",
+      "version": "link-dev:./package.json",
+      "source": {
+        "type": "link-dev",
+        "path": ".",
+        "manifest": "package.json"
+      },
+      "overrides": [],
+      "dependencies": [
+        "reason-react@0.7.0@d41d8cd9", "react-dom@16.9.0@d41d8cd9",
+        "react@16.9.0@d41d8cd9"
+      ],
+      "devDependencies": [ "bs-platform@5.0.6@d41d8cd9" ]
+    },
+    "react-is@16.9.0@d41d8cd9": {
+      "id": "react-is@16.9.0@d41d8cd9",
+      "name": "react-is",
+      "version": "16.9.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/react-is/-/react-is-16.9.0.tgz#sha1:21ca9561399aad0ff1a7701c01683e8ca981edcb"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "react-dom@16.9.0@d41d8cd9": {
+      "id": "react-dom@16.9.0@d41d8cd9",
+      "name": "react-dom",
+      "version": "16.9.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/react-dom/-/react-dom-16.9.0.tgz#sha1:5e65527a5e26f22ae3701131bcccaee9fb0d3962"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [
+        "scheduler@0.15.0@d41d8cd9", "react@16.9.0@d41d8cd9",
+        "prop-types@15.7.2@d41d8cd9", "object-assign@4.1.1@d41d8cd9",
+        "loose-envify@1.4.0@d41d8cd9"
+      ],
+      "devDependencies": []
+    },
+    "react@16.9.0@d41d8cd9": {
+      "id": "react@16.9.0@d41d8cd9",
+      "name": "react",
+      "version": "16.9.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/react/-/react-16.9.0.tgz#sha1:40ba2f9af13bc1a38d75dbf2f4359a5185c4f7aa"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [
+        "prop-types@15.7.2@d41d8cd9", "object-assign@4.1.1@d41d8cd9",
+        "loose-envify@1.4.0@d41d8cd9"
+      ],
+      "devDependencies": []
+    },
+    "prop-types@15.7.2@d41d8cd9": {
+      "id": "prop-types@15.7.2@d41d8cd9",
+      "name": "prop-types",
+      "version": "15.7.2",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/prop-types/-/prop-types-15.7.2.tgz#sha1:52c41e75b8c87e72b9d9360e0206b99dcbffa6c5"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [
+        "react-is@16.9.0@d41d8cd9", "object-assign@4.1.1@d41d8cd9",
+        "loose-envify@1.4.0@d41d8cd9"
+      ],
+      "devDependencies": []
+    },
+    "object-assign@4.1.1@d41d8cd9": {
+      "id": "object-assign@4.1.1@d41d8cd9",
+      "name": "object-assign",
+      "version": "4.1.1",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz#sha1:2109adc7965887cfc05cbbd442cac8bfbb360863"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "loose-envify@1.4.0@d41d8cd9": {
+      "id": "loose-envify@1.4.0@d41d8cd9",
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz#sha1:71ee51fa7be4caec1a63839f7e682d8132d30caf"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [ "js-tokens@4.0.0@d41d8cd9" ],
+      "devDependencies": []
+    },
+    "js-tokens@4.0.0@d41d8cd9": {
+      "id": "js-tokens@4.0.0@d41d8cd9",
+      "name": "js-tokens",
+      "version": "4.0.0",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz#sha1:19203fb59991df98e3a287050d4647cdeaf32499"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "bs-platform@5.0.6@d41d8cd9": {
+      "id": "bs-platform@5.0.6@d41d8cd9",
+      "name": "bs-platform",
+      "version": "5.0.6",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://registry.npmjs.org/bs-platform/-/bs-platform-5.0.6.tgz#sha1:88c13041fb020479800de3d82c680bf971091425"
+        ]
+      },
+      "overrides": [],
+      "dependencies": [],
+      "devDependencies": []
+    }
+  }
+}

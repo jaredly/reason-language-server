@@ -1,0 +1,43 @@
+📣 📣 NEW BSB PACKAGE 📣 📣
+- location: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6
+- bsPlatform: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform
+- buildSystem: bsb version 5.0.6
+- build command: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsb.exe -make-world
+>> Build system running: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsb.exe -make-world
+>>> stdout
+ninja: no work to do.
+ninja: no work to do.
+>>> stderr
+
+Affected files: 
+Cleaning bsconfig.json
+Deps reason-react
+Dep loc /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/bsconfig.json
+Compiled base: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/lib/bs
+Source directories: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src
+Source files found: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReactDOMRe.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReactEventRe.rei : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReasonReact.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReasonReactOptimizedCreateClass.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReactDOMServerRe.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReactEventRe.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReasonReact.rei
+Adding intf /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReactEventRe.rei
+Adding intf /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReasonReact.rei
+Bad source file (extension) /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReactEventRe.rei
+Bad source file (extension) /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/src/ReasonReact.rei
+Got source directories ./src
+Source directories: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src
+Source files found: /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src/Component2.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src/Component1.re : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src/Index.re
+adding namespace ReactTemplate : ReactTemplate : /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/ReactTemplate.cmt
+-- All local modules found: 4
+ReactTemplate
+impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/ReactTemplate.cmt
+Component2-ReactTemplate
+impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/src/Component2-ReactTemplate.cmt
+Component1-ReactTemplate
+impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/src/Component1-ReactTemplate.cmt
+Index-ReactTemplate
+impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/src/Index-ReactTemplate.cmt
+############ Namespaced as ReactTemplate at /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/ReactTemplate.cmt
+Dependency dirs /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/lib/bs/src
+➡️ running bsc /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsc.exe -c -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/src' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/lib/bs/src' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml' -bin-annot -bs-no-builtin-ppx-ml -open ReactTemplate -ppx '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsppx.exe -bs-jsx 2' -nostdlib -color always -w -30-40+6+7+27+32..39+44+45+101 -bs-re-out -impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/.lsp/Component2-ReactTemplate.ast with pwd /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6
+<< Replacing lastDefinitions for file:///Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src/Component2.re
+➡️ running bsc /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsc.exe -c -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/src' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/lib/bs/src' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml' -bin-annot -bs-no-builtin-ppx-ml -open ReactTemplate -ppx '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsppx.exe -bs-jsx 2' -nostdlib -color always -w -30-40+6+7+27+32..39+44+45+101 -bs-re-out -impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/.lsp/Component1-ReactTemplate.ast with pwd /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6
+<< Replacing lastDefinitions for file:///Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src/Component1.re
+➡️ running bsc /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsc.exe -c -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/lib/bs/src' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/reason-react/lib/bs/src' -I '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/ocaml' -bin-annot -bs-no-builtin-ppx-ml -open ReactTemplate -ppx '/Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/bs-platform/lib/bsppx.exe -bs-jsx 2' -nostdlib -color always -w -30-40+6+7+27+32..39+44+45+101 -bs-re-out -impl /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/node_modules/.lsp/Index-ReactTemplate.ast with pwd /Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6
+<< Replacing lastDefinitions for file:///Users/jared/clone/tools/reason-language-server/examples/bs-5.0.6/src/Index.re

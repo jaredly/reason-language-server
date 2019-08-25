@@ -8,6 +8,7 @@ let checkExampleProject = (rootPath, sourcePaths) => {
     rootUri: Util.Utils.toUri(rootPath),
   };
   print_endline("  Project directory in " ++ rootPath);
+  Util.Log.setLocation(Filename.concat(rootPath, "example-lsp-debug.log"));
   let files = sourcePaths->Belt.List.map(path => {
     print_endline("  Source directory " ++ path);
     Files.collect(path, FindFiles.isSourceFile)
@@ -19,7 +20,9 @@ let checkExampleProject = (rootPath, sourcePaths) => {
         print_endline("  Unable to get package: " ++ uri)
         print_endline(message);
         [`PackageFail(uri, message), ...failures]
-      | Ok(package) => switch (State.getCompilationResult(uri, state, ~package)) {
+      | Ok(package) => 
+        print_endline("Analyzing " ++ uri);
+        switch (State.getCompilationResult(uri, state, ~package)) {
         | Error(message) =>
           print_endline("  Invalid compilation result: " ++ message);
           [`FileFail(uri, message), ...failures]
@@ -36,11 +39,13 @@ let checkExampleProject = (rootPath, sourcePaths) => {
 
 let projects = [
   // ("dune-complex", ["src", "both", "awesome"], "esy"),
-  ("example-project", ["src"], "npm install"),
-  ("example-es6-imports", ["src"], "npm install"),
-  ("example-react", ["src", "__tests__"], "npm install"),
-  ("name_with_underscore", ["src"], "npm install"),
-  ("bs-3.1.5", ["src"], "npm install"),
+  ("bs-5.0.6", ["src"], "npm install"),
+  ("bs-5.1.0", ["src"], "npm install"),
+  // ("example-project", ["src"], "npm install"),
+  // ("example-es6-imports", ["src"], "npm install"),
+  // ("example-react", ["src", "__tests__"], "npm install"),
+  // ("name_with_underscore", ["src"], "npm install"),
+  // ("bs-3.1.5", ["src"], "npm install"),
   // ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
 
