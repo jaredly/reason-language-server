@@ -1,0 +1,33 @@
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Revery CI
+    
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        node-version: [10.x]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }} on ${{ matrix.os}}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install esy
+      run: |
+        npm install -g esy
+    - name: Install dependencies
+      run: |
+        esy install
+    - name: Building reason-langage-server
+      run: |
+        esy build
+      env:
+        CI: true
+    - name: Building all in reason-langage-server
+      run: |
+        esy build dune build @all
