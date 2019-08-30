@@ -14,6 +14,26 @@ type handler = Handler(string, Json.t => result('a, string), (state, 'a) => resu
 
 let getPackage = Packages.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
 
+let rec getItemsFromModule = ({SharedTypes.Module.topLevel}) => {
+  open SharedTypes;
+  let fn = ({name: {txt}, extentLoc, contents}) => {
+    let (item, siblings) = switch contents {
+      | Module.Value(v) => (v.typ.variableKind, [])
+      | Type(t) => (t.typ.declarationKind, [])
+      | Module(Structure(contents)) => (`Module, getItemsFromModule(contents))
+      | Module(Ident(_)) => (`Module, [])
+      | ModuleType(_) => (`ModuleType, [])
+    };
+    if (extentLoc.loc_ghost) {
+      siblings
+    } else {
+      [(txt, extentLoc, item), ...siblings]
+    }
+  };
+  let x = topLevel |. List.map(fn) |. List.toArray |. List.concatMany;
+  x
+};
+
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
     open InfixResult;
@@ -505,26 +525,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     open SharedTypes;
 
-    let rec getItems = ({Module.topLevel}) => {
-      let fn = ({name: {txt}, extentLoc, contents}) => {
-        let (item, siblings) = switch contents {
-          | Module.Value(v) => (v.typ.variableKind, [])
-          | Type(t) => (t.typ.declarationKind, [])
-          | Module(Structure(contents)) => (`Module, getItems(contents))
-          | Module(Ident(_)) => (`Module, [])
-          | ModuleType(_) => (`ModuleType, [])
-        };
-        if (extentLoc.loc_ghost) {
-          siblings
-        } else {
-          [(txt, extentLoc, item), ...siblings]
-        }
-      };
-      let x = topLevel |. List.map(fn) |. List.toArray |. List.concatMany;
-      x
-    };
-
-    (getItems(file.contents) |> items => {
+    (getItemsFromModule(file.contents) |> items => {
       open Util.JsonShort;
       Ok((state, l(List.map(items, ((name, loc, typ)) => o([
         ("name", s(name)),
@@ -635,6 +636,41 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         }
       | _ => Error("Unexpected command " ++ command)
     }
+  }),
+
+  ("workspace/symbol", (state, params) => {
+    switch (params |> Json.get("query") |?> Json.string) {
+    | Some(query) =>
+      open SharedTypes;
+      let allPackages = state.packagesByRoot->Stdlib.Hashtbl.to_seq_values;
+      let allPackages = allPackages->Stdlib.List.of_seq;
+      let allFiles =
+        allPackages
+        ->Belt.List.map(package =>
+            package.localModules
+            ->Belt.List.keepMap(modname => State.fileForModule(state, ~package, modname))
+          )
+        ->Belt.List.flatten;
+
+      let allItems = allFiles->Belt.List.map(file => getItemsFromModule(file.contents))->Belt.List.flatten;
+
+      let encodeItem = ((name, loc, typ)) => {
+        JsonShort.(
+          o([
+            ("name", s(name)),
+            ("kind", i(Protocol.symbolKind(typ))),
+            ("location", Protocol.locationOfLoc(loc)),
+            /* ("containerName", s(String.concat(".", path))) */
+          ])
+        );
+      };
+
+      let result = JsonShort.l(allItems->Belt.List.map(encodeItem));
+      Ok((state, result));
+    | None =>
+      let result = Json.Null;
+      Ok((state, result));
+    };
   }),
 
   ("custom:reasonLanguageServer/createInterface", (state, params) => {

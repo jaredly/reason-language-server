@@ -20,6 +20,7 @@ let capabilities =
       ("typeDefinitionProvider", t),
       ("referencesProvider", t),
       ("documentSymbolProvider", t),
+      ("workspaceSymbolProvider", t),
       /*
        * Found how to do the showReferences thing
        * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts
