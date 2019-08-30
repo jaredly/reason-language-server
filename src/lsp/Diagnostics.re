@@ -28,7 +28,7 @@ let makeDiagnostic = (documentText, ((line, c1, c2), message)) => {
 };
 
 let getText = (state, uri) => {
-  switch (MessageHandlers.maybeHash(state.documentText, uri)) {
+  switch (HandlerHelpers.maybeHash(state.documentText, uri)) {
     | None => switch (Utils.parseUri(uri)) {
       | None => Error("Not a uri " ++ uri)
       | Some(src) => Files.readFileResult(src)

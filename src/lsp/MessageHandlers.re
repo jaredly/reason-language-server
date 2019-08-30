@@ -3,36 +3,14 @@ open Belt;
 open R;
 open TopTypes;
 open Infix;
+open HandlerHelpers;
 
 let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);
 
 let log = Log.log;
 let (-?>) = (_, b) => b;
 
-let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
-
-let getPackage = Packages.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
-
-let rec getItemsFromModule = ({SharedTypes.Module.topLevel}) => {
-  open SharedTypes;
-  let fn = ({name: {txt}, extentLoc, contents}) => {
-    let (item, siblings) = switch contents {
-      | Module.Value(v) => (v.typ.variableKind, [])
-      | Type(t) => (t.typ.declarationKind, [])
-      | Module(Structure(contents)) => (`Module, getItemsFromModule(contents))
-      | Module(Ident(_)) => (`Module, [])
-      | ModuleType(_) => (`ModuleType, [])
-    };
-    if (extentLoc.loc_ghost) {
-      siblings
-    } else {
-      [(txt, extentLoc, item), ...siblings]
-    }
-  };
-  let x = topLevel |. List.map(fn) |. List.toArray |. List.concatMany;
-  x
-};
 
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
@@ -67,48 +45,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (text, _version, _isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
-    let%try full = State.getDefinitionData(uri, state, ~package);
-    let {SharedTypes.file, extra} = full;
+    let%try (typ, hoverText) = getTypeAndHoverTextForPosition(~uri, ~position, ~state);
 
     {
       let%opt (commas, _labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
       Log.log("Signature help lident " ++ lident);
       let lastPos = i + String.length(lident) - 1;
       let%opt pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode;
-      let%opt (typ, hoverText) = {
-        switch (References.locForPos(~extra, pos)) {
-        | None =>
-          let tokenParts = Utils.split_on_char('.', lident);
-          let rawOpens = PartialParser.findOpens(text, offset);
-          let%opt declared = NewCompletions.findDeclaredValue(
-            ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
-            ~full,
-            ~package,
-            ~rawOpens,
-            ~getModule=State.fileForModule(state, ~package),
-            pos,
-            tokenParts
-          );
-          let typ = declared.contents.typ;
-          Some((typ, declared.docstring |? "No docs"))
-        | Some((_, loc)) =>
-          let%opt typ =
-            switch (loc) {
-            | Typed(t, _) => Some(t)
-            | _ => None
-            };
-          let%opt hoverText =
-            Hover.newHover(
-              ~rootUri=state.rootUri,
-              ~file,
-              ~getModule=State.fileForModule(state, ~package),
-              ~markdown=! state.settings.clientNeedsPlainText,
-              ~showPath=state.settings.showModulePathOnHover,
-              loc,
-            );
-          Some((typ, hoverText));
-        };
-      };
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
       let (args, _rest) = typ.getArguments();
@@ -150,9 +93,12 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       Log.log("Nothing completable found :/");
       Ok([])
     }
-    | Labeled(_) => {
-      Log.log("don't yet support completion for argument labels, but I hope to soon!");
-      Ok([])
+    | Labeled(string) => {
+      let%try args = getArgumentsForPosition(~uri, ~position=pos, ~state)
+      let args = Belt.List.map(args, ((arg, _)) => {
+      o@@[ ("label", s(arg)), ("kind", i(12)) ]
+      });
+      Ok(args)
     }
     | Lident(string) => {
       /* Log.log("Completing for string " ++ string); */
