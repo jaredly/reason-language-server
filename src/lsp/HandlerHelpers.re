@@ -42,7 +42,7 @@ let getTypeAndHoverTextForPosition = (~uri: string, ~position: (int, int), ~stat
   | None =>
     let tokenParts = Utils.split_on_char('.', lident);
     let rawOpens = PartialParser.findOpens(text, offset);
-    let%opt declared = NewCompletions.findDeclaredValue(
+    let%try declared = NewCompletions.findDeclaredValue(
       ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
       ~full,
       ~package,
@@ -50,16 +50,16 @@ let getTypeAndHoverTextForPosition = (~uri: string, ~position: (int, int), ~stat
       ~getModule=State.fileForModule(state, ~package),
       pos,
       tokenParts
-    );
+    ) |> R.orError("Could not find declared value");
     let typ = declared.contents.typ;
-    Some((typ, declared.docstring |? "No docs"))
+    Ok((typ, declared.docstring |? "No docs"))
   | Some((_, loc)) =>
-    let%opt typ =
+    let%try typ =
       switch (loc) {
-      | Typed(t, _) => Some(t)
-      | _ => None
+      | Typed(t, _) => Ok(t)
+      | _ => Error("typ was empty")
       };
-    let%opt hoverText =
+    let%try hoverText =
       Hover.newHover(
         ~rootUri=state.rootUri,
         ~file,
@@ -67,11 +67,11 @@ let getTypeAndHoverTextForPosition = (~uri: string, ~position: (int, int), ~stat
         ~markdown=! state.settings.clientNeedsPlainText,
         ~showPath=state.settings.showModulePathOnHover,
         loc,
-      );
-    Some((typ, hoverText));
+      ) |> R.orError("Failed to create hover text");
+    Ok((typ, hoverText));
   });
 
-  res |> R.orError("Failed to find type info and hover text")
+  res;
 };
 
 let getArgumentsForPosition = (~uri: string, ~position: (int, int), ~state: state) => {
