@@ -497,11 +497,16 @@ let findDeclaredValue =
   let opens = resolveRawOpens(~useStdlib, ~env, ~getModule, ~rawOpens, ~package);
 
   let path = pathFromTokenParts(tokenParts);
-
   let%opt (env, suffix) = getEnvWithOpens(~pos, ~env, ~getModule, ~opens, path);
 
-  let%opt stamp = Utils.maybeHash(env.exported.values, suffix);
-  Utils.maybeHash(env.file.stamps.values, stamp);
+  let envs = List.concat([ [env], opens ]);
+  let envsWithStamp = envs->Belt.List.keep((envOrOpen: Query.queryEnv) => {
+    Utils.maybeHash(envOrOpen.exported.values, suffix)->Belt.Option.isSome;
+  });
+  let%opt envWithStamp = envsWithStamp->Belt.List.get(0);
+  let%opt stamp= Utils.maybeHash(envWithStamp.exported.values, suffix);
+  let%opt value = Utils.maybeHash(envWithStamp.file.stamps.values, stamp);
+  Some(value);
 };
 
 
