@@ -36,6 +36,6 @@
     "@opam/ppxlib": "*",
     "@opam/stdlib-shims": "*",
     "rex-json": "*",
-    "ocaml": "~4.8.0"
+    "ocaml": "~4.8.1000"
   }
 }

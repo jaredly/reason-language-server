@@ -1,11 +1,4 @@
 opam-version: "2.0"
-maintainer: ["Jane Street Group, LLC <opensource@janestreet.com>"]
-authors: ["Jane Street Group, LLC <opensource@janestreet.com>"]
-bug-reports: "https://github.com/ocaml/dune/issues"
-homepage: "https://github.com/ocaml/dune"
-doc: "https://dune.readthedocs.io/"
-license: "MIT"
-dev-repo: "git+https://github.com/ocaml/dune.git"
 synopsis: "Fast, portable and opinionated build system"
 description: """
 
@@ -26,6 +19,12 @@ several opam roots/switches simultaneously. This helps maintaining
 packages across several versions of OCaml and gives cross-compilation
 for free.
 """
+maintainer: ["Jane Street Group, LLC <opensource@janestreet.com>"]
+authors: ["Jane Street Group, LLC <opensource@janestreet.com>"]
+license: "MIT"
+homepage: "https://github.com/ocaml/dune"
+doc: "https://dune.readthedocs.io/"
+bug-reports: "https://github.com/ocaml/dune/issues"
 depends: [
   "ocaml" {>= "4.02"}
   "base-unix"
@@ -36,6 +35,7 @@ conflicts: [
   "odoc" {< "1.3.0"}
   "dune-release" {< "1.3.0"}
 ]
+dev-repo: "git+https://github.com/ocaml/dune.git"
 build: [
   # opam 2 sets OPAM_SWITCH_PREFIX, so we don't need a hardcoded path
   ["ocaml" "configure.ml" "--libdir" lib] {opam-version < "2"}
@@ -45,9 +45,9 @@ build: [
 ]
 url {
   src:
-    "https://github.com/ocaml/dune/releases/download/1.10.0/dune-1.10.0.tbz"
+    "https://github.com/ocaml/dune/releases/download/1.11.3/dune-build-info-1.11.3.tbz"
   checksum: [
-    "sha256=ed16e628de270c5dc242fbf52e6b80252f7039c04d93970779f13c135e4edd95"
-    "sha512=2ba3e9a91650be2402bd88dc883b2b5dc1a73d63348a0fa5a9e5fa054da400f84a30e92656e7bec2c0a2786584ce85160ec5ce0b495908417d630f049af06675"
+    "sha256=c83a63e7e8245611b0e11d6adea07c6484dc1b4efffacb176315cd6674d4bbd2"
+    "sha512=2c1532b91d223e6ea0628c5f5174792c1bb4113a464f6d8b878b3c58be1136beb84ba2d9883a330fa20e550367588aa923ba06ffb9b615a098a21374a9377e81"
   ]
 }
