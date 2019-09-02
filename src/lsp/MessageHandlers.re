@@ -96,7 +96,8 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     | Labeled(string) => {
       let%try args = getArgumentsForPosition(~uri, ~position=pos, ~state)
       let args = Belt.List.map(args, ((arg, _)) => {
-      o@@[ ("label", s(arg)), ("kind", i(12)) ]
+        let argWithoutQMark = (arg->String.length > 1 && arg->String.get(0) == '?') ? arg->String.sub(1, arg->String.length - 1) : arg;
+        o@@[ ("label", s(arg)), ("kind", i(12)), ("insertText", s(argWithoutQMark ++ "=")) ];
       });
       Ok(args)
     }

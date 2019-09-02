@@ -11,10 +11,10 @@ let capabilities =
       ("completionProvider", o([
         ("resolveProvider", t),
         /* TODO list # as trigger character */
-        ("triggerCharacters", l([s(".")]))
+        ("triggerCharacters", l([s("."), s("#"), s("~")]))
       ])),
       ("signatureHelpProvider", o([
-        ("triggerCharacters", l([s("(")]))
+        ("triggerCharacters", l([s("("), s(",")]))
       ])),
       ("definitionProvider", t),
       ("typeDefinitionProvider", t),
