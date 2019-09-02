@@ -55,6 +55,14 @@ const base = '/Users/anmonteiro/Downloads/ocaml'
 
 // NOTE(anmonteiro): This relies on the compiler being built, since some files
 // get generated as part of the building process!
+//
+// Relevant instructions: clone the version of the compiler you want to include
+// as part of RLS and run the commands below in the compiler distribution's
+// root directory. Don't forget to change the `base` variable above to point
+// to your OCaml compiler distribution!
+//
+// $ ./configure
+// $ make world.opt
 const names = ['parsing/parsetree', 'parsing/asttypes', 'typing/annot', 'typing/outcometree'].concat(...items)
 
 const allFiles = names.reduce((result, name) => {
