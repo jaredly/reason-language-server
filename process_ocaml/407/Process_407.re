@@ -33,15 +33,15 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
      }
    }; */
 
-module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_408);
+module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_current);
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
   switch (infos.cmt_annots) {
   | Implementation(structure) =>
     Ok
-      (`Implementation(Untypeast.untype_structure(structure)))
-  | Interface(signature) => Ok(`Interface(Untypeast.untype_signature(signature)))
+      (`Implementation(Convert.copy_structure(Obj.magic(Untypeast.untype_structure(structure)))))
+  | Interface(signature) => Ok(`Interface(Convert.copy_signature(Obj.magic(Untypeast.untype_signature(signature)))))
 
   | Partial_implementation(parts) =>
     let items =
@@ -63,7 +63,7 @@ let astForCmt = cmt => {
         List.map(
           item => Untypeast.default_mapper.structure_item(Untypeast.default_mapper, item),
           items,
-        ),
+        ) |> Obj.magic |> Convert.copy_structure,
       ),
     );
   | Partial_interface(parts) =>
@@ -86,7 +86,7 @@ let astForCmt = cmt => {
         List.map(
           item => Untypeast.default_mapper.signature_item(Untypeast.default_mapper, item),
           items,
-        ),
+        ) |> Obj.magic |> Convert.copy_signature,
       ),
     );
 
