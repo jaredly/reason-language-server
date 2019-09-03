@@ -97,7 +97,16 @@ let rec findArgLabel = (text, i) => if (i < 0) { None } else {
 
 open Infix;
 
-let findFunctionCall = (text, offset) => {
+
+// The first integer represents the number of commas between the cursor and the
+// function call. The array of strings are the labelled arguments already passed
+// to the function before the cursor. The string is the name of the function,
+// the last int is the offset into the document required to get to the function
+// name.
+[@deriving show]
+type functionCallInfo = (int, array(string), string, int);
+
+let findFunctionCall = (text, offset): option(functionCallInfo) => {
   let rec loop = (commas, labels, i) => {
     if (i > 0) {
       switch (text.[i]) {
@@ -114,7 +123,7 @@ let findFunctionCall = (text, offset) => {
       | '(' => switch (text.[i - 1]) {
         | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' => {
           let i0 = startOfLident(text, i - 2);
-          Some((commas, labels, String.sub(text, i0, i - i0), i0))
+          Some((commas, labels->Belt.List.toArray, String.sub(text, i0, i - i0), i0))
         }
         | _ => loop(commas, labels, i - 1)
       }
@@ -129,51 +138,39 @@ let findFunctionCall = (text, offset) => {
       None;
     }
   };
-  loop(0, [], offset) |?>> ((commas, labels, lident, i)) => (commas, Array.of_list(labels), lident, i);
+  // When a function call is found, this returns the number of commas between
+  // the cursor and the start of the function call, the labelled arguments
+  // already passed to the function, the "lident", or name of the function being
+  // called, and the offset in the document to the start of the name of the
+  // function call.
+  loop(0, [], offset) |?>> ((commas, labels, lident, i)) => (commas, labels, lident, i);
 };
 
+type jsxCallInfo = {
+  lident: string,
+  start: int,
+  end_: int
+};
 
-
-let findJsxTag = text => {
-  let rec loop = (labels, i) => {
-    if (i > 0) {
-      switch (text.[i]) {
-      | '}' => loop(labels, findBackSkippingCommentsAndStrings(text, '{', '}', i - 1, 0))
-      | ']' => loop(labels, findBackSkippingCommentsAndStrings(text, '[', ']', i - 1, 0))
-      | ')' => loop(labels, findBackSkippingCommentsAndStrings(text, '(', ')', i - 1, 0))
-      | '"' => loop(labels, findBack(text, '"', i - 1))
-      | '=' => switch (text.[i - 1]) {
-        | 'a'..'z' | 'A'..'Z' | '_' => {
-          let i0 = startOfLident(text, i - 1);
-          /* TODO support punning */
-          loop([String.sub(text, i0, i - i0), ...labels], i0 - 1)
-        }
-        | _ => loop(labels, i - 1)
-        }
-      | '{' | '[' | '(' | '>' | ';' => None
-      | ' ' | '\n' => switch (text.[i - 1]) {
-        | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' => {
-          let i0 = startOfLident(text, i - 3);
-          if (i0 > 0 && text.[i0 - 1] == '<') {
-            Some((labels, String.sub(text, i0, i - i0)))
-          } else { loop(labels, i - 1) }
-        }
-        | _ => loop(labels, i - 1)
-      }
-      | _ => if (i >= 1 && text.[i] == '/' && text.[i - 1] == '*') {
-          loop(labels, findOpenComment(text, i - 2))
-        } else {
-          loop(labels, i - 1)
-        }
-      }
-    } else {
-      None;
-    }
+let findJsxCallBeforeCursor = (text, offset): option(jsxCallInfo) => {
+  let pattern = Str.regexp("<\([a-zA-Z0-9\.]+\)");
+  switch (Str.search_backward(pattern, text, offset)) {
+  | exception e =>
+    None;
+  | index =>
+    let group = Str.matched_group(1, text);
+    Some({lident: group, start: index, end_: index + group->String.length});
   };
-  loop([], String.length(text) - 1) |?>> ((labels, lident)) => (Array.of_list(labels), lident);
 };
 
 type completable = Nothing | Labeled(string) | Lident(string);
+
+let findJsxCompletableBeforeCursor = (text, offset) => {
+  switch (findJsxCallBeforeCursor(text, offset)) {
+    | Some({lident}) => Labeled(lident)
+    | None => Nothing
+  }
+};
 
 let findCompletable = (text, offset) => {
   /* NOTE disabled the unterminated check... it got in the way too often */
@@ -183,16 +180,20 @@ let findCompletable = (text, offset) => {
   } else { */
     /* Log.log("Not unterminated"); */
     /** TODO handle being in the middle of an identifier */
-    let rec loop = i => {
-      i < 0 ? Lident(String.sub(text, i + 1, offset - (i + 1))) : switch (text.[i]) {
-      | '~' => Labeled(String.sub(text, i + 1, offset - (i + 1)))
-      | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' => loop(i - 1)
-      | _ => {
-        i == offset - 1 ? Nothing : Lident(String.sub(text, i + 1, offset - (i + 1)))
-      }
-      }
-    };
-    loop(offset - 1)
+    switch(findJsxCompletableBeforeCursor(text, offset)) {
+    | Nothing => 
+      let rec loop = i => {
+        i < 0 ? Lident(String.sub(text, i + 1, offset - (i + 1))) : switch (text.[i]) {
+        | '~' => Labeled(String.sub(text, i + 1, offset - (i + 1)))
+        | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' => loop(i - 1)
+        | _ => {
+          i == offset - 1 ? Nothing : Lident(String.sub(text, i + 1, offset - (i + 1)))
+        }
+        }
+      };
+      loop(offset - 1)
+    | other => other
+    }
   /* } */
 };
 

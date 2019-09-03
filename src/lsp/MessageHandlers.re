@@ -90,19 +90,24 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Util.JsonShort;
     let%try completions = switch (PartialParser.findCompletable(text, offset)) {
     | Nothing => {
-      Log.log("Nothing completable found :/");
+      // Log.log("Nothing completable found :/");
       Ok([])
     }
     | Labeled(string) => {
       let%try args = getArgumentsForPosition(~uri, ~position=pos, ~state)
       let args = Belt.List.map(args, ((arg, _)) => {
         let argWithoutQMark = (arg->String.length > 1 && arg->String.get(0) == '?') ? arg->String.sub(1, arg->String.length - 1) : arg;
-        o@@[ ("label", s(arg)), ("kind", i(12)), ("insertText", s(argWithoutQMark ++ "=")) ];
+        o @@ [
+          ("label", s(arg)),
+          ("kind", i(12)),
+          ("insertText", s(argWithoutQMark ++ "=")),
+          ("filterText", s(argWithoutQMark)),
+        ];
       });
       Ok(args)
     }
     | Lident(string) => {
-      /* Log.log("Completing for string " ++ string); */
+      // Log.log("Completing for string " ++ string);
       let parts = Str.split(Str.regexp_string("."), string);
       let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
       let rawOpens = PartialParser.findOpens(text, offset);

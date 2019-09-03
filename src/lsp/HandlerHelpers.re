@@ -33,7 +33,14 @@ let getTypeAndHoverTextForPosition = (~uri: string, ~position: (int, int), ~stat
   let%try full = State.getDefinitionData(uri, state, ~package);
 
 
-  let%try (commas, _labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1) |> R.orError("Could not find function call");
+  let%try (lident, i) = {
+    switch (PartialParser.findFunctionCall(text, offset - 1)) {
+    | Some((_, _, lident, i)) => Some((lident, i))
+    | None =>
+      PartialParser.findJsxCallBeforeCursor(text, offset)
+      ->Belt.Option.map(callInfo => {(callInfo.lident, callInfo.start)})
+    };
+  } |> R.orError("Could not find function call");
   let lastPos = i + String.length(lident) - 1;
   let%try pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode |> R.orError("Could not offset to position");
   let {SharedTypes.file, extra} = full;
