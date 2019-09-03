@@ -1,7 +1,7 @@
 
 (library
   (name Lsp)
-  (libraries Analyze Belt Vendor str Process_402 Process_406 Process_407 Core Util reason ocaml-migrate-parsetree)
+  (libraries Analyze Belt Vendor str Process_402 Process_406 Process_407 Core Util reason ocaml-migrate-parsetree ppx_deriving.runtime)
   (flags :standard -open Vendor -open Util -open Analyze -w -9)
-  (preprocess (pps Belt_ppx Ppx_monads))
+  (preprocess (pps Belt_ppx Ppx_monads ppx_deriving.show))
   )

@@ -34,6 +34,7 @@
     "@opam/ppx_tools_versioned": "*",
     "@opam/ppx_tools": "*",
     "@opam/ppxlib": "*",
+    "@opam/ppx_deriving": "*",
     "rex-json": "*",
     "ocaml": "~4.7.2"
   }
