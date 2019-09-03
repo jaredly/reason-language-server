@@ -11,15 +11,16 @@ let capabilities =
       ("completionProvider", o([
         ("resolveProvider", t),
         /* TODO list # as trigger character */
-        ("triggerCharacters", l([s(".")]))
+        ("triggerCharacters", l([s("."), s("~"), s(" ")]))
       ])),
       ("signatureHelpProvider", o([
-        ("triggerCharacters", l([s("(")]))
+        ("triggerCharacters", l([s("("), s(",")]))
       ])),
       ("definitionProvider", t),
       ("typeDefinitionProvider", t),
       ("referencesProvider", t),
       ("documentSymbolProvider", t),
+      ("workspaceSymbolProvider", t),
       /*
        * Found how to do the showReferences thing
        * https://github.com/Microsoft/vscode/blob/c6b1114292288e76e2901e05e860faf3a08b4b5a/extensions/typescript-language-features/src/features/implementationsCodeLensProvider.ts

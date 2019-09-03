@@ -3,16 +3,14 @@ open Belt;
 open R;
 open TopTypes;
 open Infix;
+open HandlerHelpers;
 
 let extend = (obj, items) => Json.obj(obj) |?>> current => Json.Object(current @ items);
 
 let log = Log.log;
 let (-?>) = (_, b) => b;
 
-let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
-
-let getPackage = Packages.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
 
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
@@ -47,48 +45,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try (text, _version, _isClean) = maybeHash(state.documentText, uri) |> orError("No document text found");
     let%try package = getPackage(uri, state);
     let%try offset = PartialParser.positionToOffset(text, position) |> orError("invalid offset");
-    let%try full = State.getDefinitionData(uri, state, ~package);
-    let {SharedTypes.file, extra} = full;
+    let%try (typ, hoverText) = getTypeAndHoverTextForPosition(~uri, ~position, ~state);
 
     {
       let%opt (commas, _labelsUsed, lident, i) = PartialParser.findFunctionCall(text, offset - 1);
       Log.log("Signature help lident " ++ lident);
       let lastPos = i + String.length(lident) - 1;
       let%opt pos = PartialParser.offsetToPosition(text, lastPos) |?>> Utils.cmtLocFromVscode;
-      let%opt (typ, hoverText) = {
-        switch (References.locForPos(~extra, pos)) {
-        | None =>
-          let tokenParts = Utils.split_on_char('.', lident);
-          let rawOpens = PartialParser.findOpens(text, offset);
-          let%opt declared = NewCompletions.findDeclaredValue(
-            ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
-            ~full,
-            ~package,
-            ~rawOpens,
-            ~getModule=State.fileForModule(state, ~package),
-            pos,
-            tokenParts
-          );
-          let typ = declared.contents.typ;
-          Some((typ, declared.docstring |? "No docs"))
-        | Some((_, loc)) =>
-          let%opt typ =
-            switch (loc) {
-            | Typed(t, _) => Some(t)
-            | _ => None
-            };
-          let%opt hoverText =
-            Hover.newHover(
-              ~rootUri=state.rootUri,
-              ~file,
-              ~getModule=State.fileForModule(state, ~package),
-              ~markdown=! state.settings.clientNeedsPlainText,
-              ~showPath=state.settings.showModulePathOnHover,
-              loc,
-            );
-          Some((typ, hoverText));
-        };
-      };
       Log.log("Found a type signature");
       /* BuildSystem.BsbNative() */
       let (args, _rest) = typ.getArguments();
@@ -127,15 +90,24 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     open Util.JsonShort;
     let%try completions = switch (PartialParser.findCompletable(text, offset)) {
     | Nothing => {
-      Log.log("Nothing completable found :/");
+      // Log.log("Nothing completable found :/");
       Ok([])
     }
-    | Labeled(_) => {
-      Log.log("don't yet support completion for argument labels, but I hope to soon!");
-      Ok([])
+    | Labeled(string) => {
+      let%try args = getArgumentsForPosition(~uri, ~position=pos, ~state)
+      let args = Belt.List.map(args, ((arg, _)) => {
+        let argWithoutQMark = (arg->String.length > 1 && arg->String.get(0) == '?') ? arg->String.sub(1, arg->String.length - 1) : arg;
+        o @@ [
+          ("label", s(arg)),
+          ("kind", i(12)),
+          ("insertText", s(argWithoutQMark ++ "=")),
+          ("filterText", s(argWithoutQMark)),
+        ];
+      });
+      Ok(args)
     }
     | Lident(string) => {
-      /* Log.log("Completing for string " ++ string); */
+      // Log.log("Completing for string " ++ string);
       let parts = Str.split(Str.regexp_string("."), string);
       let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
       let rawOpens = PartialParser.findOpens(text, offset);
@@ -505,26 +477,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
     open SharedTypes;
 
-    let rec getItems = ({Module.topLevel}) => {
-      let fn = ({name: {txt}, extentLoc, contents}) => {
-        let (item, siblings) = switch contents {
-          | Module.Value(v) => (v.typ.variableKind, [])
-          | Type(t) => (t.typ.declarationKind, [])
-          | Module(Structure(contents)) => (`Module, getItems(contents))
-          | Module(Ident(_)) => (`Module, [])
-          | ModuleType(_) => (`ModuleType, [])
-        };
-        if (extentLoc.loc_ghost) {
-          siblings
-        } else {
-          [(txt, extentLoc, item), ...siblings]
-        }
-      };
-      let x = topLevel |. List.map(fn) |. List.toArray |. List.concatMany;
-      x
-    };
-
-    (getItems(file.contents) |> items => {
+    (getItemsFromModule(file.contents) |> items => {
       open Util.JsonShort;
       Ok((state, l(List.map(items, ((name, loc, typ)) => o([
         ("name", s(name)),
@@ -635,6 +588,44 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         }
       | _ => Error("Unexpected command " ++ command)
     }
+  }),
+
+  ("workspace/symbol", (state, params) => {
+    switch (params |> Json.get("query") |?> Json.string) {
+    | Some(query) =>
+      open SharedTypes;
+      let allPackages = state.packagesByRoot->Stdlib.Hashtbl.to_seq_values;
+      let allPackages = allPackages->Stdlib.List.of_seq;
+      let allFiles =
+        allPackages
+        ->Belt.List.map(package =>
+            package.localModules
+            ->Belt.List.keepMap(modname => State.fileForModule(state, ~package, modname))
+          )
+        ->Belt.List.flatten;
+
+      let allItems = allFiles->Belt.List.map(file => getItemsFromModule(file.contents))->Belt.List.flatten;
+      let itemsContainingQuery = allItems->Belt.List.keep((( name, _, _ )) => {
+        Utils.containsDisregardingCase(~outer=name, ~inner=query);
+      });
+
+      let encodeItem = ((name, loc, typ)) => {
+        JsonShort.(
+          o([
+            ("name", s(name)),
+            ("kind", i(Protocol.symbolKind(typ))),
+            ("location", Protocol.locationOfLoc(loc)),
+            /* ("containerName", s(String.concat(".", path))) */
+          ])
+        );
+      };
+
+      let result = JsonShort.l(itemsContainingQuery->Belt.List.map(encodeItem));
+      Ok((state, result));
+    | None =>
+      let result = Json.Null;
+      Ok((state, result));
+    };
   }),
 
   ("custom:reasonLanguageServer/createInterface", (state, params) => {
