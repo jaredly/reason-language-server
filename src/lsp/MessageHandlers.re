@@ -601,11 +601,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
 
       let allItems = allFiles->Belt.List.map(file => getItemsFromModule(file.contents))->Belt.List.flatten;
       let itemsContainingQuery = allItems->Belt.List.keep((( name, _, _ )) => {
-        let pattern = Str.regexp(".*" ++ query ++ ".*");
-        switch(Str.search_forward(pattern, name, 0)) {
-          |exception _ => false
-          | _ => true
-        }
+        Utils.containsDisregardingCase(~outer=name, ~inner=query);
       });
 
       let encodeItem = ((name, loc, typ)) => {

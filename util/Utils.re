@@ -87,6 +87,13 @@ let endsWith = (s, suffix) => {
   }
 };
 
+let containsDisregardingCase = (~outer: string, ~inner: string) => {
+  let pattern = Str.regexp(inner->String.lowercase_ascii);
+  switch (Str.search_forward(pattern, outer->String.lowercase_ascii, 0)) {
+  | exception _ => false
+  | _ => true
+  };
+};
 
 let cmtLocFromVscode = ((line, col)) => (line + 1, col);
 
