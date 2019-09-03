@@ -600,6 +600,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         ->Belt.List.flatten;
 
       let allItems = allFiles->Belt.List.map(file => getItemsFromModule(file.contents))->Belt.List.flatten;
+      let itemsContainingQuery = allItems->Belt.List.keep((( name, _, _ )) => {
+        let pattern = Str.regexp(".*" ++ query ++ ".*");
+        switch(Str.search_forward(pattern, name, 0)) {
+          |exception _ => false
+          | _ => true
+        }
+      });
 
       let encodeItem = ((name, loc, typ)) => {
         JsonShort.(
@@ -612,7 +619,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         );
       };
 
-      let result = JsonShort.l(allItems->Belt.List.map(encodeItem));
+      let result = JsonShort.l(itemsContainingQuery->Belt.List.map(encodeItem));
       Ok((state, result));
     | None =>
       let result = Json.Null;
