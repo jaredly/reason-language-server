@@ -33,10 +33,10 @@ let parseMerlin = (base, text) => {
   )
 };
 
-// let maybeConcat = (base, path) => path.[0] == '/' ? path : Filename.concat(base, path);
+// let maybeConcat = (base, path) => Infix.isFullPath(path) ? path : Filename.concat(base, path);
 
-let isRelativePath = Sys.os_type == "Win32"
-? path => !Str.string_match(Str.regexp("[A-Z]:"), path, 0)
+let isRelativePath = Sys.win32
+? path => !Str.string_match(Str.regexp("[A-Za-z]:"), path, 0)
 : path => path != "" && path.[0] != '/';
 
 let isBuildFile = name =>

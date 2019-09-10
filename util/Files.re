@@ -4,7 +4,7 @@ let split = (str, string) => Str.split(Str.regexp_string(str), string);
 let absify = path => {
   if (path == "" || path == ".") {
     Unix.getcwd()
-  } else if (path.[0] == '/') {
+  } else if (Infix.isFullPath(path)) {
     path
   } else {
     Filename.concat(Unix.getcwd(), path)

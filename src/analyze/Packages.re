@@ -362,7 +362,9 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
 
 
     /* Log.log("Getting things"); */
-    let (otherDirectories, otherFiles) = source |> List.filter(s => s != "." && s != "" && s.[0] != '/') |> optMap(name => {
+    let (globalSource, localSource) = List.filter(s => s != "." && s != "", source)
+    |> List.partition(Infix.isFullPath);
+    let (otherDirectories, otherFiles) = localSource |> optMap(name => {
       let otherPath = rootPath /+ name;
       let res = {
         let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(otherPath);
@@ -395,7 +397,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       }
     }) |> List.split;
 
-    let dependencyDirectories = (source |> List.filter(s => s != "" && s != "." && s.[0] == '/')) @ stdlibs;
+    let dependencyDirectories = globalSource @ stdlibs;
 
     let dependencyModules = dependencyDirectories
     |> List.map(path => {

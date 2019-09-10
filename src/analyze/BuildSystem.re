@@ -265,10 +265,24 @@ let isRunningInEsyNamedSandbox = () => {
 };
 
 let getExecutableInEsyPath = (exeName, ~pwd) => {
-  if (isRunningInEsyNamedSandbox()) {
+  let ret = if (isRunningInEsyNamedSandbox()) {
     getLine("which " ++ exeName, ~pwd)
   } else {
     getLine("esy which " ++ exeName, ~pwd)
+  };
+  if (Sys.win32) {
+    switch ret {
+      | RResult.Ok(ret) =>
+        let ret = if (isRunningInEsyNamedSandbox()) {
+          getLine("cygpath -w " ++ ret, ~pwd)
+        } else {
+          getLine("esy cygpath -w " ++ ret, ~pwd)
+        };
+        ret
+      | Error(a) => Error(a)
+    }
+  } else {
+    ret
   }
 };
 
