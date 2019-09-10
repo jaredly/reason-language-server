@@ -46,18 +46,19 @@ let findInScope = (pos, name, stamps) => {
 
 let rec joinPaths = (modulePath, path) => {
   switch modulePath {
-    | Path.Pident(ident) => (Ident.binding_time(ident), Ident.name(ident), path)
+    | Path.Pident(ident) => (Current.ident_binding_time(ident), Ident.name(ident), path)
     | Path.Papply(fnPath, _argPath) => joinPaths(fnPath, path)
-    | Path.Pdot(inner, name, _) => joinPaths(inner, Nested(name, path))
+    | Path.Pdot(inner, name) => joinPaths(inner, Nested(name, path))
   }
 };
 
 let rec makePath = (modulePath) => {
   switch modulePath {
-    | Path.Pident(ident) when Ident.binding_time(ident) === 0 => `GlobalMod(Ident.name(ident))
-    | Path.Pident(ident) => `Stamp(Ident.binding_time(ident))
+    | Path.Pident(ident) when Current.ident_binding_time(ident) === 0 =>
+      `GlobalMod(Ident.name(ident))
+    | Path.Pident(ident) => `Stamp(Current.ident_binding_time(ident))
     | Path.Papply(fnPath, _argPath) => makePath(fnPath)
-    | Path.Pdot(inner, name, _) => `Path(joinPaths(inner, Tip(name)))
+    | Path.Pdot(inner, name) => `Path(joinPaths(inner, Tip(name)))
   }
 };
 
@@ -67,13 +68,13 @@ let makeRelativePath = (basePath, otherPath) => {
       Some(tip)
     } else {
       switch other {
-        | Pdot(inner, name, _) => loop(basePath, inner, Nested(name, tip))
+        | Pdot(inner, name) => loop(basePath, inner, Nested(name, tip))
         | _ => None
       }
     }
   };
   switch otherPath {
-    | Path.Pdot(inner, name, _) => loop(basePath, inner, Tip(name))
+    | Path.Pdot(inner, name) => loop(basePath, inner, Tip(name))
     | _ => None
   }
 };

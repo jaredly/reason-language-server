@@ -1,5 +1,6 @@
-
 (library
-  (name Current)
-  (public_name reason-language-server.Current)
-  (libraries compiler-libs.common))
+ (name Current)
+ (public_name reason-language-server.Current)
+ (libraries compiler-libs.common)
+ (flags
+  (:standard -w -9-3)))

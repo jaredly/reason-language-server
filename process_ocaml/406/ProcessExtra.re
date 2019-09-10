@@ -22,8 +22,14 @@ let handleConstructor = (path, txt) => {
 
 let rec relative = (ident, path) =>
   switch (ident, path) {
-  | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
-  | (Longident.Ldot(ident, name), Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
+  | (Longident.Lident(name),
+     Path.Pdot(path, pname, _))
+    when pname == name =>
+    Some(path)
+  | (Longident.Ldot(ident, name),
+     Path.Pdot(path, pname, _))
+    when pname == name =>
+    relative(ident, path)
   /* | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => None */
   | _ => None
   };
@@ -352,7 +358,7 @@ module F = (Collector: {
 
   let enter_signature_item = item => switch (item.sig_desc) {
   | Tsig_value({val_id, val_loc, val_name: name, val_desc, val_attributes}) => {
-    let stamp = Ident.binding_time(val_id);
+    let stamp = Current.ident_binding_time(val_id);
     if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
       let declared = ProcessAttributes.newDeclared(
         ~name,
@@ -423,12 +429,12 @@ module F = (Collector: {
         addForConstructor(pat_type, lident, constructor)
       }
       | Tpat_alias(_inner, ident, name) => {
-        let stamp = Ident.binding_time(ident);
+        let stamp = Current.ident_binding_time(ident);
         addForPattern(stamp, name);
       }
       | Tpat_var(ident, name) => {
         /* Log.log("Pattern " ++ name.txt); */
-        let stamp = Ident.binding_time(ident);
+        let stamp = Current.ident_binding_time(ident);
         addForPattern(stamp, name);
       }
       | _ => ()

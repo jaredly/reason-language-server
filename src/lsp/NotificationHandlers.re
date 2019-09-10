@@ -29,7 +29,7 @@ let reportDiagnostics = (uri, result) => {
       ("diagnostics", l([]))
     ])
   };
-  Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", body)
+  Rpc.sendNotification(Log.log, stdout, "textDocument/publishDiagnostics", body)
 };
 
 let checkPackageTimers = state => {

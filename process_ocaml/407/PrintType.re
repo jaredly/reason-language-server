@@ -233,7 +233,8 @@ let default = {
   ident: (_, ident) => str(Ident.name(ident)),
   path: (stringifier, path, pathType) => switch path {
     | Path.Pident(ident) => stringifier.ident(stringifier, ident)
-    | Pdot(path, name, _) => {stringifier.path(stringifier, path, pathType) @! str("." ++ name)}
+    | Pdot(path, name, _) =>
+    {stringifier.path(stringifier, path, pathType) @! str("." ++ name)}
     | Papply(_, _) => str("<apply>")
   },
   value: print_value,

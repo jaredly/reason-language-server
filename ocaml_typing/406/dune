@@ -1,8 +1,7 @@
-
 (library
-  (name Compiler_libs_406)
-  (public_name reason-language-server.Compiler_libs_406)
-  (modules_without_implementation annot outcometree asttypes cmo_format compdynlink parsetree)
-  (libraries Current)
-  (flags :standard -w -9)
-)
+ (name Compiler_libs_406)
+ (public_name reason-language-server.Compiler_libs_406)
+ (modules_without_implementation annot outcometree asttypes cmo_format
+   compdynlink parsetree)
+ (libraries Current)
+ (flags :standard -w -8-9-3-27))
