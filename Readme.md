@@ -150,6 +150,10 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - Install the VS Code extension's dependencies `cd editor-extensions/vscode && npm i && cd ../..`
 - Open this project in VS Code
 
+### Building the OCaml grammar
+- Edit the files in editor-extensions/vscode/src/syntaxes
+- Run `cd editor-extensions/vscode && npm run build-syntaxes`
+
 ## To test your changes in one of the example projects
 - Open the "Debug" pane in VS Code. Select a debug target. Press "Run"
 - It should start up a window titled `[Extension development host]`
