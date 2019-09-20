@@ -149,7 +149,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
         "-ppx " ++ bsPlatform /+ "lib" /+ "bsppx.exe"
       ], opens)
     | _ => {
-      let flags = MerlinFile.getFlags(rootPath) |> RResult.withDefault([""]) |> List.map(escapePreprocessingFlags);
+      let flags = MerlinFile.getFlags(~isNative=false, rootPath) |> RResult.withDefault([""]) |> List.map(escapePreprocessingFlags);
       let opens = List.fold_left((opens, item) => {
         let parts = Utils.split_on_char(' ', item);
         let rec loop = items => switch items {
@@ -269,9 +269,14 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
     | Some(BuildSystem.Dune(mgr)) => Ok((mgr, Dune(mgr)))
     | Some(_) => failwith("Invalid build system override when creating a new dune package")
   };
+  let isNative =
+    switch (buildSystem) {
+    | BsbNative(_) => true
+    | _ => false
+    };
 
   let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
-  let (source, _build, flags) = MerlinFile.parseMerlin("", merlinRaw);
+  let (source, _build, flags) = MerlinFile.parseMerlin(~isNative, "", merlinRaw);
 
   let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(rootPath);
   let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
@@ -300,6 +305,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (!state.settings.useOldDuneProcess) {
     Log.log("New dune process");
     let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(
+      ~isNative=false,
       ~stdlibs,
       rootPath, merlinRaw);
     let pathsForModule = Hashtbl.create(Stdlib.Hashtbl.length(pathsForModule_));

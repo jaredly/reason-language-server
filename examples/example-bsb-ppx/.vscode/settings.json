@@ -1,0 +1,7 @@
+{
+  "editor.codeLens": true,
+  "reason_language_server.location": "../../Bin.exe",
+  "reason_language_server.reloadOnChange": true,
+  "reason_language_server.per_value_codelens": false,
+  "reason_language_server.show_debug_errors": true,
+}

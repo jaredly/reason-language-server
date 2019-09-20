@@ -1,7 +1,7 @@
 let debug: ref(bool);
 let fixPpx: (string, string) => string;
 let parseMerlin:
-  (string, string) => (list(string), list(string), list(string));
+  (~isNative: bool, string, string) => (list(string), list(string), list(string));
 let isRelativePath: string => bool;
 let isBuildFile: string => bool;
 let isSourceFile: string => bool;
@@ -29,7 +29,7 @@ let calcPaths:
     string,
   );
 let getModulesFromMerlin:
-  (~stdlibs: list(string), string, string) =>
+  (~stdlibs: list(string), ~isNative: bool, string, string) =>
   (
     Hashtbl.t(
       string,
@@ -44,5 +44,5 @@ let getModulesFromMerlin:
     list(string),
     list(string),
   );
-let getFlags: string => RResult.result(list(string), string);
+let getFlags: (~isNative: bool, string) => RResult.result(list(string), string);
 let getBackend: string => RResult.result(string, string);

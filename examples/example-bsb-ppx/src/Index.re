@@ -1,0 +1,1 @@
+[@decco] type s = string;

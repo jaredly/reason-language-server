@@ -158,5 +158,17 @@
 			"stopOnEntry": false,
 			"sourceMaps": false,
 		},
+		{
+			"name": "Launch PPX Using Project",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/examples/example-bsb-ppx"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
 	]
 }

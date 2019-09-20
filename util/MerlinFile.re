@@ -14,12 +14,14 @@ let fixPpx = (flg, base) => {
   }
 };
 
-let parseMerlin = (base, text) => {
+let parseMerlin = (~isNative, base, text) => {
   let lines = Str.split(Str.regexp_string("\n"), text);
   List.fold_left(
     ((source, build, flags), line) => {
       if (Utils.startsWith(line, "FLG ")) {
-        (source, build, [fixPpx(Utils.chopPrefix(line, "FLG "), base), ...flags])
+        let flag = Utils.chopPrefix(line, "FLG ");
+        let fixedFlag = isNative ? fixPpx(flag, base) : flag;
+        (source, build, [fixedFlag, ...flags]);
       } else if (Utils.startsWith(line, "S ")) {
         ([Utils.chopPrefix(line, "S "), ...source], build, flags)
       } else if (Utils.startsWith(line, "B ")) {
@@ -126,8 +128,8 @@ let calcPaths = (mname, files) => {
 };
 
 /** Returns a `pathsForModule`, `nameForPath`, `localModules` and `dependencyModules` */
-let getModulesFromMerlin = (~stdlibs, base, text) => {
-  let (source, build, _flags) = parseMerlin(base, text);
+let getModulesFromMerlin = (~stdlibs, ~isNative, base, text) => {
+  let (source, build, _flags) = parseMerlin(~isNative, base, text);
 
   let source = stdlibs @ source;
   let build = stdlibs @ build;
@@ -384,11 +386,11 @@ let getModulesFromMerlin = (~stdlibs, base, text) => {
 
 };
 
-let getFlags = base =>
+let getFlags = (~isNative, base) =>
   RResult.InfixResult.(
     Files.readFile(base ++ "/.merlin")
     |> RResult.orError("no .merlin file")
-    |?>> parseMerlin(base)
+    |?>> parseMerlin(~isNative, base)
     |?>> (((_, _, flags)) => flags |> List.rev)
   );
 
