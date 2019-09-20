@@ -189,7 +189,8 @@
 		]
 	},
 	"scripts": {
-		"postinstall": "node ./node_modules/vscode/bin/install"
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"build-syntaxes": "tsc -p src/syntaxes && node script/syntax.js"
 	},
 	"dependencies": {
 		"vscode": "^1.1.17",
