@@ -4,6 +4,9 @@ const config = {
   mode: 'production',
   target: 'node',
   entry: './src/index',
+  externals: {
+    'coc.nvim': 'commonjs coc.nvim',
+  },
   module: {
     rules: [
       {

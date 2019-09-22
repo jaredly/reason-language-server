@@ -1,5 +1,17 @@
 // @flow
+import { ExtensionContext, LanguageClient, services } from 'coc.nvim';
 
-const add = (a: number, b: number) => a + b;
+const RLS_COMMAND: string = process.env.RLS_COMMAND || 'reason-language-server';
 
-console.log(add(2, 3));
+const activate = (context: ExtensionContext) => {
+  const command = RLS_COMMAND;
+  const serverOptions = { command };
+
+  const documentSelector = [{ language: 'reason', scheme: 'file' }];
+  const clientOptions = { documentSelector };
+
+  const languageClient = new LanguageClient('reason', 'ReasonML', serverOptions, clientOptions);
+  context.subscriptions.push(services.registLanguageClient(languageClient));
+};
+
+export { activate };
