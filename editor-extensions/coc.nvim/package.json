@@ -2,5 +2,14 @@
   "name": "coc-reason",
   "version": "0.0.1",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.6.0",
+    "@babel/preset-env": "^7.6.0",
+    "@babel/preset-flow": "^7.0.0",
+    "babel-loader": "^8.0.6",
+    "flow-bin": "^0.108.0",
+    "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9"
+  }
 }
