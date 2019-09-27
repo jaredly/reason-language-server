@@ -19,5 +19,9 @@
     "flow-bin": "^0.108.0",
     "webpack": "^4.40.2",
     "webpack-cli": "^3.3.9"
+  },
+  "dependencies": {
+    "adm-zip": "^0.4.13",
+    "axios": "^0.19.0"
   }
 }
