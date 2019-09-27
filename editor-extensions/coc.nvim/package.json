@@ -3,6 +3,15 @@
   "version": "0.0.1",
   "main": "lib/index.js",
   "license": "MIT",
+  "scripts": {
+    "lint": "eslint .",
+    "flow": "flow .",
+    "check": "npm run lint && npm run flow",
+    "clean": "rm -rf lib/",
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "prepare": "npm run check && npm run clean && npm run build"
+  },
   "engines": {
     "coc": "^0.0.4"
   },
