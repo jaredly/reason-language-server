@@ -1,0 +1,47 @@
+{
+  "name": "coc-reason",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "description": "coc.nvim Reason language server extension",
+  "keywords": [
+    "coc.nvim",
+    "reason",
+    "vim",
+    "lsp"
+  ],
+  "author": {
+    "name": "Amirali Esmaeili",
+    "email": "esmailiamirali@gmail.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint .",
+    "flow": "flow .",
+    "check": "npm run lint && npm run flow",
+    "clean": "rm -rf lib/",
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "prepare": "npm run check && npm run clean && npm run build"
+  },
+  "engines": {
+    "coc": "^0.0.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.6.0",
+    "@babel/preset-env": "^7.6.0",
+    "@babel/preset-flow": "^7.0.0",
+    "babel-eslint": "^10.0.3",
+    "babel-loader": "^8.0.6",
+    "coc.nvim": "^0.0.73",
+    "eslint": "^6.4.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "flow-bin": "^0.108.0",
+    "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9"
+  },
+  "dependencies": {
+    "adm-zip": "^0.4.13",
+    "axios": "^0.19.0"
+  }
+}
