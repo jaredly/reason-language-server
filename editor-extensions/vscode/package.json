@@ -65,7 +65,8 @@
 							"dune:opam:/abs/path/to/switch",
 							"bsb-native:4.0.7:js",
 							"bsb-native:4.0.7:bytecode",
-							"bsb-native:4.0.7:native"
+							"bsb-native:4.0.7:native",
+							"merlin:/abs/path/to/project"
 						]
 					},
 					"description": "Only specify this if build system autodetection isn't working for you (for example if you have a bsconfig.json, and a dune file in the same project). The keys in this object should be in uri format, e.g. file:///some/path/here"

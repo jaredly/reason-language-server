@@ -25,7 +25,8 @@ type packageManager =
 type t =
   | Dune(packageManager)
   | Bsb(string)
-  | BsbNative(string, target);
+  | BsbNative(string, target)
+  | Merlin(string);
 
 let usesStdlib = v => switch v {
   | V408 | V407 => true
@@ -41,6 +42,7 @@ let fromString = string => {
     | ["bsb-native", version, "js"] => Some(BsbNative(version, Js))
     | ["bsb-native", version, "native"] => Some(BsbNative(version, Native))
     | ["bsb-native", version, "bytecode"] => Some(BsbNative(version, Bytecode))
+    | ["merlin", basedir] => Some(Merlin(basedir))
     | _ => None
   }
 };
@@ -50,6 +52,7 @@ let show = t => switch t {
   | Dune(Opam(loc)) => "dune & opam (switch at " ++ loc ++ ")"
   | Bsb(v) => "bsb version " ++ v
   | BsbNative(v, target) => "bsb-native version " ++ v ++ " targetting " ++ targetName(target)
+  | Merlin(loc) => "Merlin file found at " ++ loc
 }
 
 
@@ -197,6 +200,7 @@ let getCompiledBase = (root, buildSystem) => {
   | BsbNative(_, Native) => Ok(root /+ "lib" /+ "bs" /+ "native")
   | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
   | Dune(Opam(_)) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
+  | Merlin(_) => Ok(root)
   | Dune(Esy(_)) =>
     let%try_wrap esyTargetDir = getEsyCompiledBase();
     root /+ esyTargetDir
@@ -256,6 +260,8 @@ let getStdlib = (base, buildSystem) => {
   | Dune(Opam(switchPrefix)) =>
     let%try libPath = getOpamLibOrBinPath(base, switchPrefix, "lib" /+ "ocaml")
     Ok([libPath])
+  | Merlin(rootPath) =>
+    Ok([rootPath])
   };
 };
 
@@ -302,6 +308,10 @@ let getCompiler = (rootPath, buildSystem) => {
     | Dune(Opam(switchPrefix)) =>
       let%try_wrap binPath = getOpamLibOrBinPath(rootPath, switchPrefix, "bin" /+ "ocamlopt.opt");
       binPath
+    | Merlin(rootPath) =>
+      // Assume OCaml is installed next to the project we are building
+      // This is due to BuckleScript shipping an OCaml compiler next to jscomp/
+      RResult.Ok(rootPath /+ ".." /+ "ocaml" /+ "ocamlc.opt")
   };
 };
 
@@ -322,6 +332,7 @@ let getRefmt = (rootPath, buildSystem) => {
     | Dune(Esy(_)) => getExecutableInEsyPath("refmt",~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       Ok(switchPrefix /+ "bin" /+ "refmt")
+    | Merlin(rootPath) => Ok(rootPath)
   };
 };
 
@@ -329,6 +340,7 @@ let hiddenLocation = (rootPath, buildSystem) => {
   switch (buildSystem) {
     | Bsb(_)
     | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
+    | Merlin(_) => Ok(rootPath /+ ".lsp")
     | Dune(Opam(_)) => Ok(rootPath /+ "_build" /+ ".lsp")
     | Dune(Esy(_)) =>
       let%try_wrap esyTargetDir = getEsyCompiledBase();

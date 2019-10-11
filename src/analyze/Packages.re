@@ -61,6 +61,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
     | Bsb(_) => bsb ++ " -make-world"
     | BsbNative(_, target) => bsb ++ " -make-world -backend " ++ BuildSystem.targetName(target)
     | Dune(_) => assert(false)
+    | Merlin(_) => assert(false)
   };
 
   Log.log({|📣 📣 NEW BSB PACKAGE 📣 📣|});
@@ -470,6 +471,79 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   });
 };
 
+let newMerlinPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath) => {
+  /* `Filename.dirname` strips the current path segment even if it's a
+   * directory, which means it would disallow projects where the source files
+   * are at the toplevel, i.e. co-located with the e.g. `dune-project` file.
+   */
+  let projectRoot =
+    Sys.is_directory(rootPath) ? rootPath : Filename.dirname(rootPath);
+  Log.log("=== Project root: " ++ projectRoot);
+
+  let%try buildSystem = switch overrideBuildSystem {
+    | None =>
+      Ok(BuildSystem.Merlin(projectRoot));
+    | Some(BuildSystem.Merlin(_)) => Ok(Merlin(projectRoot))
+    | Some(_) => failwith("Invalid build system override when creating a new dune package")
+  };
+
+  let%try merlinRaw = Files.readFileResult(rootPath /+ ".merlin");
+  let (source, _build, flags) = MerlinFile.parseMerlin("", merlinRaw);
+
+  let%try hiddenLocation = BuildSystem.hiddenLocation(projectRoot, buildSystem);
+  Files.mkdirp(hiddenLocation);
+
+  let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
+
+  let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = {
+    Log.log("Get modules from Merlin");
+    let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(
+      ~stdlibs,
+      rootPath, merlinRaw);
+    let pathsForModule = Hashtbl.create(Stdlib.Hashtbl.length(pathsForModule_));
+    pathsForModule_ |> Hashtbl.iter((k, v) => pathsForModule->Hashtbl.replace(k, pathToPath(v)));
+    // pathsForModule->Hasthbl.map
+    Ok((
+      pathsForModule,
+      nameForPath,
+      localModules->Belt.List.keepMap(name => Utils.maybeHash(pathsForModule, name) |?>> (x => (name, x))),
+      depsModules,
+      includeDirectories
+    ))
+  }
+
+  let interModuleDependencies = Hashtbl.create(List.length(localModules));
+
+  // TODO: Fix autoRebuild setting for Merlin-only
+  // if (state.settings.autoRebuild) {
+  //   BuildCommand.runBuildCommand(~reportDiagnostics, state, rootPath, buildCommand);
+  // };
+
+  let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
+  let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
+  Ok({
+    basePath: rootPath,
+    localModules: localModules |. Belt.List.map(fst),
+    rebuildTimer: 0.,
+    interModuleDependencies,
+    dependencyModules: depsModules,
+    pathsForModule,
+    namespace: None,
+    nameForPath,
+    buildSystem,
+    buildCommand: None,
+    /* TODO check if there's a module called that */
+    opens: fold(None, [], libraryName => [String.capitalize_ascii(libraryName)]),
+    tmpPath: hiddenLocation,
+    compilationFlags: flags |> String.concat(" "),
+    includeDirectories,
+    compilerVersion,
+    compilerPath,
+    refmtPath: None,
+    lispRefmtPath: None,
+  });
+};
+
 
 
 
@@ -493,9 +567,12 @@ let findRoot = (uri, packagesByRoot, overrides) => {
         } else if (Files.exists(path /+ "dune")) {
           Log.log("Found a `dune` file at " ++ path);
           Some(`Jbuilder(path))
+        } else if (Files.exists(path /+ "jbuild")) {
+          Log.log("Found a `jbuild` file at " ++ path);
+          Some(`Jbuilder(path))
         } else if (Files.exists(path /+ ".merlin")) {
           Log.log("Found a `.merlin` file at " ++ path);
-          Some(`Jbuilder(path))
+          Some(`Merlin(path))
         } else {
           loop(Filename.dirname(path))
         }
@@ -559,6 +636,12 @@ let getPackage = (~reportDiagnostics, uri, state) => {
       Files.mkdirp(package.tmpPath);
       Hashtbl.replace(state.rootForUri, uri, package.basePath);
       Hashtbl.replace(state.packagesByRoot, package.basePath, package);
+      RResult.Ok(package)
+    | `Override(rootPath, (Merlin(_)) as buildSystem) =>
+      let%try package = newMerlinPackage(~overrideBuildSystem=buildSystem, ~reportDiagnostics, state, rootPath);
+      RResult.Ok(package)
+    | `Merlin(rootPath) =>
+      let%try package = newMerlinPackage(~reportDiagnostics, state, rootPath);
       RResult.Ok(package)
     | `Jbuilder(path) =>
       Log.log("]] Making a new jbuilder package at " ++ path);
