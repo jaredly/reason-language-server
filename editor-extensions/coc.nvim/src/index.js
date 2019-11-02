@@ -54,7 +54,10 @@ async function activate(context: ExtensionContext) {
   const serverOptions = { command };
 
   const documentSelector = [{ language: 'reason', scheme: 'file' }];
-  const clientOptions = { documentSelector };
+  const synchronize = {
+    configurationSection: 'reason_language_server',
+  };
+  const clientOptions = { documentSelector, synchronize };
 
   const languageClient = new LanguageClient('reason', 'ReasonML', serverOptions, clientOptions);
   context.subscriptions.push(services.registLanguageClient(languageClient));
