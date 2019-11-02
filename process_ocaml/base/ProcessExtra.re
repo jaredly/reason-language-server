@@ -1,5 +1,7 @@
 
-#if 408
+#if 409
+open Compiler_libs_409;
+#elif 408
 open Compiler_libs_408;
 #elif 407
 open Compiler_libs_407;
@@ -15,7 +17,9 @@ open Infix;
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
-#if 408
+#if 409
+    | Path.Pdot(_path, typename) => typename
+#elif 408
     | Path.Pdot(_path, typename) => typename
 #else
     | Path.Pdot(_path, typename, _) => typename
@@ -35,7 +39,9 @@ let handleConstructor = (path, txt) => {
 let rec relative = (ident, path) =>
   switch (ident, path) {
   | (Longident.Lident(name),
-#if 408
+#if 409
+     Path.Pdot(path, pname))
+#elif 408
      Path.Pdot(path, pname))
 #else
      Path.Pdot(path, pname, _))
@@ -43,7 +49,9 @@ let rec relative = (ident, path) =>
     when pname == name =>
     Some(path)
   | (Longident.Ldot(ident, name),
-#if 408
+#if 409
+     Path.Pdot(path, pname))
+#elif 408
      Path.Pdot(path, pname))
 #else
      Path.Pdot(path, pname, _))
@@ -299,7 +307,9 @@ module F = (Collector: {
           | None => addForPathParent(Shared.mapOldPath(path), l)
         };
         switch (path, txt) {
-#if 408
+#if 409
+          | (Pdot(pinner, _pname), Ldot(inner, name)) => {
+#elif 408
           | (Pdot(pinner, _pname), Ldot(inner, name)) => {
 #else
           | (Pdot(pinner, _pname, _), Ldot(inner, name)) => {
@@ -328,9 +338,17 @@ module F = (Collector: {
   };
 
   open Typedtree;
+#if 409
+#else
   include TypedtreeIter.DefaultIteratorArgument;
+#endif
   let enter_structure_item = item => switch (item.str_desc) {
-#if 408
+#if 409
+  | Tstr_attribute({
+    attr_name: {Asttypes.txt: "ocaml.explanation", loc},
+    attr_payload:
+      PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])}) => {
+#elif 408
   | Tstr_attribute({
     attr_name: {Asttypes.txt: "ocaml.explanation", loc},
     attr_payload:
@@ -351,7 +369,11 @@ module F = (Collector: {
   }
   | Tstr_module({mb_expr}) =>
     handle_module_expr(mb_expr.mod_desc)
-#if 408
+#if 409
+  | Tstr_open({ open_expr:
+                  { mod_type: Mty_ident(open_path) | Mty_alias(open_path),
+                    mod_desc: Tmod_ident(_, {txt, loc} as l) }}) => {
+#elif 408
   | Tstr_open({ open_expr:
                   { mod_type: Mty_ident(open_path) | Mty_alias(open_path),
                     mod_desc: Tmod_ident(_, {txt, loc} as l) }}) => {
@@ -486,7 +508,8 @@ module F = (Collector: {
   };
 
   let enter_expression = expression => {
-#if 408
+#if 409
+#elif 408
 #else
     expression.exp_extra |. Belt.List.forEach(((e, eloc, _)) => switch e {
       | Texp_open(_, path, ident, _) => {
@@ -505,7 +528,20 @@ module F = (Collector: {
     /* | Texp_apply({exp_desc: Pexp_ident(_, {txt: Ldot(Lident("ReasonReact"), "element")})}, [(_, {exp_desc: Pexp_apply({exp_desc: Pexp_ident(_, {txt})}, _)})]) =>{
 
     } */
-#if 408
+#if 409
+    | Texp_open(
+      { open_expr:
+        { mod_type: Mty_ident(path) | Mty_alias(path),
+        mod_desc: Tmod_ident(_, ident) }}, _) => {
+      extra.opens |. Hashtbl.add(expression.exp_loc, {
+        path: Shared.mapOldPath(path),
+        ident,
+        loc: expression.exp_loc,
+        extent: expression.exp_loc,
+        used: [],
+      })
+    }
+#elif 408
     | Texp_open(
       { open_expr:
         { mod_type: Mty_ident(path) | Mty_alias(path),
@@ -618,7 +654,10 @@ let forFile = (~file) => {
         let t = {
           Types.id: 0,
           level: 0,
-#if 408
+#if 409
+          desc: Tconstr(Path.Pident(Shared.makeIdent(d.name.txt, stamp)), [], ref(Types.Mnil)),
+          scope: Btype.lowest_level,
+#elif 408
           desc: Tconstr(Path.Pident(Shared.makeIdent(d.name.txt, stamp)), [], ref(Types.Mnil)),
           scope: Btype.lowest_level,
 #elif 407
@@ -649,12 +688,42 @@ let forItems = (~file, ~allLocations, items, parts) => {
 
   /* TODO look through parts and extend the extent */
 
-  let module Iter = TypedtreeIter.MakeIterator(F({
+  let module X = F({
     let scopeExtent = ref([extent]);
     let extra = extra;
     let file = file;
     let allLocations = allLocations;
-  }));
+  });
+
+#if 409
+  let module Iter = {
+    let iterator = {
+     ...Tast_iterator.default_iterator,
+     signature_item: (_iterator, item) => X.enter_signature_item(item),
+     structure: (_iterator, structure) => {
+      X.enter_structure(structure);
+      X.leave_structure(structure);
+     },
+     expr: (_iterator, exp) => {
+      X.enter_expression(exp);
+      X.leave_expression(exp);
+     },
+     structure_item: (_iterator, item) => X.enter_structure_item(item),
+     typ: (_iterator, core_type) => X.enter_core_type(core_type),
+     pat: (_iterator, pat) => X.enter_pattern(pat)
+    };
+
+    let iter_signature_item = iterator.signature_item(iterator)
+    let iter_signature = iterator.signature(iterator)
+    let iter_structure_item = iterator.structure_item(iterator)
+    let iter_expression = iterator.expr(iterator)
+    let iter_pattern = iterator.pat(iterator)
+    let iter_class_expr = iterator.class_expr(iterator)
+    let iter_module_type = iterator.module_type(iterator)
+  }
+#else
+  let module Iter = TypedtreeIter.MakeIterator(X);
+#endif
 
   List.iter(Iter.iter_structure_item, items);
   /* Log.log("Parts " ++ string_of_int(Array.length(parts))); */

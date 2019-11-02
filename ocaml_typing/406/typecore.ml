@@ -1750,7 +1750,7 @@ struct
     val empty : t
     (** No variables are accessed in an expression; it might be a
         constant or a global identifier *)
-      
+
     val unguarded : t -> Ident.t list
     (** The list of identifiers that are used in an unguarded context *)
 
@@ -1785,14 +1785,14 @@ struct
         x y
 
     let single id access = M.add id access M.empty
-  
+
     let empty = M.empty
 
     let list_matching p t =
       let r = ref [] in
       M.iter (fun id v -> if p v then r := id :: !r) t;
       !r
-    
+
     let unguarded =
       list_matching (function Unguarded | Dereferenced -> true | _ -> false)
 
@@ -1808,7 +1808,7 @@ struct
     let empty = Ident.empty
 
     let join x y =
-      let r = 
+      let r =
       Ident.fold_all
         (fun id v tbl ->
            let v' = try Ident.find_same id tbl with Not_found -> Use.empty in
@@ -1912,7 +1912,7 @@ struct
   type sd = Static | Dynamic
 
   let rec classify_expression : Typedtree.expression -> sd =
-    fun exp -> match exp.exp_desc with 
+    fun exp -> match exp.exp_desc with
       | Texp_let (_, _, e)
       | Texp_letmodule (_, _, _, e)
       | Texp_sequence (_, e)
@@ -1971,7 +1971,7 @@ struct
                 (join
                    (inspect (expression env e1))
                    (inspect (expression env e2)))
-                (* The body is evaluated, but not used, and not available 
+                (* The body is evaluated, but not used, and not available
                    for inclusion in another value *)
                 (discard (expression env e3)))
 
@@ -2213,7 +2213,7 @@ struct
         else Use.discard ty (* as in 'let' *)
       in
       let vars = pattern_variables c_lhs in
-      let env = 
+      let env =
         List.fold_left
           (fun env id -> Ident.add id ty env)
           env
@@ -2226,7 +2226,7 @@ struct
     fun rec_flag env bindings ->
       match rec_flag with
       | Recursive ->
-          (* Approximation: 
+          (* Approximation:
                 let rec y =
                   let rec x1 = e1
                       and x2 = e2
@@ -2285,7 +2285,7 @@ struct
     let ty = expression (build_unguarded_env idlist) expr in
     match Use.unguarded ty, Use.dependent ty, classify_expression expr with
     | _ :: _, _, _ (* The expression inspects rec-bound variables *)
-    | _, _ :: _, Dynamic -> (* The expression depends on rec-bound variables 
+    | _, _ :: _, Dynamic -> (* The expression depends on rec-bound variables
                                and its size is unknown *)
         raise(Error(expr.exp_loc, env, Illegal_letrec_expr))
     | [], _, Static (* The expression has known size *)
@@ -3828,29 +3828,19 @@ and type_format loc str env =
         | Int_X  -> mk_constr "Int_X"  [] | Int_CX -> mk_constr "Int_CX" []
         | Int_o  -> mk_constr "Int_o"  [] | Int_Co -> mk_constr "Int_Co" []
         | Int_u  -> mk_constr "Int_u"  []
-      and mk_fconv fconv = match fconv with
+      and mk_fconv fconv =
+        let flag = match fst fconv with
+        | Float_flag_ -> mk_constr "Float_flag_" []
+        | Float_flag_p -> mk_constr "Float_flag_p" []
+        | Float_flag_s -> mk_constr "Float_flag_s" [] in
+        let kind = match snd fconv with
         | Float_f  -> mk_constr "Float_f"  []
-        | Float_pf -> mk_constr "Float_pf" []
-        | Float_sf -> mk_constr "Float_sf" []
         | Float_e  -> mk_constr "Float_e"  []
-        | Float_pe -> mk_constr "Float_pe" []
-        | Float_se -> mk_constr "Float_se" []
         | Float_E  -> mk_constr "Float_E"  []
-        | Float_pE -> mk_constr "Float_pE" []
-        | Float_sE -> mk_constr "Float_sE" []
         | Float_g  -> mk_constr "Float_g"  []
-        | Float_pg -> mk_constr "Float_pg" []
-        | Float_sg -> mk_constr "Float_sg" []
         | Float_G  -> mk_constr "Float_G"  []
-        | Float_pG -> mk_constr "Float_pG" []
-        | Float_sG -> mk_constr "Float_sG" []
-        | Float_h  -> mk_constr "Float_h"  []
-        | Float_ph -> mk_constr "Float_ph" []
-        | Float_sh -> mk_constr "Float_sh" []
-        | Float_H  -> mk_constr "Float_H"  []
-        | Float_pH -> mk_constr "Float_pH" []
-        | Float_sH -> mk_constr "Float_sH" []
         | Float_F  -> mk_constr "Float_F"  []
+        in mk_exp_loc (Pexp_tuple [flag; kind])
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []
         | Char_counter  -> mk_constr "Char_counter"  []
@@ -4835,7 +4825,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
       l spat_sexp_list
   in
   if is_recursive then
-    List.iter 
+    List.iter
       (fun {vb_pat=pat} -> match pat.pat_desc with
            Tpat_var _ -> ()
          | Tpat_alias ({pat_desc=Tpat_any}, _, _) -> ()

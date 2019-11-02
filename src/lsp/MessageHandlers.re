@@ -665,7 +665,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | `Interface(int) => Pprintast.signature(Format.str_formatter, int)
       };
     } else {
-      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_408, Migrate_parsetree.OCaml_404);
+      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_current, Migrate_parsetree.OCaml_404);
       switch (parsetree) {
       | `Implementation(str) =>
         Reason_toolchain.RE.print_implementation_with_comments(

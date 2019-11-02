@@ -11,6 +11,7 @@ let targetName = t => switch t {
 };
 
 type compilerVersion =
+  | V409
   | V408
   | V407
   | V406
@@ -28,7 +29,7 @@ type t =
   | BsbNative(string, target);
 
 let usesStdlib = v => switch v {
-  | V408 | V407 => true
+  | V409 | V408 | V407 => true
   | V406 | V402 => false
 };
 
@@ -123,6 +124,7 @@ let getCompilerVersion = executable => {
     | ["4", "06", _] => Ok(V406)
     | ["4", "07", _] => Ok(V407)
     | ["4", "08", _] => Ok(V408)
+    | ["4", "09", _] => Ok(V409)
     | _ => Error("Unsupported OCaml version: " ++ line)
   }
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))

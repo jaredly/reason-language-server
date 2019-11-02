@@ -1,5 +1,7 @@
 
-#if 408
+#if 409
+open Compiler_libs_409;
+#elif 408
 open Compiler_libs_408;
 #elif 407
 open Compiler_libs_407;
@@ -256,7 +258,9 @@ let default = {
   ident: (_, ident) => str(Ident.name(ident)),
   path: (stringifier, path, pathType) => switch path {
     | Path.Pident(ident) => stringifier.ident(stringifier, ident)
-#if 408
+#if 409
+    | Pdot(path, name) =>
+#elif 408
     | Pdot(path, name) =>
 #else
     | Pdot(path, name, _) =>

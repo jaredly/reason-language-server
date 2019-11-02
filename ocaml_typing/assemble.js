@@ -1,18 +1,19 @@
 const items = `
-UTILS=utils/config.cmo utils/misc.cmo \
+UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
-  utils/clflags.cmo utils/tbl.cmo utils/profile.cmo \
+  utils/clflags.cmo utils/profile.cmo \
+  utils/load_path.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
-  utils/build_path_prefix_map.cmo \
   utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
-  parsing/ast_helper.cmo parsing/parser.cmo \
-  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
+  parsing/ast_helper.cmo \
   parsing/pprintast.cmo \
+  parsing/camlinternalMenhirLib.cmo parsing/parser.cmo \
+  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
   parsing/builtin_attributes.cmo parsing/ast_invariants.cmo parsing/depend.cmo
 
@@ -24,12 +25,15 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/typedtreeIter.cmo typing/typedtreeMap.cmo \
-  typing/tast_mapper.cmo \
+  typing/typedtreeIter.cmo typing/tast_mapper.cmo \
   typing/cmt_format.cmo typing/untypeast.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/printpat.cmo \
-  typing/parmatch.cmo typing/stypes.cmo typing/typedecl.cmo typing/typeopt.cmo \
-  typing/typecore.cmo typing/typeclass.cmo typing/typemod.cmo
+  typing/parmatch.cmo typing/stypes.cmo \
+  typing/typedecl_properties.cmo typing/typedecl_variance.cmo \
+  typing/typedecl_unboxed.cmo typing/typedecl_immediacy.cmo \
+  typing/typedecl.cmo typing/typeopt.cmo \
+  typing/rec_check.cmo typing/typecore.cmo typing/typeclass.cmo \
+  typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/semantics_of_primitives.cmo \
@@ -43,7 +47,27 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/symtable.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo \
-  driver/compdynlink.cmo driver/compplugin.cmo driver/makedepend.cmo
+  driver/compdynlink_types.cmo driver/compdynlink_platform_intf.cmo \
+  driver/compdynlink_common.cmo driver/compdynlink.cmo \
+  driver/compplugin.cmo driver/makedepend.cmo \
+  driver/compile_common.cmo
+
+COMPILEROBJS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
+  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
+  utils/clflags.cmo utils/consistbl.cmo \
+  utils/terminfo.cmo utils/warnings.cmo utils/load_path.cmo \
+  parsing/location.cmo parsing/longident.cmo \
+  parsing/docstrings.cmo parsing/syntaxerr.cmo \
+  parsing/ast_helper.cmo parsing/ast_mapper.cmo parsing/ast_iterator.cmo \
+  parsing/attr_helper.cmo parsing/builtin_attributes.cmo \
+  typing/ident.cmo typing/path.cmo typing/primitive.cmo typing/types.cmo \
+  typing/btype.cmo typing/subst.cmo typing/predef.cmo \
+  typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
+  bytecomp/lambda.cmo bytecomp/instruct.cmo \
+  bytecomp/opcodes.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
+  bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo)
+
+COMPILERINTFS=bytecomp/cmo_format.cmo
 `.replace('\\\n', '')
 .split('\n')
 .filter(x => x.trim())
@@ -76,7 +100,7 @@ const allFiles = names.reduce((result, name) => {
 
 allFiles.forEach(file => {
   const base = path.basename(file)
-  fs.writeFileSync(path.join(__dirname, '407', base), fs.readFileSync(file))
+  fs.writeFileSync(path.join(__dirname, '408', base), fs.readFileSync(file))
 })
 
 

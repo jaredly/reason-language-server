@@ -1,5 +1,7 @@
 
-#if 408
+#if 409
+open Compiler_libs_409;
+#elif 408
 open Compiler_libs_408;
 #elif 407
 open Compiler_libs_407;
@@ -23,7 +25,9 @@ let tryReadCmt = cmt => {
     switch (Cmt_format.read_cmt(cmt)) {
     | exception Cmi_format.Error(err) =>
       Error("Failed to load " ++ cmt ++ " as a cmt w/ ocaml version " ++
-#if 408
+#if 409
+      "409" ++
+#elif 408
       "408" ++
 #elif 407
       "407" ++
@@ -94,7 +98,12 @@ let rec getFnArgs = t => {
 /* Unfortunately we need to depend on previous Compiler_libs_* versions starting
    with 4.07, otherwise we can't construct an ident with a custom stamp.
  */
-#if 408
+#if 409
+let makeIdent = (name, stamp) => {
+  let ident = Current.Local({ name, stamp });
+  (Obj.magic(ident): Ident.t)
+};
+#elif 408
 let makeIdent = (name, stamp) => {
   let ident = Current.Local({ name, stamp });
   (Obj.magic(ident): Ident.t)
@@ -111,7 +120,9 @@ let makeIdent = (name, stamp) => {
    They forced my hand.
 */
 let convertIdent = (oldIdent) => {
-#if 408
+#if 409
+  (Obj.magic(oldIdent): Current.abstract_ident);
+#elif 408
   (Obj.magic(oldIdent): Current.abstract_ident);
 #elif 407
   let { Compiler_libs_406.Ident.name, stamp } = (Obj.magic(oldIdent) : Compiler_libs_406.Ident.t);
@@ -121,8 +132,12 @@ let convertIdent = (oldIdent) => {
 #endif
 };
 
-#if 408
+#if 409
 let mapOldPath = oldPath => oldPath
+#elif 408
+/* Ident.t is now abstract since 4.08, so we can't establish an equivalence
+   between 408.Ident.t and 4.09.Ident.t which is effectively Current.ident */
+let mapOldPath = oldPath => Obj.magic(oldPath)
 #else
 let rec mapOldPath = oldPath => {
   switch (oldPath) {
@@ -212,7 +227,13 @@ let asSimpleDeclaration = (name, t) => {
 let migrateAttributes = t => {
   t.Types.type_attributes
     ->Belt.List.map(
-#if 408
+#if 409
+      ({
+        Parsetree.attr_name: {Asttypes.txt, loc},
+        attr_payload: payload,
+        _
+      }) => {
+#elif 408
       ({
         Parsetree.attr_name: {Asttypes.txt, loc},
         attr_payload: payload,

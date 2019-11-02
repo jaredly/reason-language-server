@@ -561,12 +561,14 @@ let forItems = (~file, ~allLocations, items, parts) => {
 
   /* TODO look through parts and extend the extent */
 
-  let module Iter = TypedtreeIter.MakeIterator(F({
+  let module X = F({
     let scopeExtent = ref([extent]);
     let extra = extra;
     let file = file;
     let allLocations = allLocations;
-  }));
+  });
+
+  let module Iter = TypedtreeIter.MakeIterator(X);
 
   List.iter(Iter.iter_structure_item, items);
   /* Log.log("Parts " ++ string_of_int(Array.length(parts))); */

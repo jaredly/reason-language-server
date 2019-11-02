@@ -200,6 +200,7 @@ let getParsetree = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
     | V406 => Process_406.astForCmt
     | V407 => Process_407.astForCmt
     | V408 => Process_408.astForCmt
+    | V409 => Process_409.astForCmt
   })(cmt);
 };
 
@@ -229,6 +230,7 @@ let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
     | V406 => Process_406.astForCmt
     | V407 => Process_407.astForCmt
     | V408 => Process_408.astForCmt
+    | V409 => Process_409.astForCmt
   })(cmt); */
   Ok("NVM")
 }; */
@@ -248,6 +250,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
     | V406 => Process_406.fullForCmt
     | V407 => Process_407.fullForCmt
     | V408 => Process_408.fullForCmt
+    | V409 => Process_409.fullForCmt
   })(~moduleName, ~allLocations);
   let cmtPath = cacheLocation /+ moduleName ++ ".cmt" ++ (interface ? "i" : "");
   try (Unix.unlink(cmtPath)) { | _ => ()};

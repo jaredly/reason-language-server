@@ -1,5 +1,7 @@
 
-#if 408
+#if 409
+open Compiler_libs_409;
+#elif 408
 open Compiler_libs_408;
 #elif 407
 open Compiler_libs_407;
@@ -17,7 +19,11 @@ open Infix;
 let getTopDoc = structure => {
   switch structure {
   | [{str_desc: Tstr_attribute(
-#if 408
+#if 409
+      { attr_name: {Asttypes.txt: "ocaml.doc" | "ocaml.text"},
+        attr_payload: PStr(
+          [{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string (doc, _))}, _)}])})}, ...rest] =>
+#elif 408
       { attr_name: {Asttypes.txt: "ocaml.doc" | "ocaml.text"},
         attr_payload: PStr(
           [{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string (doc, _))}, _)}])})}, ...rest] =>
@@ -38,7 +44,11 @@ let getTopDoc = structure => {
 let getTopSigDoc = structure => {
   switch structure {
   | [{sig_desc: Tsig_attribute(
-#if 408
+#if 409
+    { attr_name: {Asttypes.txt: "ocaml.doc" | "ocaml.text"},
+      attr_payload: PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])})}, ...rest] =>
+
+#elif 408
     { attr_name: {Asttypes.txt: "ocaml.doc" | "ocaml.text"},
       attr_payload: PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])})}, ...rest] =>
 
@@ -127,7 +137,9 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
   open Types;
   switch item {
   | Sig_value(ident, {val_type, val_attributes, val_loc: loc}
-#if 408
+#if 409
+    , _
+#elif 408
     , _
 #else
 #endif
@@ -152,7 +164,9 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
     ident,
     {type_params, type_loc, type_kind, type_manifest, type_attributes} as decl,
     _
-#if 408
+#if 409
+    , _
+#elif 408
     , _
 #else
 #endif
@@ -227,13 +241,17 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
     [{...declared, contents: Module.Module(declared.contents)}, ...items] */
   | Sig_module(
     ident,
-#if 408
+#if 409
+    _,
+#elif 408
     _,
 #else
 #endif
     {md_type, md_attributes, md_loc},
     _
-#if 408
+#if 409
+    , _
+#elif 408
     , _
 #else
 #endif
@@ -264,6 +282,8 @@ and forSignatureType = (env, signature) => {
 #if 402
   | Mty_alias(path) =>
 #elif 408
+  | Mty_alias(path) =>
+#elif 409
   | Mty_alias(path) =>
 #else
   | Mty_alias(_ /* 402*/, path) =>

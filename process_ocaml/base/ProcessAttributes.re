@@ -1,5 +1,7 @@
 
-#if 408
+#if 409
+open Compiler_libs_409;
+#elif 408
 open Compiler_libs_408;
 #elif 407
 open Compiler_libs_407;
@@ -16,7 +18,12 @@ let rec findDocAttribute = (attributes) => {
   open Parsetree;
   switch attributes {
   | [] => None
-#if 408
+#if 409
+  | [{ attr_name: {Asttypes.txt: "ocaml.doc"},
+       attr_payload:
+         PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])},
+    ..._] =>
+#elif 408
   | [{ attr_name: {Asttypes.txt: "ocaml.doc"},
        attr_payload:
          PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])},
@@ -40,7 +47,11 @@ let rec findDeprecatedAttribute = (attributes) => {
   open Parsetree;
   switch attributes {
   | [] => None
-#if 408
+#if 409
+  | [{ attr_name: {Asttypes.txt: "ocaml.deprecated" | "deprecated"},
+       attr_payload:
+         PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(message, _))}, _)}])}, ..._] =>
+#elif 408
   | [{ attr_name: {Asttypes.txt: "ocaml.deprecated" | "deprecated"},
        attr_payload:
          PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(message, _))}, _)}])}, ..._] =>

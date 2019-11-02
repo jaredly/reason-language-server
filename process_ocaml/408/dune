@@ -1,8 +1,8 @@
 (library
  (name Process_408)
  (public_name reason-language-server.Process_408)
- (libraries Belt Current Vendor Util str Compiler_libs_407 Compiler_libs_408
-   Compiler_libs_406 Core)
+ (libraries Belt Current Vendor Util str Compiler_libs_408 Compiler_libs_409
+   Compiler_libs_406 ocaml-migrate-parsetree Core)
  (flags :standard -open Vendor -open Util -w -9)
  (preprocess
   (pps Belt_ppx Ppx_monads)))

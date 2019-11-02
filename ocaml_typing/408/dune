@@ -1,4 +1,7 @@
 (library
  (name Compiler_libs_408)
  (public_name reason-language-server.Compiler_libs_408)
- (libraries compiler-libs.common Current))
+ (modules_without_implementation annot outcometree asttypes parsetree
+   compdynlink cmo_format)
+ (libraries Current)
+ (flags :standard -w -8-9-3))

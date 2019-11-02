@@ -91,7 +91,9 @@ let convertIdent = (oldIdent) => {
   (Obj.magic(oldIdent): Current.abstract_ident);
 };
 
-let mapOldPath = oldPath => oldPath
+/* Ident.t is now abstract since 4.08, so we can't establish an equivalence
+   between 408.Ident.t and 4.09.Ident.t which is effectively Current.ident */
+let mapOldPath = oldPath => Obj.magic(oldPath)
 
 let rec asSimpleType = t => {
   open SharedTypes;
