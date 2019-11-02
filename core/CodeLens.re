@@ -7,7 +7,7 @@ let sepList = items =>
     String.concat(", ", Belt.List.take(items, 3) |? [])
     ++ " and "
     ++ string_of_int(List.length(items) - 3)
-    ++ "more";
+    ++ " more";
 
 
 let forOpen = (tracker: SharedTypes.openTracker) => {
