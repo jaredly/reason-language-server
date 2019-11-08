@@ -52,7 +52,7 @@ let getInitialState = (params) => {
   Log.log("Hello - from " ++ Sys.executable_name);
   Log.log("Previous log location: " ++ Log.initial_dest);
 
-  Rpc.sendNotification(
+  Rpc.sendRequest(
     Log.log,
     stdout,
     "client/registerCapability",
