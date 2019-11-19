@@ -72,11 +72,13 @@ And you're done!
 
 1. Download the `your-platform.zip` file from the [latest release](https://github.com/jaredly/reason-language-server/releases), unzip it, and put the `reason-language-server.exe` file somewhere.
 2. Assuming you're using [lsp-mode](https://github.com/emacs-lsp/lsp-mode/), add the following to your config file:
-```lisp
+```
 (lsp-register-client
-  (make-lsp-client :new-connection (lsp-stdio-connection "/absolute/path/to/reason-language-server.exe")
+ (make-lsp-client :new-connection (lsp-stdio-connection "/absolute/path/to/reason-language-server.exe")
                   :major-modes '(reason-mode)
-                  :server-id 'ocaml-ls))
+                  :notification-handlers (ht ("client/registerCapability" 'ignore))
+                  :priority 1
+                  :server-id 'reason-ls))
 ```
 
 ### Atom
