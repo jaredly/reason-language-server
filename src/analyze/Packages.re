@@ -16,17 +16,6 @@ let escapePreprocessingFlags = flag => {
   }
 };
 
-let makePathForPpxBs = (base, flag) => {
-  switch (ModuleResolution.resolveNodeModulePath(~startPath=base, ".bin"), Str.split(Str.regexp_string(" "), flag)) {
-  | (Some(ppxPath), ["-ppx", ppx])
-      when
-        Str.string_match(Str.regexp("[a-zA-Z_]+"), ppx, 0)
-        && !Str.string_match(Str.regexp("[a-zA-Z_]:"), ppx, 0) => 
-    "-ppx " ++ ppxPath /+ ppx
-  | _ => flag
-  };
-};
-
 /**
  * Creates the `pathsForModule` hashtbl, which maps a `moduleName` to it's `paths` (the ml/re, mli/rei, cmt, and cmti files)
  */
@@ -163,7 +152,6 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
       let flags =
         MerlinFile.getFlags(rootPath)
         |> RResult.withDefault([""])
-        |> List.map(makePathForPpxBs(rootPath))
         |> List.map(escapePreprocessingFlags);
       let opens = List.fold_left((opens, item) => {
         let parts = Utils.split_on_char(' ', item);

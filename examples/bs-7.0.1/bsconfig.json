@@ -7,7 +7,7 @@
     "dir" : "src",
     "subdirs" : true
   },
-  "ppx-flags": ["bs-emotion-ppx"],
+  "ppx-flags": ["@ahrefs/bs-emotion-ppx/bin/bs-emotion-ppx"],
   "package-specs": [{
     "module": "commonjs",
     "in-source": true
