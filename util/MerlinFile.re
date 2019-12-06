@@ -5,7 +5,7 @@ let debug = ref(false);
 let maybeLog = message => if (debug^) { Log.log("[MerlinFile]: " ++ message) };
 
 /** This is a dirty hack to get around the bug in bsb native that doesn't do the proper ppx flags for ppxs */
-let fixPpx = (flg, base) => {
+let fixPpxBsNative = (flg, base) => {
   switch (Str.split(Str.regexp_string(" "), flg)) {
     | ["-ppx", ppx] when Str.string_match(Str.regexp("[a-zA-Z_]+"), ppx, 0) && !Str.string_match(Str.regexp("[a-zA-Z_]:"), ppx, 0) => {
       "-ppx " ++ (base /+ "lib" /+ "bs" /+ "native" /+ String.lowercase_ascii(ppx) ++ ".native")
@@ -19,7 +19,7 @@ let parseMerlin = (base, text) => {
   List.fold_left(
     ((source, build, flags), line) => {
       if (Utils.startsWith(line, "FLG ")) {
-        (source, build, [fixPpx(Utils.chopPrefix(line, "FLG "), base), ...flags])
+        (source, build, [Utils.chopPrefix(line, "FLG "), ...flags])
       } else if (Utils.startsWith(line, "S ")) {
         ([Utils.chopPrefix(line, "S "), ...source], build, flags)
       } else if (Utils.startsWith(line, "B ")) {
