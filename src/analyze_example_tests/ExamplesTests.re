@@ -52,13 +52,13 @@ let main = (baseDir, _verbose, args) => {
       print_endline("\027[43;30m# Example " ++ root ++ "\027[0m");
       let root = Filename.concat(baseDir, Filename.concat("examples", root));
       print_endline("Running \027[32m" ++ prepareCommand ++ "\027[0m in " ++ root);
-      let (stdout, stderr, success) = Util.Commands.execFull(~pwd=root, prepareCommand);
-      if (!success) {
-        [`Project(root, prepareCommand, stdout @ stderr), ...failures]
-      } else {
+      // let (stdout, stderr, success) = Util.Commands.execFull(~pwd=root, prepareCommand);
+      // if (!success) {
+      //   [`Project(root, prepareCommand, stdout @ stderr), ...failures]
+      // } else {
         let sourcePaths = sourcePaths->Belt.List.map(Filename.concat(root));
         checkExampleProject(root, sourcePaths) @ failures
-      }
+      // }
     } else {
       failures
     }
