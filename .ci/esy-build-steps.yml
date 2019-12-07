@@ -25,7 +25,7 @@ steps:
     workingDirectory: "examples/bs-7.0.1"
     displayName: "[Prepare tests] bs-7.0.1"
   - script: esy x ExamplesTests
-  - script: esy x UtilTests
+  - script: esy x UtilTests.exe
   - bash: mkdir -p rls-release
   - bash: cp _esy/default/build/default/bin/Bin.exe rls-release/reason-language-server.exe
   - task: PublishBuildArtifacts@1
