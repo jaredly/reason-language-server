@@ -24,7 +24,7 @@ steps:
   - script: "npm install"
     workingDirectory: "examples/bs-7.0.1"
     displayName: "[Prepare tests] bs-7.0.1 - install"
-  - script: "npm build"
+  - script: "npm run build"
     workingDirectory: "examples/bs-7.0.1"
     displayName: "[Prepare tests] bs-7.0.1 - build"
   - script: esy x ExamplesTests
