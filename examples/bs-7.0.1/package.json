@@ -2,7 +2,7 @@
   "name": "react-template",
   "version": "0.1.0",
   "scripts": {
-    "build": "bsb -verbose -make-world -- -v",
+    "build": "bsb -make-world",
     "start": "bsb -make-world -w",
     "clean": "bsb -clean-world",
     "test": "echo \"Error: no test specified\" && exit 1",
