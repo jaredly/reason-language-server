@@ -1,20 +1,21 @@
 {
   "name": "react-template",
-  "reason": {
-    "react-jsx": 3
-  },
-  "sources": {
-    "dir" : "src",
-    "subdirs" : true
-  },
+  "sources": ["src"],
+  "bs-dependencies": [
+    "@ahrefs/bs-emotion",
+    "reason-react",
+    "re-classnames"
+  ],
+  "reason": { "react-jsx": 2 },
+  "refmt": 3,
+  "bsc-flags": ["-open Belt"],
   "ppx-flags": ["@ahrefs/bs-emotion-ppx/bin/bs-emotion-ppx"],
-  "package-specs": [{
+  "package-specs": {
     "module": "commonjs",
     "in-source": true
-  }],
+  },
   "suffix": ".bs.js",
-  "bs-dependencies": [
-    "reason-react"
-  ],
-  "refmt": 3
+  "warnings": {
+    "number": "-44"
+  }
 }
