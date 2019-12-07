@@ -23,6 +23,7 @@ jobs:
         displayName: "esy build"
       # - script: "esy test"
       #   displayName: "Test command"
+      - template: utils/publish-build-cache.yml
       - bash: ./_build/default/src/analyze_example_tests/ExamplesTests.exe
       - bash: ./_build/default/util_tests/UtilTests.exe
       - bash: mkdir -p rls-release
