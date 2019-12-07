@@ -23,7 +23,10 @@ steps:
   #   displayName: "[Prepare tests] name_with_underscore"
   - script: "npm install"
     workingDirectory: "examples/bs-7.0.1"
-    displayName: "[Prepare tests] bs-7.0.1"
+    displayName: "[Prepare tests] bs-7.0.1 - install"
+  - script: "npm build"
+    workingDirectory: "examples/bs-7.0.1"
+    displayName: "[Prepare tests] bs-7.0.1 - build"
   - script: esy x ExamplesTests
   - script: esy x UtilTests.exe
   - bash: mkdir -p rls-release
