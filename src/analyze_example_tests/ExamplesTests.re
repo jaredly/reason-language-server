@@ -36,10 +36,10 @@ let checkExampleProject = (rootPath, sourcePaths) => {
 
 let projects = [
   // ("dune-complex", ["src", "both", "awesome"], "esy"),
-  ("example-project", ["src"], "npm install"),
-  ("example-es6-imports", ["src"], "npm install"),
-  ("example-react", ["src", "__tests__"], "npm install"),
-  ("name_with_underscore", ["src"], "npm install"),
+  // ("example-project", ["src"], "npm install"),
+  // ("example-es6-imports", ["src"], "npm install"),
+  // ("example-react", ["src", "__tests__"], "npm install"),
+  // ("name_with_underscore", ["src"], "npm install"),
   ("bs-7.0.1", ["src"], "npm install"),
   // ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
