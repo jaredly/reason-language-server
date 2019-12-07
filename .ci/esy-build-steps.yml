@@ -21,10 +21,10 @@ steps:
   # - script: "npm install"
   #   workingDirectory: "examples/name_with_underscore"
   #   displayName: "[Prepare tests] name_with_underscore"
-  - script: "npm install"
+  - script: "yarn install"
     workingDirectory: "examples/bs-7.0.1"
     displayName: "[Prepare tests] bs-7.0.1 - install"
-  - script: "npm run build"
+  - script: "yarn build"
     workingDirectory: "examples/bs-7.0.1"
     displayName: "[Prepare tests] bs-7.0.1 - build"
   - script: esy x ExamplesTests
