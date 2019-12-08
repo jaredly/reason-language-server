@@ -11,8 +11,8 @@ install:
 
 build_script:
     - cd examples\bs-7.0.1
-    - yarn install
-    - yarn build
+    - npm install
+    - npm run build
     - cd ..\..
 
 artifacts:
