@@ -3,32 +3,14 @@ image: Visual Studio 2017
 platform:
     - x64
 
-# Workaround for esy/esy#388
-environment:
-    HOME: C:\Users\appveyor
-
 cache:
-    - C:\Users\appveyor\.esy
     - examples/bs-7.0.1/node_modules/
-    - examples/example-project/node_modules/
-    - examples/example-es6-imports/node_modules/
-    - examples/example-react/node_modules/
-    - examples/name_with_underscore/node_modules/
-    - examples/example-esy-dune-project/node_modules/
-    - _esy
-    - node_modules
 
 install:
     # The x64 is required as a workaround for esy/esy#412
     - ps: Install-Product node 8 x64
-    - npm install -g esy@0.5.6
-    # Retry is necessary due to esy/esy#413 and esy/esy#414
-    - appveyor-retry esy install
 
 build_script:
-    - esy build
-    # Validate binary
-    # - esy dune exec Bin -- --help
     - cd examples\bs-7.0.1
     - npm install
     - npm run build
