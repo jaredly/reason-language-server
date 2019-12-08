@@ -20,7 +20,6 @@
     "reason-react": ">=0.4.0"
   },
   "devDependencies": {
-    "bs-platform": "7.0.1",
-    "@ahrefs/bs-emotion-ppx": "1.0.0"
+    "bs-platform": "3.1.5"
   }
 }

@@ -63,13 +63,13 @@
 			"sourceMaps": false,
 		},
 		{
-			"name": "BS 7.0.1",
+			"name": "BS 3.1.5",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
-				"${workspaceRoot}/examples/bs-7.0.1"
+				"${workspaceRoot}/examples/bs-3.1.5"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,

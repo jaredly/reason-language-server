@@ -36,7 +36,7 @@ jobs:
           paths:
             - node_modules
             - ~/.esy
-            - examples/bs-7.0.1/node_modules/
+            - examples/bs-3.1.5/node_modules/
             - examples/example-project/node_modules/
             - examples/example-es6-imports/node_modules/
             - examples/example-react/node_modules/
