@@ -8,7 +8,7 @@ steps:
   - script: esy build
     displayName: 'esy build'
   # Run tests or any additional steps here
-  # - script: esy b dune runtest
+  - script: esy dune exec AllTests
   - bash: ./_build/default/src/analyze_example_tests/ExamplesTests.exe
   - bash: ./_build/default/util_tests/UtilTests.exe
   - bash: mkdir -p rls-release

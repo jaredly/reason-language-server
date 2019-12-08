@@ -13,13 +13,14 @@ let tests: list((module Test)) = [
 ];
 
 let args = Array.to_list(Sys.argv);
-let (args, debug) = {
-  let rec loop = (items, ok, verbose) => switch items {
-    | ["-v" | "--verbose", ...rest] => loop(rest, ok, true)
-    | [one, ...rest] => loop(rest, [one, ...ok], verbose)
-    | [] => (ok, verbose)
+let (args, debug, update) = {
+  let rec loop = (items, ok, verbose, update) => switch items {
+    | ["-v" | "--verbose", ...rest] => loop(rest, ok, true, update)
+    | ["-u" | "--update", ...rest] => loop(rest, ok, verbose, true)
+    | [one, ...rest] => loop(rest, [one, ...ok], verbose, update)
+    | [] => (ok, verbose, update)
   };
-  loop(args |> List.rev, [], false)
+  loop(args |> List.rev, [], false, false)
 };
 
 // Util.Log.spamError := true;
@@ -37,6 +38,8 @@ if (debug) {
 };
 
 print_endline("Test dir: " ++ TestUtils.tmp);
+let failures = ref([])
+let total = ref(0)
 tests |. Belt.List.forEach(m => {
   Files.removeDeep(TestUtils.tmp);
   Files.mkdirp(TestUtils.tmp);
@@ -44,8 +47,26 @@ tests |. Belt.List.forEach(m => {
   if (suite == None || suite == Some(M.name)) {
     print_endline("## " ++ M.name);
     let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
-    let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput) |> String.concat("\n");
-    Files.writeFileExn(fileName, output);
+    let expected = Files.readFileExn(fileName);
+    let (sections, failed_items, total_items) = expected |> Utils.splitLines |. TestUtils.process(M.getOutput);
+    failures := failures^ @ (failed_items -> Belt.List.map(item => (M.name, item)));
+    let actual = sections |> String.concat("\n");
+    total := total^ + total_items;
+    if (failed_items != []) {
+      if (update) {
+        Files.writeFileExn(fileName, actual);
+      }
+    }
   }
 });
+
+if (failures^ == []) {
+  print_endline("All clear!")
+  exit(0)
+} else if (update) {
+  print_endline(Printf.sprintf("Updated %d/%d fixtures", List.length(failures^), total^))
+} else {
+  print_endline(Printf.sprintf("%d/%d fixtures failed!", List.length(failures^), total^));
+  exit(1)
+}
 

@@ -347,7 +347,9 @@ let inferPackageManager = projectRoot => {
     | Ok(v) =>
       Log.log("Detected `esy` dependency manager for local use");
       Ok(Esy(v));
-    | _ => Error("Couldn't get esy version")
+    | Error(err) =>
+      Log.log(err);
+      Error("Couldn't get esy version")
     };
   } else {
     switch (opam) {

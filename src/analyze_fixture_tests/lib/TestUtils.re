@@ -20,7 +20,7 @@ let getPackage = (localModules) => {
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
-    compilerVersion: BuildSystem.V407,
+    compilerVersion: BuildSystem.V408,
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,
@@ -236,20 +236,35 @@ let process = (lines, getResult) => {
     | `Test(name, _, _, _) => Utils.startsWith(name, "*")
     | _ => false
   });
-  sections |> List.map(section => switch section {
-    | `Header(name) => "### " ++ name ++ "\n"
+  let totalTests = sections->Belt.List.keep(s => switch s { | `Test(_) => true | _ => false})|> List.length;
+  let results = sections |> List.map(section => switch section {
+    | `Header(name) => ("### " ++ name ++ "\n", None)
     | `Test(name, mainFile, files, result) => {
       if (hasOnly && !Utils.startsWith(name, "*")) {
-        "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-        ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result))
+        ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+        ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result)), None)
       } else {
-        print_endline("-----[ " ++ name ++ " ]-----");
+        let newResult = getResult(files, mainFile);
+        let failed = newResult->String.trim != String.concat("\n", result)->String.trim;
+        if (failed) {
+          print_endline("❌ " ++ name);
+        } else {
+          print_endline("✅ " ++ name);
+        };
+        // print_endline("-----[ " ++ name ++ " ]-----");
         /* print_endline("Running " ++ name); */
         /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
-        let newResult = getResult(files, mainFile);
-        "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-        ++ (newResult == "" ? "" : "-->\n" ++ newResult ++ "\n")
+        ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+        ++ (newResult == "" ? "" : "-->\n" ++ newResult ++ "\n"), failed ? Some(name) : None)
       }
     }
-  })
+  });
+  let (sections, failures) = results -> Belt.List.reduce(([], []), ((sections, failures), (section, failure)) => (
+    [section, ...sections],
+    switch (failure) {
+      | None => failures
+      | Some(failure) => [failure, ...failures]
+    }
+  ));
+  (sections->List.rev, failures->List.rev, totalTests)
 };
