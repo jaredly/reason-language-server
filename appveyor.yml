@@ -7,7 +7,7 @@ cache:
     - examples/bs-7.0.1/node_modules/
 
 install:
-    - ps: Install-Product node 12
+    - ps: Install-Product node 12 x64
 
 build_script:
     - cd examples\bs-7.0.1
