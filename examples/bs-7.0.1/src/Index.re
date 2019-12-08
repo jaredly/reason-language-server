@@ -1,3 +1,3 @@
-include GlobalStyles;
+ReactDOMRe.renderToElementWithId(<Component1 message="Hello!" />, "index1");
 
-ReactDOMRe.renderToElementWithId(<Component size=30 animate=true />, "app");
+ReactDOMRe.renderToElementWithId(<Component2 greeting="Hello!" />, "index2");

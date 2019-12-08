@@ -1,29 +1,26 @@
 {
   "name": "react-template",
-  "version": "0.0.0",
-  "private": true,
-  "author": "Alex Fedoseev <alex.fedoseev@gmail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ahrefs/bs-emotion.git"
-  },
+  "version": "0.1.0",
   "scripts": {
-    "start": "parcel src/index.html",
-    "prestart": "yarn run clean:bs && yarn run build:bs",
-    "build": "parcel build src/index.html",
-    "prebuild": "yarn run clean:dist && yarn run clean:bs && yarn run build:bs",
-    "build:bs": "bsb -make-world",
-    "clean:bs": "bsb -clean-world",
-    "clean:dist": "rm -rf dist",
-    "test": "exit 0"
+    "build": "bsb -make-world",
+    "start": "bsb -make-world -w",
+    "clean": "bsb -clean-world",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "webpack": "webpack -w",
+    "webpack:production": "NODE_ENV=production webpack"
   },
+  "keywords": [
+    "BuckleScript"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
-    "@ahrefs/bs-emotion": "1.0.0",
-    "@ahrefs/bs-emotion-ppx": "1.0.0",
-    "bs-platform": "^7.0.1",
-    "parcel-bundler": "1.10.3",
-    "re-classnames": "3.0.0",
-    "reason-react": "0.5.3"
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "reason-react": ">=0.4.0"
+  },
+  "devDependencies": {
+    "bs-platform": "7.0.1",
+    "@ahrefs/bs-emotion-ppx": "1.0.0"
   }
 }
