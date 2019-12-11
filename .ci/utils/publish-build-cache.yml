@@ -1,0 +1,3 @@
+steps:
+  - pwsh: Copy-Item -Path $(ESY__CACHE_INSTALL_PATH) -Destination $(CACHE_FOLDER) -Recurse
+    displayName: '[Cache][Publish] Copy builds to be cached'

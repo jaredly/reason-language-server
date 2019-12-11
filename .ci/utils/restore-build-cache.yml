@@ -1,0 +1,45 @@
+# The cache key is built up of the following:
+# We use a string that we can change to bust the cache
+# The string "esy"
+# The string for the OS
+# The hash of the lock file
+steps:
+  - bash: |
+      # COMPUTE THE ESY INSTALL CACHE LOCATION AHEAD OF TIME
+      DESIRED_LEN="86"
+      # Note: This will need to change when upgrading esy version
+      # that reenables long paths on windows.
+      if [ "$AGENT_OS" == "Windows_NT" ]; then
+        DESIRED_LEN="33"
+      fi
+      HOME_ESY3="$HOME/.esy/3"
+      HOME_ESY3_LEN=${#HOME_ESY3}
+      NUM_UNDERS=$(echo "$(($DESIRED_LEN-$HOME_ESY3_LEN))")
+      UNDERS=$(printf "%-${NUM_UNDERS}s" "_")
+      UNDERS="${UNDERS// /_}"
+      THE_ESY__CACHE_INSTALL_PATH=${HOME_ESY3}${UNDERS}/i
+      if [ "$AGENT_OS" == "Windows_NT" ]; then
+        THE_ESY__CACHE_INSTALL_PATH=$( cygpath --mixed --absolute "$THE_ESY__CACHE_INSTALL_PATH")
+      fi
+      echo "THE_ESY__CACHE_INSTALL_PATH: $THE_ESY__CACHE_INSTALL_PATH"
+      # This will be exposed as an env var ESY__CACHE_INSTALL_PATH, or an
+      # Azure var esy__cache_install_path
+      echo "##vso[task.setvariable variable=esy__cache_install_path]$THE_ESY__CACHE_INSTALL_PATH"
+    displayName: '[Cache] calculate esy store path'
+      
+  - task: Cache@2
+    inputs:
+      # "v1" prefix added just to keep the ability to clear a cache without having to wait 7 days
+      key: v1 | esy | $(Agent.OS) | esy.lock/index.json
+      restoreKeys: v1 | esy | $(Agent.OS)
+      path: $(CACHE_FOLDER)
+      cacheHitVar: CACHE_RESTORED
+    displayName: '[Cache] esy packages'
+
+  - pwsh: 'New-Item $(ESY__CACHE_INSTALL_PATH) -ItemType Directory'
+    condition: eq(variables.CACHE_RESTORED, 'true')
+    displayName: '[Cache][Restore] Create esy cache directory'
+
+  - pwsh: Move-Item -Path $(CACHE_FOLDER)/* -Destination $(ESY__CACHE_INSTALL_PATH)
+    displayName: '[Cache][Restore] Move downloaded cache in place'
+    condition: eq(variables.CACHE_RESTORED, 'true')
