@@ -14,14 +14,14 @@ type longident = Longident.t =
 
 type abstract_ident = Ident.t
 
-type ident =
+type ident_408 =
   | Local of { name: string; stamp: int }
   | Scoped of { name: string; stamp: int; scope: int }
   | Global of string
   | Predef of { name: string; stamp: int }
 
-let ident_binding_time ident =
-  let current_ident = (Obj.magic ident : ident) in
+let ident_binding_time_408 (ident: Ident.t) =
+  let current_ident = (Obj.magic ident : ident_408) in
   match current_ident with
   | Predef { stamp }
   | Scoped { stamp }
