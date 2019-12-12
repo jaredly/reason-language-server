@@ -637,6 +637,18 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
   }),
 
+  ("custom:reasonLanguageServer/dumpFileData", (state, params) => {
+    open InfixResult;
+    let%try uri = RJson.get("uri", params) |?> RJson.string;
+    let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
+    let%try package = getPackage(uri, state);
+    let interfacePath = path ++ ".dump.json";
+    let%try text = State.getInterfaceFile(uri, state, ~package);
+    let%try () = Files.writeFileResult(interfacePath, text)
+    /* let interfaceUri = uri ++ "i"; */
+    Ok((state, Json.Null))
+  }),
+
   ("custom:reasonLanguageServer/createInterface", (state, params) => {
     open InfixResult;
     let%try uri = RJson.get("uri", params) |?> RJson.string;
