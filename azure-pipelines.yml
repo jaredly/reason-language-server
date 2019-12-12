@@ -1,81 +1,51 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-
 name: $(Build.SourceVersion)
+
+trigger:
+  branches:
+    include:
+      - master
+
+pr:
+  branches:
+    include:
+      - "*"
+
 jobs:
-- job: Linux
-  timeoutInMinutes: 0
-  pool:
-    vmImage: 'Ubuntu 16.04'
+  - template: .ci/build-platform.yml
+    parameters:
+      platform: Linux
+      vmImage: ubuntu-16.04
 
-  variables:
-    STAGING_DIRECTORY: /home/vsts/STAGING
-    STAGING_DIRECTORY_UNIX: /home/vsts/STAGING
-    ESY__CACHE_INSTALL_PATH: /home/vsts/.esy/3_____________________________________________________________________/i
-    ESY__CACHE_SOURCE_TARBALL_PATH: /home/vsts/.esy/source/i
-    # ESY__NPM_ROOT: /opt/hostedtoolcache/node/8.14.0/x64/lib/node_modules/esy
+  - template: .ci/build-platform.yml
+    parameters:
+      platform: macOS
+      vmImage: macOS-10.13
 
-  steps:
-  - template: .ci/use-node.yml
-  - template: .ci/restore-build-cache.yml
-  - template: .ci/esy-build-steps.yml
-  - template: .ci/publish-build-cache.yml
+  # Need windows-2019 to do esy import/export-dependencies
+  # which assumes you have bsdtar (tar.exe) in your system
+  # otherwise it will end up using the esy-bash tar which doesn't
+  # understand drives like D:/ (thinks it's an scp path).
+  - template: .ci/build-platform.yml
+    parameters:
+      platform: Windows
+      vmImage: windows-2019
 
-- job: MacOS
-  timeoutInMinutes: 0
-  pool:
-    vmImage: 'macOS 10.13'
-
-  variables:
-    STAGING_DIRECTORY: /Users/runner/STAGING
-    STAGING_DIRECTORY_UNIX: /Users/runner/STAGING
-    ESY__CACHE_SOURCE_TARBALL_PATH: /Users/runner/.esy/source/i
-    # ESY__NPM_ROOT: /usr/local/lib/node_modules/esy
-
-  steps:
-  - template: .ci/use-calc-esy-install-path.yml
-  - template: .ci/use-node.yml
-  - template: .ci/restore-build-cache.yml
-  - template: .ci/esy-build-steps.yml
-  - template: .ci/publish-build-cache.yml
-
-- job: Windows
-  timeoutInMinutes: 0
-  pool:
-    vmImage: 'vs2017-win2016'
-
-  variables:
-    STAGING_DIRECTORY: C:\Users\VssAdministrator\STAGING
-    STAGING_DIRECTORY_UNIX: /C/Users/VssAdministrator/STAGING
-    ESY__CACHE_INSTALL_PATH: /C/Users/VssAdministrator/.esy/3_/i
-    ESY__CACHE_SOURCE_TARBALL_PATH: /C/Users/VssAdministrator/.esy/source/i
-    # ESY__NPM_ROOT: /C/npm/prefix/node_modules/esy
-
-  steps:
-  - template: .ci/use-node.yml
-  - template: .ci/restore-build-cache.yml
-  - template: .ci/esy-build-steps.yml
-  - template: .ci/publish-build-cache.yml
-
-- job: Release
-  timeoutInMinutes: 0
-  displayName: Release
-  dependsOn:
-      - Linux
-      - MacOS
-      - Windows
-  condition: succeeded()
-  pool:
-    vmImage: ubuntu-16.04
-  steps:
-    - task: PublishBuildArtifacts@1
-      displayName: 'Release Package'
-      inputs:
-          PathtoPublish: './editor-extensions/vscode/'
-          ArtifactName: npm-package
+  - job: Release
+    timeoutInMinutes: 0
+    displayName: Release
+    dependsOn:
+        - Linux
+        - MacOS
+        - Windows
+    condition: succeeded()
+    pool:
+      vmImage: ubuntu-16.04
+    steps:
+      - task: PublishBuildArtifacts@1
+        displayName: 'Release Package'
+        inputs:
+            PathtoPublish: './editor-extensions/vscode/'
+            ArtifactName: npm-package
 
 
 # - name: release
