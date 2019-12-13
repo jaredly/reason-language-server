@@ -46,7 +46,6 @@ type settings = {
   showModulePathOnHover: bool,
   recordAllLocations: bool,
   autoRebuild: bool,
-  useOldDuneProcess: bool,
   buildSystemOverrideByRoot: list((string, BuildSystem.t))
 };
 
@@ -93,7 +92,6 @@ let empty = () => {
     showModulePathOnHover: true,
     recordAllLocations: false,
     autoRebuild: true,
-    useOldDuneProcess: false,
     buildSystemOverrideByRoot: [],
   },
 };

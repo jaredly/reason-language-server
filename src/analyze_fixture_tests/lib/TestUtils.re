@@ -106,7 +106,6 @@ let getState = () => {
       showModulePathOnHover: false,
       recordAllLocations: false,
       autoRebuild: false,
-      useOldDuneProcess: false,
       buildSystemOverrideByRoot: [],
     },
   };

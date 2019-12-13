@@ -3,7 +3,7 @@
 	"description": "IDE & Syntax support for Reason/OCaml",
 	"author": "Jared Forsyth",
 	"license": "ISC",
-	"version": "1.7.3",
+	"version": "1.7.4",
 	"publisher": "jaredly",
 	"repository": {
 		"type": "git",
@@ -117,11 +117,6 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Enables autorun of bsb"
-				},
-				"reason_language_server.useOldDuneProcess": {
-					"type": "boolean",
-					"default": true,
-					"description": "Keep the old process for determining package files (for compatability, will remove soon)"
 				}
 			}
 		},
