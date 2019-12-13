@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@opam/dune": "*",
+    "ocaml": "~4.8",
     "rex-json": "jaredly/rex-json#esy",
     "@esy-ocaml/reason": "*"
   }
