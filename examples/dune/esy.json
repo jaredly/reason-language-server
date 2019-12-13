@@ -1,5 +1,5 @@
 {
-  "name": "dune-complex",
+  "name": "dune-example",
   "esy": {
     "build": "dune build -p #{self.name}",
     "buildsInSource": "_build"
