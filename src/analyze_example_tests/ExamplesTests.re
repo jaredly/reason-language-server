@@ -34,14 +34,19 @@ let checkExampleProject = (rootPath, sourcePaths) => {
   })
 };
 
-let projects = [
-  // ("dune-complex", ["src", "both", "awesome"], "esy"),
+let esyProjects = [
+  ("dune", ["src", "both"], "esy"),
+  ("dune-complex", ["src", "both", "awesome"], "esy"),
+  ("example-esy-dune-project", ["lib", "bin"], "esy"),
+];
+
+// Don't run the esy examples on windows, they're failing right now.
+let projects = (Sys.os_type == "Unix" ? esyProjects : []) @ [
   ("example-project", ["src"], "npm install"),
   ("example-es6-imports", ["src"], "npm install"),
   ("example-react", ["src", "__tests__"], "npm install"),
   ("name_with_underscore", ["src"], "npm install"),
   ("bs-3.1.5", ["src"], "npm install"),
-  // ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
 
 
