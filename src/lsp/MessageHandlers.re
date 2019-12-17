@@ -474,7 +474,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           uri,
           package
         );
-        let%try fmtCmd = fmtCmd |> R.orError("No formatter provided");
         let%try_wrap text = AsYouType.format(substring, fmtCmd);
         Util.JsonShort.(
           state,
@@ -551,7 +550,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       uri,
       package
     );
-    let%try fmtCmd = fmtCmd |> R.orError("No formatter provided");
     let%try_wrap newText = AsYouType.format(text, fmtCmd);
     open Util.JsonShort;
     (state, text == newText ? Json.Null : l([o([

@@ -178,7 +178,7 @@ let fmtCmdForUri = (~formatWidth, ~interface, uri, package) => {
   if (Filename.check_suffix(uri, ".ml") || Filename.check_suffix(uri, ".mli")) {
     switch (package.mlfmtPath) {
     | None => Error("No formatter available for .ml(i) files")
-    | Some(fmtPath) => Ok(Some(fmtPath));
+    | Some(fmtPath) => Ok(fmtPath);
     };
   } else if (Filename.check_suffix(uri, ".rel")
              || Filename.check_suffix(uri, ".reli")) {
@@ -192,7 +192,7 @@ let fmtCmdForUri = (~formatWidth, ~interface, uri, package) => {
         formatWidth |? 80,
         interface ? " -i true" : "",
       );
-      Ok(Some(cmd));
+      Ok(cmd);
     };
   } else {
     switch (package.refmtPath) {
@@ -204,7 +204,7 @@ let fmtCmdForUri = (~formatWidth, ~interface, uri, package) => {
         formatWidth |? 80,
         interface ? " -i true" : "",
       );
-      Ok(Some(cmd));
+      Ok(cmd);
     };
   };
 };
