@@ -1,8 +1,10 @@
 
 module type Test = {
   let name: string;
-  let getOutput: (list((string, string)), string) => string;
+  let getOutput: (~projectDir: string, list((string, string)), string) => string;
 };
+
+let projectDir = "./src/analyze_fixture_tests/old_ocamls/407"
 
 let tests: list((module Test)) = [
   (module TestCodeLens),
@@ -48,7 +50,7 @@ tests |. Belt.List.forEach(m => {
     print_endline("## " ++ M.name);
     let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
     let expected = Files.readFileExn(fileName);
-    let (sections, failed_items, total_items) = expected |> Utils.splitLines |. TestUtils.process(M.getOutput);
+    let (sections, failed_items, total_items) = expected |> Utils.splitLines |. TestUtils.process(M.getOutput(~projectDir));
     failures := failures^ @ (failed_items -> Belt.List.map(item => (M.name, item)));
     let actual = sections |> String.concat("\n");
     total := total^ + total_items;
@@ -69,4 +71,3 @@ if (failures^ == []) {
   print_endline(Printf.sprintf("%d/%d fixtures failed!", List.length(failures^), total^));
   exit(1)
 }
-
