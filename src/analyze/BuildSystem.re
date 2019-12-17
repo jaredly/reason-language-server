@@ -16,6 +16,12 @@ type compilerVersion =
   | V406
   | V402;
 
+let showCompilerVersion = fun
+  | V408 => "4.08"
+  | V407 => "4.07"
+  | V406 => "4.06"
+  | V402 => "4.02";
+
 type packageManager =
   /* Absolute path to the Opam switch prefix */
   | Opam(string)
@@ -339,10 +345,8 @@ let hiddenLocation = (rootPath, buildSystem) => {
 let inferPackageManager = projectRoot => {
   let hasEsyDir = Files.exists(projectRoot /+ "_esy");
 
-  let esy = getLine("esy --version", ~pwd=projectRoot);
-  let opam = getLine("opam config var prefix", ~pwd=projectRoot);
-
   if (hasEsyDir) {
+    let esy = getLine("esy --version", ~pwd=projectRoot);
     switch (esy) {
     | Ok(v) =>
       Log.log("Detected `esy` dependency manager for local use");
@@ -352,6 +356,7 @@ let inferPackageManager = projectRoot => {
       Error("Couldn't get esy version")
     };
   } else {
+    let opam = getLine("opam config var prefix", ~pwd=projectRoot);
     switch (opam) {
     | Ok(prefix) =>
       Log.log("Detected `opam` dependency manager for local use");

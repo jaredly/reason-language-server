@@ -4,8 +4,8 @@ module type Test = {
   let getOutput: (~projectDir: string, list((string, string)), string) => string;
 };
 
-let projectDir = "./src/analyze_fixture_tests/old_ocamls/407"
-let projectDir = "."
+// let projectDir = "./src/analyze_fixture_tests/old_ocamls/407"
+// let projectDir = "."
 
 let tests: list((module Test)) = [
   (module TestCodeLens),
@@ -16,14 +16,15 @@ let tests: list((module Test)) = [
 ];
 
 let args = Array.to_list(Sys.argv);
-let (args, debug, update) = {
-  let rec loop = (items, ok, verbose, update) => switch items {
-    | ["-v" | "--verbose", ...rest] => loop(rest, ok, true, update)
-    | ["-u" | "--update", ...rest] => loop(rest, ok, verbose, true)
-    | [one, ...rest] => loop(rest, [one, ...ok], verbose, update)
-    | [] => (ok, verbose, update)
+let (args, debug, update, projectDir) = {
+  let rec loop = (items, ok, verbose, update, base) => switch items {
+    | [base, "-b" | "--base", ...rest] => loop(rest, ok, verbose, update, base)
+    | ["-v" | "--verbose", ...rest] => loop(rest, ok, true, update, base)
+    | ["-u" | "--update", ...rest] => loop(rest, ok, verbose, true, base)
+    | [one, ...rest] => loop(rest, [one, ...ok], verbose, update, base)
+    | [] => (ok, verbose, update, base)
   };
-  loop(args |> List.rev, [], false, false)
+  loop(args |> List.rev, [], false, false, ".")
 };
 
 // Util.Log.spamError := true;
@@ -59,6 +60,16 @@ if (debug) {
 // })
 
 print_endline("Test dir: " ++ TestUtils.tmp);
+print_endline("Project dir: " ++ projectDir);
+
+switch (TestUtils.compilerForProjectDir(projectDir)) {
+  | Error(e) =>
+    print_endline("FATAL: Unable to determine compiler + build system for project dir " ++ projectDir);
+    exit(1)
+  | Ok((buildSystem, compilerPath, compilerVersion)) =>
+    print_endline("OCaml version: " ++ BuildSystem.showCompilerVersion(compilerVersion))
+}
+
 let failures = ref([])
 let total = ref(0)
 tests |. Belt.List.forEach(m => {

@@ -2,10 +2,24 @@ open Analyze;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
+let getBuildSystem = (projectDir) => {
+  let esy = BuildSystem.getLine("esy --version", ~pwd=projectDir);
+  switch (esy) {
+  | Ok(v) => Ok(BuildSystem.Dune(Esy(v)));
+  | Error(err) => Error("Couldn't get esy version")
+  };
+};
+
+let compilerForProjectDir = (projectDir) => {
+  let%try buildSystem = getBuildSystem(projectDir);
+  let%try compilerPath = BuildSystem.getCompiler(projectDir, buildSystem);
+  let%try_wrap compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
+  (buildSystem, compilerPath, compilerVersion)
+}
+
 let getPackage = (~projectDir, localModules) => {
-  let buildSystem = BuildSystem.Dune(Esy("0.5.6"));
-  let%try refmtPath = BuildSystem.getRefmt(projectDir, buildSystem);
-  let%try_wrap compilerPath = BuildSystem.getCompiler(projectDir, buildSystem);
+  let%try (buildSystem, compilerPath, compilerVersion) = compilerForProjectDir(projectDir);
+  let%try_wrap refmtPath = BuildSystem.getRefmt(projectDir, buildSystem);
   // print_endline("Compiler " ++ compilerPath);
   let (pathsForModule, nameForPath) = Packages.makePathsForModule(localModules, []);
   {
@@ -21,7 +35,7 @@ let getPackage = (~projectDir, localModules) => {
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
-    compilerVersion: BuildSystem.V408,
+    compilerVersion,
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,
@@ -251,7 +265,7 @@ let process = (lines, getResult) => {
         if (failed) {
           print_endline("❌ " ++ name);
           print_endline(newResult);
-          print_endline(">> Expected <<")
+          print_endline("❗ Expected")
           print_endline(String.concat("\n", result));
         } else {
           print_endline("✅ " ++ name);

@@ -3,16 +3,16 @@
 steps:
   - script: npm install -g esy@0.5.6
     displayName: 'npm install -g esy@0.5.6'
-  - script: esy install
-    displayName: 'esy install'
-  - script: esy build
-    displayName: 'esy build'
-  # Run tests or any additional steps here
-  - script: esy dune exec AllTests
-  - bash: ./_build/default/src/analyze_example_tests/ExamplesTests.exe
-  - bash: ./_build/default/util_tests/UtilTests.exe
+  - script: esy
+    displayName: 'esy install & build'
+
+  # Run tests
+  - bash: ./runtests.sh
+
   - bash: mkdir -p rls-release
-  - bash: cp _build/default/bin/Bin.exe rls-release/reason-language-server.exe
+  - bash: |
+    esy cp-bin
+    mv bin.exe rls-release/reason-language-server.exe
   - task: PublishBuildArtifacts@1
     displayName: 'Upload binary'
     inputs:
