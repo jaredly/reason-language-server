@@ -77,6 +77,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
   let%try compilerPath = BuildSystem.getCompiler(rootPath, buildSystem);
+  let mlfmtPath = state.settings.mlfmtLocation;
   let%try refmtPath = BuildSystem.getRefmt(rootPath, buildSystem);
   let%try tmpPath = BuildSystem.hiddenLocation(rootPath, buildSystem);
   let%try (dependencyDirectories, dependencyModules) = FindFiles.findDependencyFiles(~debug=true, ~buildSystem, rootPath, config);
@@ -222,6 +223,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
       stdLibDirectories
       ,
     compilerPath,
+    mlfmtPath: mlfmtPath,
     refmtPath: Some(refmtPath),
     /** TODO detect this from node_modules */
     lispRefmtPath: None,
@@ -335,6 +337,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
+  let mlfmtPath = state.settings.mlfmtLocation;
   let refmtPath = BuildSystem.getRefmt(projectRoot, buildSystem) |> RResult.toOptionAndLog;
   Ok({
     basePath: rootPath,
@@ -354,6 +357,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
     includeDirectories,
     compilerVersion,
     compilerPath,
+    mlfmtPath,
     refmtPath,
     lispRefmtPath: None,
   });

@@ -52,8 +52,8 @@ let convertToRe = (~formatWidth, ~interface, text, refmt) => {
   }
 };
 
-let format = (~formatWidth, ~interface, text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse re%s", Commands.shellEscape(refmt), formatWidth |? 80, interface ? " -i true" : ""));
+let format = (text, fmtCmd) => {
+  let (out, error, success) = Commands.execFull(~input=text, fmtCmd);
   if (success) {
     Ok(String.concat("\n", out))
   } else {

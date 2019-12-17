@@ -97,6 +97,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("workspace/didChangeConfiguration", (state, params) => {
     let nullIfEmpty = item => item == "" ? None : Some(item);
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
+    let mlfmtLocation = (settings |?> Json.get("mlfmt") |?> Json.string) |?> nullIfEmpty;
     let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string) |?> nullIfEmpty;
     let lispRefmtLocation = (settings |?> Json.get("lispRefmt") |?> Json.string |?> nullIfEmpty);
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
@@ -120,6 +121,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       settings: {
         ...state.settings,
         perValueCodelens,
+        mlfmtLocation,
         refmtLocation,
         lispRefmtLocation,
         opensCodelens,
