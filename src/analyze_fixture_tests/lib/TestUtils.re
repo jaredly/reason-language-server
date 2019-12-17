@@ -250,6 +250,9 @@ let process = (lines, getResult) => {
         let failed = newResult->String.trim != String.concat("\n", result)->String.trim;
         if (failed) {
           print_endline("❌ " ++ name);
+          print_endline(newResult);
+          print_endline(">> Expected <<")
+          print_endline(String.concat("\n", result));
         } else {
           print_endline("✅ " ++ name);
         };

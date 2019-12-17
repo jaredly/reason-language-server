@@ -37,23 +37,23 @@ let z = string_of_int(<c2>m);
 O<c11>ther.<c3>contain.<c4>r.<c5>age;
 let m = Lib.A(2,3.);
 -->
-1: Couldn't find a definition for the loc at 2, 8 file:///path/to/Test.re
-2: Couldn't find a definition for the loc at 3, 22 file:///path/to/Test.re
+1: PASS
+2: PASS
 3: PASS
 4: PASS
 5: PASS
-6: Couldn't find a definition for the loc at 7, 12 file:///path/to/Lib.re
-7: Couldn't find a definition for the loc at 6, 33 file:///path/to/Lib.re
+6: PASS
+7: PASS
 8: PASS
 9: PASS
-10: Couldn't find a definition for the loc at 8, 8 file:///path/to/Lib.re
+10: PASS
 11: PASS
 
 === Single
 let x = (~<t1>a, ~<t2>b: int) => <c1>a + <c2>b
 -->
-1: Couldn't find a definition for the loc at 1, 25 file:///path/to/Test.re
-2: Couldn't find a definition for the loc at 1, 29 file:///path/to/Test.re
+1: PASS
+2: PASS
 
 === Module
 module <t1><t2>X = {
@@ -63,8 +63,8 @@ module <t1><t2>X = {
 let m = <c1>X.num;
 type r = <c2>X.<c3>t;
 -->
-1: Couldn't find a definition for the loc at 5, 8 file:///path/to/Test.re
-2: Couldn't find a definition for the loc at 6, 9 file:///path/to/Test.re
+1: PASS
+2: PASS
 3: Couldn't find a definition for the loc at 6, 11 file:///path/to/Test.re
 
 === Functor
@@ -76,11 +76,11 @@ module <t1>A = {
 module C = <c1>A.<c2>B({let m = 20});
 let z = <c3>C.<c4>r;
 -->
-1: Couldn't find a definition for the loc at 6, 11 file:///path/to/Test.re
-2: Couldn't find a definition for the loc at 6, 13 file:///path/to/Test.re
-3: Couldn't find a definition for the loc at 7, 8 file:///path/to/Test.re
-4: Couldn't find a definition for the loc at 7, 10 file:///path/to/Test.re
-5: Couldn't find a definition for the loc at 3, 14 file:///path/to/Test.re
+1: PASS
+2: PASS
+3: PASS
+4: PASS
+5: PASS
 
 === Trace include
 module X = {
@@ -89,7 +89,7 @@ module X = {
 include X;
 let y = <c1>num;
 -->
-1: Couldn't find a definition for the loc at 5, 8 file:///path/to/Test.re
+1: PASS
 
 === Cross-file include
 --- One.re

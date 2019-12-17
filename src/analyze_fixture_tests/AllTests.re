@@ -5,6 +5,7 @@ module type Test = {
 };
 
 let projectDir = "./src/analyze_fixture_tests/old_ocamls/407"
+let projectDir = "."
 
 let tests: list((module Test)) = [
   (module TestCodeLens),
@@ -38,6 +39,24 @@ Printexc.record_backtrace(true);
 if (debug) {
   Log.spamError := true;
 };
+
+// let envs = Unix.environment();
+// envs->Belt.Array.forEach(item => {
+//   switch (Str.split(Str.regexp_string("="), item)) {
+//     | [] => assert(false)
+//     | [name, ..._] =>
+//       if (
+//         Str.string_match(Str.regexp_string("cur__"), name, 0) ||
+//         name == "OCAMLLIB" ||
+//         name == "OCAMLPATH" ||
+//         name == "CAML_LD_LIBRARY_PATH" ||
+//         Str.string_match(Str.regexp_string("OCAMLFIND"), name, 0)
+//         ) {
+//         // clear out esy env vbls
+//         Unix.putenv(name, "")
+//       }
+//   }
+// })
 
 print_endline("Test dir: " ++ TestUtils.tmp);
 let failures = ref([])

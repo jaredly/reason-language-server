@@ -11,19 +11,10 @@ switch None {
   | _ => ()
 };
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 24 (2, 12)
-    missing reference - file:///path/to/Test.re 20 (2, 8)
-
-  2: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 89 (7, 10)
-
-  3: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 126 (9, 10)
-
-  4: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 71 (6, 9)
-
+  1: ✅ PASS
+  2: ✅ PASS
+  3: ✅ PASS
+  4: ✅ PASS
 
 === Mutable
 type r = {
@@ -31,10 +22,8 @@ type r = {
 };
 let m = {<c1><t2>n: "hello"};
 -->
-  1: No definition! at 4, 9 message Not a valid loc
-  2: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 44 (4, 9)
-
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Constructor
 type a = | <c1>A(int) | <t2>B(float);
@@ -46,12 +35,8 @@ switch d {
   | _ => ()
 };
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 88 (6, 4)
-    missing reference - file:///path/to/Test.re 52 (3, 8)
-    missing reference - file:///path/to/Test.re 38 (2, 8)
-
-  2: No definition! at 4, 8 message Not a valid loc
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Basic cross-module
 --- Lib.re
@@ -70,10 +55,7 @@ let c = <t1>A(3);
 ---
 let m = Lib.<t1>A(2);
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 52 (3, 8)
-    missing reference - file:///path/to/Lib.re 38 (2, 8)
-
+  1: ✅ PASS
 
 === Cross-module with same-name export
 --- Lib.re
@@ -83,10 +65,7 @@ let c = <t1>A(3);
 ---
 let m = Lib.<t1>A(2);
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 52 (3, 8)
-    missing reference - file:///path/to/Lib.re 38 (2, 8)
-
+  1: ✅ PASS
 
 === Through a module alias
 module A = {
@@ -95,7 +74,7 @@ module A = {
 module B = A;
 let z = B.<c1>a;
 -->
-  1: No definition! at 5, 10 message Not a valid loc
+  1: ✅ PASS
 
 === Global through an alias
 --- A.re
@@ -123,12 +102,9 @@ module Lib = Lib_Packaged;
 open Package;
 let m = Lib.<c1><t2>a;
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Lib_Packaged.re 20 (2, 8)
-
+  1: ✅ PASS
   2: 🔴 FAIL
     missing reference - file:///path/to/Test.re 26 (2, 12)
-    missing reference - file:///path/to/Lib_Packaged.re 20 (2, 8)
 
 
 === Cross-module with interface
@@ -141,12 +117,8 @@ let <t1><t2>a: int
 let m = Lib.<c1><t2>a;
 
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 20 (2, 8)
-
-  2: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 20 (2, 8)
-
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Opens
 module Lib = {
@@ -167,13 +139,8 @@ let m = M.l;
 open Lib.M.E;
 let r = <t2>z;
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 143 (12, 8)
-
-  2: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 212 (17, 8)
-    missing reference - file:///path/to/Test.re 151 (12, 16)
-
+  1: ✅ PASS
+  2: ✅ PASS
 
 === Functor
 module M = (N: {let x: int}) => {
@@ -185,7 +152,7 @@ module C = {
 module Z = M(C);
 let r = Z.<c1>v;
 -->
-  1: No definition! at 8, 10 message Not a valid loc
+  1: ✅ PASS
 
 === Cross-file Functor
 --- Lib.re
@@ -196,18 +163,14 @@ module M = (N: {let x: int}) => {
 module Z = Lib.M({let x = 10});
 let r = Z.<t1>v;
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 42 (2, 10)
-
+  1: ✅ PASS
 
 === Functor arg
 module M = (N: {let <c1>x: int}) => {
   let v = 20 + N.<t1>x;
 };
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Test.re 51 (2, 17)
-
+  1: ✅ PASS
 
 === Kitchen sink
 --- Lib.re
@@ -229,16 +192,7 @@ let z = string_of_int(m);
 let m = Lib.<t4>A(2,3.);
 Other.contain.r.<t3>age;
 -->
-  1: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 121 (6, 33)
-    missing reference - file:///path/to/Lib.re 79 (5, 33)
-
-  2: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 142 (7, 12)
-
-  3: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 156 (7, 26)
-
-  4: 🔴 FAIL
-    missing reference - file:///path/to/Lib.re 173 (8, 8)
-
+  1: ✅ PASS
+  2: ✅ PASS
+  3: ✅ PASS
+  4: ✅ PASS

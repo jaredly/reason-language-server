@@ -68,7 +68,16 @@ type t = {name: int, nose: float};
 let m = {name: 2, nose: 1.4};
 m.n<*>
 -->
-🛑  no completions found
+name
+- path: file:///path/to/Test.re
+> name: int
+> 
+> type t = {name: int, nose: float}
+nose
+- path: file:///path/to/Test.re
+> nose: float
+> 
+> type t = {name: int, nose: float}
 
 === Just dot
 type t = {name: int, party: float};
@@ -77,7 +86,16 @@ let x = {
   m.<*>
 };
 -->
-🛑  no completions found
+name
+- path: file:///path/to/Test.re
+> name: int
+> 
+> type t = {name: int, party: float}
+party
+- path: file:///path/to/Test.re
+> party: float
+> 
+> type t = {name: int, party: float}
 
 ### MultiFile
 
