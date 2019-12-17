@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "cp-test": "cp _build/install/default/bin/ExamplesTests ExamplesTests.exe",
+    "cp-alltests": "cp _build/default/src/analyze_fixture_tests/AllTests.exe AllTests.exe",
     "package": "esy build && esy cp \"_build/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
     "check-self-definitions": "fd -E examples '.*\\.re$' | xargs ./bin.exe check -q -d .",

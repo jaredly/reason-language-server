@@ -1,8 +1,10 @@
 
 module type Test = {
   let name: string;
-  let getOutput: (list((string, string)), string) => string;
+  let getOutput: (~projectDir: string, list((string, string)), string) => string;
 };
+
+let projectDir = "./src/analyze_fixture_tests/old_ocamls/407"
 
 let tests: list((module Test)) = [
   (module TestCodeLens),
@@ -44,7 +46,7 @@ tests |. Belt.List.forEach(m => {
   if (suite == None || suite == Some(M.name)) {
     print_endline("## " ++ M.name);
     let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
-    let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput) |> String.concat("\n");
+    let output = Files.readFileExn(fileName) |> Utils.splitLines |. TestUtils.process(M.getOutput(~projectDir)) |> String.concat("\n");
     Files.writeFileExn(fileName, output);
   }
 });

@@ -2,10 +2,11 @@ open Analyze;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
-let getPackage = (localModules) => {
+let getPackage = (~projectDir, localModules) => {
   let buildSystem = BuildSystem.Dune(Esy("0.5.6"));
-  let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
-  let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
+  let%try refmtPath = BuildSystem.getRefmt(projectDir, buildSystem);
+  let%try_wrap compilerPath = BuildSystem.getCompiler(projectDir, buildSystem);
+  // print_endline("Compiler " ++ compilerPath);
   let (pathsForModule, nameForPath) = Packages.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
@@ -142,9 +143,10 @@ let makeFilesList = files => {
   }, interfaces, []))
 };
 
-let setUp = (files, text) => {
+let setUp = (~projectDir, files, text) => {
   let state = getState();
   let%try_force package = getPackage(
+    ~projectDir,
     /* (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
       TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
@@ -160,7 +162,7 @@ let setUp = (files, text) => {
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
-      ~basePath=".",
+      ~basePath=projectDir,
       ~reasonFormat=false,
       ~allLocations=false,
       ~compilerVersion=package.compilerVersion,
@@ -190,7 +192,7 @@ let setUp = (files, text) => {
   let%try_force result = AsYouType.process(
     ~uri=mainUri,
     ~moduleName="Test",
-    ~basePath=".",
+    ~basePath=projectDir,
     ~reasonFormat=false,
     ~compilerVersion=package.compilerVersion,
     ~allLocations=false,
