@@ -151,7 +151,7 @@ let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceF
 
 let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
   let cmd = justBscCommand(~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags);
-  Log.log({|➡️ running bsc |} ++ cmd ++ " with pwd " ++ basePath);
+  Log.log({|➡️ running compiler |} ++ cmd ++ " with pwd " ++ basePath);
   let (out, error, success) = Commands.execFull(~pwd=basePath, cmd);
   if (success) {
     Ok((out, error))

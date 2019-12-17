@@ -297,7 +297,7 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
   Log.log("Get ocaml stdlib dirs");
   let%try stdlibs = BuildSystem.getStdlib(projectRoot, buildSystem);
 
-  let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = if (!state.settings.useOldDuneProcess) {
+  let%try (pathsForModule, nameForPath, localModules, depsModules, includeDirectories) = {
     Log.log("New dune process");
     let (pathsForModule_, nameForPath, localModules, depsModules, includeDirectories) = MerlinFile.getModulesFromMerlin(
       ~stdlibs,
@@ -312,117 +312,6 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       depsModules,
       includeDirectories
     ))
-  } else {
-    Log.log("Old dune process");
-    let%try buildDir =
-      BuildSystem.getCompiledBase(projectRoot, buildSystem)
-      |> RResult.resultOfOption(
-        "Could not find local build dir for " ++ projectRoot,
-      );
-    Log.log("=== Build dir:    " ++ buildDir);
-
-
-    /* TODO support binaries, and other directories */
-    let includeSubdirs = JbuildFile.hasIncludeSubdirs(jbuildConfig);
-    Log.log("Include subdirs? " ++ (includeSubdirs ? "YES" : "no :/"));
-
-    let sourceFiles = includeSubdirs
-      ? Files.collect(rootPath, FindFiles.isSourceFile)->Belt.List.map(path => Files.relpath(rootPath, path))
-      : Files.readDirectory(rootPath) |> List.filter(FindFiles.isSourceFile);
-    let rel = Files.relpath(projectRoot, rootPath);
-    let compiledBase = switch packageName {
-      | `NoName => buildDir /+ "default" /+ rel
-      | `Library(libraryName) => buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte"
-      | `Executable(execName) => buildDir /+ "default" /+ rel /+ "." ++ execName ++ ".eobjs/byte"
-    };
-
-    /* Log.log("locals"); */
-    Log.log("Got a compiled base " ++ compiledBase);
-    let localModules = sourceFiles |> List.map(filename => {
-      let name = FindFiles.getName(filename);
-      let namespaced = switch packageName {
-        | `NoName | `Executable(_) => name
-        | `Library(libraryName) =>
-          String.capitalize_ascii(libraryName) ++ "__" ++ String.capitalize_ascii(name)
-      };
-      Log.log("Local file: " ++ (rootPath /+ filename));
-      let implCmtPath =
-        compiledBase
-          /+ (
-            fold(libraryName, "", l => l ++ "__")
-            ++ String.capitalize_ascii(Filename.chop_extension(filename))
-            ++ ".cmt"
-          );
-      Log.log("Local .cmt file: " ++ implCmtPath);
-      (
-        namespaced,
-        SharedTypes.Impl(implCmtPath, Some(rootPath /+ filename)),
-      );
-    });
-
-
-    /* Log.log("Getting things"); */
-    let (globalSource, localSource) = List.filter(s => s != "." && s != "", source)
-    |> List.partition(Infix.isFullPath);
-    let (otherDirectories, otherFiles) = localSource |> optMap(name => {
-      let otherPath = rootPath /+ name;
-      let res = {
-        let%try (jbuildPath, jbuildRaw) = JbuildFile.readFromDir(otherPath);
-        let%try jbuildConfig = switch (JbuildFile.parse(jbuildRaw)) {
-          | exception Failure(message) => Error("Unable to parse build file " ++ jbuildPath ++ " " ++ message)
-          | x => Ok(x)
-        };
-        let%try libraryName = JbuildFile.findName(jbuildConfig) |> n => switch n {
-          | `Library(name) => RResult.Ok(name)
-          | _ => Error("Not a library")
-        };
-        let rel = Files.relpath(projectRoot, otherPath);
-        let compiledBase = buildDir /+ "default" /+ rel /+ "." ++ libraryName ++ ".objs/byte";
-        Log.log("Found " ++ libraryName ++ " defined in " ++ jbuildPath);
-        Log.log("Compiled base: " ++ compiledBase);
-        Ok((compiledBase, FindFiles.collectFiles(~compiledTransform=modName => {
-          if (modName == libraryName) {
-            modName
-          } else {
-            libraryName ++ "__" ++ modName
-          }
-        }, ~sourceDirectory=otherPath, compiledBase)));
-      };
-      switch res {
-        | Error(message) => {
-          Log.log(message);
-          None
-        }
-        | Ok(res) => Some(res)
-      }
-    }) |> List.split;
-
-    let dependencyDirectories = globalSource @ stdlibs;
-
-    let dependencyModules = dependencyDirectories
-    |> List.map(path => {
-      Log.log(">> Collecting deps for " ++ path);
-      Files.readDirectory(Infix.maybeConcat(rootPath, path))
-      |> List.filter(FindFiles.isCompiledFile)
-      |> List.map(name => {
-        let compiled = path /+ FindFiles.cmtName(~namespace=None, name);
-        (Filename.chop_extension(name) |> String.capitalize_ascii, SharedTypes.Impl(compiled, Some(path /+ name)));
-      })
-    })
-    |> List.concat;
-
-    let dependencyModules = List.concat(otherFiles) @ dependencyModules;
-    /* let pathsForModule = makePathsForModule(localModules, dependencyModules); */
-    let (pathsForModule, nameForPath) = makePathsForModule(localModules, dependencyModules);
-    Log.log("Depedency dirs " ++ String.concat(" ", dependencyDirectories));
-
-    libraryName |?< libraryName => Hashtbl.replace(
-      pathsForModule,
-      String.capitalize_ascii(libraryName),
-      Impl(compiledBase /+ libraryName ++ ".cmt", None)
-    );
-    let includeDirectories = [compiledBase, ...otherDirectories] @ dependencyDirectories;
-    Ok((pathsForModule, nameForPath, localModules, dependencyModules->Belt.List.map(fst), includeDirectories))
   };
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));

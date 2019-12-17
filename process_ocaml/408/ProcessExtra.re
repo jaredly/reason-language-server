@@ -361,7 +361,7 @@ module F = (Collector: {
 
   let enter_signature_item = item => switch (item.sig_desc) {
   | Tsig_value({val_id, val_loc, val_name: name, val_desc, val_attributes}) => {
-    let stamp = Current.ident_binding_time(val_id);
+    let stamp = Current.ident_binding_time_408(val_id);
     if (!Hashtbl.mem(Collector.file.stamps.values, stamp)) {
       let declared = ProcessAttributes.newDeclared(
         ~name,
@@ -432,12 +432,12 @@ module F = (Collector: {
         addForConstructor(pat_type, lident, constructor)
       }
       | Tpat_alias(_inner, ident, name) => {
-        let stamp = Current.ident_binding_time(ident);
+        let stamp = Current.ident_binding_time_408(ident);
         addForPattern(stamp, name);
       }
       | Tpat_var(ident, name) => {
         /* Log.log("Pattern " ++ name.txt); */
-        let stamp = Current.ident_binding_time(ident);
+        let stamp = Current.ident_binding_time_408(ident);
         addForPattern(stamp, name);
       }
       | _ => ()
