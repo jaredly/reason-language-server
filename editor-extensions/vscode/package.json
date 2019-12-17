@@ -78,6 +78,10 @@
 					"type": "string",
 					"description": "Provide a location for the reason-lisp lispRefmt binary"
 				},
+				"reason_language_server.mlfmt": {
+					"type": "string",
+					"description": "Provide a location for an .ml/.mli formatter"
+				},
 				"reason_language_server.format_width": {
 					"type": "number",
 					"default": 80,

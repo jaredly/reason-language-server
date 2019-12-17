@@ -24,6 +24,7 @@ let getPackage = (localModules) => {
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,
+    mlfmtPath: None,
     refmtPath: Some(refmtPath),
     lispRefmtPath: None,
   };
@@ -96,6 +97,7 @@ let getState = () => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       crossFileAsYouType: false,
+      mlfmtLocation: None,
       refmtLocation: None,
       lispRefmtLocation: None,
       formatWidth: None,
