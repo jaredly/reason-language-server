@@ -1,6 +1,6 @@
 print_endline("Start of RunTests.re file");
-// include ExamplesTests;
-// print_endline("After including ExamplesTests");
+include ExamplesTests;
+print_endline("After including ExamplesTests");
 // include AnalyzeFixtureTests;
 // print_endline("After including Fixture Tests");
 include UtilTests;
