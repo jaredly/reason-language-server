@@ -226,60 +226,60 @@ let setUp = (~projectDir, files, text) => {
   (state, package, (), moduleData)
 };
 
-let iterTests = (lines, iter) => {
-  let sections = TestParser.parseSections(lines);
-  let hasOnly = Belt.List.some(sections, s => switch s {
-    | `Test(name, _, _, _) => Utils.startsWith(name, "*")
-    | _ => false
-  });
-  sections |> List.iter(section => switch section {
-    | `Test(name, mainFile, files, result) => {
-      if (!hasOnly || Utils.startsWith(name, "*")) {
-        iter(name, mainFile, files, result)
-      }
-    }
-    | _ => ()
-  })
-};
+// let iterTests = (lines, iter) => {
+//   let sections = TestParser.parseSections(lines);
+//   let hasOnly = Belt.List.some(sections, s => switch s {
+//     | `Test(name, _, _, _, _) => Utils.startsWith(name, "*")
+//     | _ => false
+//   });
+//   sections |> List.iter(section => switch section {
+//     | `Test(name, mainFile, files, result, versionedResults) => {
+//       if (!hasOnly || Utils.startsWith(name, "*")) {
+//         iter(name, mainFile, files, result)
+//       }
+//     }
+//     | _ => ()
+//   })
+// };
 
-let process = (lines, getResult) => {
-  let sections = TestParser.parseSections(lines);
-  let hasOnly = Belt.List.some(sections, s => switch s {
-    | `Test(name, _, _, _) => Utils.startsWith(name, "*")
-    | _ => false
-  });
-  let totalTests = sections->Belt.List.keep(s => switch s { | `Test(_) => true | _ => false})|> List.length;
-  let results = sections |> List.map(section => switch section {
-    | `Header(name) => ("### " ++ name ++ "\n", None)
-    | `Test(name, mainFile, files, result) => {
-      if (hasOnly && !Utils.startsWith(name, "*")) {
-        ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-        ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result)), None)
-      } else {
-        let newResult = getResult(files, mainFile);
-        let failed = newResult->String.trim != String.concat("\n", result)->String.trim;
-        if (failed) {
-          print_endline("❌ " ++ name);
-          print_endline(newResult);
-          print_endline("❗ Expected")
-          print_endline(String.concat("\n", result));
-        } else {
-          print_endline("✅ " ++ name);
-        };
-        // print_endline("-----[ " ++ name ++ " ]-----");
-        /* print_endline("Running " ++ name); */
-        /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
-        ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-        ++ (newResult == "" ? "" : "-->\n" ++ newResult ++ "\n"), failed ? Some(name) : None)
-      }
-    }
-  });
-  let (sections, failures) = results -> Belt.List.reduce(([], []), ((sections, failures), (section, failure)) => (
-    [section, ...sections],
-    switch (failure) {
-      | None => failures
-      | Some(failure) => [failure, ...failures]
-    }
-  ));
-  (sections->List.rev, failures->List.rev, totalTests)
-};
+// let process = (lines, getResult) => {
+//   let sections = TestParser.parseSections(lines);
+//   let hasOnly = Belt.List.some(sections, s => switch s {
+//     | `Test(name, _, _, _) => Utils.startsWith(name, "*")
+//     | _ => false
+//   });
+//   let totalTests = sections->Belt.List.keep(s => switch s { | `Test(_) => true | _ => false})|> List.length;
+//   let results = sections |> List.map(section => switch section {
+//     | `Header(name) => ("### " ++ name ++ "\n", None)
+//     | `Test(name, mainFile, files, result) => {
+//       if (hasOnly && !Utils.startsWith(name, "*")) {
+//         ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+//         ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result)), None)
+//       } else {
+//         let newResult = getResult(files, mainFile);
+//         let failed = newResult->String.trim != String.concat("\n", result)->String.trim;
+//         if (failed) {
+//           print_endline("❌ " ++ name);
+//           print_endline(newResult);
+//           print_endline("❗ Expected")
+//           print_endline(String.concat("\n", result));
+//         } else {
+//           print_endline("✅ " ++ name);
+//         };
+//         // print_endline("-----[ " ++ name ++ " ]-----");
+//         /* print_endline("Running " ++ name); */
+//         /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
+//         ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+//         ++ (newResult == "" ? "" : "-->\n" ++ newResult ++ "\n"), failed ? Some(name) : None)
+//       }
+//     }
+//   });
+//   let (sections, failures) = results -> Belt.List.reduce(([], []), ((sections, failures), (section, failure)) => (
+//     [section, ...sections],
+//     switch (failure) {
+//       | None => failures
+//       | Some(failure) => [failure, ...failures]
+//     }
+//   ));
+//   (sections->List.rev, failures->List.rev, totalTests)
+// };

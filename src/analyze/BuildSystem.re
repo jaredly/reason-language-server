@@ -121,10 +121,10 @@ let getBsbExecutable = rootPath =>
   );
 
 let parseOCamlVersion = versionString =>switch (Utils.split_on_char('.', String.trim(versionString))) {
-    | ["4", "02", _] => Ok(V402)
-    | ["4", "06", _] => Ok(V406)
-    | ["4", "07", _] => Ok(V407)
-    | ["4", "08", _] => Ok(V408)
+    | ["4", "02", ..._] => Ok(V402)
+    | ["4", "06", ..._] => Ok(V406)
+    | ["4", "07", ..._] => Ok(V407)
+    | ["4", "08", ..._] => Ok(V408)
     | _ => Error("Unsupported OCaml version: " ++ versionString)
   }
 
