@@ -2,4 +2,5 @@
 set -ex
 esy
 # We need to run the binary outside of the esy env.
-sh -c '$(esy x which RunTests.exe)'
+cp $(esy x which RunTests.exe) RunTests.exe
+./RunTests.exe
