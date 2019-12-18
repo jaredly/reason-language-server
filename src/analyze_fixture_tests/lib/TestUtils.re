@@ -2,16 +2,11 @@ open Analyze;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
-let getBuildSystem = (projectDir) => {
-  let esy = BuildSystem.getLine("esy --version", ~pwd=projectDir);
-  switch (esy) {
-  | Ok(v) => Ok(BuildSystem.Dune(Esy(v)));
-  | Error(err) => Error("Couldn't get esy version")
-  };
-};
+// let getBuildSystem = (projectDir) => {
+// };
 
 let compilerForProjectDir = (projectDir) => {
-  let%try buildSystem = getBuildSystem(projectDir);
+  let%try buildSystem = BuildSystem.detectFull(projectDir);
   let%try compilerPath = BuildSystem.getCompiler(projectDir, buildSystem);
   let%try_wrap compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
   (buildSystem, compilerPath, compilerVersion)

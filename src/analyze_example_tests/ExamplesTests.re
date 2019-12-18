@@ -3,9 +3,9 @@ open TestFramework;
 
 open Analyze;
 
-let checkExampleProject = (rootPath, sourcePaths) => {
+let checkExampleProject = (name, rootPath, sourcePaths) => {
 
-  let {describe, describeSkip, describeOnly} =
+  let {describe} =
     describeConfig
     |> withLifecycle(testLifecycle =>
         testLifecycle
@@ -25,7 +25,7 @@ let checkExampleProject = (rootPath, sourcePaths) => {
     Files.collect(path, FindFiles.isSourceFile)
   })->Belt.List.toArray->Belt.List.concatMany;
 
-  describe(rootPath, ({test}) => {
+  describe("Examples Test " ++ name, ({test}) => {
     files->Belt.List.forEach(path => {
       let uri = Utils.toUri(path);
       test(uri, ({expect, env: state}) => {
@@ -77,12 +77,12 @@ let projects = (Sys.os_type == "Unix" ? esyProjects : []) @ [
 // let main = (baseDir, _verbose, args) => {
 //   print_endline("Checking each example project to make sure we can analyze each source file...");
 let baseDir = Sys.getcwd();
-  projects->Belt.List.forEach(((root, sourcePaths, prepareCommand)) => {
+  projects->Belt.List.forEach(((rootName, sourcePaths, prepareCommand)) => {
     // if (args == [] || List.mem(root, args)) {
-      describe(root, ({test}) => {
-        let root = Filename.concat(baseDir, Filename.concat("examples", root));
+      describe("ExamplesTests " ++ rootName, ({test}) => {
+        let root = Filename.concat(baseDir, Filename.concat("examples", rootName));
 
-        let {describe, describeSkip, describeOnly} =
+        let {describe} =
           describeConfig
           |> withLifecycle(testLifecycle =>
               testLifecycle
@@ -107,7 +107,7 @@ let baseDir = Sys.getcwd();
           // sourcePaths->Belt.List.forEach(sourcePath => {
           //   describe(sourcePath, ({test}) => checkExampleProject(root, sourcePath))
           // })
-          checkExampleProject(root, sourcePaths)
+          checkExampleProject(rootName, root, sourcePaths)
         // }
       })
     // } else {

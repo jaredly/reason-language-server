@@ -120,17 +120,24 @@ let getBsbExecutable = rootPath =>
     |?>> (path => path /+ ".bin" /+ "bsb")
   );
 
-let getCompilerVersion = executable => {
-  let cmd = executable ++ " -version";
-  let (output, success) = Commands.execSync(cmd);
-  success ? switch output {
-  | [line] => switch (Utils.split_on_char('.', String.trim(line))) {
+let parseOCamlVersion = versionString =>switch (Utils.split_on_char('.', String.trim(versionString))) {
     | ["4", "02", _] => Ok(V402)
     | ["4", "06", _] => Ok(V406)
     | ["4", "07", _] => Ok(V407)
     | ["4", "08", _] => Ok(V408)
-    | _ => Error("Unsupported OCaml version: " ++ line)
+    | _ => Error("Unsupported OCaml version: " ++ versionString)
   }
+
+let getCompilerVersion = executable => {
+  let cmd = executable ++ " -version";
+  let (output, success) = Commands.execSync(cmd);
+  success ? switch output {
+  | [line] when Str.string_match(Str.regexp_string("BuckleScript "), line, 0) =>
+    switch (Str.split(Str.regexp_string("(Using OCaml"), String.trim(line))) {
+      | [_, version] => parseOCamlVersion(version)
+      | _ => Error("Cannot detect OCaml version from BuckleScript version string: " ++ line)
+    }
+  | [line] => parseOCamlVersion(line)
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
   } : Error("Could not run compiler (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
 };
@@ -160,6 +167,21 @@ let detect = (rootPath, bsconfig) => {
       | _ => Native
     };
   }) : Bsb(bsbVersion);
+};
+
+let detectFull = projectDir => {
+  let bsConfig = Filename.concat(projectDir, "bsconfig.json");
+  if (Files.exists(bsConfig)) {
+    let%try raw = Files.readFileResult(bsConfig);
+    let config = Json.parse(raw);
+    detect(projectDir, config);
+  } else {
+    let esy = getLine("esy --version", ~pwd=projectDir);
+    switch (esy) {
+    | Ok(v) => Ok(Dune(Esy(v)))
+    | Error(err) => Error("Couldn't get esy version")
+    };
+  };
 };
 
 let getEsyCompiledBase = () => {

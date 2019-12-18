@@ -30,8 +30,14 @@ Printexc.record_backtrace(true);
 //   Log.spamError := true;
 // };
 
-let projectDirs = ["./examples/bs-3.1.5", "./examples/dune", "./examples/example-react"];
+let projectDirs = [
+  "./examples/bs-3.1.5",
+  "./examples/dune",
+  "./examples/example-react",
+  "."
+];
 
+let baseDir = Sys.getcwd();
 projectDirs->Belt.List.forEach(projectDir => {
   // describe(projectDir, ({describe}) => {
     tests->Belt.List.forEach(m => {
@@ -48,7 +54,7 @@ projectDirs->Belt.List.forEach(projectDir => {
               ->Belt.List.forEach(item => {
                   test(item.name, ({expect}) => {
                     expect.string(
-                      M.getOutput(~projectDir, item.otherFiles, item.mainContent)
+                      M.getOutput(~projectDir=Filename.concat(baseDir, projectDir), item.otherFiles, item.mainContent)
                       ->String.trim,
                     ).
                       toEqual(
