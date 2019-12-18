@@ -31,14 +31,27 @@ Printexc.record_backtrace(true);
 // };
 
 let projectDirs = [
-  "./examples/bs-3.1.5",
-  "./examples/dune",
-  "./examples/example-react",
-  "."
+  ("./examples/bs-3.1.5", "npm i"),
+  ("./examples/dune", "esy"),
+  ("./examples/example-react", "npm i"),
+  (".", "esy")
 ];
 
 let baseDir = Sys.getcwd();
-projectDirs->Belt.List.forEach(projectDir => {
+projectDirs->Belt.List.forEach(((projectDir, prepareCommand)) => {
+
+  let {describe} =
+    describeConfig
+    |> withLifecycle(testLifecycle =>
+        testLifecycle
+        |> beforeAll(() => {
+          let (stdout, stderr, success) = Util.Commands.execFull(~pwd=projectDir, prepareCommand);
+          if (!success) {
+            failwith("Unable to run " ++ prepareCommand ++ " in " ++ projectDir)
+          }
+        })
+      )
+    |> build;
 
   let compilerVersion = switch (TestUtils.compilerForProjectDir(projectDir)) {
     | Error(e) =>
