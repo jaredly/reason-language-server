@@ -5,7 +5,7 @@ print_endline("Start of RunTests.re file");
 // print_endline("After including Fixture Tests");
 // include UtilTests;
 // print_endline("After utilTests, ready for cli");
-// TestFramework.cli()
+TestFramework.cli()
 print_endline("Done");
 
 // Things I wish rely would do:
