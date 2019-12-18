@@ -1,0 +1,2 @@
+include AnalyzeFixtureTests;
+TestFramework.cli()

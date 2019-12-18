@@ -97,6 +97,24 @@ let rec parseSections = lines => switch lines {
   }
 };
 
+type test = {name: string, mainContent: string, otherFiles: list((string, string)), result: list(string)};
+type section = {heading: string, children: list(test)}
+
+let addChild = (section, child) => {...section, children: [child, ...section.children]}
+
+let collectSections = lines => {
+  let parts = parseSections(lines);
+  let rec loop = (current, previous, parts) => switch parts {
+    | [`Header(heading), ...rest] => loop({heading, children: []}, [current, ...previous], rest)
+    | [`Test(name, mainContent, otherFiles, result), ...rest] => loop(current->addChild({name, mainContent, otherFiles, result}), previous, rest)
+    | [] => [current, ...previous] |> List.rev |> List.map(({heading, children}) => {heading, children: List.rev(children)})
+  };
+  switch parts {
+    | [`Header(heading), ...rest] => loop({heading, children: []}, [], rest)
+    | rest => loop({heading: "Default", children: []}, [], rest)
+  }
+}
+
 let printFiles = (mainFile, files) => {
   switch files {
     | [] => String.trim(mainFile)

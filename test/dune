@@ -1,0 +1,10 @@
+(library
+  (name TestFramework)
+  (modules TestFramework)
+  (libraries rely.lib))
+
+(executable
+  (name RunTests)
+  (public_name RunTests.exe)
+  (modules RunTests)
+  (libraries AnalyzeFixtureTests))
