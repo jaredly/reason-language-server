@@ -4,9 +4,9 @@ open SharedTypes;
 
 /* Log.spamError := true; */
 
-let getOutput = (files, text) => {
+let getOutput = (~projectDir, files, text) => {
   let (text, offset, pos) = TestUtils.extractPosition(text);
-  let (state, package, cmt, full) = TestUtils.setUp(files, text)
+  let (state, package, cmt, full) = TestUtils.setUp(~projectDir, files, text)
   let completions = switch (PartialParser.findCompletable(text, offset)) {
   | Nothing => failwith("Nothing completable found")
   | Labeled(string) => failwith("Can't do labeled completions yet")

@@ -1,3 +1,9 @@
+=== Basic
+let <t1>x = 10;
+let y = <c1>x;
+-->
+1: PASS
+
 === Cross-module with interface
 --- Lib.re
 let <t2><c3>a = 30;

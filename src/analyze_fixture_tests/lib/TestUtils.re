@@ -2,10 +2,25 @@ open Analyze;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
-let getPackage = (localModules) => {
-  let buildSystem = BuildSystem.Dune(Esy("0.5.6"));
-  let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
-  let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
+let getBuildSystem = (projectDir) => {
+  let esy = BuildSystem.getLine("esy --version", ~pwd=projectDir);
+  switch (esy) {
+  | Ok(v) => Ok(BuildSystem.Dune(Esy(v)));
+  | Error(err) => Error("Couldn't get esy version")
+  };
+};
+
+let compilerForProjectDir = (projectDir) => {
+  let%try buildSystem = getBuildSystem(projectDir);
+  let%try compilerPath = BuildSystem.getCompiler(projectDir, buildSystem);
+  let%try_wrap compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
+  (buildSystem, compilerPath, compilerVersion)
+}
+
+let getPackage = (~projectDir, localModules) => {
+  let%try (buildSystem, compilerPath, compilerVersion) = compilerForProjectDir(projectDir);
+  let%try_wrap refmtPath = BuildSystem.getRefmt(projectDir, buildSystem);
+  // print_endline("Compiler " ++ compilerPath);
   let (pathsForModule, nameForPath) = Packages.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
@@ -20,7 +35,7 @@ let getPackage = (localModules) => {
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
-    compilerVersion: BuildSystem.V408,
+    compilerVersion,
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,
@@ -143,9 +158,10 @@ let makeFilesList = files => {
   }, interfaces, []))
 };
 
-let setUp = (files, text) => {
+let setUp = (~projectDir, files, text) => {
   let state = getState();
   let%try_force package = getPackage(
+    ~projectDir,
     /* (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
       TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
@@ -161,7 +177,7 @@ let setUp = (files, text) => {
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
-      ~basePath=".",
+      ~basePath=projectDir,
       ~reasonFormat=false,
       ~allLocations=false,
       ~compilerVersion=package.compilerVersion,
@@ -191,7 +207,7 @@ let setUp = (files, text) => {
   let%try_force result = AsYouType.process(
     ~uri=mainUri,
     ~moduleName="Test",
-    ~basePath=".",
+    ~basePath=projectDir,
     ~reasonFormat=false,
     ~compilerVersion=package.compilerVersion,
     ~allLocations=false,
@@ -249,6 +265,9 @@ let process = (lines, getResult) => {
         let failed = newResult->String.trim != String.concat("\n", result)->String.trim;
         if (failed) {
           print_endline("❌ " ++ name);
+          print_endline(newResult);
+          print_endline("❗ Expected")
+          print_endline(String.concat("\n", result));
         } else {
           print_endline("✅ " ++ name);
         };

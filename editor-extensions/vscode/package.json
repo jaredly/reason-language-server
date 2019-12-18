@@ -39,6 +39,10 @@
 			{
 				"command": "reason-language-server.create_interface",
 				"title": "Reason: Create an interface file for this implementation file."
+			},
+			{
+				"command": "reason-language-server.dump_file_data",
+				"title": "Reason: dump data on the current file"
 			}
 		],
 		"snippets": [

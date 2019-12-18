@@ -1,4 +1,10 @@
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
@@ -20,14 +26,8 @@ jobs:
     - name: install esy
       run: |
         npm install -g esy
-    - name: Install dependencies
-      run: |
-        esy install
-    - name: Building reason-langage-server
-      run: |
-        esy build
-      env:
-        CI: true
-    - name: Building all in reason-langage-server
-      run: |
-        esy build dune build @all
+    - name: Esy
+      run: esy
+    - name: Running some tests
+      run: ./runtests.sh
+      shell: bash

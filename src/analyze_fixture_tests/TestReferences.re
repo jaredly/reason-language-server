@@ -2,9 +2,9 @@
 let name = "TestReferences";
 let showPos = ((l, c)) => string_of_int(l) ++ ", " ++ string_of_int(c);
 
-let getOutput = (files, mainFile) => {
+let getOutput = (~projectDir, files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
-  let (state, package, _, _) = TestUtils.setUp(files, text);
+  let (state, package, _, _) = TestUtils.setUp(~projectDir, files, text);
 
   let fileNames = files |. Belt.List.map(fst);
   let fileNames = ["Test.re", ...fileNames];
