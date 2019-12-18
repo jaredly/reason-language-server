@@ -19,7 +19,7 @@ jobs:
       - template: utils/restore-build-cache.yml
       - script: "esy"
         displayName: "esy install & build"
-      - bash: ./runtests.sh
+      - bash: '$(esy x which RunTests.exe)'
         displayName: "Run some tests"
       - template: utils/publish-build-cache.yml
       - bash: mkdir -p rls-release
