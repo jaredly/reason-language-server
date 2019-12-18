@@ -13,16 +13,16 @@ let {describe} =
 
 module type Test = {
   let name: string;
-  let fixture: string;
+  // let fixture: string;
   let getOutput: (~projectDir: string, list((string, string)), string) => string;
 };
 
 let tests: list(module Test) = [
   (module TestCodeLens),
-  // (module TestCompletions),
-  // (module TestDefinition),
-  // (module TestReferences),
-  // (module TestHover),
+  (module TestCompletions),
+  (module TestDefinition),
+  (module TestReferences),
+  (module TestHover),
 ];
 
 Printexc.record_backtrace(true);
@@ -39,7 +39,9 @@ projectDirs->Belt.List.forEach(projectDir => {
       describe(
         M.name,
         ({describe}) => {
-          let sections = TestParser.collectSections(M.fixture->Utils.splitLines);
+    let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
+    let expected = Files.readFileExn(fileName);
+          let sections = TestParser.collectSections(expected->Utils.splitLines);
           sections->Belt.List.forEach(section => {
             describe(section.heading, ({test}) => {
               section.children
