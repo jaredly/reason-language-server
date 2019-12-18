@@ -33,11 +33,11 @@ Printexc.record_backtrace(true);
 let projectDirs = ["./examples/bs-3.1.5", "./examples/dune", "./examples/example-react"];
 
 projectDirs->Belt.List.forEach(projectDir => {
-  describe(projectDir, ({describe}) => {
+  // describe(projectDir, ({describe}) => {
     tests->Belt.List.forEach(m => {
       module M = (val m);
       describe(
-        M.name,
+        M.name ++ " in dir " ++ projectDir,
         ({describe}) => {
     let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
     let expected = Files.readFileExn(fileName);
@@ -61,5 +61,5 @@ projectDirs->Belt.List.forEach(projectDir => {
         },
       );
     })
-  })
+  // })
 });
