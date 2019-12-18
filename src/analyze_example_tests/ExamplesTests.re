@@ -3,13 +3,32 @@ open TestFramework;
 
 open Analyze;
 
-let checkExampleProject = (name, rootPath, sourcePaths) => {
+let checkExampleProject = (name, rootPath, sourcePaths, prepareCommand) => {
+
+  // let {describe} =
+  //   describeConfig
+  //   |> withLifecycle(testLifecycle =>
+  //       testLifecycle
+  //       |> beforeAll(() => {
+  //         let (stdout, stderr, success) = Util.Commands.execFull(~pwd=root, prepareCommand);
+  //         print_endline("Ok did the " ++ prepareCommand ++ " in " ++ root);
+  //         if (!success) {
+  //           failwith("Unable to run " ++ prepareCommand ++ " in " ++ root)
+  //         }
+  //       })
+  //     )
+  //   |> build;
 
   let {describe} =
     describeConfig
     |> withLifecycle(testLifecycle =>
         testLifecycle
         |> beforeAll(() => {
+          let (stdout, stderr, success) = Util.Commands.execFull(~pwd=rootPath, prepareCommand);
+          // print_endline("Ok did the " ++ prepareCommand ++ " in " ++ rootPath);
+          if (!success) {
+            failwith("Unable to run " ++ prepareCommand ++ " in " ++ rootPath)
+          }
           let state = {
             ...TopTypes.empty(),
             rootPath,
@@ -82,19 +101,6 @@ let baseDir = Sys.getcwd();
       describe("ExamplesTests " ++ rootName, ({test}) => {
         let root = Filename.concat(baseDir, Filename.concat("examples", rootName));
 
-        let {describe} =
-          describeConfig
-          |> withLifecycle(testLifecycle =>
-              testLifecycle
-              |> beforeEach(() => {
-                let (stdout, stderr, success) = Util.Commands.execFull(~pwd=root, prepareCommand);
-                if (!success) {
-                  failwith("Unable to run " ++ prepareCommand ++ " in " ++ root)
-                }
-              })
-            )
-          |> build;
-
         // print_endline("\027[43;30m# Example " ++ root ++ "\027[0m");
         // print_endline("Running \027[32m" ++ prepareCommand ++ "\027[0m in " ++ root);
         // test("Setup Project", ({expect}) => {
@@ -107,7 +113,7 @@ let baseDir = Sys.getcwd();
           // sourcePaths->Belt.List.forEach(sourcePath => {
           //   describe(sourcePath, ({test}) => checkExampleProject(root, sourcePath))
           // })
-          checkExampleProject(rootName, root, sourcePaths)
+          checkExampleProject(rootName, root, sourcePaths, prepareCommand)
         // }
       })
     // } else {
