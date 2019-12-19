@@ -1,9 +1,19 @@
 print_endline("Start of RunTests.re file");
-include ExamplesTests;
+// include ExamplesTests;
 print_endline("After including ExamplesTests");
 // include AnalyzeFixtureTests;
 // print_endline("After including Fixture Tests");
-include UtilTests;
+// include UtilTests;
+open TestFramework;
+describe("A", ({test}) => {
+  test("thing", ({expect}) => {
+    // expect.bool(true).toBe(false);
+    print_endline("Ok folks");
+    failwith("wat");
+    expect.bool(false).toBe(true);
+    print_endline("ENDD")
+  })
+})
 print_endline("After utilTests, ready for cli");
 TestFramework.cli()
 print_endline("Done");
