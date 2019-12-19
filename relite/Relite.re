@@ -35,10 +35,18 @@ type lifecycle('parentEnv, 'allEnv, 'eachEnv) = {
   afterAll: 'allEnv => unit,
 }
 
+let plainLc = {
+  beforeAll: x => x,
+  beforeEach: x => x,
+  afterEach: _ => (),
+  afterAll: _ => (),
+}
+
 type describeArgs('env) = {
   it: (string, testArgs('env) => unit) => unit
 }
 and describe('parentEnv) = {
+  plain: (string, describeArgs('parentEnv) => unit) => unit,
   withLifecycle: 'allEnv 'eachEnv . (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => unit,
 }
 and testArgs('env) = {
@@ -51,6 +59,11 @@ type suite('parentEnv) = Suite(string, lifecycle('parentEnv, 'allEnv, 'eachEnv),
 let suites = ref([]);
 
 let describe = {
+  plain: (name, body) => {
+    let children = ref([]);
+    body({it: (name, body) => children.contents = [(name, body), ...children.contents]});
+    suites.contents = [Suite(name, plainLc, children.contents)]
+  },
   withLifecycle: (name, lc, body) => {
     let children = ref([]);
     body({it: (name, body) => children.contents = [(name, body), ...children.contents]});
