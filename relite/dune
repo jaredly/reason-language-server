@@ -1,5 +1,5 @@
 (executable
   (public_name Relite.exe)
   (name Relite)
- (preprocess
-  (pps Belt_ppx Ppx_monads)))
+  (libraries Belt)
+  (preprocess (pps Belt_ppx Ppx_monads)))
