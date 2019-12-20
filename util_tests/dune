@@ -1,4 +1,4 @@
 (library
   (name UtilTests)
-  (libraries Util rely.lib TestFramework)
+  (libraries Util TestFramework)
   )
