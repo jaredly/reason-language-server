@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "cp-test":
-      "cp #{self.target_dir}/install/default/bin/ExamplesTests ExamplesTests.exe",
+      "cp #{self.target_dir}/install/default/bin/RunTests.exe RunTests.exe",
     "cp-alltests":
       "cp #{self.target_dir}/default/src/analyze_fixture_tests/AllTests.exe AllTests.exe",
     "package":
