@@ -8,7 +8,7 @@
 
 (library
   (name Relite)
-  (libraries Belt ANSITerminal  pastel.lib)
+  (libraries Belt pastel.lib)
   (modules :standard \ Example)
  (flags :standard -w -9 -w -30 -w -27)
   (preprocess (pps Belt_ppx)))

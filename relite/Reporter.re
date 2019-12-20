@@ -8,8 +8,9 @@ let indent = n => {
 };
 
 let clear = () => {
-  ANSITerminal.move_bol();
-  ANSITerminal.erase(ANSITerminal.Eol)
+  ()
+  // ANSITerminal.move_bol();
+  // ANSITerminal.erase(ANSITerminal.Eol)
 }
 
 /*
