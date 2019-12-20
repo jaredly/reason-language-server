@@ -10,184 +10,252 @@ type expect = {
 };
 
 let expect = {
-  string: actual => {toEqual: (~message=?, expected) => {
-    if (actual != expected) {
-      failwith(Printf.sprintf("Expected %s to equal %s : %s", actual, expected, switch message {
-        | None => ""
-        | Some(m) => m
-      }))
-    }
-  }},
-  int: actual => {toEqual: (~message=?, expected) => {
-    if (actual != expected) {
-      failwith(Printf.sprintf("Expected %d to equal %d : %s", actual, expected, switch message {
-        | None => ""
-        | Some(m) => m
-      }))
-    }
-  }}
-}
+  string: actual => {
+    toEqual: (~message=?, expected) =>
+      if (actual != expected) {
+        failwith(
+          Printf.sprintf(
+            "Expected %s to equal %s : %s",
+            actual,
+            expected,
+            switch (message) {
+            | None => ""
+            | Some(m) => m
+            },
+          ),
+        );
+      },
+  },
+  int: actual => {
+    toEqual: (~message=?, expected) =>
+      if (actual != expected) {
+        failwith(
+          Printf.sprintf(
+            "Expected %d to equal %d : %s",
+            actual,
+            expected,
+            switch (message) {
+            | None => ""
+            | Some(m) => m
+            },
+          ),
+        );
+      },
+  },
+};
 
 type lifecycle('parentEnv, 'allEnv, 'eachEnv) = {
   beforeAll: 'parentEnv => 'allEnv,
   beforeEach: 'allEnv => 'eachEnv,
   afterEach: 'eachEnv => unit,
   afterAll: 'allEnv => unit,
-}
+};
 
-let plainLc = {
-  beforeAll: x => x,
-  beforeEach: x => x,
-  afterEach: _ => (),
-  afterAll: _ => (),
-}
+let plainLc = {beforeAll: x => x, beforeEach: x => x, afterEach: _ => (), afterAll: _ => ()};
 
-type describeArgs('env) = {
-  it: (string, testArgs('env) => unit) => unit
-}
+let rootLc = {beforeAll: () => (), beforeEach: () => (), afterEach: () => (), afterAll: () => ()};
+
+type describeArgs('env) = {it: (string, testArgs('env) => unit) => unit}
 and describe('parentEnv) = {
   plain: (string, describeArgs('parentEnv) => unit) => unit,
-  withLifecycle: 'allEnv 'eachEnv . (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => unit,
+  withLifecycle:
+    'allEnv 'eachEnv.
+    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => unit,
+
+}
+and describeWithOptions('parentEnv) = {
+  plain: (string, describeArgs('parentEnv) => unit) => unit,
+  withLifecycle:
+    'allEnv 'eachEnv.
+    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => unit,
+
+  skip: describe('parentEnv),
+  // only: describe('parentEnv),
 }
 and testArgs('env) = {
   expect,
-  env: 'env
+  env: 'env,
 };
 
-type test('eachEnv) = (string, (testArgs('eachEnv)) => unit);
-type suite('parentEnv) = Suite(string, lifecycle('parentEnv, 'allEnv, 'eachEnv), list(test('eachEnv))) : suite('parentEnv)
+// type test('eachEnv) = (string, (testArgs('eachEnv)) => unit);
+type child('env) =
+  | Test(string, testArgs('env) => unit)
+  | Suite(suite('env, 'allEnv, 'eachEnv)): child('env)
+and suite('parentEnv, 'allEnv, 'eachEnv) = {
+  name: string,
+  skipped: bool,
+  lc: lifecycle('parentEnv, 'allEnv, 'eachEnv),
+  mutable children: list(child('eachEnv)),
+};
 let suites = ref([]);
+
+let makeDescribe = parent => {
+  let describeWithOptions = {
+    plain: (name, body) => {
+      let children = ref([]);
+      body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+      parent.children = [Suite({name, lc: plainLc, skipped: false, children: children.contents}), ...parent.children];
+    },
+    withLifecycle: (name, lc, body) => {
+      let children = ref([]);
+      body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+      parent.children = [Suite({name, lc, skipped: false, children: children.contents}), ...parent.children];
+    },
+    skip: {
+      plain: (name, body) => {
+        let children = ref([]);
+        body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+        parent.children = [Suite({name, lc: plainLc, skipped: true, children: children.contents}), ...parent.children];
+      },
+      withLifecycle: (name, lc, body) => {
+        let children = ref([]);
+        body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+        parent.children = [Suite({name, lc, skipped: true, children: children.contents}), ...parent.children];
+      },
+    },
+  };
+  describeWithOptions
+};
 
 let describe = {
   plain: (name, body) => {
     let children = ref([]);
-    body({it: (name, body) => children.contents = [(name, body), ...children.contents]});
-    suites.contents = [Suite(name, plainLc, children.contents)]
+    body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+    suites.contents = [Suite({name, lc: plainLc, skipped: false, children: children.contents}), ...suites.contents];
   },
   withLifecycle: (name, lc, body) => {
     let children = ref([]);
-    body({it: (name, body) => children.contents = [(name, body), ...children.contents]});
-    suites.contents = [Suite(name, lc, children.contents)]
-  }
-}
+    body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+    suites.contents = [Suite({name, lc: lc, skipped: false, children: children.contents}), ...suites.contents];
+  },
+};
 
-describe.withLifecycle("A", {
-  beforeAll: () => 10,
-  beforeEach: string_of_int,
-  afterEach: (s: string) => (),
-  afterAll: (x: int) => (),
-}, ({it}) => {
+describe.withLifecycle(
+  "A",
+  {
+    beforeAll: () => 10,
+    beforeEach: string_of_int,
+    afterEach: (s: string) => (),
+    afterAll: (x: int) => (),
+  },
+  ({it}) => {
   it("x", ({expect, env}) => {
     expect.string(env).toEqual("10")
   })
 });
 
-suites.contents->Belt.List.forEach((Suite(name, lc, tests)) => {
-  print_endline(name);
-  let allEnv = lc.beforeAll(());
-  tests->Belt.List.forEach(((name, body)) => {
-    switch {
-      lc.beforeEach(allEnv)
-    } {
-      | exception Expect(err) => print_endline("Expectation error: " ++ err)
-      | exception Failure(err) => print_endline("Failure: " ++ err)
+suites.contents
+->Belt.List.forEach((Suite({name, lc, children})) => {
+    print_endline(name);
+    let allEnv = lc.beforeAll();
+    children->Belt.List.forEach(child => {
+      switch child {
+        | Test(name, body) =>
+      switch (
+        {
+          lc.beforeEach(allEnv);
+        }
+      ) {
+      | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
+      | exception (Failure(err)) => print_endline("Failure: " ++ err)
       | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
       | before =>
         print_endline(name);
-        switch {
-          body({env: before, expect})
-        } {
-          | exception Expect(err) => print_endline("Expectation error: " ++ err)
-          | exception Failure(err) => print_endline("Failure: " ++ err)
-          | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
-          | () =>
-            switch {
-              lc.afterEach(before)
-            } {
-              | exception Expect(err) => print_endline("Expectation error: " ++ err)
-              | exception Failure(err) => print_endline("Failure: " ++ err)
-              | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
-              | () => print_endline("Done")
+        switch (
+          {
+            body({env: before, expect});
+          }
+        ) {
+        | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
+        | exception (Failure(err)) => print_endline("Failure: " ++ err)
+        | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
+        | () =>
+          switch (
+            {
+              lc.afterEach(before);
             }
-        }
-    };
-  })
-})
-
-
-
-
-
+          ) {
+          | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
+          | exception (Failure(err)) => print_endline("Failure: " ++ err)
+          | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
+          | () => print_endline("Done")
+          }
+        };
+      }
+      | _ => ()
+      }
+    });
+  });
 
 /*
 
-type suite('parentEnv, 'allEnv, 'eachEnv) = {
-  namespace: list(string),
-  lifecycle: lifecycle('parentEnv, 'allEnv, 'eachEnv),
-  mutable children: list(suiteOrTest('eachEnv)),
-}
+ type suite('parentEnv, 'allEnv, 'eachEnv) = {
+   namespace: list(string),
+   lifecycle: lifecycle('parentEnv, 'allEnv, 'eachEnv),
+   mutable children: list(suiteOrTest('eachEnv)),
+ }
 
-and lifecycle('parentEnv, 'allEnv, 'eachEnv) = {
-  beforeAll: 'parentEnv => 'allEnv,
-  beforeEach: 'allEnv => 'eachEnv,
-  afterEach: 'eachEnv => unit,
-  afterAll: 'allEnv => unit,
-}
+ and lifecycle('parentEnv, 'allEnv, 'eachEnv) = {
+   beforeAll: 'parentEnv => 'allEnv,
+   beforeEach: 'allEnv => 'eachEnv,
+   afterEach: 'eachEnv => unit,
+   afterAll: 'allEnv => unit,
+ }
 
-and test('eachEnv) = {
-  tnamespace: list(string),
-  body: itArgs('eachEnv) => unit,
-}
-and suiteOrTest('eachEnv) =
-  | Suite(suite('eachEnv, 'a, 'b)): suiteOrTest('eachEnv)
-  | Test(test('eachEnv))
+ and test('eachEnv) = {
+   tnamespace: list(string),
+   body: itArgs('eachEnv) => unit,
+ }
+ and suiteOrTest('eachEnv) =
+   | Suite(suite('eachEnv, 'a, 'b)): suiteOrTest('eachEnv)
+   | Test(test('eachEnv))
 
-and describeFn('parentEnv, 'allEnv, 'eachEnv) =
-  (
-    string,
-    ~lifecycle: lifecycle('parentEnv, 'allEnv, 'eachEnv),
-    describeArgs('eachEnv) => unit
-  ) =>
-  unit
-and itFn('eachEnv) = (string, itArgs('eachEnv) => unit) => unit
-and describeArgs('eachEnv) = {
-  describe: 'a 'b. describeFn('eachEnv, 'a, 'b),
-  it: itFn('eachEnv),
-}
-and itArgs('eachEnv) = {
-  env: 'eachEnv,
-  expect,
-  fail: string => unit,
-};
+ and describeFn('parentEnv, 'allEnv, 'eachEnv) =
+   (
+     string,
+     ~lifecycle: lifecycle('parentEnv, 'allEnv, 'eachEnv),
+     describeArgs('eachEnv) => unit
+   ) =>
+   unit
+ and itFn('eachEnv) = (string, itArgs('eachEnv) => unit) => unit
+ and describeArgs('eachEnv) = {
+   describe: 'a 'b. describeFn('eachEnv, 'a, 'b),
+   it: itFn('eachEnv),
+ }
+ and itArgs('eachEnv) = {
+   env: 'eachEnv,
+   expect,
+   fail: string => unit,
+ };
 
-let add = (suite, child) => {
-  suite.children = [child, ...suite.children];
-};
+ let add = (suite, child) => {
+   suite.children = [child, ...suite.children];
+ };
 
-let it = (parent, testName, body) => {
-  parent->add(Test({tnamespace: [testName, ...parent.namespace], body}));
-};
+ let it = (parent, testName, body) => {
+   parent->add(Test({tnamespace: [testName, ...parent.namespace], body}));
+ };
 
-let rec describe: 'b 'c. describeFn(unit, 'b, 'c) =
-  (suiteName, ~lifecycle: lifecycle(unit, 'b, 'c), body: describeArgs('c) => unit) => {
-    let suite = {
-      namespace: [suiteName], // , ...parent.namespace],
-      children: [],
-      lifecycle,
-    };
-    body({describe, it: it(suite)});
-  };
+ let rec describe: 'b 'c. describeFn(unit, 'b, 'c) =
+   (suiteName, ~lifecycle: lifecycle(unit, 'b, 'c), body: describeArgs('c) => unit) => {
+     let suite = {
+       namespace: [suiteName], // , ...parent.namespace],
+       children: [],
+       lifecycle,
+     };
+     body({describe, it: it(suite)});
+   };
 
-// describe("A", ({beforeEach, it, describe}) => {
-//   beforeAll(() => 10);
-//   beforeEach(env => {env * 2});
+ // describe("A", ({beforeEach, it, describe}) => {
+ //   beforeAll(() => 10);
+ //   beforeEach(env => {env * 2});
 
-//   it("B", ({expect, env}) => {
-//     failwith("Bad news bears")
-//   });
+ //   it("B", ({expect, env}) => {
+ //     failwith("Bad news bears")
+ //   });
 
-//   describe("C", ({beforeEach, it}) => {
-//     beforeEach()
-//   });
-// });
-*/
+ //   describe("C", ({beforeEach, it}) => {
+ //     beforeEach()
+ //   });
+ // });
+ */
