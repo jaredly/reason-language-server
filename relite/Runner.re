@@ -68,16 +68,19 @@ type parentArgs('all, 'each) = {
 };
 
 type event =
+  | Start((int, int))
   | SuiteStart(string, list(string))
   | SuiteEnd(string, list(string), suiteResult)
   | TestStart(string, list(string))
   | TestEnd(string, list(string), testResult)
 
-let rec countTests
-: 'a 'b 'c . Types.suite('a, 'b, 'c) => int
- = suite => suite.children->Belt.List.reduce(0, (sum, child) => switch child {
-  | Test(_) => sum + 1
-  | Suite(LockedSuite(suite)) => sum + countTests(suite)
+let rec count
+: 'a 'b 'c . Types.suite('a, 'b, 'c) => (int, int)
+ = suite => suite.children->Belt.List.reduce((0, 0), ((tests, suites), child) => switch child {
+  | Test(_) => (tests + 1, suites)
+  | Suite(LockedSuite(suite)) => 
+    let (ctests, csuites) = count(suite);
+    (tests + ctests, suites + csuites + 1)
 });
 
 let rec runSuite:
@@ -92,7 +95,7 @@ let rec runSuite:
   ) => {
     report(SuiteStart(suite.name, trail));
     let result = switch (catcher(() => suite.lc.beforeAll(parent.v))) {
-    | Error(err) => BeforeError(err, countTests(suite))
+    | Error(err) => BeforeError(err, count(suite) |> fst)
     | Ok(beforeAll) =>
       let trail = [suite.name, ...trail];
       let tests =
@@ -191,8 +194,11 @@ let rec runSuite:
     result
   };
 
-let run = (~report=x => (), expect, suite) => runSuite(expect, report, [], LockedSuite(suite), {
+let run = (~report=x => (), expect, suite) => {
+  report(Start(count(suite)));
+  runSuite(expect, report, [], LockedSuite(suite), {
   v: (),
   beforeEach: () => (),
   afterEach: () => (),
-});
+})
+};

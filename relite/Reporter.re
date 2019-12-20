@@ -42,6 +42,10 @@ let report = fun
     print_string("\n" ++ indent(List.length(trail) * 2) ++ name);
     flush(stdout)
   }
+  | Start((tests, suites)) => {
+    Printf.printf("Collected %d suites and %d tests", suites, tests);
+    flush(stdout)
+  }
   | SuiteEnd(name, trail, result) => {
     print_string("\n" ++ indent(List.length(trail) * 2) ++ name ++ " -- " ++ suiteResult(result))
     flush(stdout)

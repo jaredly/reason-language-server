@@ -42,6 +42,7 @@ and describeWithOptions('parentEnv) = {
     unit,
 
   skip: describe('parentEnv),
+  // skipIf: ('parentEnv => bool) => describe('parentEnv),
 }
 and testArgs('env) = {
   expect,
