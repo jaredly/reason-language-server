@@ -25,6 +25,7 @@
   "license": "ISC",
   "esy": { "build": "dune build -p #{self.name}" },
   "dependencies": {
+    "@opam/ANSITerminal": "0.8.1",
     "@opam/dune": "*",
     "@opam/reason": ">= 3.5.2",
     "@opam/ocaml-migrate-parsetree": ">= 1.3.1",

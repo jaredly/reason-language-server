@@ -18,6 +18,7 @@ type compilerVersion =
   | V402;
 
 let showCompilerVersion = fun
+  | V409 => "4.09"
   | V408 => "4.08"
   | V407 => "4.07"
   | V406 => "4.06"
