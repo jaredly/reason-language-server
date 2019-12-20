@@ -1,5 +1,12 @@
 (executable
   (public_name Relite.exe)
+  (name Example)
+  (modules Example)
+  (libraries Belt Relite)
+  (preprocess (pps Belt_ppx)))
+
+(library
   (name Relite)
   (libraries Belt ANSITerminal  pastel.lib)
+  (modules :standard \ Example)
   (preprocess (pps Belt_ppx)))
