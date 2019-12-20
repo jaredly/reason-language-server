@@ -34,10 +34,12 @@ Printexc.record_backtrace(true);
 //   Log.spamError := true;
 // };
 
+let (/+) = Filename.concat;
+
 let projectDirs = [
-  ("./examples/bs-3.1.5", "npm i"),
-  ("./examples/dune", "esy"),
-  ("./examples/example-react", "npm i"),
+  ("examples" /+ "bs-3.1.5", "npm i"),
+  ("examples" /+ "dune", "esy"),
+  ("examples" /+ "example-react", "npm i"),
   (".", "esy"),
 ];
 
@@ -55,7 +57,7 @@ describe.withLifecycle("AnalyzeFixtureTests", lc, ({describe}) => {
         switch (TestUtils.compilerForProjectDir(projectDir)) {
         | Error(e) =>
           failwith(
-            "FATAL: Unable to determine compiler + build system for project dir " ++ projectDir,
+            "FATAL: Unable to determine compiler + build system for project dir " ++ projectDir ++"  "++ e,
           );
         | Ok((buildSystem, compilerPath, compilerVersion)) => compilerVersion
         };

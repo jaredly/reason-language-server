@@ -1,22 +1,8 @@
-print_endline("Start of RunTests.re file");
 include ExamplesTests;
-print_endline("After including ExamplesTests");
 include AnalyzeFixtureTests;
-// print_endline("After including Fixture Tests");
 include UtilTests;
-open TestFramework;
-// describe.plain("A", ({it}) => {
-//   it("thing", ({expect}) => {
-//     // expect.bool(true).toBe(false);
-//     print_endline("Ok folks");
-//     failwith("wat");
-//     // expect.bool(false).toBe(true);
-//     print_endline("ENDD")
-//   })
-// })
 print_endline("After utilTests, ready for cli");
 TestFramework.run()
-// print_endline("Done");
 
 // Things I wish rely would do:
 // - watch mode would be awesome

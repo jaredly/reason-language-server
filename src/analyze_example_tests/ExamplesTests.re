@@ -6,59 +6,49 @@ open Analyze;
 open TestFramework;
 
 let checkExampleProject = (describe, name, rootPath, sourcePaths, prepareCommand) => {
+  let files =
+    sourcePaths
+    ->Belt.List.map(path => {Files.collect(path, FindFiles.isSourceFile)})
+    ->Belt.List.toArray
+    ->Belt.List.concatMany;
 
-  let files = sourcePaths->Belt.List.map(path => {
-    // print_endline("  Source directory " ++ path);
-    Files.collect(path, FindFiles.isSourceFile)
-  })->Belt.List.toArray->Belt.List.concatMany;
-
-  describe.withLifecycle("Examples Test " ++ name,
-  Relite.Suite.beforeAll(() => {
-          let (stdout, stderr, success) = Util.Commands.execFull(~pwd=rootPath, prepareCommand);
-          // print_endline("Ok did the " ++ prepareCommand ++ " in " ++ rootPath);
-          if (!success) {
-            failwith("Unable to run " ++ prepareCommand ++ " in " ++ rootPath)
-          }
-          let state = {
-            ...TopTypes.empty(),
-            rootPath,
-            rootUri: Util.Utils.toUri(rootPath),
-          };
-          state
-
-  }),
-  ({it}) => {
+  describe.withLifecycle(
+    "Examples Test " ++ name,
+    Relite.Suite.beforeAll(() => {
+      let (stdout, stderr, success) = Util.Commands.execFull(~pwd=rootPath, prepareCommand);
+      // print_endline("Ok did the " ++ prepareCommand ++ " in " ++ rootPath);
+      if (!success) {
+        failwith("Unable to run " ++ prepareCommand ++ " in " ++ rootPath);
+      };
+      let state = {...TopTypes.empty(), rootPath, rootUri: Util.Utils.toUri(rootPath)};
+      state;
+    }),
+    ({it}) => {
     files->Belt.List.forEach(path => {
       let uri = Utils.toUri(path);
       it(uri, ({expect, ctx: state}) => {
         switch (Packages.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
-          | Error(message) =>
-            failwith("Unable to get package: " ++ message);
-            // print_endline("  Unable to get package: " ++ uri)
-            // print_endline(message);
-            // [`PackageFail(uri, message), ...failures]
-          | Ok(package) => switch (State.getCompilationResult(uri, state, ~package)) {
-            | Error(message) =>
-              failwith("Invalid compilation result: " ++ message)
-              // print_endline("  Invalid compilation result: " ++ message);
-              // [`FileFail(uri, message), ...failures]
-            | Ok(Success(_)) =>
-              ()
-              // print_endline("  Good: " ++ uri);
-              // failures
-            | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
-              failwith("Error compiling: " ++ message);
-              // print_endline("  Error compiling: " ++ uri);
-              // [`FileFail(uri, message)]
+        | Error(message) => failwith("Unable to get package: " ++ message)
+        // print_endline("  Unable to get package: " ++ uri)
+        // print_endline(message);
+        // [`PackageFail(uri, message), ...failures]
+        | Ok(package) =>
+          switch (State.getCompilationResult(uri, state, ~package)) {
+          | Error(message) => failwith("Invalid compilation result: " ++ message)
+          // print_endline("  Invalid compilation result: " ++ message);
+          // [`FileFail(uri, message), ...failures]
+          | Ok(Success(_)) => ()
+          // print_endline("  Good: " ++ uri);
+          // failures
+          | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
+            failwith("Error compiling: " ++ message)
+          // print_endline("  Error compiling: " ++ uri);
+          // [`FileFail(uri, message)]
           }
         }
-      })
+      });
     })
-  })
-
-  // print_endline("  Project directory in " ++ rootPath);
-  // files->Belt.List.reduce([], (failures, path) => {
-  // })
+  });
 };
 
 let esyProjects = [

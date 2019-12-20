@@ -7,4 +7,4 @@
   (name RunTests)
   (public_name RunTests.exe)
   (modules RunTests)
-  (libraries AnalyzeFixtureTests UtilTests ExamplesTests))
+  (libraries UtilTests ExamplesTests AnalyzeFixtureTests ))

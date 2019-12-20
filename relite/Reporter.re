@@ -8,7 +8,8 @@ let indent = n => {
 };
 
 let clear = () => {
-  ()
+  print_string("\r\027[2K");
+  // ()
   // ANSITerminal.move_bol();
   // ANSITerminal.erase(ANSITerminal.Eol)
 }
@@ -53,7 +54,7 @@ let report = fun
     flush(stdout)
   }
   | SuiteEnd(name, trail, result, time) => {
-    print_string("\n" ++ indent(List.length(trail) * 2) ++ name ++ " -- " ++ suiteResult(result) ++ Printf.sprintf(" took %0.2fs", time))
+    print_string("\n" ++ indent(List.length(trail) * 2) ++ name ++ " -- " ++ suiteResult(result) ++ Printf.sprintf(", took %0.2fs", time))
     flush(stdout)
   }
   | TestStart(name, trail) => {
