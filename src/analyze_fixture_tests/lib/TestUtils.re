@@ -2,10 +2,20 @@ open Analyze;
 let tmp = "/tmp/.lsp-test";
 Files.mkdirp(tmp);
 
-let getPackage = (localModules) => {
-  let buildSystem = BuildSystem.Dune(Esy("0.5.6"));
-  let%try refmtPath = BuildSystem.getRefmt(".", buildSystem);
-  let%try_wrap compilerPath = BuildSystem.getCompiler(".", buildSystem);
+// let getBuildSystem = (projectDir) => {
+// };
+
+let compilerForProjectDir = (projectDir) => {
+  let%try buildSystem = BuildSystem.detectFull(projectDir);
+  let%try compilerPath = BuildSystem.getCompiler(projectDir, buildSystem);
+  let%try_wrap compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
+  (buildSystem, compilerPath, compilerVersion)
+}
+
+let getPackage = (~projectDir, localModules) => {
+  let%try (buildSystem, compilerPath, compilerVersion) = compilerForProjectDir(projectDir);
+  let%try_wrap refmtPath = BuildSystem.getRefmt(projectDir, buildSystem);
+  // print_endline("Compiler " ++ compilerPath);
   let (pathsForModule, nameForPath) = Packages.makePathsForModule(localModules, []);
   {
     TopTypes.basePath: tmp,
@@ -20,10 +30,11 @@ let getPackage = (localModules) => {
     opens: [],
     tmpPath: tmp,
     compilationFlags: "",
-    compilerVersion: BuildSystem.V407,
+    compilerVersion,
     rebuildTimer: 0.,
     includeDirectories: [],
     compilerPath,
+    mlfmtPath: None,
     refmtPath: Some(refmtPath),
     lispRefmtPath: None,
   };
@@ -96,6 +107,7 @@ let getState = () => {
     lastDefinitions: Hashtbl.create(10),
     settings: {
       crossFileAsYouType: false,
+      mlfmtLocation: None,
       refmtLocation: None,
       lispRefmtLocation: None,
       formatWidth: None,
@@ -106,7 +118,6 @@ let getState = () => {
       showModulePathOnHover: false,
       recordAllLocations: false,
       autoRebuild: false,
-      useOldDuneProcess: false,
       buildSystemOverrideByRoot: [],
     },
   };
@@ -142,9 +153,10 @@ let makeFilesList = files => {
   }, interfaces, []))
 };
 
-let setUp = (files, text) => {
+let setUp = (~projectDir, files, text) => {
   let state = getState();
   let%try_force package = getPackage(
+    ~projectDir,
     /* (files |> List.map(((name, _)) => (
       Filename.chop_extension(name),
       TopTypes.Impl("/tmp/.lsp-test/" ++ Filename.chop_extension(name) ++ ".cmt", Some("/path/to/" ++ name))
@@ -160,7 +172,7 @@ let setUp = (files, text) => {
     let%try_force result = AsYouType.process(
       ~uri,
       ~moduleName,
-      ~basePath=".",
+      ~basePath=projectDir,
       ~reasonFormat=false,
       ~allLocations=false,
       ~compilerVersion=package.compilerVersion,
@@ -190,7 +202,7 @@ let setUp = (files, text) => {
   let%try_force result = AsYouType.process(
     ~uri=mainUri,
     ~moduleName="Test",
-    ~basePath=".",
+    ~basePath=projectDir,
     ~reasonFormat=false,
     ~compilerVersion=package.compilerVersion,
     ~allLocations=false,
@@ -214,42 +226,60 @@ let setUp = (files, text) => {
   (state, package, (), moduleData)
 };
 
-let iterTests = (lines, iter) => {
-  let sections = TestParser.parseSections(lines);
-  let hasOnly = Belt.List.some(sections, s => switch s {
-    | `Test(name, _, _, _) => Utils.startsWith(name, "*")
-    | _ => false
-  });
-  sections |> List.iter(section => switch section {
-    | `Test(name, mainFile, files, result) => {
-      if (!hasOnly || Utils.startsWith(name, "*")) {
-        iter(name, mainFile, files, result)
-      }
-    }
-    | _ => ()
-  })
-};
+// let iterTests = (lines, iter) => {
+//   let sections = TestParser.parseSections(lines);
+//   let hasOnly = Belt.List.some(sections, s => switch s {
+//     | `Test(name, _, _, _, _) => Utils.startsWith(name, "*")
+//     | _ => false
+//   });
+//   sections |> List.iter(section => switch section {
+//     | `Test(name, mainFile, files, result, versionedResults) => {
+//       if (!hasOnly || Utils.startsWith(name, "*")) {
+//         iter(name, mainFile, files, result)
+//       }
+//     }
+//     | _ => ()
+//   })
+// };
 
-let process = (lines, getResult) => {
-  let sections = TestParser.parseSections(lines);
-  let hasOnly = Belt.List.some(sections, s => switch s {
-    | `Test(name, _, _, _) => Utils.startsWith(name, "*")
-    | _ => false
-  });
-  sections |> List.map(section => switch section {
-    | `Header(name) => "### " ++ name ++ "\n"
-    | `Test(name, mainFile, files, result) => {
-      if (hasOnly && !Utils.startsWith(name, "*")) {
-        "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-        ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result))
-      } else {
-        print_endline("-----[ " ++ name ++ " ]-----");
-        /* print_endline("Running " ++ name); */
-        /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
-        let newResult = getResult(files, mainFile);
-        "=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
-        ++ (newResult == "" ? "" : "-->\n" ++ newResult ++ "\n")
-      }
-    }
-  })
-};
+// let process = (lines, getResult) => {
+//   let sections = TestParser.parseSections(lines);
+//   let hasOnly = Belt.List.some(sections, s => switch s {
+//     | `Test(name, _, _, _) => Utils.startsWith(name, "*")
+//     | _ => false
+//   });
+//   let totalTests = sections->Belt.List.keep(s => switch s { | `Test(_) => true | _ => false})|> List.length;
+//   let results = sections |> List.map(section => switch section {
+//     | `Header(name) => ("### " ++ name ++ "\n", None)
+//     | `Test(name, mainFile, files, result) => {
+//       if (hasOnly && !Utils.startsWith(name, "*")) {
+//         ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+//         ++ (result == [] ? "" : "-->\n" ++ String.concat("\n", result)), None)
+//       } else {
+//         let newResult = getResult(files, mainFile);
+//         let failed = newResult->String.trim != String.concat("\n", result)->String.trim;
+//         if (failed) {
+//           print_endline("❌ " ++ name);
+//           print_endline(newResult);
+//           print_endline("❗ Expected")
+//           print_endline(String.concat("\n", result));
+//         } else {
+//           print_endline("✅ " ++ name);
+//         };
+//         // print_endline("-----[ " ++ name ++ " ]-----");
+//         /* print_endline("Running " ++ name); */
+//         /* files |> List.iter(((name, _)) => print_endline("File: " ++ name)); */
+//         ("=== " ++ name ++ "\n" ++ TestParser.printFiles(mainFile, files) ++ "\n"
+//         ++ (newResult == "" ? "" : "-->\n" ++ newResult ++ "\n"), failed ? Some(name) : None)
+//       }
+//     }
+//   });
+//   let (sections, failures) = results -> Belt.List.reduce(([], []), ((sections, failures), (section, failure)) => (
+//     [section, ...sections],
+//     switch (failure) {
+//       | None => failures
+//       | Some(failure) => [failure, ...failures]
+//     }
+//   ));
+//   (sections->List.rev, failures->List.rev, totalTests)
+// };

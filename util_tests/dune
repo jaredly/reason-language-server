@@ -1,5 +1,4 @@
-(executable
+(library
   (name UtilTests)
-  (public_name UtilTests.exe)
-  (libraries Util)
+  (libraries Util rely.lib TestFramework)
   )

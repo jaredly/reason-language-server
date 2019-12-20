@@ -11,6 +11,9 @@ let l = More.outer + More.n + Other.inner;
 
 let n = More.n;
 
+let x = 10;
+let y = x;
+
 More.party;
 string_of_bool;
 

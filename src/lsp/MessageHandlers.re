@@ -408,8 +408,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = getPackage(uri, state);
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
-    let%try refmtPath = State.refmtForUri(uri, package);
-    let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
 
     let text = State.getContents(uri, state);
     let maybeResult = {
@@ -470,7 +468,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             |> String.concat("\n");
           };
         };
-        let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), substring, refmtPath);
+        let%try fmtCmd = State.fmtCmdForUri(
+          ~formatWidth=state.settings.formatWidth,
+          ~interface=(Utils.endsWith(uri, "i")),
+          uri,
+          package
+        );
+        let%try_wrap text = AsYouType.format(substring, fmtCmd);
         Util.JsonShort.(
           state,
           l([
@@ -540,9 +544,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = getPackage(uri, state);
     let text = State.getContents(uri, state);
-    let%try refmtPath = State.refmtForUri(uri, package);
-    let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
-    let%try_wrap newText = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), text, refmtPath);
+    let%try fmtCmd = State.fmtCmdForUri(
+      ~formatWidth=state.settings.formatWidth,
+      ~interface=(Utils.endsWith(uri, "i")),
+      uri,
+      package
+    );
+    let%try_wrap newText = AsYouType.format(text, fmtCmd);
     open Util.JsonShort;
     (state, text == newText ? Json.Null : l([o([
       ("range", Protocol.rangeOfInts(
@@ -635,6 +643,18 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         }
       | _ => Error("Unexpected command " ++ command)
     }
+  }),
+
+  ("custom:reasonLanguageServer/dumpFileData", (state, params) => {
+    open InfixResult;
+    let%try uri = RJson.get("uri", params) |?> RJson.string;
+    let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
+    let%try package = getPackage(uri, state);
+    let interfacePath = path ++ ".dump.json";
+    let%try text = State.getInterfaceFile(uri, state, ~package);
+    let%try () = Files.writeFileResult(interfacePath, text)
+    /* let interfaceUri = uri ++ "i"; */
+    Ok((state, Json.Null))
   }),
 
   ("custom:reasonLanguageServer/createInterface", (state, params) => {

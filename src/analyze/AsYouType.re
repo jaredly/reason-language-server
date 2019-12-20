@@ -52,8 +52,8 @@ let convertToRe = (~formatWidth, ~interface, text, refmt) => {
   }
 };
 
-let format = (~formatWidth, ~interface, text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse re%s", Commands.shellEscape(refmt), formatWidth |? 80, interface ? " -i true" : ""));
+let format = (text, fmtCmd) => {
+  let (out, error, success) = Commands.execFull(~input=text, fmtCmd);
   if (success) {
     Ok(String.concat("\n", out))
   } else {
@@ -151,7 +151,7 @@ let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceF
 
 let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
   let cmd = justBscCommand(~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags);
-  Log.log({|➡️ running bsc |} ++ cmd ++ " with pwd " ++ basePath);
+  Log.log({|➡️ running compiler |} ++ cmd ++ " with pwd " ++ basePath);
   let (out, error, success) = Commands.execFull(~pwd=basePath, cmd);
   if (success) {
     Ok((out, error))

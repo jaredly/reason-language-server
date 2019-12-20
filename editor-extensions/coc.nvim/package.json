@@ -1,6 +1,6 @@
 {
   "name": "coc-reason",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "lib/index.js",
   "description": "coc.nvim Reason language server extension",
   "keywords": [
@@ -25,6 +25,81 @@
   },
   "engines": {
     "coc": "^0.0.4"
+  },
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Reason language server configuration",
+      "properties": {
+        "reason_language_server.location": {
+          "type": "string",
+          "description": "Provide a custom location for the language server binary"
+        },
+        "reason_language_server.build_system_override_by_root": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "bsb:4.0.7",
+              "dune:esy",
+              "dune:opam:/abs/path/to/switch",
+              "bsb-native:4.0.7:js",
+              "bsb-native:4.0.7:bytecode",
+              "bsb-native:4.0.7:native"
+            ]
+          },
+          "description": "Only specify this if build system autodetection isn't working for you (for example if you have a bsconfig.json, and a dune file in the same project). The keys in this object should be in uri format, e.g. file:///some/path/here"
+        },
+        "reason_language_server.refmt": {
+          "type": "string",
+          "description": "Provide a custom location for the refmt binary"
+        },
+        "reason_language_server.lispRefmt": {
+          "type": "string",
+          "description": "Provide a location for the reason-lisp lispRefmt binary"
+        },
+        "reason_language_server.format_width": {
+          "type": "number",
+          "default": 80,
+          "description": "Format width (default=80)"
+        },
+        "reason_language_server.per_value_codelens": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the type for each top-level value in a codelens"
+        },
+        "reason_language_server.dependencies_codelens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the dependencies for a file at the top"
+        },
+        "reason_language_server.opens_codelens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Indicate what values have been used from an open"
+        },
+        "reason_language_server.show_module_path_on_hover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the module path on hover"
+        },
+        "reason_language_server.reloadOnChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Monitor the language server binary for updates, and restart it (for development)."
+        },
+        "reason_language_server.show_debug_errors": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show errors in the console"
+        },
+        "reason_language_server.autoRebuild": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enables autorun of bsb"
+        }
+      }
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.6.0",
