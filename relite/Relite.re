@@ -82,16 +82,16 @@ let rootLc = {beforeAll: () => (), beforeEach: () => (), afterEach: () => (), af
 
 type describeArgs('env) = {it: (string, testArgs('env) => unit) => unit}
 and describe('parentEnv) = {
-  plain: (string, describeArgs('parentEnv) => unit) => unit,
+  plain: (string, (describeArgs('parentEnv), suite('parentEnv, 'parentEnv, 'parentEnv)) => unit) => unit,
   withLifecycle:
     'allEnv 'eachEnv.
-    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => suite('parentEnv, 'allEnv, 'eachEnv),
+    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), (describeArgs('eachEnv), suite('parentEnv, 'allEnv, 'eachEnv)) => unit) => suite('parentEnv, 'allEnv, 'eachEnv),
 }
 and describeWithOptions('parentEnv) = {
-  plain: (string, describeArgs('parentEnv) => unit) => unit,
+  plain: (string, (describeArgs('parentEnv), suite('parentEnv, 'parentEnv, 'parentEnv)) => unit) => unit,
   withLifecycle:
     'allEnv 'eachEnv.
-    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => suite('parentEnv, 'allEnv, 'eachEnv),
+    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), (describeArgs('eachEnv), suite('parentEnv, 'allEnv, 'eachEnv)) => unit) => suite('parentEnv, 'allEnv, 'eachEnv),
   skip: describe('parentEnv),
 }
 and testArgs('env) = {
@@ -119,7 +119,7 @@ let makeDescribe = parent => {
   let describeWithOptions = {
     plain: (name, body) => {
       let inner = {name, lc: plainLc, skipped: false, children: []};
-      body({it: (name, body) => inner.children = [Test(name, body), ...inner.children]});
+      body({it: (name, body) => inner.children = [Test(name, body), ...inner.children]}, inner);
       parent.children = [
         suite(inner),
         ...parent.children,
@@ -127,7 +127,7 @@ let makeDescribe = parent => {
     },
     withLifecycle: (name, lc, body) => {
       let inner = {name, lc, skipped: false, children: []}
-      body({it: (name, body) => inner.children = [Test(name, body), ...inner.children]});
+      body({it: (name, body) => inner.children = [Test(name, body), ...inner.children]}, inner);
       parent.children = [
         suite(inner),
         ...parent.children,
@@ -139,7 +139,7 @@ let makeDescribe = parent => {
         let inner = {name, lc: plainLc, skipped: true, children: []};
         body({
           it: (name, body) => inner.children = [Test(name, body), ...inner.children],
-        });
+        }, inner);
         parent.children = [
           suite(inner),
           ...parent.children,
@@ -150,7 +150,7 @@ let makeDescribe = parent => {
         let inner = {name, lc, skipped: true, children: []};
         body({
           it: (name, body) => inner.children = [Test(name, body), ...inner.children],
-        });
+        }, inner);
         parent.children = [
           suite(inner),
           ...parent.children,
@@ -186,7 +186,7 @@ let beforeAfterEach = (before, after) => {
   afterAll: () => (),
 };
 
-let aSuite = describe.withLifecycle(
+describe.withLifecycle(
   "A",
   {
     beforeAll: () => {print_endline("A before all"); 10},
@@ -194,30 +194,31 @@ let aSuite = describe.withLifecycle(
     afterEach: (s: string) => print_endline("A after each" ++ s),
     afterAll: (x: int) => print_endline("A after all"),
   },
-  ({it}) => {
+  ({it}, suite) => {
   it("a1", ({expect, ctx}) => {
     expect.string(ctx).toEqual("10")
-  })
+  });
+  let describe = makeDescribe(suite);
+  describe.withLifecycle(
+    "B",
+    {
+      beforeAll: aAll => {print_endline("B before all"); aAll * 2},
+      beforeEach: num => {print_endline("B before each"); string_of_int(num)},
+      afterEach: (s: string) => print_endline("B after each " ++ s),
+      afterAll: (x: int) => print_endline("B after all"),
+    },
+    ({it}, suite) => {
+    it("b1", ({expect, ctx}) => {
+      expect.string(ctx).toEqual("20")
+    })
+    it("b2", ({expect, ctx}) => {
+      expect.string(ctx).toEqual("10")
+    })
+  });
+  ()
 });
 
-let describe = makeDescribe(aSuite);
 
-let bSuite = describe.withLifecycle(
-  "B",
-  {
-    beforeAll: aAll => {print_endline("B before all"); aAll * 2},
-    beforeEach: num => {print_endline("B before each"); string_of_int(num)},
-    afterEach: (s: string) => print_endline("B after each " ++ s),
-    afterAll: (x: int) => print_endline("B after all"),
-  },
-  ({it}) => {
-  it("b1", ({expect, ctx}) => {
-    expect.string(ctx).toEqual("20")
-  })
-  it("b2", ({expect, ctx}) => {
-    expect.string(ctx).toEqual("10")
-  })
-});
 
 /*
 
@@ -236,7 +237,6 @@ let bSuite = describe.withLifecycle(
      beforeAll: parentCtx => ctx,
      beforeEach: // it's fine actually
    })
-
  })
 
  aAll = A.beforeAll()
