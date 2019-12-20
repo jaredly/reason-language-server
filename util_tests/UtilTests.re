@@ -45,12 +45,10 @@ let caseInsensitiveFixtures = [
 let relpathFixtures = Sys.os_type == "Linux" ? relpathFixtures : relpathFixtures @ caseInsensitiveFixtures;
 
 // These tests are broken on windows -- I need to modify the tests.
-if (Sys.os_type != "Win32") {
-  describe.plain("relpath", ({it}) => {
-    relpathFixtures |> List.iter((((base, path), expected)) => {
-      it(base ++ " + " ++ path, ({expect}) => {
-        expect.string(Util.Files.relpath(base, path)).toEqual(expected)
-      })
+describe.skipIf(() => Sys.os_type == "Win32").plain("relpath", ({it}) => {
+  relpathFixtures |> List.iter((((base, path), expected)) => {
+    it(base ++ " + " ++ path, ({expect}) => {
+      expect.string(Util.Files.relpath(base, path)).toEqual(expected)
     })
   })
-}
+})

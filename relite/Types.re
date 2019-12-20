@@ -42,7 +42,7 @@ and describeWithOptions('parentEnv) = {
     unit,
 
   skip: describe('parentEnv),
-  // skipIf: ('parentEnv => bool) => describe('parentEnv),
+  skipIf: ('parentEnv => bool) => describe('parentEnv),
 }
 and testArgs('env) = {
   expect,
@@ -55,7 +55,7 @@ and lockedSuite('parentEnv) =
   | LockedSuite(suite('parentEnv, 'allEnv, 'eachEnv)): lockedSuite('parentEnv)
 and suite('parentEnv, 'allEnv, 'eachEnv) = {
   name: string,
-  skipped: bool,
+  skip: option('parentEnv => bool),
   lc: lifecycle('parentEnv, 'allEnv, 'eachEnv),
   mutable children: list(child('allEnv, 'eachEnv)),
 };

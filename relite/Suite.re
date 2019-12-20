@@ -13,41 +13,24 @@ let plainLc = {beforeAll: x => x, beforeEach: x => x, afterEach: _ => (), afterA
 let suite = suite => Suite(LockedSuite(suite));
 
 let makeDescribe = (maker, parent) => {
+  let addSuite = (name, lc, skip, body) => {
+    let inner = {name, lc, skip, children: []};
+    body(describeArgs(inner, maker));
+    parent.children = [
+      suite(inner),
+      ...parent.children,
+    ];
+  };
   let describeWithOptions = {
-    plain: (name, body) => {
-      let inner = {name, lc: plainLc, skipped: false, children: []};
-      body(describeArgs(inner, maker));
-      parent.children = [
-        suite(inner),
-        ...parent.children,
-      ];
-    },
-    withLifecycle: (name, lc, body) => {
-      let inner = {name, lc, skipped: false, children: []}
-      body(describeArgs(inner, maker));
-      parent.children = [
-        suite(inner),
-        ...parent.children,
-      ];
+    plain: (name, body) => addSuite(name, plainLc, None, body),
+    withLifecycle: (name, lc, body) => addSuite(name, lc, None, body),
+    skipIf: fn => {
+      plain: (name, body) => addSuite(name, plainLc, Some(fn), body),
+      withLifecycle: (name, lc, body) => addSuite(name, lc, Some(fn), body),
     },
     skip: {
-      plain: (name, body) => {
-        let inner = {name, lc: plainLc, skipped: true, children: []};
-        body(describeArgs(inner, maker));
-        parent.children = [
-          suite(inner),
-          ...parent.children,
-        ];
-      },
-      withLifecycle: (name, lc, body) => {
-        let children = ref([]);
-        let inner = {name, lc, skipped: true, children: []};
-        body(describeArgs(inner, maker));
-        parent.children = [
-          suite(inner),
-          ...parent.children,
-        ];
-      },
+      plain: (name, body) => addSuite(name, plainLc, Some(_ => true), body),
+      withLifecycle: (name, lc, body) => addSuite(name, lc, Some(_ => true), body),
     },
   };
   describeWithOptions;
@@ -56,7 +39,7 @@ let maker = {make: makeDescribe};
 // let describe = makeDescribe(maker, rootSuite);
 
 let rootLc = {beforeAll: () => (), beforeEach: () => (), afterEach: () => (), afterAll: () => ()};
-let root = () => {name: "Root", lc: rootLc, skipped: false, children: []};
+let root = () => {name: "Root", lc: rootLc, skip: None, children: []};
 let describe = suite => makeDescribe(maker, suite);
 
 let beforeAll = beforeAll => {

@@ -2,12 +2,14 @@ open Types;
 
 type suiteResult =
   | BeforeError(string, int)
+  | SuiteSkipped(int)
   | Results({
       afterErr: option(string),
       tests: list(childResult),
     })
 and testResult =
   | BeforeEachError(string)
+  | TestSkipped
   | TestResult({
       after: option(string),
       err: option(string),
@@ -45,8 +47,10 @@ let rec summarize = childResults => childResults->Belt.List.reduce(
   (summary, result) => switch result {
   | ChildTestResult({result: BeforeEachError(_)}) => {...summary, errors: summary.errors + 1, skipped: summary.skipped + 1}
   | ChildTestResult({result: TestResult({after, err: None})}) => {...summary, succeeded: summary.succeeded + 1, errors: summary.errors + (after == None ? 0 : 1)}
+  | ChildTestResult({result: TestSkipped}) => {...summary, skipped: summary.skipped + 1}
   | ChildTestResult({result: TestResult({after})}) => {...summary, failed: summary.failed + 1, errors: summary.errors + (after == None ? 0 : 1)}
   | SuiteResult({result: BeforeError(_, count)}) => {...summary, errors: summary.errors + 1, skipped: summary.skipped + count}
+  | SuiteResult({result: SuiteSkipped(count)}) => {...summary, skipped: summary.skipped + count}
   | SuiteResult({result: Results({afterErr, tests})}) => addSummaries(
     {...summary, errors: summary.errors + (afterErr == None ? 0 : 1)},
     summarize(tests)
@@ -70,7 +74,7 @@ type parentArgs('all, 'each) = {
 type event =
   | Start((int, int))
   | SuiteStart(string, list(string))
-  | SuiteEnd(string, list(string), suiteResult)
+  | SuiteEnd(string, list(string), suiteResult, float)
   | TestStart(string, list(string))
   | TestEnd(string, list(string), testResult)
 
@@ -93,8 +97,14 @@ let rec runSuite:
     LockedSuite(suite): lockedSuite(parentEnv),
     parent: parentArgs(parentEnv, parentEach),
   ) => {
+    let startTime = Unix.gettimeofday();
     report(SuiteStart(suite.name, trail));
-    let result = switch (catcher(() => suite.lc.beforeAll(parent.v))) {
+    let skip = switch (suite.skip) {
+      | None => false
+      | Some(f) => f(parent.v)
+    };
+    let result = if (skip) { SuiteSkipped(count(suite) |> fst) } else {
+      switch (catcher(() => suite.lc.beforeAll(parent.v))) {
     | Error(err) => BeforeError(err, count(suite) |> fst)
     | Ok(beforeAll) =>
       let trail = [suite.name, ...trail];
@@ -189,8 +199,8 @@ let rec runSuite:
           },
       });
     // TODO have a way to report both errors
-    };
-    report(SuiteEnd(suite.name, trail, result));
+    }};
+    report(SuiteEnd(suite.name, trail, result, Unix.gettimeofday() -. startTime));
     result
   };
 

@@ -2,6 +2,7 @@
   (public_name Relite.exe)
   (name Example)
   (modules Example)
+ (flags :standard -w -9 -w -30 -w -27)
   (libraries Belt Relite)
   (preprocess (pps Belt_ppx)))
 
@@ -9,4 +10,5 @@
   (name Relite)
   (libraries Belt ANSITerminal  pastel.lib)
   (modules :standard \ Example)
+ (flags :standard -w -9 -w -30 -w -27)
   (preprocess (pps Belt_ppx)))

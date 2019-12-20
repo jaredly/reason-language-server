@@ -24,8 +24,11 @@ A
 */
 
 let showSummary = ({Runner.succeeded, failed, skipped, errors}) => {
+  let total = failed + skipped + succeeded;
   [
-    Some(string_of_int(failed) ++ "/" ++ string_of_int(failed + succeeded + skipped) ++ " failed"),
+    failed > 0
+    ? Some(string_of_int(failed) ++ "/" ++ string_of_int(total) ++ " failed")
+    : Some("All " ++ string_of_int(total) ++ " succeeded"),
     skipped > 0 ? Some(string_of_int(skipped) ++ " skipped") : None,
     errors > 0 ? Some(string_of_int(errors) ++ " errors") : None
   ]->Belt.List.keepMap(x => x) |> String.concat(", ")
@@ -33,6 +36,7 @@ let showSummary = ({Runner.succeeded, failed, skipped, errors}) => {
 
 let suiteResult = fun
   | Runner.BeforeError(_) => "BeforeAll failed"
+  | SuiteSkipped(count) => "Suite skipped (" ++ string_of_int(count) ++ " tests)"
   | Results({
     tests
   }) => showSummary(Runner.summarize(tests))
@@ -46,8 +50,8 @@ let report = fun
     Printf.printf("Collected %d suites and %d tests", suites, tests);
     flush(stdout)
   }
-  | SuiteEnd(name, trail, result) => {
-    print_string("\n" ++ indent(List.length(trail) * 2) ++ name ++ " -- " ++ suiteResult(result))
+  | SuiteEnd(name, trail, result, time) => {
+    print_string("\n" ++ indent(List.length(trail) * 2) ++ name ++ " -- " ++ suiteResult(result) ++ Printf.sprintf(" took %0.2fs", time))
     flush(stdout)
   }
   | TestStart(name, trail) => {
@@ -57,6 +61,10 @@ let report = fun
   | TestEnd(name, trail, result) => {
     clear()
     print_string(indent(List.length(trail) * 2) ++ name ++ " - " ++ (Runner.success(result) ? "PASS" : "FAIL"))
+    switch result {
+      | TestResult({err: Some(err)}) => print_string("  - " ++ err)
+      | _ => ()
+    }
     flush(stdout)
   };
 

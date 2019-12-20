@@ -2,8 +2,8 @@ open TestFramework;
 
 let lc =
   Relite.Suite.beforeAfterEach(
-    () => {Files.removeDeep(TestUtils.tmp)},
     () => {Files.mkdirp(TestUtils.tmp)},
+    () => {Files.removeDeep(TestUtils.tmp)},
   );
 
 // let {describe, describeOnly} =
