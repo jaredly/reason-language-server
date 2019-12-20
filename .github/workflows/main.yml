@@ -26,8 +26,21 @@ jobs:
     - name: install esy
       run: |
         npm install -g esy
+
+    - uses: actions/cache@v1
+      if: matrix.os == 'windows-latest'
+      with:
+        path: ~/.esy
+        key: ${{ runner.os }}-node-${{ hashFiles('esy.lock/**') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Esy
       run: esy
     - name: Running some tests
       run: ./runtests.sh
       shell: bash
+
+    - name: rm the esy build stuff, don't need to cache that
+      if: matrix.os == 'windows-latest'
+      run: npx rimraf ~/.esy/3_*/b/

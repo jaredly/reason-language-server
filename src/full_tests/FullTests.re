@@ -59,6 +59,5 @@ files->Belt.List.forEach(fileName => {
       | Ok(TypeError(_message, _) | SyntaxError(_message, _, _)) =>
         print_endline("  Error compiling: " ++ uri);
     };
-    // print_endline(Analyze.State.Show.state(state, package));
   }
 });

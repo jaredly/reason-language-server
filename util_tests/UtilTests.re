@@ -1,12 +1,4 @@
-
-type test =
-  | Single(string, unit => option(string))
-  | Multiple(string, 'a => option(string), list('a)) : test;
-
-let tests = ref([]);
-let addTest = test => tests := [test, ...tests^];
-let single = (name, fn) => addTest(Single(name, fn));
-let multiple = (name, fn, items) => addTest(Multiple(name, fn, items));
+open TestFramework;
 
 let duneFile = {|
 (library
@@ -21,14 +13,11 @@ let duneFile = {|
    )
 |};
 
-single("DuneFile", () => {
-  switch (Util.JbuildFile.parse(duneFile)) {
-    | exception Failure(message) => {
-      Some("Unable to parse dune file: " ++ message)
-    }
-    | _ => None
-  };
-})
+describe.plain("DuneFile", ({it}) => {
+  it("Complex dune file", ({expect}) => {
+    Util.JbuildFile.parse(duneFile) |>  ignore
+  })
+});
 
 let relpathFixtures = [
   (("/a/b/c", "/a/b/d"), "../d"),
@@ -55,42 +44,11 @@ let caseInsensitiveFixtures = [
 // Linux is case sensitive
 let relpathFixtures = Sys.os_type == "Linux" ? relpathFixtures : relpathFixtures @ caseInsensitiveFixtures;
 
-multiple("relpath", (((base, path), expected)) => {
-  let output = Util.Files.relpath(base, path);
-  if (output == expected) {
-    None
-  } else {
-    Some(Printf.sprintf("%s + %s => %s :: expected %s", base, path, output, expected))
-  }
-}, relpathFixtures);
-
-let (failures, total) = tests^ |> List.fold_left(((failures, total), test) => {
-  switch test {
-    | Single(name, fn) => 
-    let (res, message) = switch (fn()) {
-      | None => ((failures, total + 1), "✔️")
-      | Some(message) => ((failures + 1, total + 1), "❌   " ++ message)
-    };
-    print_endline(name ++ " :: " ++ message);
-    res
-    | Multiple(name, fn, items) =>
-      let (f2, t2) = items |> List.fold_left(((failures, total), item) => {
-        let (res, message) = switch (fn(item)) {
-          | None => ((failures, total + 1), "✔️")
-          | Some(message) => ((failures + 1, total + 1), "❌   " ++ message)
-        };
-        Printf.printf("%s (%2d) :: %s\n", name, total, message);
-        res
-      }, (0, 0));
-      (f2 + failures, t2 + total)
-  }
-}, (0, 0));
-
-if (failures == 0) {
-  Printf.printf("✅ All tests passed! %d/%d\n", total, total);
-  exit(0)
-} else {
-  Printf.printf("❌ Failures: %d/%d\n", failures, total);
-  exit(0)
-
-}
+// These tests are broken on windows -- I need to modify the tests.
+describe.skipIf(() => Sys.os_type == "Win32").plain("relpath", ({it}) => {
+  relpathFixtures |> List.iter((((base, path), expected)) => {
+    it(base ++ " + " ++ path, ({expect}) => {
+      expect.string(Util.Files.relpath(base, path)).toEqual(expected)
+    })
+  })
+})
