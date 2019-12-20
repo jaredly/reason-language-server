@@ -54,10 +54,9 @@ describe.withLifecycle("AnalyzeFixtureTests", lc, ({describe}) => {
 
         switch (TestUtils.compilerForProjectDir(projectDir)) {
         | Error(e) =>
-          print_endline(
+          failwith(
             "FATAL: Unable to determine compiler + build system for project dir " ++ projectDir,
           );
-          exit(1);
         | Ok((buildSystem, compilerPath, compilerVersion)) => compilerVersion
         };
       }),
