@@ -2,6 +2,9 @@ Printexc.record_backtrace(true);
 
 open Types;
 
+module Suite = Suite;
+module Types = Types;
+
 type relite = {
   root: suite(unit, unit, unit),
   describe: describeWithOptions(unit),
@@ -17,6 +20,7 @@ let init = () => {
   }
 };
 
+let {describe, run} = init();
 
 // let showTrail = trail => List.rev(trail) |> String.concat(":");
 

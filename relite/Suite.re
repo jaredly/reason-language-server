@@ -63,7 +63,7 @@ let beforeAll = beforeAll => {
   beforeAll,
   beforeEach: x => x,
   afterEach: _ => (),
-  afterAll: () => (),
+  afterAll: _ => (),
 };
 
 let beforeEach = beforeEach => {

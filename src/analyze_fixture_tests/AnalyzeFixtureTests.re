@@ -1,15 +1,19 @@
 open TestFramework;
 
-let {describe, describeOnly} =
-  describeConfig
-  |> withLifecycle(lc =>
-       lc
-       |> beforeEach(() => {
-            Files.removeDeep(TestUtils.tmp);
-            Files.mkdirp(TestUtils.tmp);
-          })
-     )
-  |> build;
+let lc =
+  Relite.Suite.beforeAfterEach(
+    () => {Files.removeDeep(TestUtils.tmp)},
+    () => {Files.mkdirp(TestUtils.tmp)},
+  );
+
+// let {describe, describeOnly} =
+//   describeConfig
+//   |> withLifecycle(lc =>
+//        lc
+//        |> beforeEach(() => {
+//           })
+//      )
+//   |> build;
 
 module type Test = {
   let name: string;
@@ -34,65 +38,72 @@ let projectDirs = [
   ("./examples/bs-3.1.5", "npm i"),
   ("./examples/dune", "esy"),
   ("./examples/example-react", "npm i"),
-  (".", "esy")
+  (".", "esy"),
 ];
 
 let baseDir = Sys.getcwd();
-projectDirs->Belt.List.forEach(((projectDir, prepareCommand)) => {
+describe.withLifecycle("AnalyzeFixtureTests", lc, ({describe}) => {
+  projectDirs->Belt.List.forEach(((projectDir, prepareCommand)) => {
+    describe.withLifecycle(
+      projectDir,
+      Relite.Suite.beforeAll(() => {
+        let (stdout, stderr, success) = Util.Commands.execFull(~pwd=projectDir, prepareCommand);
+        if (!success) {
+          failwith("Unable to run " ++ prepareCommand ++ " in " ++ projectDir);
+        };
 
-  let {describe} =
-    describeConfig
-    |> withLifecycle(testLifecycle =>
-        testLifecycle
-        |> beforeAll(() => {
-          let (stdout, stderr, success) = Util.Commands.execFull(~pwd=projectDir, prepareCommand);
-          if (!success) {
-            failwith("Unable to run " ++ prepareCommand ++ " in " ++ projectDir)
-          }
-        })
-      )
-    |> build;
-
-  let compilerVersion = switch (TestUtils.compilerForProjectDir(projectDir)) {
-    | Error(e) =>
-      print_endline("FATAL: Unable to determine compiler + build system for project dir " ++ projectDir);
-      exit(1)
-    | Ok((buildSystem, compilerPath, compilerVersion)) =>
-      compilerVersion
-  };
-
-  // describe(projectDir, ({describe}) => {
-    tests->Belt.List.forEach(m => {
-      module M = (val m);
-      describe(
-        M.name ++ " in dir " ++ projectDir,
-        ({describe}) => {
-          let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
-          let expected = Files.readFileExn(fileName);
-          let sections = TestParser.collectSections(expected->Utils.splitLines);
-          sections->Belt.List.forEach(section => {
-            describe(section.heading, ({test}) => {
-              section.children
-              ->Belt.List.forEach(item => {
-                  test(item.name, ({expect}) => {
-                    let expected = item.versionedResults->Belt.List.getBy(((v, _)) => v == compilerVersion);
-                    let expected = switch expected {
-                      | None => item.result
-                      | Some((_, results)) => results
-                    };
-                    expect.string(
-                      M.getOutput(~projectDir=Filename.concat(baseDir, projectDir), item.otherFiles, item.mainContent)
-                      ->String.trim,
-                    ).
-                      toEqual(
-                      String.concat("\n", expected)->String.trim,
+        switch (TestUtils.compilerForProjectDir(projectDir)) {
+        | Error(e) =>
+          print_endline(
+            "FATAL: Unable to determine compiler + build system for project dir " ++ projectDir,
+          );
+          exit(1);
+        | Ok((buildSystem, compilerPath, compilerVersion)) => compilerVersion
+        };
+      }),
+      ({describe}) => {
+      tests->Belt.List.forEach(m => {
+        module M = (val m);
+        describe.plain(
+          M.name ++ " in dir " ++ projectDir,
+          ({describe}) => {
+            let fileName = "./src/analyze_fixture_tests/" ++ M.name ++ ".txt";
+            let expected = Files.readFileExn(fileName);
+            let sections = TestParser.collectSections(expected->Utils.splitLines);
+            sections->Belt.List.forEach(section => {
+              describe.plain(section.heading, ({it}) => {
+                section.children
+                ->Belt.List.forEach(item => {
+                    it(
+                      item.name,
+                      ({expect, ctx: compilerVersion}) => {
+                        let expected =
+                          item.versionedResults
+                          ->Belt.List.getBy(((v, _)) => v == compilerVersion);
+                        let expected =
+                          switch (expected) {
+                          | None => item.result
+                          | Some((_, results)) => results
+                          };
+                        expect.string(
+                          M.getOutput(
+                            ~projectDir=Filename.concat(baseDir, projectDir),
+                            item.otherFiles,
+                            item.mainContent,
+                          )
+                          ->String.trim,
+                        ).
+                          toEqual(
+                          String.concat("\n", expected)->String.trim,
+                        );
+                      },
                     )
                   })
-                })
-            })
-          });
-        },
-      );
+              })
+            });
+          },
+        );
+      })
     })
-  // })
+  })
 });

@@ -1,29 +1,19 @@
 
 open TestFramework;
+open Relite.Types;
 
 open Analyze;
+open TestFramework;
 
-let checkExampleProject = (name, rootPath, sourcePaths, prepareCommand) => {
+let checkExampleProject = (describe, name, rootPath, sourcePaths, prepareCommand) => {
 
-  // let {describe} =
-  //   describeConfig
-  //   |> withLifecycle(testLifecycle =>
-  //       testLifecycle
-  //       |> beforeAll(() => {
-  //         let (stdout, stderr, success) = Util.Commands.execFull(~pwd=root, prepareCommand);
-  //         print_endline("Ok did the " ++ prepareCommand ++ " in " ++ root);
-  //         if (!success) {
-  //           failwith("Unable to run " ++ prepareCommand ++ " in " ++ root)
-  //         }
-  //       })
-  //     )
-  //   |> build;
+  let files = sourcePaths->Belt.List.map(path => {
+    // print_endline("  Source directory " ++ path);
+    Files.collect(path, FindFiles.isSourceFile)
+  })->Belt.List.toArray->Belt.List.concatMany;
 
-  let {describe} =
-    describeConfig
-    |> withLifecycle(testLifecycle =>
-        testLifecycle
-        |> beforeAll(() => {
+  describe.withLifecycle("Examples Test " ++ name,
+  Relite.Suite.beforeAll(() => {
           let (stdout, stderr, success) = Util.Commands.execFull(~pwd=rootPath, prepareCommand);
           // print_endline("Ok did the " ++ prepareCommand ++ " in " ++ rootPath);
           if (!success) {
@@ -35,36 +25,29 @@ let checkExampleProject = (name, rootPath, sourcePaths, prepareCommand) => {
             rootUri: Util.Utils.toUri(rootPath),
           };
           state
-        })
-      )
-    |> build;
 
-  let files = sourcePaths->Belt.List.map(path => {
-    // print_endline("  Source directory " ++ path);
-    Files.collect(path, FindFiles.isSourceFile)
-  })->Belt.List.toArray->Belt.List.concatMany;
-
-  describe("Examples Test " ++ name, ({test}) => {
+  }),
+  ({it}) => {
     files->Belt.List.forEach(path => {
       let uri = Utils.toUri(path);
-      test(uri, ({expect, env: state}) => {
+      it(uri, ({expect, ctx: state}) => {
         switch (Packages.getPackage(~reportDiagnostics=(_, _) => (), uri, state)) {
           | Error(message) =>
-            expect.string("Unable to get package: " ++ message).toEqual("")
+            failwith("Unable to get package: " ++ message);
             // print_endline("  Unable to get package: " ++ uri)
             // print_endline(message);
             // [`PackageFail(uri, message), ...failures]
           | Ok(package) => switch (State.getCompilationResult(uri, state, ~package)) {
             | Error(message) =>
-              expect.string("Invalid compilation result: " ++ message).toEqual("")
+              failwith("Invalid compilation result: " ++ message)
               // print_endline("  Invalid compilation result: " ++ message);
               // [`FileFail(uri, message), ...failures]
             | Ok(Success(_)) =>
-              expect.bool(true).toBeTrue()
+              ()
               // print_endline("  Good: " ++ uri);
               // failures
             | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
-              expect.string("Error compiling: " ++ message).toEqual("")
+              failwith("Error compiling: " ++ message);
               // print_endline("  Error compiling: " ++ uri);
               // [`FileFail(uri, message)]
           }
@@ -98,7 +81,7 @@ let projects = (Sys.os_type == "Unix" ? esyProjects : []) @ [
 let baseDir = Sys.getcwd();
   projects->Belt.List.forEach(((rootName, sourcePaths, prepareCommand)) => {
     // if (args == [] || List.mem(root, args)) {
-      describe("ExamplesTests " ++ rootName, ({test}) => {
+      describe.plain("ExamplesTests " ++ rootName, ({describe}) => {
         let root = Filename.concat(baseDir, Filename.concat("examples", rootName));
 
         // print_endline("\027[43;30m# Example " ++ root ++ "\027[0m");
@@ -113,7 +96,7 @@ let baseDir = Sys.getcwd();
           // sourcePaths->Belt.List.forEach(sourcePath => {
           //   describe(sourcePath, ({test}) => checkExampleProject(root, sourcePath))
           // })
-          checkExampleProject(rootName, root, sourcePaths, prepareCommand)
+          checkExampleProject(describe, rootName, root, sourcePaths, prepareCommand)
         // }
       })
     // } else {

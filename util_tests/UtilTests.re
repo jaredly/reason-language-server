@@ -13,9 +13,9 @@ let duneFile = {|
    )
 |};
 
-describe("DuneFile", ({test}) => {
-  test("Complex dune file", ({expect}) => {
-    expect.fn(() => Util.JbuildFile.parse(duneFile)).not.toThrow()
+describe.plain("DuneFile", ({it}) => {
+  it("Complex dune file", ({expect}) => {
+    Util.JbuildFile.parse(duneFile) |>  ignore
   })
 });
 
@@ -46,9 +46,9 @@ let relpathFixtures = Sys.os_type == "Linux" ? relpathFixtures : relpathFixtures
 
 // These tests are broken on windows -- I need to modify the tests.
 if (Sys.os_type != "Win32") {
-  describe("relpath", ({test}) => {
+  describe.plain("relpath", ({it}) => {
     relpathFixtures |> List.iter((((base, path), expected)) => {
-      test(base ++ " + " ++ path, ({expect}) => {
+      it(base ++ " + " ++ path, ({expect}) => {
         expect.string(Util.Files.relpath(base, path)).toEqual(expected)
       })
     })

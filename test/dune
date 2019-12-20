@@ -1,7 +1,7 @@
 (library
   (name TestFramework)
   (modules TestFramework)
-  (libraries rely.lib))
+  (libraries Relite))
 
 (executable
   (name RunTests)
