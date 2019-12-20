@@ -267,57 +267,113 @@ let catcher = fn => switch (fn()) {
   | x => Ok(x)
 }
 
-let runSuite = (suite: suite('parentEnv, 'allEnv, 'eachEnv), parentAll: 'parentEnv, parentEach: 'parentEnv => 'parentEach, parentAfterEach: 'parentEach => unit) => {
-  switch (catcher(() => suite.lc.beforeAll(parentAll))) {
-  | Error(err) => BeforeError(err)
-  | Ok(beforeAll) =>
-    let tests = suite.children
-    ->Belt.List.map(child =>
-        switch (child) {
-        | Suite({name, lc, children}) => SuiteResult({name, result: BeforeError("WIP")})
-        | Test(name, body) =>
-          TestResult({
-            name,
-            result: {
-              switch (catcher(() => parentEach(parentAll))) {
-              | Error(err) => BeforeEachError(err)
-              | Ok(parentEach) =>
-                switch (catcher(() => suite.lc.beforeEach(beforeAll))) {
-                | Error(err) => BeforeEachError(err)
-                | Ok(ctx) =>
-                  let args: testArgs('eachEnv) = {expect, ctx};
-                  let err =
-                    switch (catcher(() => body(args))) {
-                    | Error(err) => Some(err)
-                    | Ok () => None
+// let runTest = (name, body, suite) => {
+
+// }
+
+let rec runSuite
+  // 'parentEnv.
+  // (suite('parentEnv, 'allEnv, 'eachEnv), 'parentEnv, unit => 'parentEach, 'parentEach => unit) =>
+  // suiteResult
+ =
+  (
+    suite: suite('parentEnv, 'allEnv, 'eachEnv),
+    parentAll: 'parentEnv,
+    parentEach: unit => 'parentEach,
+    parentAfterEach: 'parentEach => unit,
+  ) => (
+    {
+      switch (catcher(() => suite.lc.beforeAll(parentAll))) {
+      | Error(err) => BeforeError(err)
+      | Ok(beforeAll) =>
+        let tests =
+          suite.children
+          ->Belt.List.map(child =>
+              switch (child) {
+              | Suite(suite) =>
+                SuiteResult({
+                  name: suite.name,
+                  result: BeforeError("ah")
+                    // runSuite(
+                    //   suite,
+                    //   beforeAll,
+                    //   () => {
+                    //     let parent = parentEach();
+                    //     switch (suite.lc.beforeEach(beforeAll)) {
+                    //     | exception exn =>
+                    //       try(parentAfterEach(parent)) {
+                    //       | _ => ()
+                    //       };
+                    //       raise(exn);
+                    //     | before => (parent, before)
+                    //     };
+                    //   },
+                    //   ((parentEach, each)) => {
+                    //     let after =
+                    //       switch (suite.lc.afterEach(each)) {
+                    //       | exception exn => Some(exn)
+                    //       | () => None
+                    //       };
+                    //     let parent =
+                    //       switch (parentAfterEach(parentEah)) {
+                    //       | exception exn => Some(exn)
+                    //       | () => None
+                    //       };
+                    //     switch (parent, after) {
+                    //     | (Some(exn), _) => raise(exn)
+                    //     | (_, Some(exn)) => raise(exn)
+                    //     | _ => ()
+                    //     };
+                    //   },
+                    // ),
+                })
+              | Test(name, body) =>
+                TestResult({
+                  name,
+                  result: {
+                    switch (catcher(parentEach)) {
+                    | Error(err) => BeforeEachError(err)
+                    | Ok(parentEach) =>
+                      switch (catcher(() => suite.lc.beforeEach(beforeAll))) {
+                      | Error(err) => BeforeEachError(err)
+                      | Ok(ctx) =>
+                        let args: testArgs('eachEnv) = {expect, ctx};
+                        let err =
+                          switch (catcher(() => body(args))) {
+                          | Error(err) => Some(err)
+                          | Ok () => None
+                          };
+                        TestResult({
+                          err,
+                          after: {
+                            let parentErr = catcher(() => parentAfterEach(parentEach));
+                            let afterErr = catcher(() => suite.lc.afterEach(ctx));
+                            switch (parentErr, afterErr) {
+                            | (Error(err), _) => Some(err)
+                            | (_, Error(err)) => Some(err)
+                            | _ => None
+                            };
+                          },
+                        });
+                      }
                     };
-                  TestResult({
-                    err,
-                    after: {
-                      let parentErr = catcher(() => parentAfterEach(parentEach));
-                      let afterErr = catcher(() => suite.lc.afterEach(ctx));
-                      switch (parentErr, afterErr) {
-                      | (Error(err), _) => Some(err)
-                      | (_, Error(err)) => Some(err)
-                      | _ => None
-                      };
-                    },
-                  });
-                }
-              };
+                  },
+                })
+              }
+            );
+        Results({
+          tests,
+          afterErr:
+            switch (catcher(() => suite.lc.afterAll(beforeAll))) {
+            | Error(err) => Some(err)
+            | _ => None
             },
-          })
-        }
-      );
-    Results({
-      tests,
-      afterErr: switch (catcher(() => suite.lc.afterAll(beforeAll))) {
-        | Error(err) => Some(err)
-        | _ => None
-      }
-    })
-  };
-};
+        });
+      };
+    }: suiteResult
+    // TODO have a way to report both errors
+  );
+runSuite(rootSuite, (), () => (), () => ());
 
 // suite.children->Belt.List.forEach((Suite({name, lc, children})) => {
 //     print_endline(name);
