@@ -85,25 +85,22 @@ and describe('parentEnv) = {
   plain: (string, describeArgs('parentEnv) => unit) => unit,
   withLifecycle:
     'allEnv 'eachEnv.
-    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => unit,
-
+    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => suite('parentEnv, 'allEnv, 'eachEnv),
 }
 and describeWithOptions('parentEnv) = {
   plain: (string, describeArgs('parentEnv) => unit) => unit,
   withLifecycle:
     'allEnv 'eachEnv.
-    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => unit,
-
+    (string, lifecycle('parentEnv, 'allEnv, 'eachEnv), describeArgs('eachEnv) => unit) => suite('parentEnv, 'allEnv, 'eachEnv),
   skip: describe('parentEnv),
-  // only: describe('parentEnv),
 }
 and testArgs('env) = {
   expect,
   ctx: 'env,
-};
+}
+and
 
-// type test('eachEnv) = (string, (testArgs('eachEnv)) => unit);
-type child('allEnv, 'eachEnv) =
+child('allEnv, 'eachEnv) =
   | Test(string, testArgs('eachEnv) => unit)
   | Suite(lockedSuite('allEnv))
 and lockedSuite('parentEnv) =
@@ -121,41 +118,44 @@ let suite = suite => Suite(LockedSuite(suite));
 let makeDescribe = parent => {
   let describeWithOptions = {
     plain: (name, body) => {
-      let children = ref([]);
-      body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+      let inner = {name, lc: plainLc, skipped: false, children: []};
+      body({it: (name, body) => inner.children = [Test(name, body), ...inner.children]});
       parent.children = [
-        suite({name, lc: plainLc, skipped: false, children: children.contents}),
+        suite(inner),
         ...parent.children,
       ];
     },
     withLifecycle: (name, lc, body) => {
-      let children = ref([]);
-      body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+      let inner = {name, lc, skipped: false, children: []}
+      body({it: (name, body) => inner.children = [Test(name, body), ...inner.children]});
       parent.children = [
-        suite({name, lc, skipped: false, children: children.contents}),
+        suite(inner),
         ...parent.children,
       ];
+      inner
     },
     skip: {
       plain: (name, body) => {
-        let children = ref([]);
+        let inner = {name, lc: plainLc, skipped: true, children: []};
         body({
-          it: (name, body) => children.contents = [Test(name, body), ...children.contents],
+          it: (name, body) => inner.children = [Test(name, body), ...inner.children],
         });
         parent.children = [
-          suite({name, lc: plainLc, skipped: true, children: children.contents}),
+          suite(inner),
           ...parent.children,
         ];
       },
       withLifecycle: (name, lc, body) => {
         let children = ref([]);
+        let inner = {name, lc, skipped: true, children: []};
         body({
-          it: (name, body) => children.contents = [Test(name, body), ...children.contents],
+          it: (name, body) => inner.children = [Test(name, body), ...inner.children],
         });
         parent.children = [
-          suite({name, lc, skipped: true, children: children.contents}),
+          suite(inner),
           ...parent.children,
         ];
+        inner
       },
     },
   };
@@ -164,19 +164,6 @@ let makeDescribe = parent => {
 
 let rootSuite = {name: "Root", lc: rootLc, skipped: false, children: []};
 let describe = makeDescribe(rootSuite);
-
-// let describe = {
-//   plain: (name, body) => {
-//     let children = ref([]);
-//     body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
-//     suites.contents = [Suite({name, lc: plainLc, skipped: false, children: children.contents}), ...suites.contents];
-//   },
-//   withLifecycle: (name, lc, body) => {
-//     let children = ref([]);
-//     body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
-//     suites.contents = [Suite({name, lc: lc, skipped: false, children: children.contents}), ...suites.contents];
-//   },
-// };
 
 let beforeAll = beforeAll => {
   beforeAll,
@@ -199,16 +186,35 @@ let beforeAfterEach = (before, after) => {
   afterAll: () => (),
 };
 
-describe.withLifecycle(
+let aSuite = describe.withLifecycle(
   "A",
   {
-    beforeAll: () => {print_endline("before all"); 10},
-    beforeEach: num => {print_endline("before each"); string_of_int(num)},
-    afterEach: (s: string) => print_endline("after each"),
-    afterAll: (x: int) => print_endline("after all"),
+    beforeAll: () => {print_endline("A before all"); 10},
+    beforeEach: num => {print_endline("A before each"); string_of_int(num)},
+    afterEach: (s: string) => print_endline("A after each" ++ s),
+    afterAll: (x: int) => print_endline("A after all"),
   },
   ({it}) => {
-  it("x", ({expect, ctx}) => {
+  it("a1", ({expect, ctx}) => {
+    expect.string(ctx).toEqual("10")
+  })
+});
+
+let describe = makeDescribe(aSuite);
+
+let bSuite = describe.withLifecycle(
+  "B",
+  {
+    beforeAll: aAll => {print_endline("B before all"); aAll * 2},
+    beforeEach: num => {print_endline("B before each"); string_of_int(num)},
+    afterEach: (s: string) => print_endline("B after each " ++ s),
+    afterAll: (x: int) => print_endline("B after all"),
+  },
+  ({it}) => {
+  it("b1", ({expect, ctx}) => {
+    expect.string(ctx).toEqual("20")
+  })
+  it("b2", ({expect, ctx}) => {
     expect.string(ctx).toEqual("10")
   })
 });
@@ -323,7 +329,7 @@ let rec runSuite:
     | Error(err) => BeforeError(err)
     | Ok(beforeAll) =>
       let tests =
-        suite.children
+        suite.children->List.rev
         ->Belt.List.map(child =>
             switch (child) {
             | Suite(LockedSuite({name}) as childSuite) =>
