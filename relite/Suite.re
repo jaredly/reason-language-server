@@ -36,7 +36,6 @@ let makeDescribe = (maker, parent) => {
   describeWithOptions;
 };
 let maker = {make: makeDescribe};
-// let describe = makeDescribe(maker, rootSuite);
 
 let rootLc = {beforeAll: () => (), beforeEach: () => (), afterEach: () => (), afterAll: () => ()};
 let root = () => {name: "Root", lc: rootLc, skip: None, children: []};

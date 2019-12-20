@@ -57,6 +57,17 @@ let rec summarize = childResults => childResults->Belt.List.reduce(
   )
 });
 
+let summarizeSuite = fun
+  | BeforeError(_, count) => {failed: 0, succeeded: 0, skipped: count, errors: 1}
+  | SuiteSkipped(count) => {failed: 0, succeeded: 0, skipped: count, errors: 0}
+  | Results({
+      afterErr,
+      tests,
+    }) => {
+      let inner = summarize(tests);
+      {...inner, errors: inner.errors + (afterErr == None ? 0 : 1)}
+    };
+
 let catcher = fn =>
   switch (fn()) {
   | exception (Expect(err)) => Error("Expectation error: " ++ err)

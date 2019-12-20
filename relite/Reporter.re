@@ -35,11 +35,12 @@ let showSummary = ({Runner.succeeded, failed, skipped, errors}) => {
 };
 
 let suiteResult = fun
-  | Runner.BeforeError(_) => "BeforeAll failed"
+  | Runner.BeforeError(err, count) => "BeforeAll failed: " ++ err ++ " (skipped " ++ string_of_int(count) ++ " tests)"
   | SuiteSkipped(count) => "Suite skipped (" ++ string_of_int(count) ++ " tests)"
   | Results({
-    tests
-  }) => showSummary(Runner.summarize(tests))
+    tests,
+    afterErr,
+  }) => showSummary(Runner.summarize(tests)) ++ (switch afterErr { | None => "" | Some(e) => "  afterAll failed: " ++ e})
 
 let report = fun
   | Runner.SuiteStart(name, trail) => {
@@ -63,6 +64,7 @@ let report = fun
     print_string(indent(List.length(trail) * 2) ++ name ++ " - " ++ (Runner.success(result) ? "PASS" : "FAIL"))
     switch result {
       | TestResult({err: Some(err)}) => print_string("  - " ++ err)
+      | BeforeEachError(err) => print_string("  - beforeEach failed: " ++ err)
       | _ => ()
     }
     flush(stdout)

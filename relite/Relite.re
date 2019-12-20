@@ -16,7 +16,15 @@ let init = () => {
   {
     root,
     describe: Suite.describe(root),
-    run: () => Runner.run(~report=Reporter.report, Expect.default, root)
+    run: () => {
+      let result = Runner.run(~report=Reporter.report, Expect.default, root);
+      let summary = Runner.summarizeSuite(result);
+      if (summary.Runner.failed > 0 || summary.errors > 0) {
+        exit(1)
+      } else {
+        exit(0)
+      }
+    }
   }
 };
 
