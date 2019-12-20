@@ -5,10 +5,9 @@ type maker = {
   make: 'parentEnv 'allEnv 'eachEnv . (maker, suite('parentEnv, 'allEnv, 'eachEnv)) => describeWithOptions('allEnv),
 }
 
-
-let describeArgs = (inner, describe) => {
+let describeArgs = (inner, maker) => {
   it: (name, body) => inner.children = [Test(name, body), ...inner.children],
-  describe,
+  describe: maker.make(maker, inner),
 };
 let plainLc = {beforeAll: x => x, beforeEach: x => x, afterEach: _ => (), afterAll: _ => ()};
 let suite = suite => Suite(LockedSuite(suite));
@@ -17,7 +16,7 @@ let makeDescribe = (maker, parent) => {
   let describeWithOptions = {
     plain: (name, body) => {
       let inner = {name, lc: plainLc, skipped: false, children: []};
-      body(describeArgs(inner, maker.make(maker, inner)));
+      body(describeArgs(inner, maker));
       parent.children = [
         suite(inner),
         ...parent.children,
@@ -25,7 +24,7 @@ let makeDescribe = (maker, parent) => {
     },
     withLifecycle: (name, lc, body) => {
       let inner = {name, lc, skipped: false, children: []}
-      body(describeArgs(inner, maker.make(maker, inner)));
+      body(describeArgs(inner, maker));
       parent.children = [
         suite(inner),
         ...parent.children,
@@ -34,7 +33,7 @@ let makeDescribe = (maker, parent) => {
     skip: {
       plain: (name, body) => {
         let inner = {name, lc: plainLc, skipped: true, children: []};
-        body(describeArgs(inner, maker.make(maker, inner)));
+        body(describeArgs(inner, maker));
         parent.children = [
           suite(inner),
           ...parent.children,
@@ -43,7 +42,7 @@ let makeDescribe = (maker, parent) => {
       withLifecycle: (name, lc, body) => {
         let children = ref([]);
         let inner = {name, lc, skipped: true, children: []};
-        body(describeArgs(inner, maker.make(maker, inner)));
+        body(describeArgs(inner, maker));
         parent.children = [
           suite(inner),
           ...parent.children,

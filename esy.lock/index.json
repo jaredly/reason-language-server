@@ -1,5 +1,5 @@
 {
-  "checksum": "b2df0a107199ff52234a1ded50ecc766",
+  "checksum": "382d9c0d7c8d337566e561eb27a5d3de",
   "root": "reason-language-server@link-dev:./package.json",
   "node": {
     "rex-json@1.4.0@d41d8cd9": {
@@ -49,12 +49,14 @@
       "dependencies": [
         "rex-json@1.4.0@d41d8cd9", "ocaml@4.8.1000@d41d8cd9",
         "@reason-native/rely@3.1.0@d41d8cd9",
+        "@reason-native/pastel@0.2.2@d41d8cd9",
         "@opam/stdlib-shims@opam:0.1.0@d957c903",
         "@opam/reason@opam:3.5.2@f689c2cb",
         "@opam/ppxlib@opam:0.10.0@011ee889",
         "@opam/ppx_tools_versioned@opam:5.2.3@4994ec80",
         "@opam/ocaml-migrate-parsetree@opam:1.5.0@3e319dbc",
-        "@opam/dune@opam:1.11.4@a7ccb7ae"
+        "@opam/dune@opam:1.11.4@a7ccb7ae",
+        "@opam/ANSITerminal@opam:0.8.1@531211e6"
       ],
       "devDependencies": []
     },
@@ -953,6 +955,28 @@
       "dependencies": [ "@esy-ocaml/substs@0.0.1@d41d8cd9" ],
       "devDependencies": []
     },
+    "@opam/base-bytes@opam:base@19d0c2ff": {
+      "id": "@opam/base-bytes@opam:base@19d0c2ff",
+      "name": "@opam/base-bytes",
+      "version": "opam:base",
+      "source": {
+        "type": "install",
+        "source": [ "no-source:" ],
+        "opam": {
+          "name": "base-bytes",
+          "version": "base",
+          "path": "esy.lock/opam/base-bytes.base"
+        }
+      },
+      "overrides": [],
+      "dependencies": [
+        "ocaml@4.8.1000@d41d8cd9", "@opam/ocamlfind@opam:1.8.1@ff07b0f9",
+        "@esy-ocaml/substs@0.0.1@d41d8cd9"
+      ],
+      "devDependencies": [
+        "ocaml@4.8.1000@d41d8cd9", "@opam/ocamlfind@opam:1.8.1@ff07b0f9"
+      ]
+    },
     "@opam/base@opam:v0.13.0@93f21415": {
       "id": "@opam/base@opam:v0.13.0@93f21415",
       "name": "@opam/base",
@@ -1068,6 +1092,35 @@
       "devDependencies": [
         "ocaml@4.8.1000@d41d8cd9", "@opam/jbuilder@opam:transition@20522f05",
         "@opam/easy-format@opam:1.3.2@0484b3c4"
+      ]
+    },
+    "@opam/ANSITerminal@opam:0.8.1@531211e6": {
+      "id": "@opam/ANSITerminal@opam:0.8.1@531211e6",
+      "name": "@opam/ANSITerminal",
+      "version": "opam:0.8.1",
+      "source": {
+        "type": "install",
+        "source": [
+          "archive:https://opam.ocaml.org/cache/md5/d9/d9909496b5e47c75227453256198d1ae#md5:d9909496b5e47c75227453256198d1ae",
+          "archive:https://github.com/Chris00/ANSITerminal/releases/download/0.8.1/ANSITerminal-0.8.1.tbz#md5:d9909496b5e47c75227453256198d1ae"
+        ],
+        "opam": {
+          "name": "ANSITerminal",
+          "version": "0.8.1",
+          "path": "esy.lock/opam/ANSITerminal.0.8.1"
+        }
+      },
+      "overrides": [],
+      "dependencies": [
+        "ocaml@4.8.1000@d41d8cd9", "@opam/dune@opam:1.11.4@a7ccb7ae",
+        "@opam/base-unix@opam:base@87d0b2eb",
+        "@opam/base-bytes@opam:base@19d0c2ff",
+        "@esy-ocaml/substs@0.0.1@d41d8cd9"
+      ],
+      "devDependencies": [
+        "ocaml@4.8.1000@d41d8cd9", "@opam/dune@opam:1.11.4@a7ccb7ae",
+        "@opam/base-unix@opam:base@87d0b2eb",
+        "@opam/base-bytes@opam:base@19d0c2ff"
       ]
     },
     "@esy-ocaml/substs@0.0.1@d41d8cd9": {

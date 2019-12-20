@@ -1,5 +1,5 @@
 (executable
   (public_name Relite.exe)
   (name Relite)
-  (libraries Belt)
+  (libraries Belt ANSITerminal  pastel.lib)
   (preprocess (pps Belt_ppx)))

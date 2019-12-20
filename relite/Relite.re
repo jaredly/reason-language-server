@@ -2,7 +2,6 @@ Printexc.record_backtrace(true);
 
 open Types;
 
-
 let expect = {
   string: actual => {
     toEqual: (~message=?, expected) =>
@@ -38,44 +37,16 @@ let expect = {
   },
 };
 
-// let composeLifecycles =
-//     (
-//       parent: lifecycle('grandParentEnv, 'parentAll, 'parentEach),
-//       child: lifecycle('parentAll, 'allEnv, 'eachEnv),
-//     ): lifecycle('grandParentEnv, ('parentAll, 'allEnv), ('parentEach, 'eachEnv)) => {
-//   beforeAll: env => {
-//     let parentAll = parent.beforeAll(env);
-//     let childAll = child.beforeAll(parentAll);
-//     (parentAll, childAll)
-//   },
-//   beforeEach: ((parentAll, childAll)) => {
-//     let parentEach = parent.beforeEach(parentAll);
-//     let childEach = child.beforeEach(childAll);
-//     (parentEach, childEach)
-//   },
-//   afterEach: ((parentEach, childEach)) => {
-//     parent.afterEach(parentEach);
-//     child.afterEach(childEach);
-//   },
-//   afterAll: ((parentAll, childAll)) => {
-//     parent.afterAll(parentAll);
-//     child.afterAll(childAll);
-//   }
-// };
-
-
-open Types;
-
 let root = Suite.root();
 let describe = Suite.describe(root);
 
 describe.withLifecycle(
   "A",
   {
-    beforeAll: () => {print_endline("A before all"); 10},
-    beforeEach: num => {print_endline("A before each"); string_of_int(num)},
-    afterEach: (s: string) => print_endline("A after each" ++ s),
-    afterAll: (x: int) => print_endline("A after all"),
+    beforeAll: () => 10,
+    beforeEach: num => {string_of_int(num)},
+    afterEach: (s: string) => (),
+    afterAll: (x: int) => (),
   },
   ({it, describe}) => {
   it("a1", ({expect, ctx}) => {
@@ -85,10 +56,10 @@ describe.withLifecycle(
   describe.withLifecycle(
     "B",
     {
-      beforeAll: aAll => {print_endline("B before all"); aAll * 2},
-      beforeEach: num => {print_endline("B before each"); string_of_int(num)},
-      afterEach: (s: string) => print_endline("B after each " ++ s),
-      afterAll: (x: int) => print_endline("B after all"),
+      beforeAll: aAll => aAll * 2,
+      beforeEach: num => {string_of_int(num)},
+      afterEach: (s: string) => (),
+      afterAll: (x: int) => (),
     },
     ({it}) => {
     it("b1", ({expect, ctx}) => {
@@ -105,15 +76,15 @@ describe.withLifecycle(
 let showTrail = trail => List.rev(trail) |> String.concat(":");
 
 let showEvent = fun
-  | Runner.SuiteStart(trail) => ">> " ++ showTrail(trail)
-  | SuiteEnd(trail, result) => "<< " ++ showTrail(trail)
+  | Runner.SuiteStart(name, trail) => ">> [" ++ name ++ "] " ++ showTrail(trail)
+  | SuiteEnd(name, trail, result) => "<< " ++ name ++ "] " ++ showTrail(trail)
   | TestStart(name, trail) => "#> [" ++ name ++ "] " ++ showTrail(trail)
   | TestEnd(name, trail, testResult) => "#< [" ++ name ++ "] " ++ showTrail(trail)
 
-let report = x => {
-  print_endline(showEvent(x))
-};
-Runner.run(~report, expect, root)
+// let report = x => {
+//   print_endline(showEvent(x))
+// };
+Runner.run(~report=Reporter.report, expect, root)
 // runSuite(report, [], LockedSuite(root), {
 //   v: (),
 //   beforeEach: () => {

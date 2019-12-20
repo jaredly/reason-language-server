@@ -1,7 +1,7 @@
 open Types;
 
 type suiteResult =
-  | BeforeError(string)
+  | BeforeError(string, int)
   | Results({
       afterErr: option(string),
       tests: list(childResult),
@@ -22,6 +22,37 @@ and childResult =
       result: testResult,
     });
 
+let success = fun
+  | TestResult({after: None, err: None}) => true
+  | _ => false;
+
+type summary = {
+  succeeded: int,
+  skipped: int,
+  errors: int,
+  failed: int,
+};
+
+let addSummaries = (a, b) => {
+  succeeded: a.succeeded + b.succeeded,
+  skipped: a.skipped + b.skipped,
+  errors: a.errors + b.errors,
+  failed: a.failed + b.failed,
+}
+
+let rec summarize = childResults => childResults->Belt.List.reduce(
+  {succeeded: 0, skipped: 0, errors: 0, failed: 0},
+  (summary, result) => switch result {
+  | ChildTestResult({result: BeforeEachError(_)}) => {...summary, errors: summary.errors + 1, skipped: summary.skipped + 1}
+  | ChildTestResult({result: TestResult({after, err: None})}) => {...summary, succeeded: summary.succeeded + 1, errors: summary.errors + (after == None ? 0 : 1)}
+  | ChildTestResult({result: TestResult({after})}) => {...summary, failed: summary.failed + 1, errors: summary.errors + (after == None ? 0 : 1)}
+  | SuiteResult({result: BeforeError(_, count)}) => {...summary, errors: summary.errors + 1, skipped: summary.skipped + count}
+  | SuiteResult({result: Results({afterErr, tests})}) => addSummaries(
+    {...summary, errors: summary.errors + (afterErr == None ? 0 : 1)},
+    summarize(tests)
+  )
+});
+
 let catcher = fn =>
   switch (fn()) {
   | exception (Expect(err)) => Error("Expectation error: " ++ err)
@@ -37,10 +68,17 @@ type parentArgs('all, 'each) = {
 };
 
 type event =
-  | SuiteStart(list(string))
-  | SuiteEnd(list(string), suiteResult)
+  | SuiteStart(string, list(string))
+  | SuiteEnd(string, list(string), suiteResult)
   | TestStart(string, list(string))
   | TestEnd(string, list(string), testResult)
+
+let rec countTests
+: 'a 'b 'c . Types.suite('a, 'b, 'c) => int
+ = suite => suite.children->Belt.List.reduce(0, (sum, child) => switch child {
+  | Test(_) => sum + 1
+  | Suite(LockedSuite(suite)) => sum + countTests(suite)
+});
 
 let rec runSuite:
   type parentEnv parentEach.
@@ -52,11 +90,11 @@ let rec runSuite:
     LockedSuite(suite): lockedSuite(parentEnv),
     parent: parentArgs(parentEnv, parentEach),
   ) => {
-    let trail = [suite.name, ...trail];
-    report(SuiteStart(trail));
+    report(SuiteStart(suite.name, trail));
     let result = switch (catcher(() => suite.lc.beforeAll(parent.v))) {
-    | Error(err) => BeforeError(err)
+    | Error(err) => BeforeError(err, countTests(suite))
     | Ok(beforeAll) =>
+      let trail = [suite.name, ...trail];
       let tests =
         suite.children->List.rev
         ->Belt.List.map(child =>
@@ -149,7 +187,7 @@ let rec runSuite:
       });
     // TODO have a way to report both errors
     };
-    report(SuiteEnd(trail, result));
+    report(SuiteEnd(suite.name, trail, result));
     result
   };
 
