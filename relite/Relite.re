@@ -51,6 +51,31 @@ type lifecycle('parentEnv, 'allEnv, 'eachEnv) = {
   afterAll: 'allEnv => unit,
 };
 
+// let composeLifecycles =
+//     (
+//       parent: lifecycle('grandParentEnv, 'parentAll, 'parentEach),
+//       child: lifecycle('parentAll, 'allEnv, 'eachEnv),
+//     ): lifecycle('grandParentEnv, ('parentAll, 'allEnv), ('parentEach, 'eachEnv)) => {
+//   beforeAll: env => {
+//     let parentAll = parent.beforeAll(env);
+//     let childAll = child.beforeAll(parentAll);
+//     (parentAll, childAll)
+//   },
+//   beforeEach: ((parentAll, childAll)) => {
+//     let parentEach = parent.beforeEach(parentAll);
+//     let childEach = child.beforeEach(childAll);
+//     (parentEach, childEach)
+//   },
+//   afterEach: ((parentEach, childEach)) => {
+//     parent.afterEach(parentEach);
+//     child.afterEach(childEach);
+//   },
+//   afterAll: ((parentAll, childAll)) => {
+//     parent.afterAll(parentAll);
+//     child.afterAll(childAll);
+//   }
+// };
+
 let plainLc = {beforeAll: x => x, beforeEach: x => x, afterEach: _ => (), afterAll: _ => ()};
 
 let rootLc = {beforeAll: () => (), beforeEach: () => (), afterEach: () => (), afterAll: () => ()};
@@ -74,7 +99,7 @@ and describeWithOptions('parentEnv) = {
 }
 and testArgs('env) = {
   expect,
-  env: 'env,
+  ctx: 'env,
 };
 
 // type test('eachEnv) = (string, (testArgs('eachEnv)) => unit);
@@ -87,7 +112,7 @@ and suite('parentEnv, 'allEnv, 'eachEnv) = {
   lc: lifecycle('parentEnv, 'allEnv, 'eachEnv),
   mutable children: list(child('eachEnv)),
 };
-let suites = ref([]);
+// let suites = ref([]);
 
 let makeDescribe = parent => {
   let describeWithOptions = {
@@ -117,17 +142,46 @@ let makeDescribe = parent => {
   describeWithOptions
 };
 
-let describe = {
-  plain: (name, body) => {
-    let children = ref([]);
-    body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
-    suites.contents = [Suite({name, lc: plainLc, skipped: false, children: children.contents}), ...suites.contents];
-  },
-  withLifecycle: (name, lc, body) => {
-    let children = ref([]);
-    body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
-    suites.contents = [Suite({name, lc: lc, skipped: false, children: children.contents}), ...suites.contents];
-  },
+let rootSuite = {
+  name: "Root",
+  lc: rootLc,
+  skipped: false,
+  children: [],
+};
+let describe = makeDescribe(rootSuite);
+
+// let describe = {
+//   plain: (name, body) => {
+//     let children = ref([]);
+//     body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+//     suites.contents = [Suite({name, lc: plainLc, skipped: false, children: children.contents}), ...suites.contents];
+//   },
+//   withLifecycle: (name, lc, body) => {
+//     let children = ref([]);
+//     body({it: (name, body) => children.contents = [Test(name, body), ...children.contents]});
+//     suites.contents = [Suite({name, lc: lc, skipped: false, children: children.contents}), ...suites.contents];
+//   },
+// };
+
+let beforeAll = beforeAll => {
+  beforeAll,
+  beforeEach: x => x,
+  afterEach: _ => (),
+  afterAll: () => (),
+};
+
+let beforeEach = beforeEach => {
+  beforeAll: () => (),
+  beforeEach,
+  afterEach: _ => (),
+  afterAll: () => (),
+};
+
+let beforeAfterEach = (before, after) => {
+  beforeAll: () => (),
+  beforeEach: before,
+  afterEach: after,
+  afterAll: () => (),
 };
 
 describe.withLifecycle(
@@ -139,53 +193,174 @@ describe.withLifecycle(
     afterAll: (x: int) => (),
   },
   ({it}) => {
-  it("x", ({expect, env}) => {
-    expect.string(env).toEqual("10")
+  it("x", ({expect, ctx}) => {
+    expect.string(ctx).toEqual("10")
   })
 });
 
-suites.contents
-->Belt.List.forEach((Suite({name, lc, children})) => {
-    print_endline(name);
-    let allEnv = lc.beforeAll();
-    children->Belt.List.forEach(child => {
-      switch child {
-        | Test(name, body) =>
-      switch (
-        {
-          lc.beforeEach(allEnv);
-        }
-      ) {
-      | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
-      | exception (Failure(err)) => print_endline("Failure: " ++ err)
-      | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
-      | before =>
-        print_endline(name);
-        switch (
-          {
-            body({env: before, expect});
-          }
-        ) {
-        | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
-        | exception (Failure(err)) => print_endline("Failure: " ++ err)
-        | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
-        | () =>
-          switch (
-            {
-              lc.afterEach(before);
-            }
-          ) {
-          | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
-          | exception (Failure(err)) => print_endline("Failure: " ++ err)
-          | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
-          | () => print_endline("Done")
-          }
-        };
-      }
-      | _ => ()
-      }
-    });
+/*
+
+A
+- a1
+- B
+  - b1
+  - b2
+
+describe.withLifecycle("A", lc, ({describe, test}) => {
+  test.it("a1", ({expect, ctx}) => {
+
   });
+
+  describe.withLifecycle("B", {
+    beforeAll: parentCtx => ctx,
+    beforeEach: // it's fine actually
+  })
+  
+})
+
+aAll = A.beforeAll()
+  aEach = A.beforeEach(aAll)
+    a1(aEach)
+  A.afterEach(aEach)
+  bAll = B.beforeAll(aAll)
+    aEach = A.beforeEach(aAll)
+    bEach = B.beforeEach(bAll) // also aEach?
+      b1(bEach)
+    B.afterEach(bEach)
+    A.afterEach(aEach)
+    aEach = A.beforeEach(aAll)
+    bEach = B.beforeEach(bEach) // also aEach
+      b2(bEach)
+    B.afterEach(bEach)
+    A.afterEach(aEach)
+  B.afterAll(bAll)
+A.afterAll(aAll)
+
+*/
+
+type suiteResult =
+  | BeforeError(string)
+  | Results({
+      afterErr: option(string),
+      tests: list(childResult),
+    })
+and testResult =
+  | BeforeEachError(string)
+  | TestResult({
+      after: option(string),
+      err: option(string),
+    })
+and childResult =
+  | SuiteResult({
+      name: string,
+      result: suiteResult,
+    })
+  | TestResult({
+      name: string,
+      result: testResult,
+    });
+
+let catcher = fn => switch (fn()) {
+  | exception (Expect(err)) => Error("Expectation error: " ++ err)
+  | exception (Failure(err)) => Error("Failure: " ++ err)
+  | exception exn => Error("Other error: " ++ Printexc.to_string(exn))
+  | x => Ok(x)
+}
+
+let runSuite = (suite: suite('parentEnv, 'allEnv, 'eachEnv), parentAll: 'parentEnv, parentEach: 'parentEnv => 'parentEach, parentAfterEach: 'parentEach => unit) => {
+  switch (catcher(() => suite.lc.beforeAll(parentAll))) {
+  | Error(err) => BeforeError(err)
+  | Ok(beforeAll) =>
+    let tests = suite.children
+    ->Belt.List.map(child =>
+        switch (child) {
+        | Suite({name, lc, children}) => SuiteResult({name, result: BeforeError("WIP")})
+        | Test(name, body) =>
+          TestResult({
+            name,
+            result: {
+              switch (catcher(() => parentEach(parentAll))) {
+              | Error(err) => BeforeEachError(err)
+              | Ok(parentEach) =>
+                switch (catcher(() => suite.lc.beforeEach(beforeAll))) {
+                | Error(err) => BeforeEachError(err)
+                | Ok(ctx) =>
+                  let args: testArgs('eachEnv) = {expect, ctx};
+                  let err =
+                    switch (catcher(() => body(args))) {
+                    | Error(err) => Some(err)
+                    | Ok () => None
+                    };
+                  TestResult({
+                    err,
+                    after: {
+                      let parentErr = catcher(() => parentAfterEach(parentEach));
+                      let afterErr = catcher(() => suite.lc.afterEach(ctx));
+                      switch (parentErr, afterErr) {
+                      | (Error(err), _) => Some(err)
+                      | (_, Error(err)) => Some(err)
+                      | _ => None
+                      };
+                    },
+                  });
+                }
+              };
+            },
+          })
+        }
+      );
+    Results({
+      tests,
+      afterErr: switch (catcher(() => suite.lc.afterAll(beforeAll))) {
+        | Error(err) => Some(err)
+        | _ => None
+      }
+    })
+  };
+};
+
+// suite.children->Belt.List.forEach((Suite({name, lc, children})) => {
+//     print_endline(name);
+//     let allEnv = lc.beforeAll();
+//     children->Belt.List.forEach(child => {
+//       switch child {
+//         | Test(name, body) =>
+//       switch (
+//         {
+//           lc.beforeEach(allEnv);
+//         }
+//       ) {
+//       | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
+//       | exception (Failure(err)) => print_endline("Failure: " ++ err)
+//       | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
+//       | before =>
+//         print_endline(name);
+//         switch (
+//           {
+//             body({env: before, expect});
+//           }
+//         ) {
+//         | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
+//         | exception (Failure(err)) => print_endline("Failure: " ++ err)
+//         | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
+//         | () =>
+//           switch (
+//             {
+//               lc.afterEach(before);
+//             }
+//           ) {
+//           | exception (Expect(err)) => print_endline("Expectation error: " ++ err)
+//           | exception (Failure(err)) => print_endline("Failure: " ++ err)
+//           | exception exn => print_endline("Other error: " ++ Printexc.to_string(exn))
+//           | () => print_endline("Done")
+//           }
+//         };
+//       }
+//       | _ => ()
+//       }
+//     });
+//   });
+// }
 
 /*
 
