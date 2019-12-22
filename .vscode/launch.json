@@ -99,7 +99,31 @@
 			"sourceMaps": false,
 		},
 		{
-			"name": "Launch Esy Dune Project",
+			"name": "Esy dune 4.08",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/examples/dune"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
+			"name": "Esy dune 4.07",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/examples/dune-4.07"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
+			"name": "Esy dune 4.06",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",

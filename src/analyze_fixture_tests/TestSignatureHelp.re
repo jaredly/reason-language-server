@@ -15,7 +15,7 @@ let getOutput = (~projectDir, files, text) => {
     let parts = Str.split(Str.regexp_string("."), string);
     let parts = string.[String.length(string) - 1] == '.' ? parts @ [""] : parts;
     let rawOpens = PartialParser.findOpens(text, offset);
-    let useMarkdown = !state.settings.clientNeedsPlainText;
+    // let useMarkdown = !state.settings.clientNeedsPlainText;
     let allModules = package.localModules;
     Log.log(showExtra(full.extra));
     NewCompletions.get(

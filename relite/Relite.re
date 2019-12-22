@@ -1,3 +1,4 @@
+[@ocaml.warning "-23"];
 Printexc.record_backtrace(true);
 
 open Types;

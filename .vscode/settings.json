@@ -7,7 +7,7 @@
   "git.enabled": true,
   "editor.codeLens": true,
   // "reason_language_server.location": "./lib/bs/native/bin.native",
-  "reason_language_server.location": "./bin.exex",
+  "reason_language_server.location": "./bin.exe",
   // "reason_language_server.show_debug_errors": true,
   "reason_language_server.format_width": 100,
   // "reason_language_server.location": "./lib/bs/native/bin.native.exe",
