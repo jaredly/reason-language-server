@@ -9,21 +9,7 @@ let indent = n => {
 
 let clear = () => {
   print_string("\r\027[2K");
-  // ()
-  // ANSITerminal.move_bol();
-  // ANSITerminal.erase(ANSITerminal.Eol)
 }
-
-/*
-
-A
-- a1
-- B
-  - b1
-  - b2
-
-
-*/
 
 let showSummary = ({Runner.succeeded, failed, skipped, errors}) => {
   let total = failed + skipped + succeeded;
