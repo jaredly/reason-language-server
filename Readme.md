@@ -150,6 +150,13 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - Install the VS Code extension's dependencies `cd editor-extensions/vscode && npm i && cd ../..`
 - Open this project in VS Code
 
+### Running the test suite
+
+- `esy cp-test`
+- `./RunTests.exe`
+
+NOTE it's important that you don't run the `RunTests.exe` from within an esy shell (e.g. `esy dune exec RunTests.exe`) -- the variables esy sets will mess things up.
+
 ### Building the OCaml grammar
 - Edit the files in editor-extensions/vscode/src/syntaxes
 - Run `cd editor-extensions/vscode && npm run build-syntaxes`

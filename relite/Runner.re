@@ -1,5 +1,41 @@
 open Types;
 
+type filter =
+  | Substr(string)
+  | Exactly(list(list(string)))
+
+let contains = (haystack, needle) => {
+  switch (Str.search_forward(Str.regexp_string(needle), haystack, 0)) {
+    | exception Not_found => false
+    | _ => true
+  }
+};
+
+let rec filterChild
+: 'a 'b . (list(string), filter, child('a, 'b)) => option(child('a, 'b))
+ = (trail, filter, child) => switch child {
+  | Test(name, body) => (switch filter {
+    | Substr(needle) => name->contains(needle)
+    | Exactly(items) => items->Belt.List.has([name, ...trail], (==))
+  }) ? Some(child) : None
+  | Suite(LockedSuite({name, children} as suite)) => (switch filter {
+    | Substr(needle) => name->contains(needle)
+    | Exactly(items) => items->Belt.List.has([name, ...trail], (==))
+  }) ? Some(child) : {
+    let children = children->Belt.List.keepMap(filterChild([name, ...trail], filter));
+    if (children != []) {
+      Some(Suite(LockedSuite({...suite, children})))
+    } else {
+      None
+    }
+  }
+};
+
+let filterSuite = (suite, filter) => {
+  let children = suite.children->Belt.List.keepMap(filterChild([], filter));
+  {...suite, children}
+}
+
 type suiteResult =
   | BeforeError(string, int)
   | SuiteSkipped(int)
@@ -27,6 +63,8 @@ and childResult =
 let success = fun
   | TestResult({after: None, err: None}) => true
   | _ => false;
+
+// let suiteSuccess = fun
 
 type summary = {
   succeeded: int,
@@ -56,6 +94,24 @@ let rec summarize = childResults => childResults->Belt.List.reduce(
     summarize(tests)
   )
 });
+
+let rec failingPaths = (trail, childResults) => childResults->Belt.List.reduce(
+  [],
+  (paths, result) => switch result {
+  // Success or skipped
+  | ChildTestResult({result: TestResult({err: None})})
+  | ChildTestResult({result: TestSkipped})
+  | SuiteResult({result: SuiteSkipped(_)}) => paths
+  // Failing
+  | ChildTestResult({name, result: BeforeEachError(_)})
+  | ChildTestResult({name, result: TestResult(_)}) => [[name, ...trail], ...paths]
+  | SuiteResult({name, result: BeforeError(_, count)}) => [[name, ...trail], ...paths]
+  | SuiteResult({name, result: Results({tests})}) => failingPaths([name, ...trail], tests) @ paths
+});
+
+let suiteFailingPaths = fun
+  | Results({tests}) => failingPaths([], tests)
+  | _ => [];
 
 let summarizeSuite = fun
   | BeforeError(_, count) => {failed: 0, succeeded: 0, skipped: count, errors: 1}
@@ -100,7 +156,13 @@ let rec count
 
 let rec runSuite:
   type parentEnv parentEach.
-    (expect, event => unit, list(string), lockedSuite(parentEnv), parentArgs(parentEnv, parentEach)) => suiteResult =
+    (
+      expect,
+      event => unit,
+      list(string),
+      lockedSuite(parentEnv),
+      parentArgs(parentEnv, parentEach),
+    ) => suiteResult =
   (
     expect,
     report,
@@ -218,8 +280,8 @@ let rec runSuite:
 let run = (~report=x => (), expect, suite) => {
   report(Start(count(suite)));
   runSuite(expect, report, [], LockedSuite(suite), {
-  v: (),
-  beforeEach: () => (),
-  afterEach: () => (),
-})
+    v: (),
+    beforeEach: () => (),
+    afterEach: () => (),
+  })
 };

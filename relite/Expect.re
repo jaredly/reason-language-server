@@ -6,7 +6,7 @@ let default = {
       if (actual != expected) {
         failwith(
           Printf.sprintf(
-            "Expected %s to equal %s : %s",
+            "Expected \"%s\" to equal \"%s\" : %s",
             actual,
             expected,
             switch (message) {

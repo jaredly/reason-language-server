@@ -26,3 +26,4 @@ _esy/
 bin.exe
 ExamplesTests.exe
 AllTests.exe
+.test-failures
