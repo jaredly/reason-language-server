@@ -1,0 +1,206 @@
+name: github release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+
+      # Check the issue
+      - working-directory: .github/actions
+        id: check
+        run: node check.js
+
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: check
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10
+
+      - name: setup
+        run: npm i -g esy
+
+      - uses: actions/cache@v1
+        if: matrix.os == 'windows-latest'
+        with:
+          path: ~/.esy
+          key: ${{ runner.os }}-node-${{ hashFiles('esy.lock/**') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # - uses: actions/cache@v1
+      #   with:
+      #     path: ~/.esy
+      #     key: ${{ runner.os }}-node-${{ hashFiles('esy.lock/**') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-node-
+
+      - name: Esy
+        run: esy
+      - name: Running some tests
+        run: ./runtests.sh
+        shell: bash
+      - name: cp-bin
+        run: esy cp-bin
+
+      - name: Upload artifacts ${{ matrix.os }}
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ matrix.os }}
+          path: bin.exe
+
+      # - name: rm the esy build stuff, don't need to cache that
+      #   run: rm -r ~/.esy/3_*/b/
+      - name: rm the esy build stuff, don't need to cache that
+        if: matrix.os == 'windows-latest'
+        run: npx rimraf ~/.esy/3_*/b/
+
+  publish:
+    needs: build
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download linux artifacts
+        uses: actions/download-artifact@master
+        with:
+          name: ubuntu-latest
+          path: binaries/linux
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@master
+        with:
+          name: macOS-latest
+          path: binaries/darwin
+
+      - name: Download windows artifacts
+        uses: actions/download-artifact@master
+        with:
+          name: windows-latest
+          path: binaries/windows
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=`node -e 'console.log(require("./editor-extensions/vscode/package.json").version)'`
+          echo "::set-output name=version::${VERSION}"
+
+      - name: Make zips
+        run: |
+
+          # https://docs.microsoft.com/en-us/azure/devops/pipelines/artifacts/build-artifacts?view=azure-devops&tabs=yaml
+          mkdir -p rls-windows
+          cp -r binaries/windows/bin.exe ./rls-windows/reason-language-server.exe
+          zip -r rls-windows.zip rls-windows
+
+          mkdir -p rls-linux
+          cp -r binaries/linux/bin.exe ./rls-linux/reason-language-server
+          chmod +x rls-linux/reason-language-server
+          zip -r rls-linux.zip rls-linux
+
+          mkdir -p rls-macos
+          cp -r binaries/darwin/bin.exe ./rls-macos/reason-language-server
+          chmod +x rls-macos/reason-language-server
+          zip -r rls-macos.zip rls-macos
+
+
+      - name: Bundle up the vsix
+        run: |
+          cd editor-extensions/vscode
+          # Todo use more descriptive names for these binaries
+          cp ../../binaries/darwin/bin.exe ./bin.native
+          cp ../../binaries/windows/bin.exe ./bin.native.exe
+          cp ../../binaries/linux/bin.exe ./bin.native.linux
+          npm i
+          chmod +x bin.native.exe
+          chmod +x bin.native.linux
+          chmod +x bin.native
+          npx vsce@1.53.2 package --out ../../reason-vscode-${{ steps.version.outputs.version }}.vsix
+
+      - name: Upload package tarball
+        uses: actions/upload-artifact@master
+        with:
+          name: package
+          path: reason-vscode-${{ steps.version.outputs.version }}.vsix
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          draft: true
+          prerelease: false
+
+      - name: Upload VSIX
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: reason-vscode-${{ steps.version.outputs.version }}.vsix
+          asset_name: reason-vscode-${{ steps.version.outputs.version }}.vsix
+          asset_content_type: application/zip
+
+      - name: Upload Windows Zip
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: rls-windows.zip
+          asset_name: rls-windows.zip
+          asset_content_type: application/zip
+
+      - name: Upload Linux Zip
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: rls-linux.zip
+          asset_name: rls-linux.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS Zip
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: rls-macos.zip
+          asset_name: rls-macos.zip
+          asset_content_type: application/zip
+
+      # - name: Tag it up
+      #   run: |
+      #     git tag $(node -e 'process.stdout.write(require("./editor-extensions/vscode/package.json").version)')
+      #     git push --tags https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
