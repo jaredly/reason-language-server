@@ -24,4 +24,5 @@ editor-extensions/vscode/src/syntaxes/out
 bsb_modules
 _esy/
 bin.exe
-ExamplesTests.exe
+.test-failures
+RunTests.exe

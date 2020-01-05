@@ -52,74 +52,12 @@ let convertToRe = (~formatWidth, ~interface, text, refmt) => {
   }
 };
 
-let format = (~formatWidth, ~interface, text, refmt) => {
-  let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse re%s", Commands.shellEscape(refmt), formatWidth |? 80, interface ? " -i true" : ""));
+let format = (text, fmtCmd) => {
+  let (out, error, success) = Commands.execFull(~input=text, fmtCmd);
   if (success) {
     Ok(String.concat("\n", out))
   } else {
     Error(String.concat("\n", out @ error))
-  }
-};
-
-let parseTypeError = text => {
-  /* let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:"); */
-  let rx = Str.regexp({|File "[^"]*", line \([0-9]+\), characters \([0-9]+\)-\([0-9]+\):
-?|});
-  if (Str.string_match(rx, text, 0)) {
-    let line = Str.matched_group(1, text) |> int_of_string;
-    let c0 = Str.matched_group(2, text) |> int_of_string;
-    let c1 = Str.matched_group(3, text) |> int_of_string;
-    let final = Str.match_end();
-    Some((line - 1, c0, c1, String.sub(text, final, String.length(text) - final)))
-  } else {
-    Log.log("Cannot parse type error: " ++ text);
-    None
-  }
-};
-
-let parseLoc = text => {
-  /* let rx = Str.regexp("File \"[^\"]+\", line ([0-9]), characters ([0-9])+-([0-9])+:"); */
-  let rx = Str.regexp({|File "[^"]*", line \([0-9]+\), characters \([0-9]+\)-\([0-9]+\):|});
-  if (Str.string_match(rx, text, 0)) {
-    let line = Str.matched_group(1, text) |> int_of_string;
-    let c0 = Str.matched_group(2, text) |> int_of_string;
-    let c1 = Str.matched_group(3, text) |> int_of_string;
-    Some((line - 1, c0, c1))
-  } else {
-    /* Log.log("Cannot parse type error: " ++ text); */
-    None
-  }
-};
-
-let parseErrors = lines => {
-  let rec loop = lines => switch lines {
-    | [] => ([], [])
-    | [line, ...rest] => {
-      let (tail, items) = loop(rest);
-      switch (parseLoc(line)) {
-        | None => ([line, ...tail], items)
-        | Some(loc) => ([], [(loc, tail), ...items])
-      }
-    }
-  };
-  let (tail, errors) = loop(lines);
-  let errors = tail == [] ? errors : [((0, 0, 0), tail), ...errors];
-
-  errors
-};
-
-let parseDependencyError = text => {
-  let rx = Str.regexp({|Error: The files \(.+\)\.cmi
-       and \(.+\)\.cmi
-       make inconsistent assumptions over interface \([A-Za-z_-]+\)|});
-
-  switch (Str.search_forward(rx, text, 0)) {
-  | exception Not_found => None
-  | _ =>
-    let dep = Str.matched_group(1, text) |> Filename.basename |> String.capitalize_ascii;
-    let base = Str.matched_group(2, text) |> Filename.basename |> String.capitalize_ascii;
-    let interface = Str.matched_group(3, text);
-    Some((dep, base, interface))
   }
 };
 
@@ -151,7 +89,7 @@ let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceF
 
 let runBsc = (~basePath, ~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
   let cmd = justBscCommand(~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags);
-  Log.log({|➡️ running bsc |} ++ cmd ++ " with pwd " ++ basePath);
+  Log.log({|➡️ running compiler |} ++ cmd ++ " with pwd " ++ basePath);
   let (out, error, success) = Commands.execFull(~pwd=basePath, cmd);
   if (success) {
     Ok((out, error))
@@ -268,7 +206,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
             /** TODO also report the type errors / warnings from the partial result */
             SyntaxError(String.concat("\n", s), errorText, {file, extra})
           | None => {
-            let errorText = switch (parseDependencyError(errorText)) {
+            let errorText = switch (ErrorParser.parseDependencyError(errorText)) {
               | Some((name, _oname, _iface)) => errorText ++ "\n\nThis is likely due to an error in module " ++ name
               | None => errorText
             };

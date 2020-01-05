@@ -1,4 +1,4 @@
-let getOutput = (_files, text) =>
+let getOutput = (~projectDir, _files, text) =>
   try (
     "PASS: "
     ++ (

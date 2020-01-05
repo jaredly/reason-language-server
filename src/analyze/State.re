@@ -174,6 +174,41 @@ let refmtForUri = (uri, package) =>
     }
   };
 
+let fmtCmdForUri = (~formatWidth, ~interface, uri, package) => {
+  if (Filename.check_suffix(uri, ".ml") || Filename.check_suffix(uri, ".mli")) {
+    switch (package.mlfmtPath) {
+    | None => Error("No formatter available for .ml(i) files")
+    | Some(fmtPath) => Ok(fmtPath);
+    };
+  } else if (Filename.check_suffix(uri, ".rel")
+             || Filename.check_suffix(uri, ".reli")) {
+    switch (package.lispRefmtPath) {
+    | None =>
+      Error("No lispRefmt path found, cannot process .rel or .reli files")
+    | Some(lispRefmt) =>
+      let cmd = Printf.sprintf(
+        "%s --print re --print-width=%d --parse re%s",
+        Commands.shellEscape(lispRefmt),
+        formatWidth |? 80,
+        interface ? " -i true" : "",
+      );
+      Ok(cmd);
+    };
+  } else {
+    switch (package.refmtPath) {
+    | None => Error("No refmt found for dune project. Cannot process .re file")
+    | Some(refmt) =>
+      let cmd = Printf.sprintf(
+        "%s --print re --print-width=%d --parse re%s",
+        Commands.shellEscape(refmt),
+        formatWidth |? 80,
+        interface ? " -i true" : "",
+      );
+      Ok(cmd);
+    };
+  };
+};
+
 open Infix;
 
 let getInterfaceFile = (uri, state, ~package: TopTypes.package) => {

@@ -175,12 +175,12 @@ let parseString = (text, pos) => {
 };
 
 let rec skipComment = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
-  | '\n' => i + 1
+  | '\n' | '\r' => i + 1
   | _ => skipComment(raw, ln, i + 1)
 };
 
 let rec skipWhite = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
-  | ' ' | '\n' | '\t' => skipWhite(raw, ln, i + 1)
+  | ' ' | '\n' | '\r' | '\t' => skipWhite(raw, ln, i + 1)
   | ';' => skipWhite(raw, ln, skipComment(raw, ln, i + 1))
   | _ => i
 };

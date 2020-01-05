@@ -38,7 +38,6 @@ let capabilities =
       ("documentHighlightProvider", t),
       ("documentRangeFormattingProvider", t),
       ("documentFormattingProvider", t),
-      ("documentFormattingProvider", t),
       ("renameProvider", t)
     ])
 );

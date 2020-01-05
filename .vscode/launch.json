@@ -99,43 +99,31 @@
 			"sourceMaps": false,
 		},
 		{
-			"name": "Esy Dune 4.06",
+			"name": "Esy dune 4.08",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
-				"${workspaceRoot}/../esy-dune-4.06"
+				"${workspaceRoot}/examples/dune"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,
 		},
 		{
-			"name": "Esy",
+			"name": "Esy dune 4.07",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
-				"${workspaceRoot}/examples/markdown-reason-react"
+				"${workspaceRoot}/examples/dune-4.07"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,
 		},
 		{
-			"name": "Lisp.re",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
-				"${workspaceRoot}/../myntax/example"
-			],
-			"stopOnEntry": false,
-			"sourceMaps": false,
-		},
-		{
-			"name": "Launch Esy Dune Project",
+			"name": "Esy dune 4.06",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
@@ -154,6 +142,18 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
 				"${workspaceRoot}/examples/example-opam-dune-project"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
+			"name": "Lisp.re",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/../myntax/example"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": false,

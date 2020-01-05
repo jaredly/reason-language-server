@@ -29,6 +29,7 @@ type package = {
   buildCommand: option((string, string)),
   compilerPath: filePath,
   compilerVersion: BuildSystem.compilerVersion,
+  mlfmtPath: option(filePath),
   refmtPath: option(filePath),
   /** TODO maybe make this general, so that I can support arbitrary syntaxes? */
   lispRefmtPath: option(filePath),
@@ -37,6 +38,7 @@ type package = {
 type settings = {
   formatWidth: option(int),
   perValueCodelens: bool,
+  mlfmtLocation: option(string),
   refmtLocation: option(string),
   lispRefmtLocation: option(string),
   opensCodelens: bool,
@@ -46,7 +48,6 @@ type settings = {
   showModulePathOnHover: bool,
   recordAllLocations: bool,
   autoRebuild: bool,
-  useOldDuneProcess: bool,
   buildSystemOverrideByRoot: list((string, BuildSystem.t))
 };
 
@@ -83,6 +84,7 @@ let empty = () => {
   lastDefinitions: Hashtbl.create(10),
   settings: {
     formatWidth: None,
+    mlfmtLocation: None,
     refmtLocation: None,
     lispRefmtLocation: None,
     crossFileAsYouType: false,
@@ -93,7 +95,6 @@ let empty = () => {
     showModulePathOnHover: true,
     recordAllLocations: false,
     autoRebuild: true,
-    useOldDuneProcess: false,
     buildSystemOverrideByRoot: [],
   },
 };

@@ -1,7 +1,7 @@
 
 open SharedTypes;
 
-let debugReferences = ref(false);
+let debugReferences = ref(true);
 
 let maybeLog = m => {
   if (debugReferences^) {
