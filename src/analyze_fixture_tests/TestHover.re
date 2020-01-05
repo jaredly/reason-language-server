@@ -5,9 +5,9 @@ let name = "TestHover";
 
 let showPos = ((l, c)) => string_of_int(l) ++ ", " ++ string_of_int(c);
 
-let getOutput = (files, mainFile) => {
+let getOutput = (~projectDir, files, mainFile) => {
   let (files, text, waypoints) = TestUtils.combinedWaypoints(files, mainFile);
-  let (state, package, _, _) = TestUtils.setUp(files, text);
+  let (state, package, _, _) = TestUtils.setUp(~projectDir, files, text);
   let num = List.length(waypoints);
 
   /* TODO refactor this bunch out */

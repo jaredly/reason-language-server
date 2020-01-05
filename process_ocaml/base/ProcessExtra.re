@@ -1,5 +1,7 @@
 
-#if 407
+#if 408
+open Compiler_libs_408;
+#elif 407
 open Compiler_libs_407;
 #elif 406
 open Compiler_libs_406;
@@ -13,7 +15,11 @@ open Infix;
 let handleConstructor = (path, txt) => {
   let typeName =
     switch path {
+#if 408
+    | Path.Pdot(_path, typename) => typename
+#else
     | Path.Pdot(_path, typename, _) => typename
+#endif
     | Pident(ident) => Ident.name(ident)
     | _ => assert false
     };
@@ -28,8 +34,22 @@ let handleConstructor = (path, txt) => {
 
 let rec relative = (ident, path) =>
   switch (ident, path) {
-  | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
-  | (Longident.Ldot(ident, name), Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
+  | (Longident.Lident(name),
+#if 408
+     Path.Pdot(path, pname))
+#else
+     Path.Pdot(path, pname, _))
+#endif
+    when pname == name =>
+    Some(path)
+  | (Longident.Ldot(ident, name),
+#if 408
+     Path.Pdot(path, pname))
+#else
+     Path.Pdot(path, pname, _))
+#endif
+    when pname == name =>
+    relative(ident, path)
   /* | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => None */
   | _ => None
   };
@@ -279,7 +299,11 @@ module F = (Collector: {
           | None => addForPathParent(Shared.mapOldPath(path), l)
         };
         switch (path, txt) {
+#if 408
+          | (Pdot(pinner, _pname), Ldot(inner, name)) => {
+#else
           | (Pdot(pinner, _pname, _), Ldot(inner, name)) => {
+#endif
             addForLongident(None, pinner, inner, Utils.chopLocationEnd(loc, String.length(name) + 1));
           }
           | (Pident(_), Lident(_)) => ()
@@ -306,6 +330,12 @@ module F = (Collector: {
   open Typedtree;
   include TypedtreeIter.DefaultIteratorArgument;
   let enter_structure_item = item => switch (item.str_desc) {
+#if 408
+  | Tstr_attribute({
+    attr_name: {Asttypes.txt: "ocaml.explanation", loc},
+    attr_payload:
+      PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])}) => {
+#else
   | Tstr_attribute(({Asttypes.txt: "ocaml.explanation", loc}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
 #if 402
       Const_string
@@ -313,6 +343,7 @@ module F = (Collector: {
       Pconst_string
 #endif
       (doc, _))}, _)}]))) => {
+#endif
     addLocation(loc, Loc.Explanation(doc))
   }
   | Tstr_include({incl_mod: expr}) => {
@@ -320,7 +351,13 @@ module F = (Collector: {
   }
   | Tstr_module({mb_expr}) =>
     handle_module_expr(mb_expr.mod_desc)
+#if 408
+  | Tstr_open({ open_expr:
+                  { mod_type: Mty_ident(open_path) | Mty_alias(open_path),
+                    mod_desc: Tmod_ident(_, {txt, loc} as l) }}) => {
+#else
   | Tstr_open({open_path, open_txt: {txt, loc} as l}) => {
+#endif
     /* Log.log("Have an open here"); */
     maybeAddUse(open_path, txt, loc, Module);
     let tracker = {
@@ -449,6 +486,8 @@ module F = (Collector: {
   };
 
   let enter_expression = expression => {
+#if 408
+#else
     expression.exp_extra |. Belt.List.forEach(((e, eloc, _)) => switch e {
       | Texp_open(_, path, ident, _) => {
         extra.opens |. Hashtbl.add(eloc, {
@@ -461,10 +500,26 @@ module F = (Collector: {
       }
       | _ => ()
     });
+#endif
     switch (expression.exp_desc) {
     /* | Texp_apply({exp_desc: Pexp_ident(_, {txt: Ldot(Lident("ReasonReact"), "element")})}, [(_, {exp_desc: Pexp_apply({exp_desc: Pexp_ident(_, {txt})}, _)})]) =>{
 
     } */
+#if 408
+    | Texp_open(
+      { open_expr:
+        { mod_type: Mty_ident(path) | Mty_alias(path),
+        mod_desc: Tmod_ident(_, ident) }}, _) => {
+      extra.opens |. Hashtbl.add(expression.exp_loc, {
+        path: Shared.mapOldPath(path),
+        ident,
+        loc: expression.exp_loc,
+        extent: expression.exp_loc,
+        used: [],
+      })
+    }
+#else
+#endif
     | Texp_ident(path, {txt, loc}, {val_type}) => {
       addForLongident(Some((Shared.makeFlexible(val_type), Value)), path, txt, loc);
     }
@@ -563,9 +618,12 @@ let forFile = (~file) => {
         let t = {
           Types.id: 0,
           level: 0,
-#if 407
-          desc: Tconstr(Path.Pident(makeIdent(d.name.txt, stamp, 0)), [], ref(Types.Mnil)),
-          scope: None
+#if 408
+          desc: Tconstr(Path.Pident(Shared.makeIdent(d.name.txt, stamp)), [], ref(Types.Mnil)),
+          scope: Btype.lowest_level,
+#elif 407
+          desc: Tconstr(Path.Pident(Shared.makeIdent(d.name.txt, stamp)), [], ref(Types.Mnil)),
+          scope: None,
 #else
           desc: Tconstr(Path.Pident({Ident.stamp, name: d.name.txt, flags: 0}), [], ref(Types.Mnil))
 #endif

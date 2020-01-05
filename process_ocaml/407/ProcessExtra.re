@@ -22,8 +22,14 @@ let handleConstructor = (path, txt) => {
 
 let rec relative = (ident, path) =>
   switch (ident, path) {
-  | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
-  | (Longident.Ldot(ident, name), Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
+  | (Longident.Lident(name),
+     Path.Pdot(path, pname, _))
+    when pname == name =>
+    Some(path)
+  | (Longident.Ldot(ident, name),
+     Path.Pdot(path, pname, _))
+    when pname == name =>
+    relative(ident, path)
   /* | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => None */
   | _ => None
   };
@@ -540,8 +546,8 @@ let forFile = (~file) => {
         let t = {
           Types.id: 0,
           level: 0,
-          desc: Tconstr(Path.Pident(makeIdent(d.name.txt, stamp, 0)), [], ref(Types.Mnil)),
-          scope: None
+          desc: Tconstr(Path.Pident(Shared.makeIdent(d.name.txt, stamp)), [], ref(Types.Mnil)),
+          scope: None,
          };
         addLocation(name.loc, Loc.Typed(Shared.makeFlexible(t), Loc.Definition(d.stamp, Constructor(name.txt))))
       });

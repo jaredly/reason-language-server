@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "ocaml": "~4.7",
+    "@esy-ocaml/reason": "*"
+  }
+}

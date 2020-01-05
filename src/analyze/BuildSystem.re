@@ -11,9 +11,16 @@ let targetName = t => switch t {
 };
 
 type compilerVersion =
+  | V408
   | V407
   | V406
   | V402;
+
+let showCompilerVersion = fun
+  | V408 => "4.08"
+  | V407 => "4.07"
+  | V406 => "4.06"
+  | V402 => "4.02";
 
 type packageManager =
   /* Absolute path to the Opam switch prefix */
@@ -27,9 +34,8 @@ type t =
   | BsbNative(string, target);
 
 let usesStdlib = v => switch v {
-  | V407 => true
-  | V406 => false
-  | V402 => false
+  | V408 | V407 => true
+  | V406 | V402 => false
 };
 
 
@@ -114,16 +120,24 @@ let getBsbExecutable = rootPath =>
     |?>> (path => path /+ ".bin" /+ "bsb")
   );
 
+let parseOCamlVersion = versionString =>switch (Utils.split_on_char('.', String.trim(versionString))) {
+    | ["4", "02", ..._] => Ok(V402)
+    | ["4", "06", ..._] => Ok(V406)
+    | ["4", "07", ..._] => Ok(V407)
+    | ["4", "08", ..._] => Ok(V408)
+    | _ => Error("Unsupported OCaml version: " ++ versionString)
+  }
+
 let getCompilerVersion = executable => {
   let cmd = executable ++ " -version";
   let (output, success) = Commands.execSync(cmd);
   success ? switch output {
-  | [line] => switch (Utils.split_on_char('.', String.trim(line))) {
-    | ["4", "02", _] => Ok(V402)
-    | ["4", "06", _] => Ok(V406)
-    | ["4", "07", _] => Ok(V407)
-    | _ => Error("Unsupported OCaml version: " ++ line)
-  }
+  | [line] when Str.string_match(Str.regexp_string("BuckleScript "), line, 0) =>
+    switch (Str.split(Str.regexp_string("(Using OCaml"), String.trim(line))) {
+      | [_, version] => parseOCamlVersion(version)
+      | _ => Error("Cannot detect OCaml version from BuckleScript version string: " ++ line)
+    }
+  | [line] => parseOCamlVersion(line)
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
   } : Error("Could not run compiler (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output));
 };
@@ -153,6 +167,21 @@ let detect = (rootPath, bsconfig) => {
       | _ => Native
     };
   }) : Bsb(bsbVersion);
+};
+
+let detectFull = projectDir => {
+  let bsConfig = Filename.concat(projectDir, "bsconfig.json");
+  if (Files.exists(bsConfig)) {
+    let%try raw = Files.readFileResult(bsConfig);
+    let config = Json.parse(raw);
+    detect(projectDir, config);
+  } else {
+    let esy = getLine("esy --version", ~pwd=projectDir);
+    switch (esy) {
+    | Ok(v) => Ok(Dune(Esy(v)))
+    | Error(err) => Error("Couldn't get esy version")
+    };
+  };
 };
 
 let getEsyCompiledBase = () => {
@@ -264,10 +293,24 @@ let isRunningInEsyNamedSandbox = () => {
 };
 
 let getExecutableInEsyPath = (exeName, ~pwd) => {
-  if (isRunningInEsyNamedSandbox()) {
+  let ret = if (isRunningInEsyNamedSandbox()) {
     getLine("which " ++ exeName, ~pwd)
   } else {
     getLine("esy which " ++ exeName, ~pwd)
+  };
+  if (Sys.win32) {
+    switch ret {
+      | RResult.Ok(ret) =>
+        let ret = if (isRunningInEsyNamedSandbox()) {
+          getLine("cygpath -w " ++ ret, ~pwd)
+        } else {
+          getLine("esy cygpath -w " ++ ret, ~pwd)
+        };
+        ret
+      | Error(a) => Error(a)
+    }
+  } else {
+    ret
   }
 };
 
@@ -324,17 +367,18 @@ let hiddenLocation = (rootPath, buildSystem) => {
 let inferPackageManager = projectRoot => {
   let hasEsyDir = Files.exists(projectRoot /+ "_esy");
 
-  let esy = getLine("esy --version", ~pwd=projectRoot);
-  let opam = getLine("opam config var prefix", ~pwd=projectRoot);
-
   if (hasEsyDir) {
+    let esy = getLine("esy --version", ~pwd=projectRoot);
     switch (esy) {
     | Ok(v) =>
       Log.log("Detected `esy` dependency manager for local use");
       Ok(Esy(v));
-    | _ => Error("Couldn't get esy version")
+    | Error(err) =>
+      Log.log(err);
+      Error("Couldn't get esy version")
     };
   } else {
+    let opam = getLine("opam config var prefix", ~pwd=projectRoot);
     switch (opam) {
     | Ok(prefix) =>
       Log.log("Detected `opam` dependency manager for local use");

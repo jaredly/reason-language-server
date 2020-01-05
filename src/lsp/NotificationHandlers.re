@@ -29,7 +29,7 @@ let reportDiagnostics = (uri, result) => {
       ("diagnostics", l([]))
     ])
   };
-  Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", body)
+  Rpc.sendNotification(Log.log, stdout, "textDocument/publishDiagnostics", body)
 };
 
 let checkPackageTimers = state => {
@@ -97,6 +97,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("workspace/didChangeConfiguration", (state, params) => {
     let nullIfEmpty = item => item == "" ? None : Some(item);
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
+    let mlfmtLocation = (settings |?> Json.get("mlfmt") |?> Json.string) |?> nullIfEmpty;
     let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string) |?> nullIfEmpty;
     let lispRefmtLocation = (settings |?> Json.get("lispRefmt") |?> Json.string |?> nullIfEmpty);
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
@@ -108,7 +109,6 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let crossFileAsYouType = false;
     let showModulePathOnHover = (settings |?> Json.get("show_module_path_on_hover") |?> Json.bool) |? true;
     let autoRebuild = settings |?> Json.get("autoRebuild") |?> Json.bool |? true;
-    let useOldDuneProcess = settings |?> Json.get("useOldDuneProcess") |?> Json.bool |? true;
 
     let buildSystemOverrideByRoot = (settings |?> Json.get("build_system_override_by_root") |?> Json.obj |? [])->Belt.List.keepMap(((key, v)) => {
       let%opt v = Json.string(v);
@@ -121,6 +121,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       settings: {
         ...state.settings,
         perValueCodelens,
+        mlfmtLocation,
         refmtLocation,
         lispRefmtLocation,
         opensCodelens,
@@ -129,7 +130,6 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         crossFileAsYouType,
         showModulePathOnHover,
         autoRebuild,
-        useOldDuneProcess,
         buildSystemOverrideByRoot,
       },
     });

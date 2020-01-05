@@ -45,6 +45,7 @@ let newDocsForCmt = (~compilerVersion, ~moduleName, cmtCache, changed, cmt, src,
     | BuildSystem.V402 => Process_402.fileForCmt
     | V406 => Process_406.fileForCmt
     | V407 => Process_407.fileForCmt
+    | V408 => Process_408.fileForCmt
   })(~moduleName, cmt, uri, converter(src, clientNeedsPlainText)) |> RResult.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
@@ -55,6 +56,7 @@ let newDocsForCmi = (~compilerVersion, ~moduleName, cmiCache, changed, cmi, src,
     | BuildSystem.V402 => Process_402.fileForCmi
     | V406 => Process_406.fileForCmi
     | V407 => Process_407.fileForCmi
+    | V408 => Process_408.fileForCmi
   })(~moduleName, cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
   Hashtbl.replace(cmiCache, cmi, (changed, file));
   Some(file);
@@ -171,6 +173,41 @@ let refmtForUri = (uri, package) =>
       | Some(x) => Ok(Some(x))
     }
   };
+
+let fmtCmdForUri = (~formatWidth, ~interface, uri, package) => {
+  if (Filename.check_suffix(uri, ".ml") || Filename.check_suffix(uri, ".mli")) {
+    switch (package.mlfmtPath) {
+    | None => Error("No formatter available for .ml(i) files")
+    | Some(fmtPath) => Ok(fmtPath);
+    };
+  } else if (Filename.check_suffix(uri, ".rel")
+             || Filename.check_suffix(uri, ".reli")) {
+    switch (package.lispRefmtPath) {
+    | None =>
+      Error("No lispRefmt path found, cannot process .rel or .reli files")
+    | Some(lispRefmt) =>
+      let cmd = Printf.sprintf(
+        "%s --print re --print-width=%d --parse re%s",
+        Commands.shellEscape(lispRefmt),
+        formatWidth |? 80,
+        interface ? " -i true" : "",
+      );
+      Ok(cmd);
+    };
+  } else {
+    switch (package.refmtPath) {
+    | None => Error("No refmt found for dune project. Cannot process .re file")
+    | Some(refmt) =>
+      let cmd = Printf.sprintf(
+        "%s --print re --print-width=%d --parse re%s",
+        Commands.shellEscape(refmt),
+        formatWidth |? 80,
+        interface ? " -i true" : "",
+      );
+      Ok(cmd);
+    };
+  };
+};
 
 open Infix;
 

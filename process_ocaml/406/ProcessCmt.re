@@ -8,18 +8,22 @@ open Infix;
 
 let getTopDoc = structure => {
   switch structure {
-  | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+  | [{str_desc: Tstr_attribute(
+      ({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
     Pconst_string
-    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+    (doc, _))}, _)}])))}, ...rest] =>
+    (Some(doc), rest)
   | _ => (None, structure)
   };
 };
 
 let getTopSigDoc = structure => {
   switch structure {
-  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+  | [{sig_desc: Tsig_attribute(
+    ({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
     Pconst_string
-    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+    (doc, _))}, _)}])))}, ...rest] =>
+    (Some(doc), rest)
   | _ => (None, structure)
   };
 };
@@ -94,7 +98,8 @@ let addItem = (~name, ~extent, ~stamp, ~env, ~contents, attributes, exported, st
 let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item) => {
   open Types;
   switch item {
-  | Sig_value(ident, {val_type, val_attributes, val_loc: loc}) => {
+  | Sig_value(ident, {val_type, val_attributes, val_loc: loc}
+  ) => {
     let contents = {
       Value.recursive: false,
       typ: Shared.makeFlexible(val_type),
@@ -111,7 +116,11 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
     );
     [{...declared, contents: Module.Value(declared.contents)}]
   }
-  | Sig_type(ident, {type_params, type_loc, type_kind, type_manifest, type_attributes} as decl, _) => {
+  | Sig_type(
+    ident,
+    {type_params, type_loc, type_kind, type_manifest, type_attributes} as decl,
+    _
+    ) => {
     let declared = addItem(~extent=type_loc, ~contents={
       Type.params: type_params |> List.map(t => (Shared.makeFlexible(t), Location.none)),
       typ: Shared.makeDeclaration(decl),
@@ -176,7 +185,11 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
   /* | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) =>
     let declared = addItem(~contents=Module.Ident(path), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}, ...items] */
-  | Sig_module(ident, {md_type, md_attributes, md_loc}, _) =>
+  | Sig_module(
+    ident,
+    {md_type, md_attributes, md_loc},
+    _
+  ) =>
     let declared = addItem(
       ~extent=md_loc,
       ~contents=forModuleType(env, md_type),

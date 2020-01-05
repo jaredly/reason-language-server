@@ -1,0 +1,36 @@
+# Cross-platform set of build steps for building esy projects
+
+parameters:
+  platform: "macOS"
+  vmImage: "macOS-10.13"
+
+jobs:
+  - job: ${{ parameters.platform }}
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+      demands: node.js
+    timeoutInMinutes: 120 # This is mostly for Windows
+    variables:
+      ESY__CACHE_INSTALL_PATH: ${{ parameters.ESY__CACHE_INSTALL_PATH }}
+      CACHE_FOLDER: $(Pipeline.Workspace)/cache
+    steps: 
+      - template: utils/use-node.yml
+      - template: utils/use-esy.yml
+      - template: utils/restore-build-cache.yml
+      - script: "esy"
+        displayName: "esy install & build"
+      - bash: |
+          cp $(esy x which RunTests.exe) RunTests.exe
+          ./RunTests.exe
+        displayName: "Run some tests"
+      - template: utils/publish-build-cache.yml
+      - bash: mkdir -p rls-release
+      - bash: esy cp-bin
+      - bash: cp bin.exe rls-release/reason-language-server.exe
+      - task: PublishBuildArtifacts@1
+        displayName: 'Upload binary'
+        inputs:
+            pathToPublish: 'rls-release'
+            artifactName: 'rls-$(Agent.OS)'
+            parallel: true
+            parallelCount: 8

@@ -138,7 +138,7 @@ If that doesn't work, try cleaning built artifacts, with `bsb -clean-world` (or 
 ## What about the [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
 That project uses [merlin](https://github.com/ocaml/merlin) under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
-I had a couple of reasons for starting a new one. The biggest is that I wanted something with minimal dependencies, so that windows support would be relatively easy, and so that I might be able to ship it with bucklescript at some future point. (it also makes targetting JS easier). I also wanted a server that was written entirely in Reason (not part typescript, part reason), and something that was written from the ground up with the Langauge Server Protocol in mind, instead of taking a different IDE-support-tool and mapping the LSP onto it.
+I had a couple of reasons for starting a new one. The biggest is that I wanted something with minimal dependencies, so that windows support would be relatively easy, and so that I might be able to ship it with bucklescript at some future point. (it also makes targetting JS easier). I also wanted a server that was written entirely in Reason (not part typescript, part reason), and something that was written from the ground up with the Language Server Protocol in mind, instead of taking a different IDE-support-tool and mapping the LSP onto it.
 
 ## Contributing
 
@@ -149,6 +149,17 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - Run `esy symlink` to link the built artifact into the root folder at `bin.exe`
 - Install the VS Code extension's dependencies `cd editor-extensions/vscode && npm i && cd ../..`
 - Open this project in VS Code
+
+### Running the test suite
+
+- `esy cp-test`
+- `./RunTests.exe`
+
+NOTE it's important that you don't run the `RunTests.exe` from within an esy shell (e.g. `esy dune exec RunTests.exe`) -- the variables esy sets will mess things up.
+
+### Building the OCaml grammar
+- Edit the files in editor-extensions/vscode/src/syntaxes
+- Run `cd editor-extensions/vscode && npm run build-syntaxes`
 
 ## To test your changes in one of the example projects
 - Open the "Debug" pane in VS Code. Select a debug target. Press "Run"

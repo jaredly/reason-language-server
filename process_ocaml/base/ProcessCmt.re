@@ -1,5 +1,7 @@
 
-#if 407
+#if 408
+open Compiler_libs_408;
+#elif 407
 open Compiler_libs_407;
 #elif 406
 open Compiler_libs_406;
@@ -14,26 +16,42 @@ open Infix;
 
 let getTopDoc = structure => {
   switch structure {
-  | [{str_desc: Tstr_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+  | [{str_desc: Tstr_attribute(
+#if 408
+      { attr_name: {Asttypes.txt: "ocaml.doc" | "ocaml.text"},
+        attr_payload: PStr(
+          [{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string (doc, _))}, _)}])})}, ...rest] =>
+#else
+      ({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
 #if 402
     Const_string
 #else
     Pconst_string
 #endif
-    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+    (doc, _))}, _)}])))}, ...rest] =>
+#endif
+    (Some(doc), rest)
   | _ => (None, structure)
   };
 };
 
 let getTopSigDoc = structure => {
   switch structure {
-  | [{sig_desc: Tsig_attribute(({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
+  | [{sig_desc: Tsig_attribute(
+#if 408
+    { attr_name: {Asttypes.txt: "ocaml.doc" | "ocaml.text"},
+      attr_payload: PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(Pconst_string(doc, _))}, _)}])})}, ...rest] =>
+
+#else
+    ({Asttypes.txt: "ocaml.doc" | "ocaml.text"}, PStr([{pstr_desc: Pstr_eval({pexp_desc: Pexp_constant(
 #if 402
     Const_string
 #else
     Pconst_string
 #endif
-    (doc, _))}, _)}])))}, ...rest] => (Some(doc), rest)
+    (doc, _))}, _)}])))}, ...rest] =>
+#endif
+    (Some(doc), rest)
   | _ => (None, structure)
   };
 };
@@ -108,7 +126,12 @@ let addItem = (~name, ~extent, ~stamp, ~env, ~contents, attributes, exported, st
 let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item) => {
   open Types;
   switch item {
-  | Sig_value(ident, {val_type, val_attributes, val_loc: loc}) => {
+  | Sig_value(ident, {val_type, val_attributes, val_loc: loc}
+#if 408
+    , _
+#else
+#endif
+  ) => {
     let contents = {
       Value.recursive: false,
       typ: Shared.makeFlexible(val_type),
@@ -125,7 +148,15 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
     );
     [{...declared, contents: Module.Value(declared.contents)}]
   }
-  | Sig_type(ident, {type_params, type_loc, type_kind, type_manifest, type_attributes} as decl, _) => {
+  | Sig_type(
+    ident,
+    {type_params, type_loc, type_kind, type_manifest, type_attributes} as decl,
+    _
+#if 408
+    , _
+#else
+#endif
+    ) => {
     let declared = addItem(~extent=type_loc, ~contents={
       Type.params: type_params |> List.map(t => (Shared.makeFlexible(t), Location.none)),
       typ: Shared.makeDeclaration(decl),
@@ -194,7 +225,19 @@ let rec forSignatureTypeItem = (env, exported: SharedTypes.Module.exported, item
   /* | Sig_module({stamp, name}, {md_type: Mty_ident(path) | Mty_alias(path), md_attributes, md_loc}, _) =>
     let declared = addItem(~contents=Module.Ident(path), ~name=Location.mknoloc(name), ~stamp, ~env, md_attributes, exported.modules, env.stamps.modules);
     [{...declared, contents: Module.Module(declared.contents)}, ...items] */
-  | Sig_module(ident, {md_type, md_attributes, md_loc}, _) =>
+  | Sig_module(
+    ident,
+#if 408
+    _,
+#else
+#endif
+    {md_type, md_attributes, md_loc},
+    _
+#if 408
+    , _
+#else
+#endif
+  ) =>
     let declared = addItem(
       ~extent=md_loc,
       ~contents=forModuleType(env, md_type),
@@ -219,6 +262,8 @@ and forSignatureType = (env, signature) => {
 } and forModuleType = (env, moduleType) => switch moduleType {
   | Types.Mty_ident(path) => Module.Ident(Shared.mapOldPath(path))
 #if 402
+  | Mty_alias(path) =>
+#elif 408
   | Mty_alias(path) =>
 #else
   | Mty_alias(_ /* 402*/, path) =>

@@ -1,9 +1,13 @@
 
+let versionedResultsRx = Str.regexp({|--> \([0-9]+\.[0-9]+\)|});
+
 let sectionHeader = line => {
   if (Utils.startsWith(line, "### ")) {
     Some(`Header(Utils.sliceToEnd(line, 4)))
   } else if (Utils.startsWith(line, "=== ")) {
     Some(`Test(Utils.sliceToEnd(line, 4)))
+  } else if (Str.string_match(versionedResultsRx, line, 0)) {
+    Some(`VersionedResults(Str.matched_group(1, line)))
   } else if (Utils.startsWith(line, "-->")) {
     Some(`Results)
   } else if (Utils.startsWith(line, "---")) {
@@ -54,9 +58,23 @@ let parseTest = (lines) => {
   switch (header) {
     | Some(`Results) => {
       let (lines, after) = getUntilNextSection(final);
-      (files, lines, after)
+      let rec loop = (collection, lines) => {
+        let (header, rest) = peekSection(lines);
+        switch (header) {
+        | Some(`VersionedResults(version)) =>
+          switch (Analyze.BuildSystem.parseOCamlVersion(version)) {
+          | Ok(version) =>
+            let (lines, after) = getUntilNextSection(rest);
+            loop([(version, lines), ...collection], after);
+          | Error(err) => failwith("Invalid 'versioned result' line: " ++ lines->List.hd)
+          }
+        | _ => (collection, lines)
+        };
+      }
+      let (otherResults, after) = loop([], after);
+      (files, lines, otherResults, after)
     }
-    | _ => (files, [], after)
+    | _ => (files, [], [], after)
   }
 };
 
@@ -79,7 +97,7 @@ let rec parseSections = lines => switch lines {
       | Some(header) => switch header {
         | `Header(name) => [`Header(name), ...parseSections(rest)]
         | `Test(name) => {
-          let (files, result, rest) = parseTest(rest);
+          let (files, result, versionedResults, rest) = parseTest(rest);
           let (mainFile, otherFiles) = splitFiles(files);
           switch mainFile {
             | None => {
@@ -87,7 +105,7 @@ let rec parseSections = lines => switch lines {
               parseSections(rest)
             }
             | Some(mainContent) => {
-              [`Test(name, mainContent, otherFiles, result), ...parseSections(rest)]
+              [`Test(name, mainContent, otherFiles, result, versionedResults), ...parseSections(rest)]
             }
           }
         }
@@ -96,6 +114,24 @@ let rec parseSections = lines => switch lines {
     }
   }
 };
+
+type test = {name: string, mainContent: string, otherFiles: list((string, string)), result: list(string), versionedResults: list((Analyze.BuildSystem.compilerVersion, list(string)))};
+type section = {heading: string, children: list(test)}
+
+let addChild = (section, child) => {...section, children: [child, ...section.children]}
+
+let collectSections = lines => {
+  let parts = parseSections(lines);
+  let rec loop = (current, previous, parts) => switch parts {
+    | [`Header(heading), ...rest] => loop({heading, children: []}, [current, ...previous], rest)
+    | [`Test(name, mainContent, otherFiles, result, versionedResults), ...rest] => loop(current->addChild({name, mainContent, otherFiles, result, versionedResults}), previous, rest)
+    | [] => [current, ...previous] |> List.rev |> List.map(({heading, children}) => {heading, children: List.rev(children)})
+  };
+  switch parts {
+    | [`Header(heading), ...rest] => loop({heading, children: []}, [], rest)
+    | rest => loop({heading: "Default", children: []}, [], rest)
+  }
+}
 
 let printFiles = (mainFile, files) => {
   switch files {

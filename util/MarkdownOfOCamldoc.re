@@ -71,7 +71,7 @@ let handleRef = reference => switch reference {
 };
 
 let rec showPath = (path: Path.module_) => switch path {
-  | Resolved(resolved) => "<resolved>"
+  | Resolved(_resolved) => "<resolved>"
   | Root(name) => name
   | Forward(name) => name
   | Dot(inner, name) => showPath(inner) ++ "." ++ name
@@ -94,7 +94,7 @@ let convertItem = (item) => {
   | `Tag(`Open) => Omd.Text("Open")
   | `Tag(`Closed) => Omd.Text("Closed")
   | `Tag(`Inline) => Omd.Text("Inline")
-  | `Tag(`Canonical(path, reference)) =>
+  | `Tag(`Canonical(path, _reference)) =>
     // output_string(stderr, "Warning: Unhandled tag 'Canonical' in ocamldoc (please tell the reason-language-server maintainers)\n");
     Omd.Text(showPath(path)) // ++ ", " ++ handleRef(reference))
   | `Tag(_) => {
@@ -154,15 +154,19 @@ let convertItem = (item) => {
 };
 
 let convert = (text) => {
-  let res = Parser_.parse_comment(
-    ~permissive=true,
-    ~sections_allowed=`All,
-    ~containing_definition=Paths.Identifier.Root({Root.package: "hi", file: Page("hi"), digest: "hi"}, "What"),
-    ~location=Lexing.dummy_pos,
-    ~text
-  );
-  switch res.result {
-  | Error.Ok(docs) => List.map(convertItem, docs)
-  | Error(message) => [Omd.Text("failed to parse: " ++ Error.to_string(message))]
+  try {
+    let res = Parser_.parse_comment(
+      ~permissive=true,
+      ~sections_allowed=`All,
+      ~containing_definition=Paths.Identifier.Root({Root.package: "hi", file: Page("hi"), digest: "hi"}, "What"),
+      ~location=Lexing.dummy_pos,
+      ~text
+    );
+    switch res.result {
+    | Error.Ok(docs) => List.map(convertItem, docs)
+    | Error(message) => [Omd.Text("failed to parse: " ++ Error.to_string(message))]
+    }
+  } {
+    | exn => [Omd.Text("Error (invalid syntax?) while parsing ocamldoc: " ++ Printexc.to_string(exn))]
   }
 };

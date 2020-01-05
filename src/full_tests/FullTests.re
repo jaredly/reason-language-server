@@ -56,9 +56,8 @@ files->Belt.List.forEach(fileName => {
         })
         print_endline("  Good: " ++ uri);
         print_endline("  > " ++ string_of_int(missing^) ++ " missing")
-      | Ok(TypeError(message, _) | SyntaxError(message, _, _)) =>
+      | Ok(TypeError(_message, _) | SyntaxError(_message, _, _)) =>
         print_endline("  Error compiling: " ++ uri);
     };
-    // print_endline(Analyze.State.Show.state(state, package));
   }
 });

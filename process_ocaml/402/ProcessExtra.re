@@ -22,8 +22,14 @@ let handleConstructor = (path, txt) => {
 
 let rec relative = (ident, path) =>
   switch (ident, path) {
-  | (Longident.Lident(name), Path.Pdot(path, pname, _)) when pname == name => Some(path)
-  | (Longident.Ldot(ident, name), Path.Pdot(path, pname, _)) when pname == name => relative(ident, path)
+  | (Longident.Lident(name),
+     Path.Pdot(path, pname, _))
+    when pname == name =>
+    Some(path)
+  | (Longident.Ldot(ident, name),
+     Path.Pdot(path, pname, _))
+    when pname == name =>
+    relative(ident, path)
   /* | (Ldot(Lident("*predef*" | "exn"), _), Pident(_)) => None */
   | _ => None
   };
