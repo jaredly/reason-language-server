@@ -1,4 +1,8 @@
 editor-extensions
 examples
-example-codemod
 _build
+_esy
+ExamplesTests.exe
+.github
+.vscode
+.circleci

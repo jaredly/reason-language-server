@@ -1,7 +1,8 @@
 (library
-  (name Process_402)
-  (public_name ReasonLanguageServer.Process_402)
-  (libraries Belt Current Vendor Util str Compiler_libs_402 Compiler_libs_407 ocaml-migrate-parsetree Core)
-  (flags :standard -open Vendor -open Util -w -26-32-50-9-27-39-33-35-6-3)
-  (preprocess (pps Belt_ppx Ppx_monads))
-  )
+ (name Process_402)
+ (public_name reason-language-server.Process_402)
+ (libraries Belt Current Vendor Util str Compiler_libs_402 Compiler_libs_408
+   ocaml-migrate-parsetree Core)
+ (flags :standard -open Vendor -open Util -w -26-32-50-9-27-39-33-35-6-3)
+ (preprocess
+  (pps Belt_ppx Ppx_monads)))

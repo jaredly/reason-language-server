@@ -23,6 +23,56 @@ let rec getNamedIdent = items => switch items {
   | [_, ...rest] => getNamedIdent(rest)
 };
 
+let rec getModules = items => switch items {
+  | [] => None
+  | [`List([`Ident("modules"), ...modules]), ..._] => Some(modules->Belt.List.keepMap(item => switch item {
+    | `Ident(name) => Some(name)
+    | _ => None
+  }))
+  | [_, ...rest] => getModules(rest)
+}
+
+let isUnwrapped = items => {
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("wrapped"), `Ident("false")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(items)
+};
+
+let includeRecursive = items => {
+// (include_subdirs unqualified)
+  let rec loop = items => switch items {
+    | [] => false
+    | [`List([`Ident("include_subdirs"), `Ident("unqualified")]), ..._] => true
+    | [_, ...rest] => loop(rest)
+  };
+  loop(items)
+};
+
+let getLibsAndBinaries = jbuildConfig => {
+  jbuildConfig->Belt.List.keepMap(item => switch item {
+    // Handle the case where there's only one thing and it's a (name _) or a (public_name _)
+    | `List([`Ident("library"), ...[`List([`Ident(_), _])] as library])
+    | `List([`Ident("library"), `List(library)])
+    | `List([`Ident("library"), ...library]) => {
+      let (public, private) = getNamedIdent(library)
+      let modules = getModules(library);
+      Some((isUnwrapped(library) ? `UnwrappedLibrary : `Library, public, private, modules))
+    }
+    // Handle the case where there's only one thing and it's a (name _) or a (public_name _)
+    | `List([`Ident("executable"), ...[`List([`Ident(_), _])] as executable])
+    | `List([`Ident("executable"), `List(executable)])
+    | `List([`Ident("executable"), ...executable]) => {
+      let (public, private) = getNamedIdent(executable)
+      let modules = getModules(executable);
+      Some((`Binary, public, private, modules))
+    }
+    | _ => None
+  })
+};
+
 let findLibraryName = jbuildConfig => {
   let rec loop = items => switch items {
     | [] => None
@@ -125,12 +175,12 @@ let parseString = (text, pos) => {
 };
 
 let rec skipComment = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
-  | '\n' => i + 1
+  | '\n' | '\r' => i + 1
   | _ => skipComment(raw, ln, i + 1)
 };
 
 let rec skipWhite = (raw, ln, i) => i >= ln ? i : switch (raw.[i]) {
-  | ' ' | '\n' | '\t' => skipWhite(raw, ln, i + 1)
+  | ' ' | '\n' | '\r' | '\t' => skipWhite(raw, ln, i + 1)
   | ';' => skipWhite(raw, ln, skipComment(raw, ln, i + 1))
   | _ => i
 };

@@ -1,42 +1,37 @@
 {
-  "name": "ReasonLanguageServer",
-  "version": "0.0.0-dont-publish",
-  "private": true,
+  "name": "reason-language-server",
+  "version": "1.0.0",
   "scripts": {
-    "cp-test": "cp #{self.target_dir}/default/src/analyze_example_tests/ExamplesTests.exe ExamplesTests.exe",
-    "package": "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
+    "cp-test":
+      "cp #{self.target_dir}/install/default/bin/RunTests.exe RunTests.exe",
+    "package":
+      "esy build && esy cp \"#{self.target_dir}/default/bin/Bin.exe\" editor-extensions/vscode/bin.native",
     "zip": "./release.sh",
+    "check-self-definitions":
+      "fd -E examples '.*\\.re$' | xargs ./bin.exe check -q -d .",
     "vsce": "cd editor-extensions/vscode && vsce package",
     "reprocess-ocaml": "(cd process_ocaml; ./build.sh); esy",
-    "symlink": "esy ln -s '#{self.target_dir}/install/default/bin/Bin' bin.exe",
-    "cp-bin": "cp \"#{self.target_dir}/default/bin/Bin.exe\" bin.exe",
-    "run-codemod": "./_build/install/default/bin/ExampleCodemod.exe ./examples/example-codemod",
-    "types": "./_esy/default/build/install/default/bin/type-digger type-digger/types.json"
+    "symlink":
+      "esy ln -s '#{self.target_dir}/install/default/bin/Bin' bin.exe",
+    "cp-bin": "cp #{self.target_dir}/install/default/bin/Bin bin.exe"
   },
-  "keywords": [
-    "Reason",
-    "lsp",
-    "IDE"
-  ],
-  "repository": {
-    "url": "jaredly/reason-language-server",
-    "type": "git"
-  },
+  "keywords": [ "Reason", "lsp", "IDE" ],
+  "repository": { "url": "jaredly/reason-language-server", "type": "git" },
   "description": "A pure-reason implementation of a language server",
   "author": "Jared Forsyth",
   "license": "ISC",
-  "esy": {
-    "build": "dune build -p #{self.name}",
-    "buildsInSource": "_build"
-  },
+  "esy": { "build": "dune build -p #{self.name}" },
   "dependencies": {
+    "@opam/ANSITerminal": "0.8.1",
     "@opam/dune": "*",
-    "@esy-ocaml/reason": "*",
-    "@opam/ocaml-migrate-parsetree": "*",
+    "@opam/ocaml-migrate-parsetree": ">= 1.3.1",
     "@opam/ppx_tools_versioned": "*",
-    "@opam/ppx_tools": "*",
     "@opam/ppxlib": "*",
-    "rex-json": "*",
-    "ocaml": "~4.7.2"
+    "@opam/reason": ">= 3.5.0",
+    "@opam/stdlib-shims": "*",
+    "@reason-native/pastel": "^0.2.2",
+    "@reason-native/rely": "^3.1.0",
+    "ocaml": "~4.8.1000",
+    "rex-json": "*"
   }
 }

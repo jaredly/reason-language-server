@@ -12,7 +12,7 @@ let (-?>) = (_, b) => b;
 let maybeHash = (h, k) => if (Hashtbl.mem(h, k)) { Some(Hashtbl.find(h, k)) } else { None };
 type handler = Handler(string, Json.t => result('a, string), (state, 'a) => result((state, Json.t), string)) : handler;
 
-let getPackage = State.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
+let getPackage = Packages.getPackage(~reportDiagnostics=NotificationHandlers.reportDiagnostics);
 
 let handlers: list((string, (state, Json.t) => result((state, Json.t), string))) = [
   ("textDocument/definition", (state, params) => {
@@ -61,6 +61,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           let tokenParts = Utils.split_on_char('.', lident);
           let rawOpens = PartialParser.findOpens(text, offset);
           let%opt declared = NewCompletions.findDeclaredValue(
+            ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
             ~full,
             ~package,
             ~rawOpens,
@@ -142,6 +143,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       let%try {SharedTypes.file, extra} = State.getBestDefinitions(uri, state, ~package);
       let allModules = package.localModules @ package.dependencyModules;
       let items = NewCompletions.get(
+        ~useStdlib=package.compilerVersion->BuildSystem.usesStdlib,
         ~full={file, extra},
         ~package,
         ~rawOpens,
@@ -406,8 +408,6 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = getPackage(uri, state);
     let%try (start, end_) = RJson.get("range", params) |?> Protocol.rgetRange;
-    let%try refmtPath = State.refmtForUri(uri, package);
-    let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
 
     let text = State.getContents(uri, state);
     let maybeResult = {
@@ -468,7 +468,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
             |> String.concat("\n");
           };
         };
-        let%try_wrap text = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), substring, refmtPath);
+        let%try fmtCmd = State.fmtCmdForUri(
+          ~formatWidth=state.settings.formatWidth,
+          ~interface=(Utils.endsWith(uri, "i")),
+          uri,
+          package
+        );
+        let%try_wrap text = AsYouType.format(substring, fmtCmd);
         Util.JsonShort.(
           state,
           l([
@@ -538,9 +544,13 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     let%try uri = params |> RJson.get("textDocument") |?> RJson.get("uri") |?> RJson.string;
     let%try package = getPackage(uri, state);
     let text = State.getContents(uri, state);
-    let%try refmtPath = State.refmtForUri(uri, package);
-    let%try refmtPath = refmtPath |> R.orError("Cannot refmt ocaml yet");
-    let%try_wrap newText = AsYouType.format(~formatWidth=state.settings.formatWidth, ~interface=(Utils.endsWith(uri, "i")), text, refmtPath);
+    let%try fmtCmd = State.fmtCmdForUri(
+      ~formatWidth=state.settings.formatWidth,
+      ~interface=(Utils.endsWith(uri, "i")),
+      uri,
+      package
+    );
+    let%try_wrap newText = AsYouType.format(text, fmtCmd);
     open Util.JsonShort;
     (state, text == newText ? Json.Null : l([o([
       ("range", Protocol.rangeOfInts(
@@ -614,7 +624,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
                   open Util.JsonShort;
                   let offset = String.length(text);
                   let%try (line, col) = PartialParser.offsetToPosition(text, offset) |> RResult.orError("Invalid offset");
-                  Rpc.sendRequest(Log.log, Pervasives.stdout, "workspace/applyEdit", o([
+                  Rpc.sendRequest(Log.log, stdout, "workspace/applyEdit", o([
                     ("label", s("Add item to interface")),
                     ("edit", o([
                       ("changes", o([
@@ -635,6 +645,18 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
     }
   }),
 
+  ("custom:reasonLanguageServer/dumpFileData", (state, params) => {
+    open InfixResult;
+    let%try uri = RJson.get("uri", params) |?> RJson.string;
+    let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
+    let%try package = getPackage(uri, state);
+    let interfacePath = path ++ ".dump.json";
+    let%try text = State.getInterfaceFile(uri, state, ~package);
+    let%try () = Files.writeFileResult(interfacePath, text)
+    /* let interfaceUri = uri ++ "i"; */
+    Ok((state, Json.Null))
+  }),
+
   ("custom:reasonLanguageServer/createInterface", (state, params) => {
     open InfixResult;
     let%try uri = RJson.get("uri", params) |?> RJson.string;
@@ -648,9 +670,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("custom:reasonLanguageServer/showPpxedSource", (state, params) => {
-    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try (uri, _pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
-    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try (file, _extra) = State.fileForUri(state, ~package, uri);
     let%try parsetree = AsYouType.getParsetree(
       ~uri,
       ~moduleName=file.moduleName,
@@ -663,7 +685,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         | `Interface(int) => Pprintast.signature(Format.str_formatter, int)
       };
     } else {
-      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_407, Migrate_parsetree.OCaml_404);
+      let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_408, Migrate_parsetree.OCaml_404);
       switch (parsetree) {
       | `Implementation(str) =>
         Reason_toolchain.RE.print_implementation_with_comments(
@@ -678,7 +700,7 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
       };
     };
     let source = Format.flush_str_formatter();
-    
+
     /* let source = State.isMl(uri) ? source : switch (package.refmtPath) {
       | None => source
       | Some(refmt) =>
@@ -692,9 +714,9 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
   }),
 
   ("custom:reasonLanguageServer/showAst", (state, params) => {
-    let%try (uri, pos) = Protocol.rPositionParams(params);
+    let%try (uri, _pos) = Protocol.rPositionParams(params);
     let%try package = getPackage(uri, state);
-    let%try (file, extra) = State.fileForUri(state, ~package, uri);
+    let%try (file, _extra) = State.fileForUri(state, ~package, uri);
     let%try parsetree = AsYouType.getParsetree(
       ~uri,
       ~moduleName=file.moduleName,

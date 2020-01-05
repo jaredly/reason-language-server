@@ -29,14 +29,14 @@ let reportDiagnostics = (uri, result) => {
       ("diagnostics", l([]))
     ])
   };
-  Rpc.sendNotification(Log.log, Pervasives.stdout, "textDocument/publishDiagnostics", body)
+  Rpc.sendNotification(Log.log, stdout, "textDocument/publishDiagnostics", body)
 };
 
 let checkPackageTimers = state => {
   Hashtbl.iter((_, package) => {
     if (package.rebuildTimer != 0. && package.rebuildTimer < Unix.gettimeofday()) {
       package.rebuildTimer = 0.;
-      State.runBuildCommand(~reportDiagnostics, state, package.basePath, package.buildCommand);
+      BuildCommand.runBuildCommand(~reportDiagnostics, state, package.basePath, package.buildCommand);
     }
   }, state.packagesByRoot)
 };
@@ -71,11 +71,11 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
 
     let%try path = Utils.parseUri(uri) |> RResult.orError("Invalid uri");
     if (FindFiles.isSourceFile(path)) {
-      let%try package = State.getPackage(~reportDiagnostics, uri, state);
+      let%try package = Packages.getPackage(~reportDiagnostics, uri, state);
       /* let name = FindFiles.getName(path); */
       if (!Hashtbl.mem(package.nameForPath, path)) {
         /* TODO: figure out what the name should be, and process it. */
-        /* package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name)); */
+        package.nameForPath |> Hashtbl.iter((name, _) => Log.log(" > " ++ name));
         Log.log("Reloading because you created a new file: " ++ path);
         Ok(state)
         /* Ok(reloadAllState(state)) */
@@ -97,6 +97,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("workspace/didChangeConfiguration", (state, params) => {
     let nullIfEmpty = item => item == "" ? None : Some(item);
     let settings = params |> Json.get("settings") |?> Json.get("reason_language_server");
+    let mlfmtLocation = (settings |?> Json.get("mlfmt") |?> Json.string) |?> nullIfEmpty;
     let refmtLocation = (settings |?> Json.get("refmt") |?> Json.string) |?> nullIfEmpty;
     let lispRefmtLocation = (settings |?> Json.get("lispRefmt") |?> Json.string |?> nullIfEmpty);
     let perValueCodelens = (settings |?> Json.get("per_value_codelens") |?> Json.bool) |? false;
@@ -120,6 +121,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
       settings: {
         ...state.settings,
         perValueCodelens,
+        mlfmtLocation,
         refmtLocation,
         lispRefmtLocation,
         opensCodelens,
@@ -135,7 +137,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
   ("textDocument/didSave", (state, params) => {
     open InfixResult;
     let%try uri = params |> RJson.get("textDocument") |?> doc => RJson.get("uri", doc) |?> RJson.string;
-    let%try package = State.getPackage(~reportDiagnostics, uri, state);
+    let%try package = Packages.getPackage(~reportDiagnostics, uri, state);
     setPackageTimer(package);
     let moduleName = FindFiles.getName(uri);
     package.localModules |. Belt.List.forEach((mname) => {

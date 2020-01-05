@@ -29,6 +29,7 @@ type package = {
   buildCommand: option((string, string)),
   compilerPath: filePath,
   compilerVersion: BuildSystem.compilerVersion,
+  mlfmtPath: option(filePath),
   refmtPath: option(filePath),
   /** TODO maybe make this general, so that I can support arbitrary syntaxes? */
   lispRefmtPath: option(filePath),
@@ -37,6 +38,7 @@ type package = {
 type settings = {
   formatWidth: option(int),
   perValueCodelens: bool,
+  mlfmtLocation: option(string),
   refmtLocation: option(string),
   lispRefmtLocation: option(string),
   opensCodelens: bool,
@@ -82,6 +84,7 @@ let empty = () => {
   lastDefinitions: Hashtbl.create(10),
   settings: {
     formatWidth: None,
+    mlfmtLocation: None,
     refmtLocation: None,
     lispRefmtLocation: None,
     crossFileAsYouType: false,

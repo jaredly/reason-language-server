@@ -88,7 +88,7 @@ let execSync = (cmd) => {
   let cin = Unix.open_process_in(cmd);
   try {
     let rec loop = () =>
-      switch (Pervasives.input_line(cin)) {
+      switch (input_line(cin)) {
       | exception End_of_file => []
       | line => {
         [line, ...loop()]
@@ -133,7 +133,7 @@ let execWithInput = (cmd, input) => {
   close_out(stdin);
   try {
     let rec loop = () =>
-      switch (Pervasives.input_line(stdout)) {
+      switch (input_line(stdout)) {
       | exception End_of_file => []
       | line => {
         [line, ...loop()]

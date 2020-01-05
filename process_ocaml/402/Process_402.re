@@ -34,7 +34,7 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   }
 }; */
 
-let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_402, Migrate_parsetree.OCaml_407);
+module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_402, Migrate_parsetree.OCaml_current);
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
@@ -50,6 +50,50 @@ let astForCmt = cmt => {
     Ok(`Interface(Convert.copy_signature(signature)))
     /* Printast.interface(Stdlib.Format.str_formatter, signature);
     Ok(Format.flush_str_formatter()); */
+  | Partial_implementation(parts) =>
+    let items =
+      parts
+      ->Array.to_list
+      ->(
+          Belt.List.keepMap(p =>
+            switch (p) {
+            | Partial_structure(str) => Some(str.str_items)
+            | Partial_structure_item(str) => Some([str])
+            | _ => None
+            }
+          )
+        )
+      |> List.concat;
+    Ok(
+      `Implementation(
+        Convert.copy_structure(Obj.magic(List.map(
+          item => Untypeast.untype_structure_item(item),
+          items,
+        ))),
+      ),
+    );
+  | Partial_interface(parts) =>
+    let items =
+      parts
+      ->Array.to_list
+      ->(
+          Belt.List.keepMap(p =>
+            switch (p) {
+            | Partial_signature(str) => Some(str.sig_items)
+            | Partial_signature_item(str) => Some([str])
+            | _ => None
+            }
+          )
+        )
+      |> List.concat;
+    Ok(
+      `Interface(
+        Convert.copy_signature(Obj.magic(List.map(
+          item => Untypeast.untype_signature_item(item),
+          items,
+        ))),
+      ),
+    );
   | _ => Error("Not a well-typed implementation")
   }
 };

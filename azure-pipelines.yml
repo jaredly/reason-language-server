@@ -1,0 +1,68 @@
+name: $(Build.SourceVersion)
+
+trigger:
+  branches:
+    include:
+      - master
+
+pr:
+  branches:
+    include:
+      - "*"
+
+jobs:
+  - template: .ci/build-platform.yml
+    parameters:
+      platform: Linux
+      vmImage: ubuntu-16.04
+
+  - template: .ci/build-platform.yml
+    parameters:
+      platform: macOS
+      vmImage: macOS-10.13
+
+  # Need windows-2019 to do esy import/export-dependencies
+  # which assumes you have bsdtar (tar.exe) in your system
+  # otherwise it will end up using the esy-bash tar which doesn't
+  # understand drives like D:/ (thinks it's an scp path).
+  - template: .ci/build-platform.yml
+    parameters:
+      platform: Windows
+      vmImage: windows-2019
+
+  - job: Release
+    timeoutInMinutes: 0
+    displayName: Release
+    dependsOn:
+        - Linux
+        - MacOS
+        - Windows
+    condition: succeeded()
+    pool:
+      vmImage: ubuntu-16.04
+    steps:
+      - task: PublishBuildArtifacts@1
+        displayName: 'Release Package'
+        inputs:
+            PathtoPublish: './editor-extensions/vscode/'
+            ArtifactName: npm-package
+
+
+# - name: release
+#   jobs:
+#   - job: Release
+#     timeoutInMinutes: 0
+#     displayName: Release
+#     pool:
+#       vmImage: ubuntu-16.04
+#     steps:
+#     - task: GitHubRelease@0
+#       inputs:
+#         gitHubConnection: jaredly
+#         repositoryName: '$(Build.Repository.Name)'
+#         action: 'create'
+#         target: '$(Build.SourceVersion)'
+#         tagSource: manual
+#         tag: $(Release Tag)
+#         isDraft: true
+#         addChangeLog: true

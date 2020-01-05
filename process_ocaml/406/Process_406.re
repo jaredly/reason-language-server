@@ -34,7 +34,7 @@ let fullForCmt = (~moduleName, ~allLocations, cmt, uri, processDoc) => {
   }
 }; */
 
-let module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_407);
+module Convert = Migrate_parsetree.Convert(Migrate_parsetree.OCaml_406, Migrate_parsetree.OCaml_current);
 
 let astForCmt = cmt => {
   let%try infos = Shared.tryReadCmt(cmt);
@@ -50,6 +50,53 @@ let astForCmt = cmt => {
     Ok(`Interface(Convert.copy_signature(Obj.magic(Untypeast.untype_signature(signature)))))
     /* Printast.interface(Stdlib.Format.str_formatter, Untypeast.untype_signature(signature));
     Ok(Format.flush_str_formatter()); */
+
+  | Partial_implementation(parts) =>
+    let items =
+      parts
+      ->Array.to_list
+      ->(
+          Belt.List.keepMap(p =>
+            switch (p) {
+            | Partial_structure(str) => Some(str.str_items)
+            | Partial_structure_item(str) => Some([str])
+            /* | Partial_expression(exp) => Some([ str]) */
+            | _ => None
+            }
+          )
+        )
+      |> List.concat;
+    Ok(
+      `Implementation(
+        Convert.copy_structure(Obj.magic(List.map(
+          item => Untypeast.default_mapper.structure_item(Untypeast.default_mapper, item),
+          items,
+        ))),
+      ),
+    );
+  | Partial_interface(parts) =>
+    let items =
+      parts
+      ->Array.to_list
+      ->(
+          Belt.List.keepMap(p =>
+            switch (p) {
+            | Partial_signature(str) => Some(str.sig_items)
+            | Partial_signature_item(str) => Some([str])
+            /* | Partial_expression(exp) => Some([ str]) */
+            | _ => None
+            }
+          )
+        )
+      |> List.concat;
+    Ok(
+      `Interface(
+        Convert.copy_signature(Obj.magic(List.map(
+          item => Untypeast.default_mapper.signature_item(Untypeast.default_mapper, item),
+          items,
+        ))),
+      ),
+    );
   | _ => Error("Not a well-typed implementation")
   }
 };

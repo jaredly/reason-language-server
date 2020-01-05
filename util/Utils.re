@@ -250,3 +250,26 @@ let getEnvVar = (~env=Unix.environment()->Array.to_list, varToFind) => {
     | _ => None
   }
 }
+
+/*
+ * Quotes filename when not quoted
+ * Example:
+ * myFile.exe -> 'myFile.exe'
+ * 'myFile.exe' -> 'myFile.exe'
+ */
+let maybeQuoteFilename = (filename) => {
+  let len = String.length(filename);
+  if (len < 1) {
+    ""
+  } else {
+    let firstChar = String.get(filename, 0);
+    let lastChar = String.get(filename, len - 1)
+    switch (firstChar, lastChar) {
+    | ('\'','\'') 
+    | ('\"','\"') => filename  
+    | _ => Filename.quote(filename)
+    }
+  }
+}
+
+

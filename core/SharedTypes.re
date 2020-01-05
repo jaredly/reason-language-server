@@ -6,6 +6,7 @@ module SimpleType = {
   type expr('source) =
     | Variable(string)
     | AnonVariable
+    | RowVariant(list((string, option(expr('source)))), bool)
     | Reference('source, list(expr('source)))
     | Tuple(list(expr('source)))
     | Fn(list((option(string), expr('source))), expr('source))
@@ -28,6 +29,7 @@ module SimpleType = {
     | Tuple(items) => items->Belt.List.map(usedSourcesExpr)->List.concat
     | Reference(source, args) => [source, ...args->Belt.List.map(usedSourcesExpr)->List.concat]
     | Fn(args, res) => args->Belt.List.map(snd)->Belt.List.map(usedSourcesExpr)->List.concat @ usedSourcesExpr(res)
+    | RowVariant(rows, _) => rows->Belt.List.keepMap(snd)->Belt.List.map(usedSourcesExpr)->List.concat
     | Variable(_) | AnonVariable | Other => []
   };
 
@@ -65,6 +67,13 @@ module SimpleType = {
     | Fn(args, res) => Fn(args->Belt.List.map(
       ((label, arg)) => (label, mapSource(fn, arg))
     ), mapSource(fn, res))
+    | RowVariant(rows, closed) => RowVariant(
+      rows->Belt.List.map(((label, expr)) => (label, switch expr {
+        | None => None
+        | Some(expr) => Some(mapSource(fn, expr))
+      })),
+      closed
+    )
     | Other => Other
   };
 
@@ -104,7 +113,15 @@ type filePath = string
 type paths =
 | Impl(filePath, option(filePath))
 | Intf(filePath, option(filePath))
+// .cm(t)i, .mli, .cmt, .rei
 | IntfAndImpl(filePath, option(filePath), filePath, option(filePath));
+
+open Infix;
+let showPaths = paths => switch paths {
+  | Impl(cmt, src) => Printf.sprintf("Impl(%s, %s)", cmt, src |? "nil")
+  | Intf(cmti, src) => Printf.sprintf("Intf(%s, %s)", cmti, src |? "nil")
+  | IntfAndImpl(cmti, srci, cmt, src) => Printf.sprintf("IntfAndImpl(%s, %s, %s, %s)", cmti, srci |? "nil", cmt, src |? "nil")
+};
 
 let getImpl = p => switch p {
   | Impl(cmt, Some(s))
@@ -331,6 +348,12 @@ module Loc = {
   | GlobalReference(string, path, tip)
   | NotFound
   | Definition(int, tip);
+  let typedToString = t => switch t {
+    | LocalReference(stamp, tip) => Printf.sprintf("Local(%d, %s)", stamp, tipToString(tip))
+    | GlobalReference(m, path, tip) => Printf.sprintf("Global(%s, %s, %s)", m, pathToString(path), tipToString(tip))
+    | Definition(stamp, tip) => Printf.sprintf("Definition(%d, %s)", stamp, tipToString(tip))
+    | NotFound => "NotFound"
+  };
   type t =
   | Typed(flexibleType, typed)
   | Constant(Asttypes.constant)

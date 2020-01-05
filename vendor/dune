@@ -2,7 +2,7 @@
 
 (library
   (name Vendor)
-  (public_name ReasonLanguageServer.Vendor)
+  (public_name reason-language-server.Vendor)
   (flags :standard -w -A)
   (libraries compiler-libs.common bigarray)
   )

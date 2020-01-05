@@ -1,9 +1,9 @@
 
 # Reason Language Server
 
-This project implements the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/specification#initialize) for Reason.
+This project implements the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) for Reason.
 
-It is written in Reason, and compiled via bsb-native. The goal is for it to work equally well on Windows, MacOS, and Linux.
+It is written in Reason, and compiled w/ esy + dune. The goal is for it to work equally well on Windows, MacOS, and Linux.
 
 ## Platform support
 
@@ -53,8 +53,15 @@ And you're done!
     "reason": {
       "enabled": true,
       "command": ["/absolute/path/to/reason-language-server.exe"],
-      "scopes": ["source.reason"],
-      "syntaxes": ["Packages/Reason/Reason.tmLanguage"],
+      "scopes": [
+        "source.reason",
+        "source.ocaml"
+      ],
+      "syntaxes": [
+        "Packages/Reason/Reason.tmLanguage",
+        "Packages/sublime-reason/Reason.tmLanguage",
+        "Packages/OCaml/OCaml.sublime-syntax"
+      ],
       "languageId": "reason"
     }
   }
@@ -67,9 +74,11 @@ And you're done!
 2. Assuming you're using [lsp-mode](https://github.com/emacs-lsp/lsp-mode/), add the following to your config file:
 ```
 (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection "/path/to/reason-language-server.exe")
-                    :major-modes '(reason-mode)
-                    :server-id 'ocaml-ls))
+ (make-lsp-client :new-connection (lsp-stdio-connection "/absolute/path/to/reason-language-server.exe")
+                  :major-modes '(reason-mode)
+                  :notification-handlers (ht ("client/registerCapability" 'ignore))
+                  :priority 1
+                  :server-id 'reason-ls))
 ```
 
 ### Atom
@@ -129,7 +138,7 @@ If that doesn't work, try cleaning built artifacts, with `bsb -clean-world` (or 
 ## What about the [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
 That project uses [merlin](https://github.com/ocaml/merlin) under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
-I had a couple of reasons for starting a new one. The biggest is that I wanted something with minimal dependencies, so that windows support would be relatively easy, and so that I might be able to ship it with bucklescript at some future point. (it also makes targetting JS easier). I also wanted a server that was written entirely in Reason (not part typescript, part reason), and something that was written from the ground up with the Langauge Server Protocol in mind, instead of taking a different IDE-support-tool and mapping the LSP onto it.
+I had a couple of reasons for starting a new one. The biggest is that I wanted something with minimal dependencies, so that windows support would be relatively easy, and so that I might be able to ship it with bucklescript at some future point. (it also makes targetting JS easier). I also wanted a server that was written entirely in Reason (not part typescript, part reason), and something that was written from the ground up with the Language Server Protocol in mind, instead of taking a different IDE-support-tool and mapping the LSP onto it.
 
 ## Contributing
 
@@ -137,8 +146,20 @@ I had a couple of reasons for starting a new one. The biggest is that I wanted s
 - Clone this repo
 - `cd` to the cloned dir
 - Run `esy` from the main project dir
+- Run `esy symlink` to link the built artifact into the root folder at `bin.exe`
 - Install the VS Code extension's dependencies `cd editor-extensions/vscode && npm i && cd ../..`
 - Open this project in VS Code
+
+### Running the test suite
+
+- `esy cp-test`
+- `./RunTests.exe`
+
+NOTE it's important that you don't run the `RunTests.exe` from within an esy shell (e.g. `esy dune exec RunTests.exe`) -- the variables esy sets will mess things up.
+
+### Building the OCaml grammar
+- Edit the files in editor-extensions/vscode/src/syntaxes
+- Run `cd editor-extensions/vscode && npm run build-syntaxes`
 
 ## To test your changes in one of the example projects
 - Open the "Debug" pane in VS Code. Select a debug target. Press "Run"

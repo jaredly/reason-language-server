@@ -1,5 +1,5 @@
-let rec (deserialize_Hello__Tryit____lockfile :
-  Json.t -> (Tryit.Hello.lockfile, string) Belt.Result.t) =
+let rec (deserialize_Hello__TryIt____lockfile :
+  Json.t -> (TryIt.Hello.lockfile, string) Belt.Result.t) =
   fun record ->
     match record with
     | ((Json.Object (items))[@explicit_arity ]) ->
@@ -33,7 +33,7 @@ let rec (deserialize_Hello__Tryit____lockfile :
                                                [@explicit_arity ])) arg1
                                   with
                                   | Belt.Result.Ok arg1 ->
-                                      (match deserialize_Hello__Tryit____shortReference
+                                      (match deserialize_Hello__TryIt____shortReference
                                                arg0
                                        with
                                        | Belt.Result.Ok arg0 ->
@@ -116,7 +116,7 @@ let rec (deserialize_Hello__Tryit____lockfile :
                                                               ])) arg1
                                                with
                                                | Belt.Result.Ok arg1 ->
-                                                   (match deserialize_Hello__Tryit____shortReference
+                                                   (match deserialize_Hello__TryIt____shortReference
                                                             arg0
                                                     with
                                                     | Belt.Result.Ok arg0 ->
@@ -215,8 +215,8 @@ let rec (deserialize_Hello__Tryit____lockfile :
             ((("Expected an object")
               [@reason.raw_literal "Expected an object"])))
         [@explicit_arity ])
-and (deserialize_Hello__Tryit____shortReference :
-  Json.t -> (Tryit.Hello.shortReference, string) Belt.Result.t) =
+and (deserialize_Hello__TryIt____shortReference :
+  Json.t -> (TryIt.Hello.shortReference, string) Belt.Result.t) =
   fun value ->
     (fun json ->
        match json with
@@ -304,7 +304,7 @@ and deserialize_Belt_HashMapInt____t :
   =
   fun bTransformer ->
     TransformHelpers.deserialize_Belt_HashMapInt____t bTransformer
-let rec (serialize_Hello__Tryit____lockfile : Tryit.Hello.lockfile -> Json.t)
+let rec (serialize_Hello__TryIt____lockfile : TryIt.Hello.lockfile -> Json.t)
   =
   fun record ->
     Json.Object
@@ -318,7 +318,7 @@ let rec (serialize_Hello__Tryit____lockfile : Tryit.Hello.lockfile -> Json.t)
                  (Belt.List.map list
                     (fun (arg0, arg1) ->
                        Json.Array
-                         [serialize_Hello__Tryit____shortReference arg0;
+                         [serialize_Hello__TryIt____shortReference arg0;
                          ((fun i -> ((Json.Number ((float_of_int i)))
                              [@explicit_arity ]))) arg1]))))
            record.pastVersions));
@@ -328,11 +328,11 @@ let rec (serialize_Hello__Tryit____lockfile : Tryit.Hello.lockfile -> Json.t)
                (Belt.List.map list
                   (fun (arg0, arg1) ->
                      Json.Array
-                       [serialize_Hello__Tryit____shortReference arg0;
+                       [serialize_Hello__TryIt____shortReference arg0;
                        ((fun i -> ((Json.Number ((float_of_int i)))
                            [@explicit_arity ]))) arg1])))) record.current))]
-and (serialize_Hello__Tryit____shortReference :
-  Tryit.Hello.shortReference -> Json.t) =
+and (serialize_Hello__TryIt____shortReference :
+  TryIt.Hello.shortReference -> Json.t) =
   fun value ->
     (fun (arg0, arg1, arg2) ->
        Json.Array

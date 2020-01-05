@@ -4,15 +4,27 @@ open Belt.Result;
 
 let tryReadCmi = cmi =>
   switch (Cmi_format.read_cmi(cmi)) {
-  | exception _ => Error("Invalid cmi format - probably wrong ocaml version")
+  | exception err => Error("Invalid cmi format " ++ cmi ++ " - probably wrong ocaml version, expected " ++ Config.version ++ " : " ++ Printexc.to_string(err))
   | x => Ok(x)
   };
 
-let tryReadCmt = cmt =>
-  switch (Cmt_format.read_cmt(cmt)) {
-  | exception _ => Error("Invalid cmt format - probably wrong ocaml version")
-  | x => Ok(x)
-  };
+let tryReadCmt = cmt => {
+  if (!Util.Files.exists(cmt)) {
+    Error("Cmt file does not exist " ++ cmt)
+  } else {
+    switch (Cmt_format.read_cmt(cmt)) {
+    | exception Cmi_format.Error(err) =>
+      Error("Failed to load " ++ cmt ++ " as a cmt w/ ocaml version " ++
+      "402" ++
+      ", error: " ++ {
+        Cmi_format.report_error(Format.str_formatter, err);
+        Format.flush_str_formatter();
+      })
+    | exception err => Error("Invalid cmt format " ++ cmt ++ " - probably wrong ocaml version, expected " ++ Config.version ++ " : " ++ Printexc.to_string(err))
+    | x => Ok(x)
+    };
+  }
+};
 
 /** TODO move to the Process_ stuff */
 let rec dig = (typ) =>
@@ -63,15 +75,22 @@ let rec getFnArgs = t => {
   }
 };
 
+/* Unfortunately we need to depend on previous Compiler_libs_* versions starting
+   with 4.07, otherwise we can't construct an ident with a custom stamp.
+ */
+
+
 /* HACK(jared): They removed all way for me to produce an "Ident.t" with the correct stamp.
    They forced my hand.
 */
-let convertIdent = (oldIdent) => {(Obj.magic(oldIdent): Current.ident)};
+let convertIdent = (oldIdent) => {
+  (Obj.magic(Current.Local { name: oldIdent.Ident.name, stamp: oldIdent.Ident.stamp }): Current.abstract_ident);
+};
 
 let rec mapOldPath = oldPath => {
   switch (oldPath) {
     | Path.Pident(oldIdent) => Current.Pident(convertIdent(oldIdent))
-    | Path.Pdot(inner, name, int) => Current.Pdot(mapOldPath(inner),name,int)
+    | Path.Pdot(inner, name, _) => Current.Pdot(mapOldPath(inner),name)
     | Path.Papply(one, two) => Current.Papply(mapOldPath(one), mapOldPath(two))
   }
 };
@@ -93,6 +112,14 @@ let rec asSimpleType = t => {
       SimpleType.Tuple(items->Belt.List.map(asSimpleType))
     | Tconstr(path, args, _) =>
       SimpleType.Reference(path, args->Belt.List.map(asSimpleType))
+    | Tvariant({row_fields, row_more: _, row_closed, row_fixed: _, row_name: _}) =>
+      SimpleType.RowVariant(
+        row_fields->Belt.List.map(((label, field)) => switch field {
+          | Reither(_, [arg], _, _) => (label, Some(asSimpleType(arg)))
+          | _ => (label, None)
+        }),
+        row_closed
+      )
     | _ => SimpleType.Other
   }
 };
@@ -129,8 +156,10 @@ let asSimpleDeclaration = (name, t) => {
 };
 
 let migrateAttributes = t => {
-  t.Types.type_attributes->Belt.List.map((({Asttypes.txt}, payload)) => {
-    (Current.mknoloc(txt), switch payload {
+  t.Types.type_attributes
+    ->Belt.List.map(
+      (({Asttypes.txt, loc}, payload)) => {
+    let payload = switch payload {
       | PStr(structure) =>
         Current.PStr(Current.Parser.implementation(Current.Lexer.token, Stdlib.Lexing.from_string({
           Pprintast.structure(Stdlib.Format.str_formatter, structure);
@@ -150,7 +179,12 @@ let migrateAttributes = t => {
           Pprintast.core_type(Stdlib.Format.str_formatter, typ);
           Stdlib.Format.flush_str_formatter()
         })))
-    })
+    };
+    {
+      Current.Parsetree.attr_name: Current.mknoloc(txt),
+      attr_payload: payload,
+      attr_loc: loc
+    }
   });
 };
 

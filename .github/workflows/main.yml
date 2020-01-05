@@ -1,0 +1,46 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Revery CI
+    
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        node-version: [10.x]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }} on ${{ matrix.os}}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install esy
+      run: |
+        npm install -g esy
+
+    - uses: actions/cache@v1
+      if: matrix.os == 'windows-latest'
+      with:
+        path: ~/.esy
+        key: ${{ runner.os }}-node-${{ hashFiles('esy.lock/**') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Esy
+      run: esy
+    - name: Running some tests
+      run: ./runtests.sh
+      shell: bash
+
+    - name: rm the esy build stuff, don't need to cache that
+      if: matrix.os == 'windows-latest'
+      run: npx rimraf ~/.esy/3_*/b/
