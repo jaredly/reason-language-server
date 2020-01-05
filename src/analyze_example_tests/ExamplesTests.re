@@ -60,6 +60,7 @@ let esyProjects = [
 // Don't run the esy examples on windows, they're failing right now.
 let projects = (Sys.os_type == "Unix" ? esyProjects : []) @ [
   ("example-project", ["src"], "npm install"),
+  ("example-bsb-ppx", ["src"], "npm install"),
   ("example-es6-imports", ["src"], "npm install"),
   ("example-react", ["src", "__tests__"], "npm install"),
   ("name_with_underscore", ["src"], "npm install"),
