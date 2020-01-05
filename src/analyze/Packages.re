@@ -70,9 +70,9 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
   Log.log("- buildSystem: " ++ BuildSystem.show(buildSystem));
   Log.log("- build command: " ++ buildCommand);
 
-  if (state.settings.autoRebuild) {
+  let%try () = if (state.settings.autoRebuild) {
     BuildCommand.runBuildCommand(~reportDiagnostics, state, rootPath, Some((buildCommand, rootPath)));
-  };
+  } else { Ok() };
 
   let compiledBase = BuildSystem.getCompiledBase(rootPath, buildSystem);
   let%try stdLibDirectories = BuildSystem.getStdlib(rootPath, buildSystem);
@@ -331,9 +331,9 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
       }
   };
 
-  if (state.settings.autoRebuild) {
+  let%try () = if (state.settings.autoRebuild) {
     BuildCommand.runBuildCommand(~reportDiagnostics, state, rootPath, buildCommand);
-  };
+  } else { Ok() };
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
