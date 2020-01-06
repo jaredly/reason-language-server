@@ -36,7 +36,8 @@ let checkPackageTimers = state => {
   Hashtbl.iter((_, package) => {
     if (package.rebuildTimer != 0. && package.rebuildTimer < Unix.gettimeofday()) {
       package.rebuildTimer = 0.;
-      BuildCommand.runBuildCommand(~reportDiagnostics, state, package.basePath, package.buildCommand);
+      // TODO report the error here
+      ignore @@ BuildCommand.runBuildCommand(~reportDiagnostics, state, package.basePath, package.buildCommand);
     }
   }, state.packagesByRoot)
 };
