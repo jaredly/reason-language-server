@@ -135,6 +135,9 @@ If your editor is in a weird state, the first recourse (if you're in VSCode) is 
 
 If that doesn't work, try cleaning built artifacts, with `bsb -clean-world` (or for dune, `dune clean`). Then try to build, with `bsb -make-world` (or `dune build @install`) and see if that works.
 
+If you encounter `Unable to find project root dir` error, check that there are no extra `.merlin` files
+in other folders than the project root folder. 
+
 ## What about the [ocaml-language-server](https://github.com/freebroccolo/ocaml-language-server/)?
 
 That project uses [merlin](https://github.com/ocaml/merlin) under the hood, which is a very powerful and well-developed tool for IDE features in OCaml/Reason.
