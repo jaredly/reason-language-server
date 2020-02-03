@@ -27,6 +27,18 @@ ext install jaredly.reason-vscode
 
 The vscode extension is configured via the normal vscode settings screen.
 
+### ArchLinux
+
+There is a package available in the [AUR](https://aur.archlinux.org/packages/reason-language-server).
+
+Use your favorite AUR helper or:
+
+```
+git clone https://aur.archlinux.org/reason-language-server.git
+cd reason-language-server
+makepkg -si
+```
+
 ### OniVim
 
 Oni has support for Reason baked in, and it only needs a little bit of configuration to integrate this langauge server.
