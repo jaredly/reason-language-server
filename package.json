@@ -29,6 +29,7 @@
     "@opam/ppxlib": "*",
     "@opam/reason": ">= 3.5.0",
     "@opam/stdlib-shims": "*",
+    "@opam/uri": "3.1.0",
     "@reason-native/pastel": "^0.2.2",
     "@reason-native/rely": "^3.1.0",
     "ocaml": "~4.8.1000",

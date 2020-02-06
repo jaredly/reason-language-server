@@ -1,7 +1,7 @@
 (library
   (name Util)
   (public_name reason-language-server.Util)
-  (libraries Belt Vendor str)
+  (libraries Belt Vendor str uri)
   (flags :standard -open Vendor -w -9)
   (preprocess (pps Belt_ppx Ppx_monads))
   )

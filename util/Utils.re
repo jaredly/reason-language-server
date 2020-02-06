@@ -130,9 +130,11 @@ let parseWindowsUri = withoutScheme => {
   |> String.concat({|\|})
 };
 
-let parseUri = (uri) =>
-  if (startsWith(uri, "file://")) {
-    let withoutScheme = sliceToEnd(uri, String.length("file://"));
+let parseUri = (uri) => {
+  let withoutPct = Uri.pct_decode(uri);
+  if (startsWith(withoutPct, "file://")) {
+    let withoutScheme = sliceToEnd(withoutPct, String.length("file://"));
+
     if (Sys.os_type == "Unix") {
       Some(withoutScheme)
     } else {
@@ -141,6 +143,7 @@ let parseUri = (uri) =>
   } else {
     None
   };
+}
 
 let locationOffset = (loc, start, length) =>
   Location.{
