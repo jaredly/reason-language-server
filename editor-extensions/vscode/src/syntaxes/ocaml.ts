@@ -300,7 +300,7 @@ export class OCaml implements basis.ILanguage {
               group(
                 alt(
                   ...Object.keys(Token)
-                    .filter(key => key !== "LOW_LINE" && key !== "NEW" && key !== "MODULE")
+                    .filter(key => key !== "LOW_LINE" && key !== "NEW" && key !== "MODULE" && key !== "AS")
                     .map(key => (Token as any)[key]),
                 ),
               ),
