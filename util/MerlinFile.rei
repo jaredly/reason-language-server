@@ -1,5 +1,5 @@
 let debug: ref(bool);
-let fixPpx: (string, string) => string;
+let fixPpxBsNative: (string, string) => string;
 let parseMerlin:
   (string, string) => (list(string), list(string), list(string));
 let isRelativePath: string => bool;
