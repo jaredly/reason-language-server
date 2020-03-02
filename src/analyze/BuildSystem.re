@@ -146,9 +146,9 @@ let getCompilerVersion = executable => {
   let (output, success) = Commands.execSync(cmd);
   success ? switch output {
   | [line] when Str.string_match(Str.regexp_string("BuckleScript "), line, 0) =>
-    switch (Str.split(Str.regexp_string("(Using OCaml"), String.trim(line))) {
+    switch (Str.split(Str.regexp("( *Using OCaml:?"), String.trim(line))) {
       | [_, version] => parseOCamlVersion(version)
-      | _ => Error("Cannot detect OCaml version from BuckleScript version string: " ++ line)
+      | xs => Error("Cannot detect OCaml version from BuckleScript version string: " ++ line ++ "[" ++ String.concat(" ;", xs) ++ "]")
     }
   | [line] => parseOCamlVersion(line)
   | _ => Error("Unable to determine compiler version (ran " ++ cmd ++ "). Output: " ++ String.concat("\n", output))
@@ -350,19 +350,28 @@ let getCompiler = (rootPath, buildSystem) => {
 };
 
 let getRefmt = (rootPath, buildSystem) => {
+  let bsRefmt = (bsPlatformDir) =>
+    switch (Files.ifExists(bsPlatformDir/+"lib"/+"refmt.exe")){
+      | Some (x) => x
+      | None => 
+        switch(Files.ifExists(bsPlatformDir /+ nodePlatform /+ "refmt.exe")){
+          | Some (x) => x 
+          | None => bsPlatformDir /+ "lib" /+ "refmt3.exe"
+        }
+    }  
   switch (buildSystem) {
     | BsbNative("3.2.0", _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "lib" /+ "refmt.exe"
+      bsRefmt(bsPlatformDir)
     | Bsb(version) when version > "2.2.0" =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "lib" /+ "refmt.exe"
+      bsRefmt(bsPlatformDir)
     | BsbNative(version, _) when version >= "4.0.6" =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "lib" /+ "refmt.exe"
+      bsRefmt(bsPlatformDir)
     | Bsb(_) | BsbNative(_, _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "lib" /+ "refmt3.exe"
+      bsRefmt(bsPlatformDir)
     | Dune(Esy(_)) => getExecutableInEsyPath("refmt",~pwd=rootPath)
     | Dune(Opam(switchPrefix)) =>
       Ok(switchPrefix /+ "bin" /+ "refmt")
