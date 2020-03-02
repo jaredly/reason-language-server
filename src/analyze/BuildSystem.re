@@ -85,6 +85,19 @@ let namespacedName = (buildSystem, namespace, name) => switch buildSystem {
 
 open Infix;
 
+let nodePlatform = 
+    switch (Sys.os_type) {
+      | "Unix" => switch (input_line (Unix.open_process_in ("uname -s"))) {
+         | "Darwin"  => "darwin"
+         | "Linux"   => "linux"
+         | "FreeBSD" => "freebsd"
+         | s => invalid_arg (s ++ ": unsupported os_type")
+      }
+      | "Win32" => "win32"
+      | s => invalid_arg (s ++ ": unsupported os_type")
+  };
+
+
 let getBsPlatformDir = rootPath => {
   let result =
     ModuleResolution.resolveNodeModulePath(
@@ -319,7 +332,10 @@ let getCompiler = (rootPath, buildSystem) => {
     | BsbNative(_, Js)
     | Bsb(_) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
-      bsPlatformDir /+ "lib" /+ "bsc.exe"
+      switch(Files.ifExists(bsPlatformDir /+ "lib" /+ "bsc.exe")){
+        | Some (x) => x 
+        | None => bsPlatformDir /+ nodePlatform /+ "bsc.exe"
+      }
     | BsbNative(_, Native) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       bsPlatformDir /+ "vendor" /+ "ocaml" /+ "ocamlopt.opt"
