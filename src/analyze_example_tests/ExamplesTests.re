@@ -54,7 +54,6 @@ let checkExampleProject = (describe, name, rootPath, sourcePaths, prepareCommand
 let esyProjects = [
   ("dune", ["src", "both"], "esy"),
   ("dune-complex", ["src", "both", "awesome"], "esy"),
-  ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
 
 // Don't run the esy examples on windows, they're failing right now.
@@ -64,6 +63,7 @@ let projects = (Sys.os_type == "Unix" ? esyProjects : []) @ [
   ("example-react", ["src", "__tests__"], "npm install"),
   ("name_with_underscore", ["src"], "npm install"),
   ("bs-3.1.5", ["src"], "npm install"),
+  ("example-esy-dune-project", ["lib", "bin"], "esy"),
 ];
 
 // let main = (baseDir, _verbose, args) => {
