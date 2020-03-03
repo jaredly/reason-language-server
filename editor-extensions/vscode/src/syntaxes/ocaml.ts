@@ -561,6 +561,15 @@ export class OCaml implements basis.ILanguage {
           },
           patterns: [
             {
+              begin: lastWords(Token.REC),
+              end: alt(capture(this.identLower()), lookAhead(complement(Class.space, Class.alpha))),
+              endCaptures: {
+                0: { name: Scope.NAME_FUNCTION() },
+              },
+              patterns: [include(this.bindTermArgs)],
+            },
+            include(this.bindTermArgs),
+            {
               begin: alt(this.lastOps("!"), lastWords(Token.AND, Token.EXTERNAL, Token.LET, Token.METHOD, Token.VAL)),
               end: alt(
                 lookAhead(words(group(alt(Token.MODULE, Token.OPEN)))),
@@ -579,15 +588,6 @@ export class OCaml implements basis.ILanguage {
               },
               patterns: [include(this.attributeIdentifier), include(this.comment)],
             },
-            {
-              begin: lastWords(Token.REC),
-              end: alt(capture(this.identLower()), lookAhead(complement(Class.space, Class.alpha))),
-              endCaptures: {
-                0: { name: Scope.NAME_FUNCTION() },
-              },
-              patterns: [include(this.bindTermArgs)],
-            },
-            include(this.bindTermArgs),
           ],
         },
         {
@@ -960,7 +960,7 @@ export class OCaml implements basis.ILanguage {
       endCaptures: {
         0: { name: Scope.STYLE_DELIMITER() },
       },
-      patterns: [include(this.comment), include(this.pragma), include(this.bindTerm)],
+      patterns: [include(this.pragma), include(this.bindTerm), include(this.comment)],
     };
   }
 
