@@ -51,22 +51,12 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
   let%try bsPlatform = BuildSystem.getBsPlatformDir(rootPath);
 
   
-  let nodePlatform = 
-    switch (Sys.os_type) {
-      | "Unix" => switch (input_line (Unix.open_process_in ("uname -s"))) {
-         | "Darwin"  => "darwin"
-         | "Linux"   => "linux"
-         | "FreeBSD" => "freebsd"
-         | s => invalid_arg (s ++ ": unsupported os_type")
-      }
-      | "Win32" => "win32"
-      | s => invalid_arg (s ++ ": unsupported os_type")
-  };
+
   
   let bsb = switch (Files.ifExists(bsPlatform /+ "lib" /+ "bsb.exe")){
     | Some (x) => x
     | None =>
-      switch (Files.ifExists(bsPlatform /+ nodePlatform /+ "bsb.exe")){
+      switch (Files.ifExists(bsPlatform /+ BuildSystem.nodePlatform /+ "bsb.exe")){
         | Some (x) => x
         | None => failwith ("can not locate bsb.exe in " ++ bsPlatform)
       } 
@@ -189,7 +179,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
   };
 
   let flags = switch buildSystem {
-    | Bsb(_) | BsbNative(_, Js) => {
+    | Bsb(version) | BsbNative(version, Js) => {
 
       let jsPackageMode = {
         let specs = config |> Json.get("package-specs");
@@ -212,7 +202,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
         | _ => flags;
       };
       /* flags */
-      ["-bs-no-builtin-ppx-ml", ...flags];
+      [ version > "7.1" ? "-bs-no-builtin-ppx" : "-bs-no-builtin-ppx-ml", ...flags];
     }
     | _ => flags
   };

@@ -38,6 +38,7 @@ let (/+) = Filename.concat;
 
 let projectDirs = [
   ("examples" /+ "bs-3.1.5", "npm i"),
+  ("examples" /+ "bs-7.2", "npm i"),
   ("examples" /+ "dune", "esy"),
   ("examples" /+ "example-react", "npm i"),
   (".", "esy"),
