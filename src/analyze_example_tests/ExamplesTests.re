@@ -64,6 +64,7 @@ let projects = (Sys.os_type == "Unix" ? esyProjects : []) @ [
   ("example-react", ["src", "__tests__"], "npm install"),
   ("name_with_underscore", ["src"], "npm install"),
   ("bs-3.1.5", ["src"], "npm install"),
+  ("bs-7.2", ["src"], "npm install"),
 ];
 
 // let main = (baseDir, _verbose, args) => {

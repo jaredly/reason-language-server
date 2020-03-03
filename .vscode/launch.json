@@ -75,6 +75,18 @@
 			"sourceMaps": false,
 		},
 		{
+			"name": "BS 7.2",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/editor-extensions/vscode",
+				"${workspaceRoot}/examples/bs-7.2"
+			],
+			"stopOnEntry": false,
+			"sourceMaps": false,
+		},
+		{
 			"name": "Workspace",
 			"type": "extensionHost",
 			"request": "launch",
