@@ -202,7 +202,7 @@ let newBsPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, rootPath)
         | _ => flags;
       };
       /* flags */
-      [ version > "7.1" ? "-bs-no-builtin-ppx" : "-bs-no-builtin-ppx-ml", ...flags];
+      [ version >= "7.2" ? "-bs-no-builtin-ppx" : "-bs-no-builtin-ppx-ml", ...flags];
     }
     | _ => flags
   };
