@@ -46,7 +46,7 @@ let runRefmt = (~interface, ~moduleName, ~cacheLocation, text, refmt) => {
 let convertToRe = (~formatWidth, ~interface, text, refmt) => {
   let (out, error, success) = Commands.execFull(~input=text, Printf.sprintf("%s --print re --print-width=%d --parse ml%s", Commands.shellEscape(refmt), formatWidth |? 80, interface ? " -i true" : ""));
   if (success) {
-    Ok(String.concat("\n", out))
+    Ok(String.concat("\n", out) ++ "\n")
   } else {
     Error(String.concat("\n", out @ error))
   }
@@ -55,7 +55,7 @@ let convertToRe = (~formatWidth, ~interface, text, refmt) => {
 let format = (text, fmtCmd) => {
   let (out, error, success) = Commands.execFull(~input=text, fmtCmd);
   if (success) {
-    Ok(String.concat("\n", out))
+    Ok(String.concat("\n", out) ++ "\n")
   } else {
     Error(String.concat("\n", out @ error))
   }
