@@ -358,7 +358,7 @@ let valueCompletions = (~env: Query.queryEnv, suffix) => {
   Log.log(" - Completing in " ++ env.file.uri);
   let results = [];
   let results =
-    if (suffix == "" || isCapitalized(suffix)) {
+    if (isCapitalized(suffix)) {
       let moduleCompletions = completionForExporteds(
           env.exported.modules, env.file.stamps.modules, suffix, m =>
           Module(m)
