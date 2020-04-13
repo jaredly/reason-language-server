@@ -197,13 +197,13 @@ let detectFull = projectDir => {
   };
 };
 
-let getEsyCompiledBase = () => {
+let getEsyCompiledBase = (rootPath) => {
   let env = Unix.environment()->Array.to_list;
 
   switch(Utils.getEnvVar(~env, "cur__original_root"), Utils.getEnvVar(~env, "cur__target_dir")) {
   | (Some(projectRoot), Some(targetDir)) => Ok(Files.relpath(projectRoot, targetDir))
   | (_, _) =>
-    switch (Commands.execResult("esy command-env --json")) {
+    switch (Commands.execResult("cd " ++ rootPath ++ " && esy command-env --json")) {
     | Ok(commandEnv) =>
       switch (Json.parse(commandEnv)) {
       | exception (Failure(message)) =>
@@ -239,7 +239,7 @@ let getCompiledBase = (root, buildSystem) => {
   | BsbNative(_, Bytecode) => Ok(root /+ "lib" /+ "bs" /+ "bytecode")
   | Dune(Opam(_)) => Ok(root /+ "_build") /* TODO maybe check DUNE_BUILD_DIR */
   | Dune(Esy(_)) =>
-    let%try_wrap esyTargetDir = getEsyCompiledBase();
+    let%try_wrap esyTargetDir = getEsyCompiledBase(root);
     root /+ esyTargetDir
   };
 
@@ -384,7 +384,7 @@ let hiddenLocation = (rootPath, buildSystem) => {
     | BsbNative(_, _) => Ok(rootPath /+ "node_modules" /+ ".lsp")
     | Dune(Opam(_)) => Ok(rootPath /+ "_build" /+ ".lsp")
     | Dune(Esy(_)) =>
-      let%try_wrap esyTargetDir = getEsyCompiledBase();
+      let%try_wrap esyTargetDir = getEsyCompiledBase(rootPath);
       rootPath /+ esyTargetDir /+ ".lsp"
   };
 };
