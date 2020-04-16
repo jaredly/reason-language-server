@@ -346,8 +346,10 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
         } : lenses;
 
         let depsList = List.map(SharedTypes.hashList(extra.externalReferences), fst)
-        let depsString = depsList == [] ? "-" : String.concat(", ", depsList)
-        let lenses = (state.settings.dependenciesCodelens==true) ? [("Dependencies: " ++ depsString, topLoc), ...lenses] : lenses;
+        let depsString = depsList == [] ? "[none]" : String.concat(", ", depsList)
+        let lenses = (state.settings.dependenciesCodelens==true) ? 
+          [("Dependencies: " ++ depsString, topLoc), ...lenses] 
+          : lenses;
 
         lenses
       };
