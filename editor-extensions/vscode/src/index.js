@@ -319,5 +319,6 @@ function activate(context) {
     // vscode.commands.registerCommand('reason-language-server.expand_switch', () => {
     // });
 
+    return { getClient: () => client };
 }
 exports.activate = activate;
