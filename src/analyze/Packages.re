@@ -332,22 +332,24 @@ let newJbuilderPackage = (~overrideBuildSystem=?, ~reportDiagnostics, state, roo
 
   let interModuleDependencies = Hashtbl.create(List.length(localModules));
 
-  let buildCommand = switch (pkgMgr) {
-    | Esy(_) =>
-      Some(("esy", projectRoot))
-    | Opam(switchPrefix) =>
-      if (Files.exists(switchPrefix /+ "bin" /+ "dune")) {
-        Some(("opam exec -- dune build @install --root .", projectRoot))
-      } else if (Files.exists(projectRoot /+ "_opam" /+ "bin" /+ "jbuild")) {
-        Some(("opam exec -- jbuild build @install --root .", projectRoot))
-      } else {
-        None
-      }
-  };
+  let buildCommand = if (state.settings.autoRebuild) {
+    switch (pkgMgr) {
+      | Esy(_) =>
+        Some(("esy", projectRoot))
+      | Opam(switchPrefix) =>
+        if (Files.exists(switchPrefix /+ "bin" /+ "dune")) {
+          Some(("opam exec -- dune build @install --root .", projectRoot))
+        } else if (Files.exists(projectRoot /+ "_opam" /+ "bin" /+ "jbuild")) {
+          Some(("opam exec -- jbuild build @install --root .", projectRoot))
+        } else {
+          None
+        }
+    };
+  } else {
+    None;
+  }
 
-  let%try () = if (state.settings.autoRebuild) {
-    BuildCommand.runBuildCommand(~reportDiagnostics, state, rootPath, buildCommand);
-  } else { Ok() };
+  let%try () = BuildCommand.runBuildCommand(~reportDiagnostics, state, rootPath, buildCommand);
 
   let%try compilerPath = BuildSystem.getCompiler(projectRoot, buildSystem);
   let%try compilerVersion = BuildSystem.getCompilerVersion(compilerPath);
