@@ -345,10 +345,11 @@ let handlers: list((string, (state, Json.t) => result((state, Json.t), string)))
           CodeLens.forOpens(extra)
         } : lenses;
 
-        let showDependencies = state.settings.dependenciesCodelens;
-        let lenses = showDependencies ? [("Dependencies: " ++ String.concat(", ",
-          List.map(SharedTypes.hashList(extra.externalReferences), fst)
-        ), topLoc), ...lenses] : lenses;
+        let depsList = List.map(SharedTypes.hashList(extra.externalReferences), fst)
+        let depsString = depsList == [] ? "[none]" : String.concat(", ", depsList)
+        let lenses = (state.settings.dependenciesCodelens==true) ? 
+          [("Dependencies: " ++ depsString, topLoc), ...lenses] 
+          : lenses;
 
         lenses
       };
