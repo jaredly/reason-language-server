@@ -60,11 +60,10 @@ And you're done!
 4. `Ctrl/Cmd + Shift + P` and type "Preferences: LSP Settings" to bring up the settings file, and put in:
 ```json
 {
-  "auto_show_diagnostics_panel": false,
   "clients": {
     "reason": {
       "enabled": true,
-      "command": ["/absolute/path/to/reason-language-server.exe"],
+      "command": ["/absolute/path/to/reason-language-server"],
       "scopes": [
         "source.reason",
         "source.ocaml"
@@ -79,6 +78,8 @@ And you're done!
   }
 }
 ```
+
+If you're on a newer version of macOS and receive the error popup "reason-language-server cannot be opened because the developer cannot be verified", see [here](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
 
 ### Emacs
 
@@ -148,7 +149,7 @@ If your editor is in a weird state, the first recourse (if you're in VSCode) is 
 If that doesn't work, try cleaning built artifacts, with `bsb -clean-world` (or for dune, `dune clean`). Then try to build, with `bsb -make-world` (or `dune build @install`) and see if that works.
 
 If you encounter `Unable to find project root dir` error, check that there are no extra `.merlin` files
-in other folders than the project root folder. 
+in other folders than the project root folder.
 
 ## What about the [ocaml-language-server](https://github.com/ocaml-lsp/ocaml-language-server)?
 
