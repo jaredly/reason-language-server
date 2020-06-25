@@ -177,13 +177,18 @@ NOTE it's important that you don't run the `RunTests.exe` from within an esy she
 - Edit the files in editor-extensions/vscode/src/syntaxes
 - Run `cd editor-extensions/vscode && npm run build-syntaxes`
 
-## To test your changes in one of the example projects
+### To test your changes in one of the example projects
 - Open the "Debug" pane in VS Code. Select a debug target. Press "Run"
 - It should start up a window titled `[Extension development host]`
 - Run `npm install && npm run build` in the project directory
 - To reload the server if something goes wrong: `Ctrl/Cmd + Shift + P` "Restart Reason Language Server"
 
 You can then develop on the language server! When you change something, the server will automatically reload.
+
+### Building a new release
+
+- Add a commit with the message `actions: release` (it can have anything in the body), that increments the version in `extensions/vscode/package.json` to the desired version. Github actions will see that commit, and build a new github release.
+- then download the .vsix, briefly test it locally, and then use `vsce` to publish the release
 
 ## Copyright & License
 
