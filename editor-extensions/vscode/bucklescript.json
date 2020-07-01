@@ -1,0 +1,451 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "BuckleScript",
+  "scopeName": "source.bucklescript",
+  "repository": {
+    "RE_IDENT": {
+      "match": "[a-z_][0-9a-zA-Z_]*"
+    },
+    "RE_ATTRIBUTE": {
+      "match": "[A-Za-z_][A-Za-z0-9_\\.]*"
+    },
+    "RE_MODULE_IDENT": {
+      "name": "entity.name.namespace",
+      "match": "[A-Z_][0-9a-zA-Z_]*"
+    },
+    "RE_KEYWORDS": {
+      "name": "keyword.control",
+      "match": "\\b(and|as|assert|begin|class|constraint|done|downto|exception|external|fun|functor|inherit|lazy|let|pub|mutable|new|nonrec|object|of|or|pri|rec|then|to|val|virtual|try|catch|finally|do|else|for|if|switch|while|import|library|export|module|in|raise|private)\\b"
+    },
+    "RE_LITERAL": {
+      "name": "constant.language",
+      "match": "\\b(true|false)\\b"
+    },
+    "commentLine": {
+      "match": "//.*",
+      "name": "comment.line"
+    },
+    "commentBlock": {
+      "name": "comment.block",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    "punctuations": {
+      "patterns": [
+        {
+          "match": "~",
+          "name": "punctuation.definition.keyword"
+        },
+        {
+          "match": ";",
+          "name": "punctuation.terminator"
+        },
+        {
+          "match": "\\.",
+          "name": "punctuation.accessor"
+        },
+        {
+          "match": "\\,",
+          "name": "punctuation.separator"
+        },
+        {
+          "match": "\\?|:",
+          "name": "punctuation.separator"
+        },
+        {
+          "match": "\\|(?!\\|)",
+          "name": "punctuation.separator"
+        },
+        {
+          "match": "\\{",
+          "name": "punctuation.section.braces.begin"
+        },
+        {
+          "match": "\\}",
+          "name": "punctuation.section.braces.end"
+        },
+        {
+          "match": "\\(",
+          "name": "punctuation.section.parens.begin"
+        },
+        {
+          "match": "\\)",
+          "name": "punctuation.section.parens.end"
+        }
+      ]
+    },
+    "storage": {
+      "patterns": [
+        {
+          "match": "\\btype\\b",
+          "name": "storage.type"
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "include": "#RE_KEYWORDS"
+        }
+      ]
+    },
+    "constant": {
+      "patterns": [
+        {
+          "include": "#RE_LITERAL"
+        }
+      ]
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.double",
+          "begin": "\"",
+          "end": "\"",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.begin"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "contentName": "string.quoted.other",
+          "begin": "([a-z_][0-9a-zA-Z_]*)?(`)",
+          "end": "`",
+          "beginCaptures": {
+            "1": {
+              "name": "variables.annotation"
+            },
+            "2": {
+              "name": "string.quoted.other punctuation.definition.string.begin"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "string.quoted.other punctuation.definition.string.end"
+            }
+          }
+        }
+      ]
+    },
+    "function": {
+      "patterns": [
+        {
+          "match": "=>",
+          "name": "storage.type.function keyword.declaration.function"
+        }
+      ]
+    },
+    "character": {
+      "patterns": [
+        {
+          "match": "'[\\x00-\\x7F]'",
+          "name": "string.quoted.single"
+        }
+      ]
+    },
+    "number": {
+      "patterns": [
+        {
+          "match": "\\b(0[xX][a-fA-F0-9_]+[Lln]?|0[oO][0-7_]+[Lln]?|0[bB][01_]+[Lln]?|[0-9][0-9_]*([Lln]|(\\.[0-9_]+)?([eE][-+]?[0-9_]+)?)?)\\b",
+          "name": "constant.numeric"
+        }
+      ]
+    },
+    "operator": {
+      "patterns": [
+        {
+          "match": "->|\\|\\||&&|\\+\\+|\\*\\*|\\+\\.|\\+|-\\.|-|\\*\\.|\\*|/\\.|/|\\.\\.\\.|\\.\\.|\\|>|===|==|\\^|:=|!|>=|<=",
+          "name": "keyword.operator"
+        }
+      ]
+    },
+    "assignment": {
+      "patterns": [
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment"
+        }
+      ]
+    },
+    "constructor": {
+      "patterns": [
+        {
+          "match": "\\b[A-Z][0-9a-zA-Z_]*\\b",
+          "name": "variable.function variable.other"
+        },
+        {
+          "match": "(#)[a-zA-Z][0-9a-zA-Z_]*\\b",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.keyword"
+            }
+          }
+        }
+      ]
+    },
+    "array": {
+      "patterns": [
+        {
+          "match": "\\[",
+          "name": "punctuation.section.brackets.begin"
+        },
+        {
+          "match": "\\]",
+          "name": "punctuation.section.brackets.end"
+        }
+      ]
+    },
+    "list": {
+      "patterns": [
+        {
+          "match": "\\b(list)(\\[)",
+          "captures": {
+            "1": {
+              "name": "keyword"
+            },
+            "2": {
+              "name": "punctuation.section.brackets.begin"
+            }
+          }
+        },
+        {
+          "match": "\\]",
+          "name": "punctuation.section.brackets.end"
+        }
+      ]
+    },
+    "objectAccess": {
+      "patterns": [
+        {
+          "match": "\\b[a-z_][0-9a-zA-Z_]*(\\[)",
+          "captures": {
+            "1": {
+              "name": "punctuation.section.brackets.begin"
+            }
+          }
+        },
+        {
+          "match": "\\]",
+          "name": "punctuation.section.brackets.end"
+        }
+      ]
+    },
+    "attribute": {
+      "patterns": [
+        {
+          "match": "(@@?)([A-Za-z_][A-Za-z0-9_\\.]*)",
+          "captures": {
+            "1": {
+              "name": "storage.modifier punctuation.definition.annotation"
+            },
+            "2": {
+              "name": "variable.annotation"
+            }
+          }
+        },
+        {
+          "match": "(%%?)([A-Za-z_][A-Za-z0-9_\\.]*)",
+          "captures": {
+            "1": {
+              "name": "storage.modifier punctuation.definition.annotation"
+            },
+            "2": {
+              "name": "variable.annotation"
+            }
+          }
+        }
+      ]
+    },
+    "jsx": {
+      "patterns": [
+        {
+          "match": "<>|</>|/>"
+        },
+        {
+          "match": "</([A-Z_][0-9a-zA-Z_]*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.namespace"
+            }
+          }
+        },
+        {
+          "match": "</([A-Z_][0-9a-zA-Z_]*)"
+        },
+        {
+          "match": "<([A-Z_][0-9a-zA-Z_]*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.namespace"
+            }
+          }
+        }
+      ]
+    },
+    "openOrIncludeModule": {
+      "patterns": [
+        {
+          "match": "\\b(open|include)\\s+([A-Z_][0-9a-zA-Z_]*((\\.)([A-Z_][0-9a-zA-Z_]*))*)",
+          "captures": {
+            "1": {
+              "name": "keyword"
+            },
+            "2": {
+              "patterns": [
+                {
+                  "include": "#moduleAccessEndsWithModule"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "\\b(open|include)\\s*",
+          "name": "keyword"
+        }
+      ]
+    },
+    "moduleAccessEndsWithModule": {
+      "patterns": [
+        {
+          "match": "[A-Z_][0-9a-zA-Z_]*",
+          "name": "entity.name.namespace"
+        },
+        {
+          "match": "(\\.)([A-Z_][0-9a-zA-Z_]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.accessor"
+            },
+            "2": {
+              "name": "entity.name.namespace"
+            }
+          }
+        }
+      ]
+    },
+    "moduleAccess": {
+      "patterns": [
+        {
+          "match": "\\b([A-Z_][0-9a-zA-Z_]*)(\\.)",
+          "captures": {
+            "1": {
+              "name": "entity.name.namespace"
+            },
+            "2": {
+              "name": "punctuation.accessor"
+            }
+          }
+        }
+      ]
+    },
+    "moduleDeclaration": {
+      "patterns": [
+        {
+          "match": "\\b(module)\\s+(type\\s+)?(of\\s+)?([A-Z_][0-9a-zA-Z_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword"
+            },
+            "2": {
+              "name": "keyword"
+            },
+            "3": {
+              "name": "keyword"
+            },
+            "4": {
+              "name": "entity.name.namespace"
+            }
+          },
+          "patterns": [
+            {
+              "match": "\\s*:\\s*([A-Z_][0-9a-zA-Z_]*)",
+              "captures": {
+                "1": {
+                  "name": "entity.name.namespace"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "patterns": [
+    {
+      "include": "#storage"
+    },
+    {
+      "include": "#constant"
+    },
+    {
+      "include": "#commentLine"
+    },
+    {
+      "include": "#commentBlock"
+    },
+    {
+      "include": "#character"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#attribute"
+    },
+    {
+      "include": "#function"
+    },
+    {
+      "include": "#list"
+    },
+    {
+      "include": "#objectAccess"
+    },
+    {
+      "include": "#array"
+    },
+    {
+      "include": "#jsx"
+    },
+    {
+      "include": "#operator"
+    },
+    {
+      "include": "#assignment"
+    },
+    {
+      "include": "#number"
+    },
+    {
+      "include": "#openOrIncludeModule"
+    },
+    {
+      "include": "#moduleDeclaration"
+    },
+    {
+      "include": "#moduleAccess"
+    },
+    {
+      "include": "#constructor"
+    },
+    {
+      "include": "#keyword"
+    },
+    {
+      "include": "#punctuations"
+    }
+  ]
+}
