@@ -23,16 +23,16 @@
   "esy": { "build": "dune build -p #{self.name}" },
   "dependencies": {
     "@opam/ANSITerminal": "0.8.1",
-    "@opam/dune": "2.6.1",
-    "@opam/ocaml-migrate-parsetree": "1.7.3",
-    "@opam/ppx_tools_versioned": "5.4.0",
-    "@opam/ppxlib": "0.13.0",
+    "@opam/dune": "*",
+    "@opam/ocaml-migrate-parsetree": ">= 1.3.1",
+    "@opam/ppx_tools_versioned": "*",
+    "@opam/ppxlib": "*",
     "@opam/reason": "3.5.2",
-    "@opam/stdlib-shims": "0.1.0",
+    "@opam/stdlib-shims": "*",
     "@opam/uri": "3.1.0",
-    "@reason-native/pastel": "0.2.3",
-    "@reason-native/rely": "3.2.1",
+    "@reason-native/pastel": "^0.2.2",
+    "@reason-native/rely": "^3.1.0",
     "ocaml": "~4.8.1000",
-    "rex-json": "1.4.0"
+    "rex-json": "*"
   }
 }

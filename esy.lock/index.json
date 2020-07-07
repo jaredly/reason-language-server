@@ -1,5 +1,5 @@
 {
-  "checksum": "0f24b96f79caba8d9bbce2c05665bea3",
+  "checksum": "f999e0f9f837259e138db2db730c36ab",
   "root": "reason-language-server@link-dev:./package.json",
   "node": {
     "rex-json@1.4.0@d41d8cd9": {
