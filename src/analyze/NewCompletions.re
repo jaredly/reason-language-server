@@ -359,6 +359,10 @@ let valueCompletions = (~env: Query.queryEnv, suffix) => {
   let results = [];
   let results =
     if (suffix == "" || isCapitalized(suffix)) {
+
+      // Get rid of lowercase modules (#417)
+      env.exported.modules |> Hashtbl.filter_map_inplace((name, key) => isCapitalized(name) ? Some(key) : None);
+
       let moduleCompletions = completionForExporteds(
           env.exported.modules, env.file.stamps.modules, suffix, m =>
           Module(m)
