@@ -45,7 +45,7 @@ const shouldReload = () => vscode.workspace.getConfiguration('reason_language_se
 
 /**
  * Taken from https://github.com/rust-lang/rls-vscode/blob/master/src/extension.ts
- *
+ * 
  * Sets up additional language configuration that's impossible to do via a
  * separate language-configuration.json file. See [1] for more information.
  *
@@ -90,8 +90,7 @@ function activate(context) {
         documentSelector: [
             {scheme: 'file', language: 'reason'},
             {scheme: 'file', language: 'ocaml'},
-            {scheme: 'file', language: 'reason_lisp'},
-            {scheme: 'file', language: 'bucklescript'}
+            {scheme: 'file', language: 'reason_lisp'}
         ],
         synchronize: {
             // Synchronize the setting section 'reason_language_server' to the server
