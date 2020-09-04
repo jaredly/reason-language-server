@@ -62,6 +62,8 @@ let format = (text, fmtCmd) => {
 };
 
 let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceFile, includes, flags) => {
+  // TestRes
+  let res = Filename.check_suffix(sourceFile, ".res") || Filename.check_suffix(sourceFile, ".resi");
   let flags = reasonFormat ? {
     /* Filter out -pp flags for Reason files. Refmt is the only preprocessor
        that should apply to Reason files. */
@@ -82,8 +84,8 @@ let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceF
     command,
     includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),
     flags ++ (reasonFormat ? " -bs-re-out" : ""),
-    interface ? "-intf" : "-impl",
-    sourceFile
+    res ? "" : (interface ? "-intf" : "-impl"),
+    res ? sourceFile ++ " >/dev/null" : sourceFile
   )
 };
 
@@ -173,7 +175,13 @@ let getAst = (~cacheLocation, ~compilerVersion, ~moduleName, ~uri) => {
 
 let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation, ~compilerVersion, ~allLocations, compilerPath, refmtPath, includes, flags) => {
   let interface = Utils.endsWith(uri, "i");
+  // TestRes
+  let res = Utils.endsWith(uri, "res") || Utils.endsWith(uri, "resi");
   let%try (syntaxError, astFile) = switch (refmtPath) {
+    | _ when res =>
+      let astFile = cacheLocation /+ moduleName ++ ".res" ++ (interface ? "i" : "");
+      let%try () = Files.writeFileResult(astFile, text);
+      Ok((None, astFile))
     | Some(refmtPath) => runRefmt(~interface, ~moduleName, ~cacheLocation, text, refmtPath);
     | None => {
       let astFile = cacheLocation /+ moduleName ++ ".ast" ++ (interface ? "i" : "");
