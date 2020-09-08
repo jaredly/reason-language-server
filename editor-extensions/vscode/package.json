@@ -21,6 +21,7 @@
 		"onLanguage:ocaml",
 		"onLanguage:reason_lisp"
 	],
+	
 	"main": "./src/index",
 	"contributes": {
 		"commands": [
