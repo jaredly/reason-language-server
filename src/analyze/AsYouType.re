@@ -85,7 +85,7 @@ let justBscCommand = (~interface, ~reasonFormat, ~command, compilerPath, sourceF
     includes |> List.map(i => Printf.sprintf("-I %s", Commands.shellEscape(i))) |> String.concat(" "),
     flags ++ (reasonFormat ? " -bs-re-out" : ""),
     res ? "" : (interface ? "-intf" : "-impl"),
-    res ? sourceFile ++ " >/dev/null" : sourceFile
+    sourceFile
   )
 };
 
@@ -236,7 +236,7 @@ let process = (~uri, ~moduleName, ~basePath, ~reasonFormat, text, ~cacheLocation
       // | _ => Log.log("Doesn't exist")
       // };
       let%try_wrap full = fullForCmt(cmtPath, uri, x => x);
-      Success(String.concat("\n", lines @ error), full)
+      Success(String.concat("\n", (res ? [] : lines) @  error), full)
     }
   }
 };
