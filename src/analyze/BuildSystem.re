@@ -85,7 +85,7 @@ let namespacedName = (buildSystem, namespace, name) => switch buildSystem {
 
 open Infix;
 
-let nodePlatform = 
+let nodePlatform =
     switch (Sys.os_type) {
       | "Unix" => switch (input_line (Unix.open_process_in ("uname -s"))) {
          | "Darwin"  => "darwin"
@@ -290,7 +290,10 @@ let getStdlib = (base, buildSystem) => {
     | Some(esy_ocamllib) => Ok([esy_ocamllib])
     | None =>
       let command = v < "0.5.6" ?
-        "esy -q sh -- -c 'echo $OCAMLLIB'" : "esy -q sh -c 'echo $OCAMLLIB'";
+        "esy -q sh -- -c 'echo $OCAMLLIB'" :
+          Sys.os_type == "Win32" ?
+            "esy -q sh -c \"echo $OCAMLLIB\"" :
+            "esy -q sh -c 'echo $OCAMLLIB'";
       let%try_wrap esy_ocamllib = getLine(command, ~pwd=base);
       [esy_ocamllib];
     };
@@ -333,7 +336,7 @@ let getCompiler = (rootPath, buildSystem) => {
     | Bsb(_) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
       switch(Files.ifExists(bsPlatformDir /+ "lib" /+ "bsc.exe")){
-        | Some (x) => x 
+        | Some (x) => x
         | None => bsPlatformDir /+ nodePlatform /+ "bsc.exe"
       }
     | BsbNative(_, Native) =>
@@ -353,12 +356,12 @@ let getRefmt = (rootPath, buildSystem) => {
   let bsRefmt = (bsPlatformDir) =>
     switch (Files.ifExists(bsPlatformDir/+"lib"/+"refmt.exe")){
       | Some (x) => x
-      | None => 
+      | None =>
         switch(Files.ifExists(bsPlatformDir /+ nodePlatform /+ "refmt.exe")){
-          | Some (x) => x 
+          | Some (x) => x
           | None => bsPlatformDir /+ "lib" /+ "refmt3.exe"
         }
-    }  
+    }
   switch (buildSystem) {
     | BsbNative("3.2.0", _) =>
       let%try_wrap bsPlatformDir = getBsPlatformDir(rootPath);
