@@ -154,11 +154,6 @@
 				"embeddedLanguages": {
 					"meta.embedded.block.reason": "reason"
 				}
-			},
-			{
-				"language": "bucklescript",
-				"scopeName": "source.bucklescript",
-				"path": "./bucklescript.json"
 			}
 		],
 		"languages": [
@@ -194,17 +189,6 @@
 					".reli"
 				],
 				"configuration": "./reason-lisp.configuration.json"
-			},
-			{
-				"id": "bucklescript",
-				"aliases": [
-					"BuckleScript"
-				],
-				"extensions": [
-					".res",
-					".resi"
-				],
-				"configuration": "./bucklescript.configuration.json"
 			}
 		]
 	},
