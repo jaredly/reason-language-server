@@ -1,3 +1,5 @@
+# NOTICE:
+With the recent "rescript" split, this language server becomes less relevant. If you're working on `.res` files, check out the [rescript-vscode](https://github.com/rescript-lang/rescript-vscode) plugin. If you're using reason/ocaml compiled to native, [ocaml-lsp](https://github.com/ocaml/ocaml-lsp) has the best support for dune.
 
 # Reason Language Server
 
