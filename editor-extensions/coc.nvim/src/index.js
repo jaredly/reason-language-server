@@ -3,6 +3,7 @@ import { ExtensionContext, LanguageClient, services, workspace } from 'coc.nvim'
 import fs from 'fs';
 import os from 'os';
 import axios from 'axios';
+import HttpAdapter from 'axios/lib/adapters/http';
 import AdmZip from 'adm-zip';
 
 const RELEASE_URL = 'https://github.com/jaredly/reason-language-server/releases/download';
@@ -34,7 +35,10 @@ async function getCommand(context: ExtensionContext): Promise<string> {
   }
 
   workspace.showMessage(`Downloading reason-language-server for ${OS}...`);
-  const { data } = await axios.get(rlsDownloadUrl(currentVersion, OS), { responseType: 'arraybuffer' });
+  const { data } = await axios.get(rlsDownloadUrl(currentVersion, OS), {
+    responseType: 'arraybuffer',
+    adapter: HttpAdapter,
+  });
   const zipPath = context.asAbsolutePath(`./rls/rls-${OS}.zip`);
   fs.writeFileSync(zipPath, data);
 
