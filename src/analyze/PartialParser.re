@@ -241,6 +241,7 @@ let findOpens = (text, current) => {
         | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' => {
           let i0 = startOfLident(text, i - 3);
           add(String.sub(text, i0, i - i0 - 1));
+          loop(i0);
         }
         | _ => loop(i - 1)
       }
