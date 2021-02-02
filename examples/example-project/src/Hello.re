@@ -77,8 +77,8 @@ let a = [
 let div = (~x, ~y, ~children, ()) => 10;
 
 let m = <div
-  x=10
-  y=20
+  x="10"
+  y="20"
  />;
 
  let something = animal => switch animal {

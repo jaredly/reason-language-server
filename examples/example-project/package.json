@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "bs-platform": "^5.0.0"
+    "bs-platform": "8.2.0",
+    "reason-react": "^0.9.1"
   },
   "scripts": {
     "build": "bsb -make-world",

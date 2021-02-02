@@ -19,7 +19,8 @@
 	"activationEvents": [
 		"onLanguage:reason",
 		"onLanguage:ocaml",
-		"onLanguage:reason_lisp"
+		"onLanguage:reason_lisp",
+		"onLanguage:bucklescript"
 	],
 	
 	"main": "./src/index",
