@@ -93,7 +93,17 @@ If you're on a newer version of macOS and receive the error popup "reason-langua
                   :major-modes '(reason-mode)
                   :notification-handlers (ht ("client/registerCapability" 'ignore))
                   :priority 1
-                  :server-id 'reason-ls))
+                  :server-id 'reason-ls
+                  :initialized-fn (lambda (workspace)
+                                   ;; Example for passing configuration/debug settings
+                                   ;; (lsp-register-custom-settings
+                                   ;;  ;; Change refmt format_width to 100
+                                   ;;  '(("reason_language_server.format_width" 100)
+                                   ;;    ;; use nil to set autoRebuild to false, t to indicate that this setting expects a boolean
+                                   ;;    ("reason_language_server.autoRebuild" nil t)))
+                                   (with-lsp-workspace workspace
+                                    (lsp--set-configuration
+                                     (lsp-configuration-section "reason_language_server"))))))
 ```
 
 ### Atom
