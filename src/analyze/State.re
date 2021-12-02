@@ -30,34 +30,35 @@ let isMl = path =>
 let odocToMd = text => MarkdownOfOCamldoc.convert(text);
 let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
 
-let converter = (src, usePlainText) => {
-  let mlToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
+let converter = (src, usePlainText, useOdocForReason) => {
+  let odocToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
+  let mdToOutput = usePlainText ? compose(Omd.of_string, Omd.to_text) : (x => x);
   fold(
     src,
-    mlToOutput,
-    src => isMl(src) ? mlToOutput : (usePlainText ? compose(Omd.of_string, Omd.to_text) : (x => x))
+    odocToOutput,
+    src => useOdocForReason || isMl(src) ? odocToOutput : mdToOutput
   );
 };
 
-let newDocsForCmt = (~compilerVersion, ~moduleName, cmtCache, changed, cmt, src, clientNeedsPlainText) => {
+let newDocsForCmt = (~compilerVersion, ~moduleName, cmtCache, changed, cmt, src, clientNeedsPlainText, useOdocForReason) => {
   let uri = Utils.toUri(src |? cmt);
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmt
     | V406 => Process_406.fileForCmt
     | V407 => Process_407.fileForCmt
     | V408 => Process_408.fileForCmt
-  })(~moduleName, cmt, uri, converter(src, clientNeedsPlainText)) |> RResult.toOptionAndLog;
+  })(~moduleName, cmt, uri, converter(src, clientNeedsPlainText, useOdocForReason)) |> RResult.toOptionAndLog;
   Hashtbl.replace(cmtCache, cmt, (changed, file));
   Some(file);
 };
 
-let newDocsForCmi = (~compilerVersion, ~moduleName, cmiCache, changed, cmi, src, clientNeedsPlainText) => {
+let newDocsForCmi = (~compilerVersion, ~moduleName, cmiCache, changed, cmi, src, clientNeedsPlainText, useOdocForReason) => {
   let%opt file = (switch compilerVersion {
     | BuildSystem.V402 => Process_402.fileForCmi
     | V406 => Process_406.fileForCmi
     | V407 => Process_407.fileForCmi
     | V408 => Process_408.fileForCmi
-  })(~moduleName, cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText));
+  })(~moduleName, cmi, Utils.toUri(src |? cmi), converter(src, clientNeedsPlainText, useOdocForReason));
   Hashtbl.replace(cmiCache, cmi, (changed, file));
   Some(file);
 };
@@ -83,6 +84,7 @@ let docsForCmt = (~package, ~moduleName, cmt, src, state) =>
             cmt,
             src,
             state.settings.clientNeedsPlainText,
+            state.settings.useOdocForReason
           );
         } else {
           Some(docs);
@@ -102,6 +104,7 @@ let docsForCmt = (~package, ~moduleName, cmt, src, state) =>
           cmt,
           src,
           state.settings.clientNeedsPlainText,
+          state.settings.useOdocForReason
         )
       };
     };
@@ -122,6 +125,7 @@ let docsForCmt = (~package, ~moduleName, cmt, src, state) =>
           cmt,
           src,
           state.settings.clientNeedsPlainText,
+          state.settings.useOdocForReason
         );
       } else {
         Some(docs);
@@ -141,6 +145,7 @@ let docsForCmt = (~package, ~moduleName, cmt, src, state) =>
         cmt,
         src,
         state.settings.clientNeedsPlainText,
+        state.settings.useOdocForReason
       )
     };
   };

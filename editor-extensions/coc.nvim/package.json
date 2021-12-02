@@ -97,6 +97,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enables autorun of bsb"
+        },
+        "reason_language_server.use_odoc_for_reason": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enables odoc syntax for ReasonML comments"
         }
       }
     }

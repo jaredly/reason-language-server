@@ -115,6 +115,7 @@ let getState = () => {
       opensCodelens: true,
       dependenciesCodelens: true,
       clientNeedsPlainText: false,
+      useOdocForReason: false,
       showModulePathOnHover: false,
       recordAllLocations: false,
       autoRebuild: false,

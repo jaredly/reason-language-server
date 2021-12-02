@@ -131,6 +131,7 @@ The language server supports the following settings (not all of them apply to al
 - `dependencies_codelens` - list a files dependencies at the top (bool)
 - `opens_codelens` - show what values are used from an `open` (bool)
 - `autoRebuild` — rebuild project on save (turned on by default) (bool)
+- `use_odoc_for_reason` - treat ReasonML comments as odoc comments (turned off by default) 
 
 ### Debug settings
 
