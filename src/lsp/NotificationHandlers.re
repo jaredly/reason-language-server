@@ -110,6 +110,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
     let crossFileAsYouType = false;
     let showModulePathOnHover = (settings |?> Json.get("show_module_path_on_hover") |?> Json.bool) |? true;
     let autoRebuild = settings |?> Json.get("autoRebuild") |?> Json.bool |? true;
+    let useOdocForReason = (settings |?> Json.get("use_odoc_for_reason") |?> Json.bool) |? false;
 
     let buildSystemOverrideByRoot = (settings |?> Json.get("build_system_override_by_root") |?> Json.obj |? [])->Belt.List.keepMap(((key, v)) => {
       let%opt v = Json.string(v);
@@ -132,6 +133,7 @@ let notificationHandlers: list((string, (state, Json.t) => result(state, string)
         showModulePathOnHover,
         autoRebuild,
         buildSystemOverrideByRoot,
+        useOdocForReason
       },
     });
   }),

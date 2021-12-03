@@ -115,6 +115,7 @@ let getState = () => {
       opensCodelens: true,
       dependenciesCodelens: true,
       clientNeedsPlainText: false,
+      useOdocForReason: false,
       showModulePathOnHover: false,
       recordAllLocations: false,
       autoRebuild: false,
@@ -181,7 +182,8 @@ let setUp = (~projectDir, files, text) => {
       package.compilerPath,
       package.refmtPath,
       [tmp],
-      ""
+      "",
+      x => x
     );
     switch result {
       | AsYouType.SyntaxError(text, _, _) => failwith("Syntax error " ++ text)
@@ -211,7 +213,8 @@ let setUp = (~projectDir, files, text) => {
     package.compilerPath,
     package.refmtPath,
     [tmp],
-    ""
+    "",
+    x => x
   );
   /* switch result {
     | AsYouType.SyntaxError(syntaxError, _, full) => Log.log("Syntax error! " ++ syntaxError)
