@@ -33,11 +33,18 @@ let compose = (fn1, fn2, arg) => fn1(arg) |> fn2;
 let converter = (src, usePlainText, useOdocForReason) => {
   let odocToOutput = compose(odocToMd, usePlainText ? Omd.to_text : Omd.to_markdown);
   let mdToOutput = usePlainText ? compose(Omd.of_string, Omd.to_text) : (x => x);
-  fold(
+  let converter = fold(
     src,
     odocToOutput,
     src => useOdocForReason || isMl(src) ? odocToOutput : mdToOutput
   );
+
+  src => {
+    let res = converter(src);
+
+    Log.log("src: " ++src ++ ", res: " ++ res);
+    res;
+  }
 };
 
 let newDocsForCmt = (~compilerVersion, ~moduleName, cmtCache, changed, cmt, src, clientNeedsPlainText, useOdocForReason) => {
@@ -292,6 +299,7 @@ let getCompilationResult = (uri, state, ~package: TopTypes.package) => {
       refmtPath,
       includes,
       package.compilationFlags,
+      converter(Some(uri), state.settings.clientNeedsPlainText, state.settings.useOdocForReason)
     );
     Hashtbl.replace(state.compiledDocuments, uri, result);
     switch (result) {
@@ -412,6 +420,7 @@ let fileForModule = (state,  ~package, modname) => {
   switch file {
     | Some(_) => file
     | None =>
+      Log.log("Getting docs for module: " ++ modname);
       let%opt (file, _) = docsForModule(modname, state, ~package);
       Some(file)
   }
