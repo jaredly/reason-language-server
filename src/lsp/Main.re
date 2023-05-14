@@ -301,6 +301,7 @@ let showHelp = () => {
 };
 
 let main = () => {
+  Sys.set_signal(Sys.sigpipe, Sys.Signal_ignore);
   switch (parseArgs(Sys.argv->Belt.List.fromArray)) {
     | (opts, _) when opts->hasOpts(["-h", "--help"]) => showHelp();
     | (opts, []) =>

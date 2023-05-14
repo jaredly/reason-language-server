@@ -34,7 +34,7 @@ let execFull = (~input=?, ~pwd=?, ~env=Unix.environment(), cmd) => {
   | None => ()
   | Some(text) => output_string(cmd_in, text)
   };
-  close_out(cmd_in);
+  close_out_noerr(cmd_in);
 
   let cmd_out_descr = Unix.descr_of_in_channel(cmd_out);
   let cmd_err_descr = Unix.descr_of_in_channel(cmd_err);
